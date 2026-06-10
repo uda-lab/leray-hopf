@@ -34,7 +34,7 @@ maintains this ledger as the final report.
 | M1 | Structural spine (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton) | in progress |
 | Side A/B | Blow-up lower bound · nonuniqueness statement | done (pending commit) |
 | M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | **done** (axiom-free) |
-| M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | in progress (part 1 done) |
+| M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | **done** (axiom-free) |
 | M4 | Finite-dim Galerkin ODE + energy identity | pending |
 | M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | pending |
 
@@ -128,6 +128,14 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
     `fourierProjection_n_mFourierCoeff` (`P̂ₙf(k) = if k ∈ box then f̂(k) else 0`), the genuine
     Fourier-multiplier formula, sorry-free/axiom-clean. Leray projection (idempotent, range,
     self-adjoint, contraction, fixes div-free) + `Pₙ` convergence `Pₙf→f` all sorry-free.
+- **M3-part2 velocity Galerkin** (`--effort xhigh`, `VelocityGalerkin.lean`): verdict *approve*,
+  no findings. `velocityProjection_n : L2VF →L[ℝ] L2VF` (componentwise truncation) with
+  `velocityProjection_n_tendsto` (`Pₙu→u`) and `velocityProjection_n_preserves_L2Sigma`
+  (truncation preserves div-free) proved sorry-free/axiom-clean. The real-valuedness of `Pₙ`
+  on real inputs is proved (`conjL2C_fourierProjection`: conjugate-symmetric coefficients +
+  symmetric box). Bonus: `mFourierCoeff3 f k = ∫ mFourier(-k)·f ∂haarTorus3` holds by
+  `mFourierBasis_repr` with NO measure bridge — confirms the M2 measure unification is
+  definitionally exact.
 
 ## Notes
 
