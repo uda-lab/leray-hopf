@@ -3,6 +3,12 @@
 主線は周期領域 $\mathbb T^3$ 上の Leray–Hopf 弱解存在定理。詳細な MVP 設計は
 [`leray_hopf_lean_mvp_plan.md`](./leray_hopf_lean_mvp_plan.md) を参照。
 
+> **文書の役割と優先順位**：本文書はフェーズ構成と到達目標を定める。本文書中のコード片は方向性の
+> 例示であり、Lean インターフェース(構造体・定理の署名)の正は、MVP スコープ(Milestone 1–4 相当)
+> について [`leray_hopf_lean_mvp_plan.md`](./leray_hopf_lean_mvp_plan.md) が持つ。両文書が食い違う
+> 場合、インターフェースは MVP plan に従う。各マイルストーンの done 基準(どの定理を sorry-free に
+> するか)は、着手時に `lean-planner` が `docs/scratch/` で確定する。
+
 ## Phase 0：スコープ
 
 対象を三段階に分け、$\mathbb R^3$ 版は最初から狙わない。
@@ -48,7 +54,7 @@ structure LerayHopfSolution
 theorem exists_lerayHopf_torus3_statement
   (u₀ : L2Sigma Torus3) :
   ∃ u : LerayHopfSolution Torus3 u₀, True := by
-  sorry
+  sorry -- ALLOW_SORRY: target statement; do NOT discharge while definitions are placeholders
 ```
 
 - **成果物**：`LerayHopf/Statement.lean`
@@ -109,7 +115,7 @@ $$
   先に閉じる。実証明は Milestone 8 で置き換える。
 
 ```lean
-axiom aubin_lions_for_navier_stokes_torus3 : ...
+axiom aubin_lions_for_navier_stokes_torus3 : ... -- ALLOW_AXIOM: packaged compactness, discharged in Milestone 8
 ```
 
 - **成果物**：`LerayHopf/CompactnessAxioms.lean`
@@ -134,6 +140,8 @@ theorem exists_lerayHopf_torus3_conditional
 - **目標**：axiom を一つずつ消す本格段階。
 - **内容**：必要となる要素は weak convergence、Bochner 空間 $L^p_t X_x$、Aubin–Lions、
   非線形項の極限移行、lower semicontinuity、initial trace。
+- **規模感**：mathlib に Aubin–Lions は存在しない。本マイルストーンは単独で研究レベルの形式化規模であり、
+  本プロジェクト最大の未知数。後続プランナーは他マイルストーンと同粒度で見積もらないこと。
 - **成果物**：`LerayHopf/AubinLions.lean`, `LerayHopf/LimitPassage.lean`
 
 ## Milestone 9：$\mathbb T^3$ full existence theorem

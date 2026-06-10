@@ -11,6 +11,11 @@ Formalize the first tractable part of the Leray--Hopf weak existence project:
 
 This MVP deliberately avoids proving the PDE estimates, compactness theorem, and Fourier--Galerkin construction.  The goal is to fix the Lean interface and prove the purely structural implication.
 
+> **Authority.**  This file is the authoritative interface design for the MVP
+> (`milestone.md` Milestones 1–4).  Where `milestone.md` sketches different field names or
+> signatures (e.g. its `GalerkinCompactnessPackage` with an `approx` field instead of a
+> `limit` field), this file wins; those sketches describe the post-MVP refinement direction.
+
 ## Scope
 
 Target domain:
@@ -41,6 +46,18 @@ LerayHopf/
   EnergySkeleton.lean
 ```
 
+### Scaffold designation
+
+| File | Status |
+|---|---|
+| `Basic.lean`, `Statement.lean`, `GalerkinPackage.lean` | **scaffold-only** — placeholder types, `Prop` fields, and marked `sorry` are allowed. These are the `AGENTS.md` Rule 4 exception files. |
+| `ExistenceFromPackage.lean`, `EnergySkeleton.lean` | **must-prove** — sorry-free required. |
+
+`exists_lerayHopf_torus3_statement` must stay
+`sorry -- ALLOW_SORRY: target statement; do NOT discharge while definitions are placeholders`
+while the definitions are placeholders.  Giving it a proof while the underlying definitions
+are still vacuous is treated as a **No-vacuous-proof** violation, not progress.
+
 ## Milestone A: Basic objects
 
 File:
@@ -64,6 +81,11 @@ structure SpatialField (Ω : Type*) where
 ```
 
 In the first MVP, `SpatialField` can be a placeholder.  The point is not to encode \(L^2_\sigma\) yet.
+
+For the MVP, `Torus3` is declared as a **placeholder type in `Basic.lean`** — e.g. an
+abbreviation around a dummy type carrying a `MeasureSpace` instance, with
+`-- TODO: realized in Milestone 5`.  Realizing it via mathlib's `AddCircle` is Milestone 5
+work and must not be anticipated here.  `L2Sigma` does **not** appear in the MVP at all.
 
 Define the solution concept.
 
@@ -107,7 +129,7 @@ theorem exists_lerayHopf_torus3_statement
   (u₀ : Type*) :
   ExistsLerayHopf Torus3 u₀ := by
   -- not proved in MVP
-  sorry
+  sorry -- ALLOW_SORRY: target statement; do NOT discharge while definitions are placeholders
 ```
 
 This file may contain `sorry`; it is only the target statement.
@@ -197,7 +219,9 @@ def EnergyInequality (ed : EnergyData) : Prop :=
     ed.E t + ed.ν * ∫ τ in s..t, ed.D τ ≤ ed.E s
 ```
 
-If interval integrals are inconvenient in the first pass, replace the integral by an abstract accumulated dissipation:
+**Decision (not a choice left to implementation):** the MVP uses the abstract
+accumulated-dissipation `A : ℝ → ℝ → ℝ` version below.  Replacing it with the
+interval-integral version above is PR 2+ refinement, not first-pass work.
 
 ```lean
 structure EnergyData where
@@ -282,6 +306,11 @@ with the following sorry-free theorems:
 
 This is small, but it fixes the architectural spine.
 
+`Statement.lean` (with `exists_lerayHopf_torus3_statement` kept as the marked `sorry`
+above) is part of the first MVP and lands in this PR or the immediately following one, so
+that the Definition of done's "main future theorem statement exists" holds.  The four-file
+list above is the strict subset that must be **sorry-free**; `Statement.lean` is not.
+
 ## Follow-up PRs
 
 ### PR 2: refine fields
@@ -297,6 +326,10 @@ Interpret:
 \[
 H = L^2_\sigma,\qquad V = H^1_\sigma.
 \]
+
+Viscosity positivity decision: keep `0 < ν` (or `0 ≤ ν`) as a **hypothesis on the energy
+lemmas**, as `EnergySkeleton` already does, rather than baking it into a structure field —
+unless a later estimate genuinely needs it structurally.
 
 ### PR 3: finite-dimensional Galerkin ODE interface
 

@@ -21,6 +21,10 @@ lake exe cache get   # download prebuilt mathlib oleans (first time / after math
 lake build
 ```
 
+> `lake update` (bumping the mathlib revision) is an **explicit `lean-coder` task only**. The
+> pinned commit in `lake-manifest.json` is the reproducibility source of truth — do not run
+> `lake update` as a side effect of other work.
+
 ## Discipline checks
 
 ```bash
