@@ -78,6 +78,41 @@ infrastructure in mathlib.
   orchestrator-owned. Edit-ownership respected (defs/statements by coder, proof bodies by prover).
 - Running ledger: `docs/STATUS.md`. Per-milestone contracts: `docs/scratch/m*.md`.
 
+## M6 — sound minimal-axiom closure of T³ existence (post-run, strategic pivot)
+
+After the axiom-free run reached the genuine analytic frontier, the strategy shifted (user
+directive): **T³ is the warm-up, not the destination (R³ is)**. Rather than build the missing
+torus-calculus tooling, the remaining T³ frontier was decomposed into **four minimal, true,
+literature-referenced axioms**, closing the T³ existence theorem on an abstract framework built
+for R³ reuse. Result:
+
+```
+exists_lerayHopf_torus3 (u₀ : L2Sigma) (ν > 0) (T > 0) :
+    ∃ F : Torus3NSForms, Nonempty (LerayHopfSolutionFull F ν T u₀)     -- PROVED
+```
+`LerayHopfSolutionFull` is **proof-carrying**: weak NS equation (smooth/Galerkin div-free tests,
+ν-scaled, compact support in (0,T)), the energy inequality on [0,T], the initial trace, and the
+**energy class** `u ∈ L²(0,T;H¹_σ)`. `#print axioms` = the 4 axioms + `propext`/`Choice`/`Quot`,
+**no `sorryAx`**.
+
+**The 4 axioms** (`AxiomaticClosure.lean`): `torus3_NSForms_exist` (the convection form, pinned to
+the concrete `galerkinConvection` so `b=0` is excluded; viscous form is *concrete*, not axiomatized),
+`galerkin_ode_solution` (A1, Temam III.3), `aubin_lions` (A2, spatial half *discharged* by the
+proved `rellich_L2Sigma`, Temam III.2.1), `galerkin_limit_passage` (A3, existential good
+representative a.e.-tied to the limit, Temam III.3). `b(u,u,u)=0` is a *proved lemma*.
+
+**Integrity:** the axiom set survived an **8-round** Codex `--effort xhigh` adversarial audit
+(→ approve) that forced fixes to a hidden inconsistency (under-specified forms), a false 3D bound,
+an over-broad test space, sequence/interval faithfulness, the Stokes domain (∞ off H¹ ⇒
+de-axiomatized to a concrete Fourier multiplier), the energy class, and measure-zero
+representative invariance; plus a final assembly/faithfulness audit (→ approve). Foundational layer
+(`H1Sigma.lean` incl. the proved `rellich_L2Sigma`; `EvolutionTriple.lean`) is **axiom-free**.
+
+**R³-reuse note (honest):** the abstract `DissipativeEvolution`/`WeakFormNS` + the `AbstractEnergyLaw`
+machinery are reusable; A1–A3 are currently stated *concretely* on T³ (the regularity-functional
+resolution chosen for soundness), so the R³ instantiation re-states A1–A3 with R³ types reusing the
+pattern, and needs its OWN spatial-compactness axiom (Rellich FAILS on ℝ³).
+
 ## Assessment vs forecast
 
 | Forecast band | Predicted | Actual |
