@@ -33,15 +33,24 @@ maintains this ledger as the final report.
 |---|---|---|
 | M1 | Structural spine (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton) | in progress |
 | Side A/B | Blow-up lower bound · nonuniqueness statement | done (pending commit) |
-| M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | pending |
+| M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | in progress |
 | M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | pending |
 | M4 | Finite-dim Galerkin ODE + energy identity | pending |
 | M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | pending |
 
+## M2 design decisions (orchestrator, adopted)
+
+- **0-A velocity codomain:** `VelocityValue := EuclideanSpace ℝ (Fin 3)` (physically faithful
+  ℝ³ energy inner product). Fourier work uses component-wise ℝ↪ℂ embedding, made explicit.
+- **0-B measure normalization:** probability/Haar (total mass 1), consistent with `mFourierBasis`
+  (`AddCircleMulti` uses `haarAddCircle`). The `volume` vs `haarAddCircle` definitional match at
+  `T = 1` is a known M2 friction point (planner D-06); to be verified by lean-coder.
+
 ## Axiom ledger
 
-_None yet._ Every entry must carry: same-line `-- ALLOW_AXIOM: <reason>`, a literature
-reference, and the milestone that discharges it.
+Planned (M2): `L2Sigma_eq_divFreeL2` — closure-of-span `L²_σ` ↔ Fourier-diagonal `k·û(k)=0`
+criterion. Ref: Temam, *Navier–Stokes Equations*, Prop. 1.1 / Cor. 1.1. Discharge target: M3.
+Will carry `-- ALLOW_AXIOM` and be entered here once placed. _Not yet in the source tree._
 
 ## Sorry frontier
 
@@ -84,6 +93,15 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
     reproved sorry-free by lean-prover.
   - [medium] Branch B `LerayHopfNonunique` froze initial data at universe 0 (non-monotone vs
     the `Type*` interface) → **fixed**: explicit `universe u v`, `Ω : Type u`, `u₀ : Type v`.
+- **M2-part1 function spaces** (`--effort xhigh`, `FunctionSpaces.lean`/`TorusDomain.lean`):
+  verdict *needs-attention*, 2 findings, both fixed.
+  - [high] two non-defeq torus measures (`L2VF` on `volume`, `L2C`/basis on `haarTorus3`)
+    would force measure-transport at every M3 boundary → **fixed**: unified all torus L²
+    spaces on the single canonical `haarTorus3`; added proven bridge
+    `volume_torus3_eq_haarTorus3`.
+  - [medium] `mFourierCoeff3` doc claimed a global-`volume` integral while `L2C` is Haar-based
+    (Parseval-divergence risk) → **fixed**: redefined `mFourierCoeff3 := torus3_mFourierBasis.repr`.
+  - `IsProbabilityMeasure (volume : Measure UnitAddCircle)` instance confirmed sound/non-conflicting.
 
 ## Notes
 

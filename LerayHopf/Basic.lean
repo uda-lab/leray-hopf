@@ -1,4 +1,6 @@
-import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+import Mathlib.Topology.Instances.AddCircle.Real
+import Mathlib.MeasureTheory.Constructions.Pi
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 
 open MeasureTheory
 
@@ -6,11 +8,12 @@ open MeasureTheory
 # Basic objects for the Leray–Hopf formalization
 
 **Scaffold only.** This file fixes the *types* the existence theory will talk about —
-a placeholder domain, a placeholder spatial-field type, and the solution-concept record
-`LerayHopfSolution` whose fields are `Prop` placeholders. No analytical content is
-encoded yet; the fields are refined monotonically in later milestones.
+the spatial 3-torus domain, a placeholder spatial-field type, and the solution-concept
+record `LerayHopfSolution` whose fields are `Prop` placeholders. The torus carries the
+real product Haar (probability) measure; other analytical content is refined in later
+milestones.
 
-Interface authority: `docs/leray_hopf_lean_mvp_plan.md` (Milestone A).
+Interface authority: `docs/leray_hopf_lean_mvp_plan.md` (Milestone A/M2).
 -/
 
 namespace LerayHopf
@@ -18,20 +21,13 @@ namespace LerayHopf
 /-- The time axis. -/
 abbrev Time := ℝ
 
-/-- Placeholder for the spatial 3-torus `𝕋³`.
+/-- The spatial 3-torus 𝕋³, realized as `UnitAddTorus (Fin 3)` = `Fin 3 → UnitAddCircle`,
+with its product Haar (probability) measure.
 
-A **fresh** named placeholder (not an alias of any analytic type) carrying a
-deliberately trivial `MeasureSpace` instance — the indiscrete σ-algebra and the **zero**
-measure — so downstream statements can quantify over a measured domain *without*
-inheriting the identity, topology, or Lebesgue measure of some concrete space. The zero
-measure is intentionally **not** the real Haar/volume measure: it signals "not realized
-yet" rather than silently standing in for the wrong domain.
-TODO(M2): realize as `UnitAddTorus 3` with its Haar/volume measure. -/
-def Torus3 : Type := PUnit
-
-noncomputable instance : MeasureSpace Torus3 where
-  __ := (⊤ : MeasurableSpace Torus3)
-  volume := 0
+`UnitAddCircle = AddCircle (1 : ℝ)` carries a `MeasureSpace` instance via
+`AddCircle.measureSpace` (total mass 1), and the product measure on
+`Fin 3 → UnitAddCircle` is provided by `MeasureTheory.MeasureSpace.pi`. -/
+abbrev Torus3 := UnitAddTorus (Fin 3)
 
 /-- Placeholder for a spatial field on a domain `Ω` (e.g. an element of `L²_σ(Ω)`).
 Realized as a real function space in a later milestone. -/
