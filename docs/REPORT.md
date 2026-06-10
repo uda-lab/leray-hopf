@@ -113,6 +113,39 @@ machinery are reusable; A1–A3 are currently stated *concretely* on T³ (the re
 resolution chosen for soundness), so the R³ instantiation re-states A1–A3 with R³ types reusing the
 pattern, and needs its OWN spatial-compactness axiom (Rellich FAILS on ℝ³).
 
+## R3 — whole-space ℝ³ Leray–Hopf weak existence (the real target, Leray 1934)
+
+The abstract framework paid off: the ℝ³ pivot reused `DissipativeEvolution`/`WeakFormNS`/
+`AbstractEnergyLaw` **unmodified**, and mathlib's ℝ³ harmonic analysis turned out rich enough to
+build the spatial+regularity layer **axiom-free**.
+
+```
+exists_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν > 0) (T > 0) :
+    ∃ 𝔊 F, Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)     -- PROVED
+```
+
+**Built axiom-free** (`R3/Domain.lean`, `DivergenceFree.lean`, `Regularity.lean`):
+`L2Sigma_R3 := ⨅ φ:𝓢, ker(divTestFunctional φ)` — the closed divergence-free subspace via **weak
+divergence against Schwartz test functions** (avoiding the L²-Fourier-representative trap), the Leray
+projection, `memH1VF_R3` via `TemperedDistribution.MemSobolev`, and `stokesTestPairing_R3`/
+`viscousFormSq_R3` via the **L² Fourier isometry** `Lp.fourierTransformₗᵢ`, plus the genuine
+convection integral `convIntegralSchwartz`.
+
+**The 6 axioms.** Exactly the T³ four (`r3_NSForms_exist`, `galerkin_ode_solution_R3`,
+`aubin_lions_R3`, `galerkin_limit_passage_R3`) **plus the two pieces T³ proved but ℝ³ cannot**:
+`r3GalerkinScheme_exists` (the approximation projector — no finite-dim Fourier truncation on ℝ³) and
+`spatial_compactness_R3` (**local** Rellich `H¹(B_R)↪↪L²(B_R)` — global Rellich *fails* on the
+unbounded domain). That +2 is the honest cost of the whole space.
+
+**Integrity.** Codex `--effort xhigh` axiom audit → approve in **2 rounds** (the 8-round T³ lessons
+applied preemptively): it forced (i) a `range_schwartz` field to exclude the identity Galerkin scheme,
+and (ii) reformulating compactness from *global* (false without tightness) to *local-on-balls* (true).
+`#print axioms exists_lerayHopf_r3` = the 6 axioms + `propext`/`Choice`/`Quot` (no `sorryAx`).
+
+This is the project's headline result: **whole-space ℝ³ Leray–Hopf weak existence, closed modulo six
+true, minimal, literature-referenced, Codex-audited axioms**, on a framework whose abstract core is
+shared with the T³ proof.
+
 ## Assessment vs forecast
 
 | Forecast band | Predicted | Actual |

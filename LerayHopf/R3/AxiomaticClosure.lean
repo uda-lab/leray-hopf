@@ -80,6 +80,8 @@ Six axioms are added in this file (names below with justifications):
 2. `r3_NSForms_exist` — existence of the ℝ³ NS convection form `b`. The genuine
    `∫(u·∇)v·w` form witnesses it; non-vacuity pinned via `b_galerkin` to
    `convIntegralSchwartz` (the genuine `∑_{i,a} ∫ u_a (∂_a v_i) w_i`, sorry-free).
+   The `b_bound` field is over the **canonical `IsSchwartzDivFree_R3` test class**
+   (‖∇w‖_∞ < ∞ for Schwartz w), matching the test predicate in `r3Evolution`.
    Blocked by missing `(u·∇)v` operator on L²(ℝ³) and integration by parts on ℝ³.
    Temam II.§1; Lemarié-Rieusset §5.
 
@@ -194,9 +196,9 @@ noncomputable def convIntegralSchwartz
 /-- The bundle of ℝ³ Navier–Stokes forms: only the trilinear convection form `b`
 (the viscous form is the concrete `stokesTestPairing_R3`, NOT axiomatized).
 
-Mirrors `Torus3NSForms` with `L2Sigma_R3` and `IsGalerkinTest_R3 𝔊` in place of `L2Sigma`
-and `IsGalerkinTest`.  The `𝔊 : R3GalerkinScheme` parameter is threaded so that
-`b_galerkin` and `b_bound` can refer to the test predicate.
+Mirrors `Torus3NSForms` with `L2Sigma_R3` in place of `L2Sigma`.  The `𝔊 : R3GalerkinScheme`
+parameter is threaded so that `b_galerkin` can pin `b` to `convIntegralSchwartz` via the
+Galerkin range's Schwartz structure.
 
 **Non-vacuity:** `b_galerkin` pins `b` to `convIntegralSchwartz` (the genuine
 `∑_{i,a} ∫ u_a (∂_a v_i) w_i` convection integral) on Schwartz div-free fields.
@@ -204,8 +206,9 @@ This excludes `b := 0` since `convIntegralSchwartz ≢ 0` on a concrete Schwartz
 
 **Antisymmetry convention:** `b u v w = -b u w v` (skew in the last two slots).
 
-**Smooth-test convection bound:** For an ℝ³ Galerkin test `w`, `|b(u,v,w)| ≤ C(w)·‖u‖·‖v‖`.
-This is the correct shape for the strong-L²(0,T) limit passage. -/
+**Smooth-test convection bound:** For a **canonical Schwartz divergence-free** test `w`
+(`IsSchwartzDivFree_R3 w`), `|b(u,v,w)| ≤ C(w)·‖u‖·‖v‖`.  This uses the full
+(scheme-independent) test class, matching the weak NS formulation in `r3Evolution`. -/
 structure R3NSForms (𝔊 : R3GalerkinScheme) where
   /-- The trilinear convection form `b : L²_σ(ℝ³) × L²_σ(ℝ³) × L²_σ(ℝ³) → ℝ`. -/
   b : L2Sigma_R3 → L2Sigma_R3 → L2Sigma_R3 → ℝ
@@ -223,12 +226,14 @@ structure R3NSForms (𝔊 : R3GalerkinScheme) where
   b_smul_2 : ∀ (c : ℝ) (u v w : L2Sigma_R3), b u (c • v) w = c * b u v w
   /-- ℝ-homogeneity in the third slot. -/
   b_smul_3 : ∀ (c : ℝ) (u v w : L2Sigma_R3), b u v (c • w) = c * b u v w
-  /-- **Smooth-test convection bound:** For an ℝ³ Galerkin test `w`, the convection form
-  is L²-bounded in the first two slots: `|b(u,v,w)| ≤ C(w) · ‖u‖_{L²} · ‖v‖_{L²}`.
-  TRUE: `b(u,v,w) = -∫(u·∇)w·v`, so `|b| ≤ ‖∇w‖_∞ ‖u‖_{L²} ‖v‖_{L²}` with `‖∇w‖_∞ < ∞`
-  for test fields (finite Galerkin support ⇒ smooth).  Correct shape for strong-L²(0,T)
-  convergence in the nonlinear limit passage. -/
-  b_bound : ∀ (w : L2Sigma_R3), IsGalerkinTest_R3 𝔊 w →
+  /-- **Smooth-test convection bound:** For a Schwartz divergence-free test `w`, the
+  convection form is L²-bounded in the first two slots:
+  `|b(u,v,w)| ≤ C(w) · ‖u‖_{L²} · ‖v‖_{L²}`.
+  TRUE: `b(u,v,w) = -∫(u·∇)w·v`, so `|b| ≤ ‖∇w‖_∞ ‖u‖_{L²} ‖v‖_{L²}` with
+  `‖∇w‖_∞ < ∞` for `IsSchwartzDivFree_R3 w` (Schwartz functions have all derivatives
+  bounded).  Correct shape for strong-L²(0,T) convergence in the nonlinear limit passage.
+  This covers the CANONICAL test class used in the weak NS formulation. -/
+  b_bound : ∀ (w : L2Sigma_R3), IsSchwartzDivFree_R3 w →
     ∃ C : ℝ, ∀ (u v : L2Sigma_R3),
       |b u v w| ≤ C * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖
   /-- **Non-vacuity pin (genuine):** `b` agrees with `convIntegralSchwartz` on L²_σ fields
@@ -264,7 +269,8 @@ The genuine convection form `b(u,v,w) = ∫_{ℝ³} ((u·∇)v)·w` is a witness
 - Antisymmetry: integration by parts + `div u = 0` gives `b u v w = -b u w v`.
 - Trilinearity: the genuine form is multilinear.
 - Smooth-test bound: `b(u,v,w) = -∫(u·∇)w·v`, so `|b| ≤ ‖∇w‖_∞ ‖u‖_{L²} ‖v‖_{L²}`
-  with `‖∇w‖_∞ < ∞` for any Galerkin test `w`.
+  with `‖∇w‖_∞ < ∞` for any `IsSchwartzDivFree_R3 w` (Schwartz functions have bounded
+  derivatives).
 - Schwartz pin: `b` equals `convIntegralSchwartz ψu ψv ψw` on fields with Schwartz
   component representatives (the genuine `∑_{i,a} ∫ u_a (∂_a v_i) w_i` form).
 
@@ -272,7 +278,7 @@ NOTE: The viscous form is NOT axiomatized — it is the concrete `stokesTestPair
 
 Blocked in Lean by: missing `(u·∇)v` operator on L²(ℝ³) + integration by parts on ℝ³.
 Temam II.§1; Lemarié-Rieusset §5. -/
-axiom r3_NSForms_exist (𝔊 : R3GalerkinScheme) : Nonempty (R3NSForms 𝔊) -- ALLOW_AXIOM: ℝ³ NS convection form b exists (b=convIntegralSchwartz on Schwartz-component fields, trilinear, smooth-test b_bound via b=-∫(u·∇)w·v); viscous form is concrete stokesTestPairing_R3 (NOT axiomatized); TRUE (genuine (u·∇)v form witnesses); NON-VACUOUS (b=0 fails b_galerkin since convIntegralSchwartz is genuine convection ≢ 0); Temam II.§1; Lemarié-Rieusset §5
+axiom r3_NSForms_exist (𝔊 : R3GalerkinScheme) : Nonempty (R3NSForms 𝔊) -- ALLOW_AXIOM: ℝ³ NS convection form b exists (b=convIntegralSchwartz on Schwartz-component fields, trilinear, b_bound over canonical IsSchwartzDivFree_R3 test class via b=-∫(u·∇)w·v, ‖∇w‖_∞<∞ for Schwartz w); viscous form is concrete stokesTestPairing_R3 (NOT axiomatized); TRUE (genuine (u·∇)v form witnesses); NON-VACUOUS (b=0 fails b_galerkin since convIntegralSchwartz is genuine convection ≢ 0); Temam II.§1; Lemarié-Rieusset §5
 
 /-! ### Proved lemma: b u u u = 0 -/
 
@@ -291,7 +297,12 @@ theorem R3NSForms.b_self_zero {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊) (u 
 `H := L2Sigma_R3`, with the `L2Sigma_R3`-subspace instances inherited from `L2VF_R3`.
 The regularity functional is `viscousFormSq_R3 1 ∘ (↑)` (matching the design doc:
 `reg := viscousFormSq_R3 1`), the viscous form is the concrete `stokesTestPairing_R3`,
-the convection form is `F.b`, and the test predicate is `IsGalerkinTest_R3 𝔊`.
+the convection form is `F.b`, and the test predicate is the **canonical**
+`IsSchwartzDivFree_R3` (Schwartz divergence-free test class — scheme-independent).
+
+Using `IsSchwartzDivFree_R3` here (rather than `IsGalerkinTest_R3 𝔊`) ensures that
+`WeakFormNS … (r3Evolution 𝔊 F) u` is tested against the full Schwartz div-free class,
+which is the correct formulation for the whole-space Leray–Hopf weak equation.
 
 This construction is **sorry-free**: `DissipativeEvolution` carries no Galerkin or
 compactness fields. -/
@@ -306,7 +317,7 @@ compactness fields. -/
   viscousForm := fun u w => stokesTestPairing_R3 (u : L2VF_R3) (w : L2VF_R3)
   convForm := F.b
   convForm_antisymm := F.b_antisymm
-  isTest := fun w => IsGalerkinTest_R3 𝔊 w
+  isTest := fun w => IsSchwartzDivFree_R3 w
 
 /-! ### AX-1: Galerkin ODE solution data on ℝ³ -/
 
