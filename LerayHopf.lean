@@ -26,6 +26,7 @@ Navier–Stokes equations has been formalized.
 import LerayHopf.Basic
 import LerayHopf.TorusDomain
 import LerayHopf.FunctionSpaces
+import LerayHopf.SobolevTorus
 import LerayHopf.DivergenceFree
 import LerayHopf.Leray
 import LerayHopf.Statement

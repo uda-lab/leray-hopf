@@ -33,7 +33,7 @@ maintains this ledger as the final report.
 |---|---|---|
 | M1 | Structural spine (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton) | in progress |
 | Side A/B | Blow-up lower bound · nonuniqueness statement | done (pending commit) |
-| M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | in progress |
+| M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | **done** (axiom-free) |
 | M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | pending |
 | M4 | Finite-dim Galerkin ODE + energy identity | pending |
 | M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | pending |
@@ -61,8 +61,12 @@ description becomes an optional later *theorem*, not an assumption.
 
 ## Sorry frontier
 
-_None yet._ Every entry must carry: same-line `-- ALLOW_SORRY: <blocker>`, the precise
-statement it guards, and an attack note.
+_Empty._ Through M2 there is **zero** frontier debt: the only `sorry` in the tree is the
+deliberate target statement `exists_lerayHopf_torus3_statement` (not counted as frontier —
+see Notes). No axioms. Every M1–M2 must-prove target is sorry-free and `#print axioms`-clean.
+
+Bochner time spaces `L²(0,T;X)` (planned M2 item) are deferred to M4/M5 where the Galerkin
+solution actually lives in them; mathlib's Banach-valued `Lp` covers them when needed.
 
 ## Known scaffold caveats (disclosed, not hidden)
 
