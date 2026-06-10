@@ -1,34 +1,29 @@
 # Leray–Hopf 弱解存在定理 Lean 形式化ロードマップ
 
-## Phase 0：スコープ固定
+主線は周期領域 $\mathbb T^3$ 上の Leray–Hopf 弱解存在定理。詳細な MVP 設計は
+[`leray_hopf_lean_mvp_plan.md`](./leray_hopf_lean_mvp_plan.md) を参照。
 
-対象を三段階に分ける。
+## Phase 0：スコープ
 
-[
-\boxed{
-\mathbb T^3 \text{ conditional}
-\to
-\mathbb T^3 \text{ full}
-\to
-\mathbb R^3 \text{ Leray original}
-}
-]
+対象を三段階に分け、$\mathbb R^3$ 版は最初から狙わない。
 
-最初から (\mathbb R^3) 版を狙わない。まず周期境界条件の
+$$
+\mathbb T^3\ \text{conditional}
+\;\to\;
+\mathbb T^3\ \text{full}
+\;\to\;
+\mathbb R^3\ \text{Leray original}
+$$
 
-[
-\Omega=\mathbb T^3
-]
-
-で始める。境界・無限遠・tightness を避けるためです。
-
----
+周期境界条件 $\Omega = \mathbb T^3$ から始めることで、境界・無限遠・tightness の処理を避ける。
 
 ## Milestone 1：Leray–Hopf solution の定義
 
-まず存在定理ではなく，解概念を Lean で定義する。
-
-目標：
+- **目標**：存在定理の前に、解概念を Lean で型として定義する。
+- **内容**：数学的には
+  $u \in L^\infty_{\mathrm{loc}}([0,\infty); L^2) \cap L^2_{\mathrm{loc}}([0,\infty); H^1)$
+  であって、弱形式 Navier–Stokes 方程式・初期値条件・エネルギー不等式を満たすもの。
+  この段階では各条件を `Prop` placeholder として持たせ、後で順次展開する。
 
 ```lean
 structure LerayHopfSolution
@@ -41,58 +36,29 @@ structure LerayHopfSolution
   energy_inequality : Prop
 ```
 
-数学的には，
-
-[
-u\in L^\infty_{\mathrm{loc}}([0,\infty);L^2)
-\cap L^2_{\mathrm{loc}}([0,\infty);H^1),
-]
-
-弱形式の Navier–Stokes 方程式，初期値条件，エネルギー不等式を持つ，という定義。
-
-この段階では，`Prop` placeholder を許してよいです。後で少しずつ展開します。
-
-**成果物**：
-`LerayHopf/Basic.lean`
-
----
+- **成果物**：`LerayHopf/Basic.lean`
 
 ## Milestone 2：弱解存在定理の statement 化
 
-次に，存在定理そのものを Lean で述べる。
-
-[
-u_0\in L^2_\sigma(\mathbb T^3)
-\Rightarrow
-\exists u,\ u \text{ is a Leray--Hopf solution}.
-]
-
-Lean では例えば：
+- **目標**：存在定理そのものを Lean で述べ、「何を証明するのか」を固定する。
+- **内容**：$u_0 \in L^2_\sigma(\mathbb T^3) \Rightarrow \exists u,\ u\ \text{is a Leray–Hopf solution}$。
+  proof はこの時点では `sorry` でよい。
 
 ```lean
 theorem exists_lerayHopf_torus3_statement
   (u₀ : L2Sigma Torus3) :
   ∃ u : LerayHopfSolution Torus3 u₀, True := by
-  ...
+  sorry
 ```
 
-この時点では proof は `sorry` でよい。
-目的は「何を証明するのか」を固定すること。
-
-**成果物**：
-`LerayHopf/Statement.lean`
-
----
+- **成果物**：`LerayHopf/Statement.lean`
 
 ## Milestone 3：Galerkin compactness package
 
-存在証明を一気にやらず，次の抽象定理に分解する。
-
-[
-\text{Galerkin 近似列が標準評価と compactness を満たす}
-\Rightarrow
-\text{Leray--Hopf 解が存在する}.
-]
+- **目標**：存在証明を一気に行わず、次の抽象的含意に分解する。
+  「Galerkin 近似列が標準評価と compactness を満たす $\Rightarrow$ Leray–Hopf 解が存在する」。
+- **内容**：compactness と極限移行の結論をフィールドとして格納したパッケージを定義し、
+  そこから存在を導く。これが最初の中心定理。
 
 ```lean
 structure GalerkinCompactnessPackage where
@@ -104,112 +70,55 @@ structure GalerkinCompactnessPackage where
   nonlinear_term_converges : Prop
   initial_trace_converges : Prop
   energy_ineq_passes_to_limit : Prop
-```
 
-そして：
-
-```lean
 theorem exists_lerayHopf_from_galerkin_package
   (pkg : GalerkinCompactnessPackage u₀) :
   ∃ u : LerayHopfSolution Torus3 u₀, True
 ```
 
-ここが最初の中心定理です。
-
-**成果物**：
-`LerayHopf/GalerkinPackage.lean`
-
----
+- **成果物**：`LerayHopf/GalerkinPackage.lean`
 
 ## Milestone 4：Galerkin 近似のエネルギー評価
 
-次に，有限次元 Galerkin 近似 (u_n) に対して
+- **目標**：有限次元 Galerkin 近似 $u_n$ に対するエネルギー不等式を証明する。
 
-[
-\frac12|u_n(t)|_2^2
-+\nu\int_0^t|\nabla u_n(s)|_2^2,ds
-\le
-\frac12|P_nu_0|_2^2
-]
+$$
+\tfrac12 \lVert u_n(t)\rVert_2^2
++ \nu \int_0^t \lVert \nabla u_n(s)\rVert_2^2\,ds
+\le \tfrac12 \lVert P_n u_0\rVert_2^2
+$$
 
-を証明する。
+- **内容**：核となるのは非線形項の消去
+  $\langle (u_n\cdot\nabla)u_n,\ u_n\rangle = 0$。
+  Lean 上でも比較的きれいに切り出せる部分。
+- **成果物**：`LerayHopf/EnergyEstimate.lean`
 
-核は
+## Milestone 5：周期領域 $\mathbb T^3$ の Fourier–Galerkin 基盤
 
-[
-\langle (u_n\cdot\nabla)u_n,u_n\rangle=0
-]
+- **目標**：$\mathbb T^3$ 上で divergence-free Fourier modes、射影 $P_n$、Leray projection を整備する。
+- **内容**：必要な構造は
+  $L^2_\sigma(\mathbb T^3)$, $H^1_\sigma(\mathbb T^3)$, $P_n$, $\Pi_{\mathrm{div}=0}$。
+  mathlib には分布・Sobolev・Fourier の入口はあるが Navier–Stokes 向けの完成 API は無く、
+  設計の比重が大きい。
+- **成果物**：`LerayHopf/TorusFourier.lean`
 
-です。
-ここは Lean 的にも比較的きれいに切れるはずです。
+## Milestone 6：Aubin–Lions / compactness の axiom 化
 
-**成果物**：
-`LerayHopf/EnergyEstimate.lean`
-
----
-
-## Milestone 5：周期領域 (\mathbb T^3) の Fourier–Galerkin 基盤
-
-(\mathbb T^3) 上で divergence-free Fourier modes，射影 (P_n)，Leray projection を整える。
-
-必要な構造：
-
-[
-L^2_\sigma(\mathbb T^3),\quad
-H^1_\sigma(\mathbb T^3),\quad
-P_n,\quad
-\Pi_{\mathrm{div}=0}.
-]
-
-mathlib には分布・Sobolev・Fourier 周辺の入口はありますが，Navier–Stokes 用の完成 API があるわけではないので，ここはかなり設計が必要です。mathlib docs には `Analysis.Distribution.Sobolev` などの分布/Sobolev 系モジュールがあり，Gagliardo–Nirenberg–Sobolev inequality のファイルもあります。([Leanコミュニティ][1])
-
-**成果物**：
-`LerayHopf/TorusFourier.lean`
-
----
-
-## Milestone 6：Aubin–Lions / compactness を一旦 axiom 化
-
-最難所です。最初は
+- **目標**：最難所の compactness を一旦 axiom とし、先に骨格を完成させる。
+- **内容**：「energy estimate + compactness theorem $\Rightarrow$ weak solution exists」の構造を
+  先に閉じる。実証明は Milestone 8 で置き換える。
 
 ```lean
-axiom aubin_lions_for_navier_stokes_torus3 :
-  ...
+axiom aubin_lions_for_navier_stokes_torus3 : ...
 ```
 
-としてよいです。
+- **成果物**：`LerayHopf/CompactnessAxioms.lean`
 
-これにより，先に
+## Milestone 7：$\mathbb T^3$ conditional existence theorem
 
-[
-\text{energy estimate}
-+
-\text{compactness theorem}
-\Rightarrow
-\text{weak solution exists}
-]
-
-の骨格を完成させる。
-
-PDE の大規模形式化は実例が出始めており，Armstrong–Kempe の De Giorgi–Nash–Moser theory formalization は，弱解・Sobolev・正則性評価を含む本格的 PDE formalization として重要な先例です。([arXiv][2])
-
-**成果物**：
-`LerayHopf/CompactnessAxioms.lean`
-
----
-
-## Milestone 7：(\mathbb T^3) conditional existence theorem
-
-ここで最初の大きな到達点：
-
-[
-\boxed{
-\text{Aubin--Lions 型 compactness を仮定すれば，
-(\mathbb T^3) 上に Leray--Hopf 弱解が存在する}
-}
-]
-
-Lean statement：
+- **目標**：最初の大きな到達点。Aubin–Lions 型 compactness を仮定すれば
+  $\mathbb T^3$ 上に Leray–Hopf 弱解が存在することを示す。
+- **内容**：弱解存在定理の conditional formalization。ここでプロジェクトの背骨が立つ。
 
 ```lean
 theorem exists_lerayHopf_torus3_conditional
@@ -218,48 +127,24 @@ theorem exists_lerayHopf_torus3_conditional
   ∃ u : LerayHopfSolution Torus3 u₀, True
 ```
 
-これは「弱解存在定理の conditional formalization」です。
-ここまで来れば，プロジェクトの背骨は完成です。
-
-**成果物**：
-`LerayHopf/ExistenceTorusConditional.lean`
-
----
+- **成果物**：`LerayHopf/ExistenceTorusConditional.lean`
 
 ## Milestone 8：compactness を axiom から theorem へ
 
-ここからが本格戦です。
+- **目標**：axiom を一つずつ消す本格段階。
+- **内容**：必要となる要素は weak convergence、Bochner 空間 $L^p_t X_x$、Aubin–Lions、
+  非線形項の極限移行、lower semicontinuity、initial trace。
+- **成果物**：`LerayHopf/AubinLions.lean`, `LerayHopf/LimitPassage.lean`
 
-必要：
+## Milestone 9：$\mathbb T^3$ full existence theorem
 
-* weak convergence
-* Bochner (L^p_t X_x)
-* Aubin–Lions
-* nonlinear term の極限移行
-* lower semicontinuity
-* initial trace
+- **目標**：周期領域版の無条件存在定理を完成させる。
 
-この段階で axiom を一つずつ消していく。
-
-**成果物**：
-`LerayHopf/AubinLions.lean`
-`LerayHopf/LimitPassage.lean`
-
----
-
-## Milestone 9：(\mathbb T^3) full existence theorem
-
-目標：
-
-[
-\boxed{
-u_0\in L^2_\sigma(\mathbb T^3)
-\Rightarrow
-\exists u,\ u \text{ is a Leray--Hopf solution on } \mathbb T^3.
-}
-]
-
-Lean statement：
+$$
+u_0 \in L^2_\sigma(\mathbb T^3)
+\;\Rightarrow\;
+\exists u,\ u\ \text{is a Leray–Hopf solution on}\ \mathbb T^3.
+$$
 
 ```lean
 theorem exists_lerayHopf_torus3
@@ -267,76 +152,51 @@ theorem exists_lerayHopf_torus3
   ∃ u : LerayHopfSolution Torus3 u₀, True
 ```
 
-この段階で，周期領域版の弱解存在定理が完成。
+- **成果物**：`LerayHopf/ExistenceTorus.lean`
 
-**成果物**：
-`LerayHopf/ExistenceTorus.lean`
+## Milestone 10：$\mathbb R^3$ 版への拡張
 
----
+- **目標**：Leray original に近い形へ移行する。
 
-## Milestone 10：(\mathbb R^3) 版への拡張
+$$
+u_0 \in L^2_\sigma(\mathbb R^3)
+\;\Rightarrow\;
+\exists u,\ u\ \text{is a Leray–Hopf solution on}\ \mathbb R^3.
+$$
 
-最後に Leray original に近い形へ移る。
+- **内容**：追加で必要となる困難は、無限遠の処理、局所 compactness、pressure recovery、
+  cutoff argument、initial trace、局所エネルギー評価との接続。
+- **成果物**：`LerayHopf/ExistenceR3.lean`
 
-[
-u_0\in L^2_\sigma(\mathbb R^3)
-\Rightarrow
-\exists u,\ u \text{ is a Leray--Hopf solution on } \mathbb R^3.
-]
+## 横枝
 
-ここで追加される困難：
+### Branch A：Leray blow-up lower bound
 
-* 無限遠の処理
-* 局所 compactness
-* pressure recovery
-* cutoff argument
-* initial trace
-* 局所エネルギー評価との接続
+主線とは独立な不等式スキーマとして小さく形式化できる。
 
-**成果物**：
-`LerayHopf/ExistenceR3.lean`
-
----
-
-# 横枝
-
-## Branch A：Leray blow-up lower bound
-
-これは主線の後でも前でもよい。
-独立した不等式スキーマとして小さく形式化できる。
-
-[
+$$
 \text{local lifespan estimate}
-\Rightarrow
-|u(t)|*{L^p}
+\;\Rightarrow\;
+\lVert u(t)\rVert_{L^p}
 \gtrsim
-(T**-t)^{-\frac12(1-3/p)}.
-]
+(T-t)^{-\frac12\left(1-\frac3p\right)}.
+$$
 
-**成果物**：
-`Leray/BlowupLowerBound.lean`
+- **成果物**：`Leray/BlowupLowerBound.lean`
 
----
+### Branch B：Hou–Wang–Yang 非一意性
 
-## Branch B：Hou–Wang–Yang 非一意性
-
-後回しでよいです。
-
-最初は statement と certificate interface のみ：
+Leray–Hopf 解クラスにおける非一意性の主張であり、`LerayHopfSolution` の定義が固まった後に置く。
+まずは statement と certificate interface のみ。
 
 ```lean
 def LerayHopfNonunique : Prop :=
   ∃ u₀, ∃ u v : LerayHopfSolution R3 u₀, u ≠ v
 ```
 
-Hou–Wang–Yang の結果は，Leray–Hopf 解クラスにおける非一意性の主張なので，この branch は **LerayHopfSolution の定義が固まった後**に置くのが自然です。
+- **成果物**：`LerayHopf/NonuniquenessStatement.lean`
 
-**成果物**：
-`LerayHopf/NonuniquenessStatement.lean`
-
----
-
-# 全体タイムライン
+## 全体タイムライン
 
 ```text
 0. Scope fixed
@@ -355,19 +215,8 @@ Side A. Blow-up lower bound
 Side B. Hou–Wang–Yang nonuniqueness statement
 ```
 
-最初の現実的な MVP は：
+## MVP
 
-[
-\boxed{
-\text{Milestone 1--3：
-Leray--Hopf 解の定義と，
-Galerkin package から存在を出す conditional theorem}
-}
-]
-
-です。
-ここまでなら，NS の全解析をまだ Lean 化せずに，プロジェクトの主張・構造・依存関係を明確にできます。
-
-[1]: https://leanprover-community.github.io/mathlib4_docs/Mathlib.html?utm_source=chatgpt.com "Mathlib"
-[2]: https://arxiv.org/html/2604.05984v1?utm_source=chatgpt.com "Formalization of De Giorgi–Nash–Moser Theory in Lean - arXiv"
-
+最初の現実的な MVP は **Milestone 1–3**：Leray–Hopf 解の定義と、Galerkin package から
+存在を導く conditional theorem。ここまでで NS の全解析を Lean 化せずに、プロジェクトの
+主張・構造・依存関係を確定できる。
