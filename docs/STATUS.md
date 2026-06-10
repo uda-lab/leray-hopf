@@ -48,9 +48,16 @@ maintains this ledger as the final report.
 
 ## Axiom ledger
 
-Planned (M2): `L2Sigma_eq_divFreeL2` — closure-of-span `L²_σ` ↔ Fourier-diagonal `k·û(k)=0`
-criterion. Ref: Temam, *Navier–Stokes Equations*, Prop. 1.1 / Cor. 1.1. Discharge target: M3.
-Will carry `-- ALLOW_AXIOM` and be entered here once placed. _Not yet in the source tree._
+_Empty — and intentionally so._
+
+The M2 plan tentatively proposed one axiom (`L2Sigma_eq_divFreeL2`, the closure-of-span ↔
+Fourier-diagonal equivalence). **Eliminated** under the minimal-axiom posture: `L²_σ` is
+defined *directly* as `⨅ k, ker (divSymbol k)` — the common kernel of the continuous
+divergence-symbol functionals `divSymbol k : L²(𝕋³;ℝ³) →L[ℝ] ℂ`, `u ↦ ∑_j (k_j) û_j(k)`.
+Membership then coincides with `DivFreeL2` *by construction* (no axiom), and `L²_σ` is a
+closed submodule (intersection of closed kernels), giving its Hilbert structure and the
+Leray orthogonal projection for free. The "closure of divergence-free Fourier modes"
+description becomes an optional later *theorem*, not an assumption.
 
 ## Sorry frontier
 
@@ -102,6 +109,12 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
   - [medium] `mFourierCoeff3` doc claimed a global-`volume` integral while `L2C` is Haar-based
     (Parseval-divergence risk) → **fixed**: redefined `mFourierCoeff3 := torus3_mFourierBasis.repr`.
   - `IsProbabilityMeasure (volume : Measure UnitAddCircle)` instance confirmed sound/non-conflicting.
+- **M2 `DivFreeL2`** (`--effort xhigh`, `DivergenceFree.lean`): verdict *approve*. Confirmed the
+  Fourier characterization `∑_j k_j û_j(k)=0 ∀k` faithfully encodes `div u = 0` (2π/i
+  normalization cancels in the `=0` condition), `compLpL` a.e. semantics correct, non-vacuous.
+- **M2 `L2Sigma`** (`--effort xhigh`, `Leray.lean`): verdict *approve*. `⨅ k, ker(divSymbol k)`
+  is the genuine divergence-free subspace by construction; closedness sound (continuous kernels
+  + arbitrary closed intersection); axiom-free (`#print axioms`: only propext/Choice/Quot).
 
 ## Notes
 
