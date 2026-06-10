@@ -1,0 +1,34 @@
+name: lean
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: lean-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Installs the pinned toolchain (lean-toolchain), runs `lake exe cache get`
+      # for mathlib, then `lake build`.
+      - name: Build
+        uses: leanprover/lean-action@v1
+        with:
+          use-mathlib-cache: true
+
+      - name: Guardrail — no unmarked sorry
+        run: bash scripts/check-no-sorry.sh
+
+      - name: Guardrail — no undeclared axiom/opaque/unsafe
+        run: bash scripts/check-no-axiom.sh
+
+      - name: Guardrail — no overclaiming theorem names
+        run: bash scripts/check-theorem-names.sh

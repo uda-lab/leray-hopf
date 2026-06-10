@@ -1,0 +1,14 @@
+# Lake build output and fetched dependencies
+/.lake/
+/build/
+
+# Lean compiled artifacts
+*.olean
+*.ilean
+*.trace
+
+# Editor / OS noise
+.DS_Store
+*.swp
+
+# lake-manifest.json and lean-toolchain are intentionally tracked for reproducibility.

@@ -1,0 +1,56 @@
+# AGENTS.md
+
+Operating rules for AI agents working in this repository. This is a Lean 4 +
+mathlib formalization of Leray–Hopf weak existence. Mathematical scope is fixed by
+the plan files in `docs/`; this file governs *how* agents work, not *what* to prove.
+
+## Before you edit
+
+Run the preflight and read the source-of-truth chain:
+
+```bash
+bash scripts/agent-preflight.sh
+```
+
+Source-of-truth order (higher wins): current task instruction → `docs/*plan*.md`
+and `docs/milestone.md` → this file → existing Lean theorem statements → README/docs.
+
+## Hard rules
+
+1. **Run preflight before and after editing.** Do not report success without a green `lake build`.
+2. **Do not rename a theorem target** unless explicitly instructed.
+3. **Do not weaken a statement to make a proof pass** — no dropping hypotheses, no
+   narrowing conclusions, no strengthening assumptions to trivialize.
+4. **Do not replace a theorem by `True`, `Nonempty`, or any vacuous proposition**
+   unless the file is explicitly marked scaffold-only.
+5. **No new `axiom`, `constant`, `opaque`, or `unsafe`** without a same-line
+   `-- ALLOW_AXIOM: <reason>` marker and an entry in the file's assumptions section.
+6. **No analytical assumption hidden in a theorem name.** The name must describe what
+   is actually proved. Reserved overclaim terms are blocked by CI.
+7. **No unmarked `sorry`.** An incomplete proof needs `-- ALLOW_SORRY: <reason>` on its line.
+8. **If a proof is not possible, leave the statement intact** and add a precise
+   `-- TODO:` describing the exact blocker. Do not patch around it by weakening math.
+9. **Prefer small local lemmas** over large monolithic tactic blocks.
+10. **Do not import broad modules unnecessarily;** justify a heavy import.
+
+## Edit ownership (see `docs/agent-roles.md`)
+
+- Proof bodies (`:= by …`) — `lean-prover` only.
+- Signatures, structure, imports, lakefile — `lean-coder`.
+- `docs/` and planning artifacts — `lean-planner`, `sot-researcher`.
+- Reviewers and researchers do not edit Lean sources.
+
+## Every PR / handoff must report
+
+- files changed,
+- theorem/def names added,
+- remaining `sorry` (count + locations),
+- new assumptions (`axiom`/`opaque` added, with justification),
+- whether `lake build` passed.
+
+## Details
+
+- Discipline rules and rationale: `docs/guardrails.md`
+- Operational protocol (failure handling, reporting): `docs/agent-protocol.md`
+- Running checks: `docs/build-and-checks.md`
+- Team roles, contracts, and the Codex review protocol: `docs/agent-roles.md`
