@@ -313,4 +313,50 @@ theorem H1_ball_totallyBounded (M : ℝ) :
     _ < ε / 2 + ε / 2 := add_lt_add_of_le_of_lt h1 hy
     _ = ε := by ring
 
+/-! ### Rellich sequential form — bounded-in-H¹ sequences have L²-convergent subsequences -/
+
+/-- **Rellich (sequential form).** Any sequence bounded in `H¹(𝕋³)` has an `L²(𝕋³)`-convergent
+subsequence.  This is the form used in the Aubin–Lions / Galerkin limit-passage argument.
+
+Proof strategy for lean-prover:
+1. Let `S := {f : L2C | memH1Torus f ∧ ∑' k, (1 + ∑ i, (k i : ℝ)^2) * ‖f̂(k)‖² ≤ M²}`.
+2. `S` is totally bounded: `H1_ball_totallyBounded M`.
+3. `closure S` is totally bounded: `TotallyBounded.closure`.
+4. `closure S` is closed, hence complete in the `CompleteSpace L2C`:
+   `IsClosed.isComplete (isClosed_closure)`.
+5. `closure S` is compact:
+   `TotallyBounded.isCompact_of_isComplete (TotallyBounded.closure _) (isClosed_closure.isComplete)`.
+6. Each `u n ∈ S ⊆ closure S` (by `subset_closure`).
+7. Apply `IsCompact.tendsto_subseq` (exact mathlib name, in `Mathlib.Topology.Sequences`):
+   given `hs : IsCompact (closure S)` and `hx : ∀ n, u n ∈ closure S`, it returns
+   `∃ a ∈ closure S, ∃ φ : ℕ → ℕ, StrictMono φ ∧ Tendsto (u ∘ φ) atTop (𝓝 a)`.
+   Destructure to get `φ`, `g`, and the `Tendsto` (the `Tendsto (u ∘ φ)` goal matches
+   `Filter.Tendsto (fun n => u (φ n))` by `Function.comp`).
+
+Key mathlib lemmas (grep-verified to exist):
+- `H1_ball_totallyBounded`              (this file, L5)
+- `TotallyBounded.closure`              (`Mathlib.Topology.UniformSpace.Cauchy`, line 560)
+- `IsClosed.isComplete`                 (`Mathlib.Topology.UniformSpace.Cauchy`, line 447)
+- `isClosed_closure`                    (`Mathlib.Topology.Closure`)
+- `TotallyBounded.isCompact_of_isComplete` (`Mathlib.Topology.UniformSpace.Cauchy`, line 745)
+- `subset_closure`                      (`Mathlib.Topology.Closure`)
+- `IsCompact.tendsto_subseq`            (`Mathlib.Topology.Sequences`, line 298)
+-/
+theorem rellich_seq_compact (M : ℝ) (u : ℕ → L2C)
+    (hu : ∀ n, memH1Torus (u n) ∧
+      ∑' k : Fin 3 → ℤ, (1 + ∑ i : Fin 3, (k i : ℝ) ^ 2) * ‖mFourierCoeff3 (u n) k‖ ^ 2 ≤ M ^ 2) :
+    ∃ (φ : ℕ → ℕ) (g : L2C), StrictMono φ ∧
+      Filter.Tendsto (fun n => u (φ n)) Filter.atTop (nhds g) := by
+  -- The closed H¹-ball's closure is totally bounded and complete, hence compact.
+  have hcompact : IsCompact (closure {f : L2C | memH1Torus f ∧
+      ∑' k : Fin 3 → ℤ, (1 + ∑ i : Fin 3, (k i : ℝ) ^ 2) * ‖mFourierCoeff3 f k‖ ^ 2 ≤ M ^ 2}) :=
+    (H1_ball_totallyBounded M).closure.isCompact_of_isComplete isClosed_closure.isComplete
+  -- Each `u n` lies in the ball, hence in its closure.
+  have hmem : ∀ n, u n ∈ closure {f : L2C | memH1Torus f ∧
+      ∑' k : Fin 3 → ℤ, (1 + ∑ i : Fin 3, (k i : ℝ) ^ 2) * ‖mFourierCoeff3 f k‖ ^ 2 ≤ M ^ 2} :=
+    fun n => subset_closure (hu n)
+  -- Extract a convergent subsequence by sequential compactness.
+  obtain ⟨g, -, φ, hmono, htend⟩ := hcompact.tendsto_subseq hmem
+  exact ⟨φ, g, hmono, htend⟩
+
 end LerayHopf
