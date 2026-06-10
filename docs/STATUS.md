@@ -5,18 +5,34 @@ Running ledger for the autonomous build of Leray–Hopf weak existence on the re
 every `axiom` in the Lean sources is listed here with a reason, a reference, and a
 plan to discharge it. Higher-level scope/posture: the approved plan and `docs/milestone.md`.
 
-**Posture:** maximal depth, minimal axioms. Prove what mathlib supports; axiomatize only
-the true frontier; leave provable-but-unfinished pieces as *marked* `sorry`, never as
-weakened/vacuous statements.
+## Goal (authoritative)
 
-**Branch:** `autorun/leray-hopf-torus3` · **target:** unconditional T³ existence.
+Build the Leray–Hopf weak-existence formalization on the **real 3-torus**, bottom-up on
+mathlib, as far as possible toward an **unconditional T³ existence theorem**
+(`u₀ ∈ L²_σ(𝕋³) ⇒ ∃ Leray–Hopf weak solution`). Reduce anything not closable to a
+**documented marked-`sorry` frontier** with exact statements. R³ is out of scope.
+
+Roadmap: M1 spine ✅ → M2 real domain & function spaces → M3 Galerkin `Pₙ` + Leray `Π_div`
+→ M4 finite-dim Galerkin ODE + energy identity → M5–7 compactness + Aubin–Lions on T³
+(Fourier-tail Rellich, the crux) + limit passage ⇒ unconditional T³.
+
+**Posture:** maximal depth, minimal axioms. Prove what mathlib supports; axiomatize only
+the true frontier (each with `ALLOW_AXIOM` + reference + ledger entry); leave
+provable-but-unfinished pieces as *marked* `sorry`, never as weakened/vacuous/renamed
+statements.
+
+**Method:** branch `autorun/leray-hopf-torus3`, 1 milestone = 1 commit gated by
+`bash scripts/agent-preflight.sh` green. Strict role delegation to subagents
+(planner/coder/reviewers = sonnet, prover = fable; read-only reviewers) under their
+`.claude/agents/*.md` contracts; orchestrator owns Codex `--effort xhigh` calls and
+maintains this ledger as the final report.
 
 ## Milestone status
 
 | # | Milestone | State |
 |---|---|---|
 | M1 | Structural spine (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton) | in progress |
-| Side A/B | Blow-up lower bound · nonuniqueness statement | pending |
+| Side A/B | Blow-up lower bound · nonuniqueness statement | done (pending commit) |
 | M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | pending |
 | M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | pending |
 | M4 | Finite-dim Galerkin ODE + energy identity | pending |
@@ -60,6 +76,14 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
   - [high] structural theorem vacuous / `ExistsLerayHopf` overclaim risk → **disclosed** (see
     "Known scaffold caveats"); structural redesign deferred to M2+ refinement per the
     plan-authoritative interface. Not closable at M1 without real function spaces.
+- **Side A/B** (`--effort xhigh`, working tree): verdict *needs-attention*, 2 findings.
+  - [high] Branch A `lower_bound_from_inverse_square_lifespan` proved the *opposite* direction
+    (an upper bound on `N`), overclaiming its name. The MVP-plan code sketch was itself
+    inconsistent with Branch A's stated lower-bound intent. → **fixed**: statement flipped to
+    the genuine lower bound (`C/N² ≤ T−t ⇒ 1/N ≤ √((T−t)/C)`, i.e. `N ≥ √(C/(T−t))`),
+    reproved sorry-free by lean-prover.
+  - [medium] Branch B `LerayHopfNonunique` froze initial data at universe 0 (non-monotone vs
+    the `Type*` interface) → **fixed**: explicit `universe u v`, `Ω : Type u`, `u₀ : Type v`.
 
 ## Notes
 

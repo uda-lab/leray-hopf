@@ -15,6 +15,10 @@ marked `sorry` target), the Galerkin compactness package, the structural implica
 package ⟹ existence, and an abstract energy skeleton. PDE analysis is intentionally
 packaged behind `Prop` placeholders and refined in later milestones.
 
+Side branches (independent of the existence spine):
+* `LerayHopf.BlowupLowerBound`  (Branch A) — algebraic blow-up lower bound, sorry-free.
+* `LerayHopf.NonuniquenessStatement` (Branch B) — non-uniqueness proposition, scaffold only.
+
 No claim is made that existence, regularity, uniqueness, or nonuniqueness of the
 Navier–Stokes equations has been formalized.
 -/
@@ -24,3 +28,5 @@ import LerayHopf.Statement
 import LerayHopf.GalerkinPackage
 import LerayHopf.ExistenceFromPackage
 import LerayHopf.EnergySkeleton
+import LerayHopf.BlowupLowerBound
+import LerayHopf.NonuniquenessStatement
