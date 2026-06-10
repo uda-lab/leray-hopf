@@ -35,7 +35,7 @@ maintains this ledger as the final report.
 | Side A/B | Blow-up lower bound · nonuniqueness statement | done (pending commit) |
 | M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | **done** (axiom-free) |
 | M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | **done** (axiom-free) |
-| M4 | Finite-dim Galerkin ODE + energy identity | pending |
+| M4 | Finite-dim Galerkin ODE + energy identity | **abstract done** (axiom-free); concrete = frontier |
 | M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | pending |
 
 ## M2 design decisions (orchestrator, adopted)
@@ -61,12 +61,25 @@ description becomes an optional later *theorem*, not an assumption.
 
 ## Sorry frontier
 
-_Empty._ Through M2 there is **zero** frontier debt: the only `sorry` in the tree is the
-deliberate target statement `exists_lerayHopf_torus3_statement` (not counted as frontier —
-see Notes). No axioms. Every M1–M2 must-prove target is sorry-free and `#print axioms`-clean.
+**In the Lean tree:** still ZERO frontier `sorry`. The only `sorry` is the deliberate target
+statement `exists_lerayHopf_torus3_statement` (not frontier debt — see Notes). No axioms.
+Every M1–M4(abstract) must-prove target is sorry-free and `#print axioms`-clean.
 
-Bochner time spaces `L²(0,T;X)` (planned M2 item) are deferred to M4/M5 where the Galerkin
-solution actually lives in them; mathlib's Banach-valued `Lp` covers them when needed.
+**The genuine analytic frontier (NOT coded — documented here, not faked as sorry/axiom).**
+Reaching unconditional T³ existence requires the following, each blocked by *structural mathlib
+absences* (not hard-but-routine proofs). They are demarcated as future work, with the abstract
+interfaces (`AbstractEnergyLaw`, `GalerkinCompactnessPackage`) already in place to receive them:
+
+| Frontier item | Precise content | Blocker |
+|---|---|---|
+| Concrete NS convection `b(u,v,w)` | `∫_{𝕋³} ((u·∇)v)·w` on `L²/H¹` torus fields | mathlib has no `(u·∇)v` for `Lp` a.e.-classes; needs torus weak-derivative/Fourier-convection API |
+| Nonlinear cancellation `b(u,u,u)=0` | skew-symmetry for divergence-free `u` | needs torus integration-by-parts; mathlib's divergence theorem is for ℝⁿ boxes only |
+| Galerkin ODE existence | `uₙ` solving the projected ODE via `PicardLindelof` | API exists but gated on the concrete RHS above |
+| **Aubin–Lions / Rellich on T³** | `H¹(𝕋³) ↪ L²(𝕋³)` compact, via Fourier-tail decay | not in mathlib; **provable from `memH1Torus` + Fourier tails** — the next target |
+| Limit passage | weak-* + strong-L² limits ⟹ weak solution | needs the above + Banach–Alaoglu plumbing |
+
+The **abstract energy law ⟹ energy inequality ⟹ nonincreasing energy** chain is fully proved
+(`AbstractEnergyLaw`); only the *concrete construction supplying* such a law is frontier.
 
 ## Known scaffold caveats (disclosed, not hidden)
 
@@ -136,6 +149,15 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
   symmetric box). Bonus: `mFourierCoeff3 f k = ∫ mFourier(-k)·f ∂haarTorus3` holds by
   `mFourierBasis_repr` with NO measure bridge — confirms the M2 measure unification is
   definitionally exact.
+- **M4 abstract energy** (`--effort xhigh`, `EnergyEstimate.lean`): verdict *needs-attention*,
+  2 findings, both fixed.
+  - [medium] capstone didn't supply the nonneg-dissipation premise for `energy_nonincreasing`
+    → **fixed**: added `accumulatedDissipation_nonneg` + `energy_nonincreasing` (proved),
+    closing the bridge to `EnergySkeleton`.
+  - [medium] `GalerkinApproximation` name overclaimed (it's an abstract scalar energy law, not
+    a full Galerkin construction) → **fixed**: renamed `AbstractEnergyLaw` with a docstring
+    stating the concrete Galerkin construction is frontier. Abstract energy identity/inequality
+    proved sorry-free/axiom-clean.
 
 ## Notes
 

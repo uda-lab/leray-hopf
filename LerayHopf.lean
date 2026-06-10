@@ -35,5 +35,6 @@ import LerayHopf.Statement
 import LerayHopf.GalerkinPackage
 import LerayHopf.ExistenceFromPackage
 import LerayHopf.EnergySkeleton
+import LerayHopf.EnergyEstimate
 import LerayHopf.BlowupLowerBound
 import LerayHopf.NonuniquenessStatement
