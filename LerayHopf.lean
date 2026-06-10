@@ -3,16 +3,24 @@
 
 Root module for the Leray–Hopf weak-existence formalization project.
 
-This is **scaffold only**. The mathematical scope — solution concept, existence
-statement, Galerkin compactness package, energy skeleton — is specified in:
+The mathematical scope — solution concept, existence statement, Galerkin compactness
+package, energy skeleton — is specified in:
 
 * `docs/milestone.md`            (roadmap)
 * `docs/leray_hopf_lean_mvp_plan.md` (MVP design and file layout)
 
-Those plan files are the source of truth for mathematical content. No definitions
-or theorems are declared yet; they are introduced in later, reviewed PRs under the
-`LerayHopf/` namespace (e.g. `LerayHopf.Basic`, `LerayHopf.GalerkinPackage`).
+Those plan files are the source of truth for mathematical content. This module gathers
+the structural spine (Milestone 1): the solution concept, the existence statement (still a
+marked `sorry` target), the Galerkin compactness package, the structural implication
+package ⟹ existence, and an abstract energy skeleton. PDE analysis is intentionally
+packaged behind `Prop` placeholders and refined in later milestones.
 
 No claim is made that existence, regularity, uniqueness, or nonuniqueness of the
 Navier–Stokes equations has been formalized.
 -/
+
+import LerayHopf.Basic
+import LerayHopf.Statement
+import LerayHopf.GalerkinPackage
+import LerayHopf.ExistenceFromPackage
+import LerayHopf.EnergySkeleton
