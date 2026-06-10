@@ -4,6 +4,11 @@ Operating rules for AI agents working in this repository. This is a Lean 4 +
 mathlib formalization of Leray–Hopf weak existence. Mathematical scope is fixed by
 the plan files in `docs/`; this file governs *how* agents work, not *what* to prove.
 
+This is the **canonical, audience-neutral source of truth**, shared by every agent:
+Claude Code loads it through `CLAUDE.md` (`@AGENTS.md`), and external reviewers (Codex)
+read it directly. Keep it compact; put depth in the linked `docs/` files. Claude-only
+orchestration notes live in `CLAUDE.md`, not here.
+
 ## Before you edit
 
 Run the preflight and read the source-of-truth chain:
