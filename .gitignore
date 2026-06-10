@@ -11,4 +11,7 @@
 .DS_Store
 *.swp
 
+# Machine-local skill symlinks auto-materialized by the harness (.claude/agents is tracked)
+/.claude/skills/
+
 # lake-manifest.json and lean-toolchain are intentionally tracked for reproducibility.
