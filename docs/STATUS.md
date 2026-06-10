@@ -37,6 +37,7 @@ maintains this ledger as the final report.
 | M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | **done** (axiom-free) |
 | M4 | Finite-dim Galerkin ODE + energy identity | **abstract done** (axiom-free); concrete = frontier |
 | M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | **Rellich done** (axiom-free); time-compactness + limit passage = frontier |
+| M6 | **Sound minimal-axiom closure of T³ existence** (`exists_lerayHopf_torus3`) | **DONE** — proved modulo exactly 4 Codex-approved axioms; abstract evolution framework for R³ reuse |
 
 ## M2 design decisions (orchestrator, adopted)
 
@@ -48,16 +49,31 @@ maintains this ledger as the final report.
 
 ## Axiom ledger
 
-_Empty — and intentionally so._
+**Posture shift (M6):** T³ is the warm-up scaffold, not the destination (R³ is). Per the
+approved plan `ssot-reference-list-cuddly-meteor.md`, the remaining T³ analytic frontier is
+decomposed into **four minimal, true, literature-referenced axioms** that close the T³
+existence theorem, with the framework built abstractly for R³ reuse. The **spatial** Rellich
+compactness is *not* axiomatized — it is the proved `rellich_seq_compact`/`rellich_L2Sigma`,
+discharged into the Aubin–Lions axiom as an explicit hypothesis. Every axiom passed a Codex
+`--effort xhigh` soundness audit (8 rounds; see the Codex log).
 
-The M2 plan tentatively proposed one axiom (`L2Sigma_eq_divFreeL2`, the closure-of-span ↔
-Fourier-diagonal equivalence). **Eliminated** under the minimal-axiom posture: `L²_σ` is
-defined *directly* as `⨅ k, ker (divSymbol k)` — the common kernel of the continuous
-divergence-symbol functionals `divSymbol k : L²(𝕋³;ℝ³) →L[ℝ] ℂ`, `u ↦ ∑_j (k_j) û_j(k)`.
-Membership then coincides with `DivFreeL2` *by construction* (no axiom), and `L²_σ` is a
-closed submodule (intersection of closed kernels), giving its Hilbert structure and the
-Leray orthogonal projection for free. The "closure of divergence-free Fourier modes"
-description becomes an optional later *theorem*, not an assumption.
+The four axioms (in `LerayHopf/AxiomaticClosure.lean`; `## Assumptions` section there):
+
+| Axiom | Statement (informal) | Why TRUE / NON-VACUOUS | Reference |
+|---|---|---|---|
+| `torus3_NSForms_exist` | ∃ the 𝕋³ convection trilinear form `b` (antisymmetric, trilinear, with the true 3D smooth-test bound `|b(u,v,w)|≤C‖u‖_{L²}‖v‖_{L²}` for Galerkin `w`), pinned on Galerkin subspaces to the concrete `galerkinConvection` | the genuine `(u·∇)v` form witnesses it; `b=0` is excluded by the `galerkinConvection` pin (non-vacuous). Viscous form is **concrete** (`stokesTestPairing`/`viscousFormSq`), not axiomatized. | Temam II.§1; RRS §3.2 |
+| `galerkin_ode_solution` | the `n`-th finite-dim projected NS ODE has a global solution `uₙ` with `uₙ(0)=Pₙu₀`, the projected ODE, H¹ regularity, and uniform (n-indep) energy + dissipation bounds | Picard–Lindelöf on finite-dim `Vₙ` + energy identity (`b(u,u,u)=0`) preventing blow-up | Temam III.3 |
+| `aubin_lions` | from a Galerkin sequence + uniform bounds + an explicit **spatial-compactness hypothesis** (= `rellich_L2Sigma`, discharged), extract a subsequence converging strongly in `L²(0,T;L²_σ)` | classical Aubin–Lions; axiom adds ONLY the missing Bochner-time half (spatial half proved) | Temam III.2.1 |
+| `galerkin_limit_passage` | from the structured sequence + the strong-L² limit, ∃ a **good representative** `u` (a.e.-equal to the limit) satisfying `WeakFormNS ∧ energy-ineq ∧ initial-trace ∧ energy-class (u∈L²(0,T;H¹_σ))` | strong-L² convergence kills the nonlinear error; lsc energy; existential good representative is null-set-invariant and tied a.e. to the Aubin–Lions limit | Temam III.3 |
+
+`b(u,u,u)=0` is a **proved lemma** (`Torus3NSForms.b_self_zero`) from antisymmetry, NOT an axiom.
+`#print axioms exists_lerayHopf_torus3` → exactly these 4 + `propext`/`Classical.choice`/`Quot.sound`
+(no `sorryAx`).
+
+**Earlier (M2) axiom eliminated:** the M2 plan tentatively proposed `L2Sigma_eq_divFreeL2`
+(closure-of-span ↔ Fourier-diagonal). **Eliminated**: `L²_σ` is defined *directly* as
+`⨅ k, ker (divSymbol k)`, so membership coincides with `DivFreeL2` by construction (no axiom),
+and `L²_σ` is a closed submodule giving its Hilbert structure + Leray projection for free.
 
 ## Sorry frontier
 
@@ -166,8 +182,35 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
   (L1–L4, the finite-rank compactness Bonus, L5) sorry-free and `#print axioms`-clean. The
   Aubin–Lions *spatial* linchpin on T³ — the user's key strategy — is cracked, axiom-free.
 
+- **M6 axiomatic closure** (`/codex:adversarial-review --effort xhigh`, working tree,
+  `AxiomaticClosure.lean` + `EvolutionTriple.lean`): **8 rounds** of adversarial axiom auditing,
+  ending in **`approve`**. Codex caught and forced fixes to, in order:
+  (v1) a hidden inconsistency — `stokes`/`b` under-specified off-diagonal, with the ∀-`F` ODE axiom
+  demanding `stokes(u,0)=0` ⇒ added `b` trilinearity + `stokes` bilinearity;
+  (v1) a FALSE 3D convection bound (`H¹×H¹→L²`) ⇒ replaced with the true smooth-test bound
+  `|b(u,v,w)|≤C‖u‖_{L²}‖v‖_{L²}` for Galerkin `w` (via antisymmetry);
+  (v1) `WeakFormNS` testing all of L² ⇒ restricted to `isTest` (Galerkin/smooth div-free) tests;
+  (v2) the Aubin–Lions package's `galSeq` untied to the input ⇒ parameterized the package by `galSeq`;
+  (v2) energy inequality stated for all `t≥0` ⇒ scoped to `[0,T]`;
+  (v3) `stokes` pinned only on the diagonal (free skew term) ⇒ added symmetry (polarization pins it);
+  (v4) a TOTAL real Stokes form with H¹ diagonal is impossible (∞ off H¹) ⇒ **de-axiomatized** the
+  viscous form entirely (concrete `stokesTestPairing`/`viscousFormSq`); A4 is now convection-only;
+  (v5) energy inequality didn't enforce the H¹ energy class (`tsum` collapse) ⇒ proof-carry
+  a.e.-`memH1VF` + integrable dissipation (`u∈L²(0,T;H¹_σ)`);
+  (v6) A3 asserted pointwise facts for an arbitrary null-set representative ⇒ made A3 **existential**
+  (a good representative exists);
+  (v7) the existential became untethered (≈ standalone existence) ⇒ added the a.e.-link
+  `∀ᵐ t, u t = alPkg.u t` to the Aubin–Lions limit; (v8) **approve**.
+  Final assembly proved sorry-free; `#print axioms exists_lerayHopf_torus3` = the 4 axioms +
+  `propext`/`Classical.choice`/`Quot.sound`.
+
 ## Notes
 
-- `exists_lerayHopf_torus3_statement` is intentionally a marked `sorry` while the
-  underlying definitions are placeholders (No-vacuous-proof rule). It is **not** counted
-  as frontier debt; it is the target statement.
+- `exists_lerayHopf_torus3_statement` (in `Statement.lean`) is intentionally a marked `sorry`
+  (the original scaffold target). It is superseded by the genuinely proved
+  `exists_lerayHopf_torus3` (in `AxiomaticClosure.lean`), which carries the proof-carrying
+  `LerayHopfSolutionFull` (weak form, energy inequality, initial trace, energy class) modulo
+  the 4 axioms. The scaffold `sorry` is kept (no-rename rule) and is not frontier debt.
+- **Next:** pivot to R³ — instantiate the abstract `DissipativeEvolution`/`WeakFormNS` + the
+  abstract A1–A3 pattern; R³ needs its OWN spatial-compactness axiom (Rellich FAILS on ℝ³ —
+  no compact Sobolev embedding; needs tightness/concentration-compactness).

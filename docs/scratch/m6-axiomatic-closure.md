@@ -68,24 +68,56 @@ structure DissipativeEvolution where
 
 ### A4 — convection + viscous forms. **NON-VACUITY IS THE CRUX.**
 A bare abstract `b` with only antisymmetry + bound is satisfiable by `b := 0` ⇒ the theorem
-would silently prove **Stokes/heat**, not Navier–Stokes (overclaim). A4 MUST pin `b` to the
-genuine convection form. Target (in priority order):
+would silently prove **Stokes/heat**, not Navier–Stokes (overclaim). And a naive INFINITE
+Fourier triple sum is NOT absolutely summable for general 3D H¹ fields (the borderline
+Ladyzhenskaya case) ⇒ `tsum` returns 0 ⇒ re-vacuous. The sound, bounded resolution is to pin
+`b` to the genuine convection form on the **finite** Galerkin subspaces (finite sums; no
+convergence issue; excludes `b=0`; honest on a dense set).
 
-1. **Preferred:** define a concrete `convectionFormFourier (u v w : L2VF) : ℝ` via the
-   Fourier triple sum of `((u·∇)v)·w` (coefficients of `(u·∇)v` are the convolution
-   `∑_{k+l=m} û_j(k)·(2πi l_j)·v̂_i(l)`; pair with `ŵ`). Then `b := convectionFormFourier`
-   is a FIXED def (so `b=0` is excluded by construction), and A4 axiomatizes only its
-   genuinely-missing analytic ESTIMATES: antisymmetry-on-div-free and the **true 3D**
-   continuity bound `|b u v w| ≤ C·√(h1EnergySq u)·√(h1EnergySq v)·‖w‖` (defect 6; the false
-   2D bound `≤C‖u‖‖v‖‖w‖` is NOT used). The Stokes form is likewise a Fourier multiplier —
-   prefer `stokes` CONCRETE with `stokes u u = viscousFormSq 1 u`, so the (2π)² is load-bearing.
-2. **Fallback if the triple-sum def is too heavy to typecheck cleanly:** keep a
-   `Torus3NSForms` structure but ADD a pinning field calibrating `b` to the concrete
-   convection value on the **finite-dimensional Galerkin subspaces** (finite sums, no
-   convergence issue) — enough to exclude `b=0`. Add `stokes_eq : ∀ u, stokes u u = viscousFormSq 1 (u:L2VF)`.
-   **FLAG this for the Codex non-vacuity audit explicitly.**
+**Concrete convection structure constant (finite).** For `mFourier_k(x)=e^{2πi k·x}`, write
+`û_a(k) := mFourierCoeff3 (L2VF_projComponentC a u) k : ℂ`. From `(u·∇)v_i = Σ_a u_a ∂_a v_i`,
+`∂_a v_i ↦ (2πi l_a) v̂_i(l)`, and `∫_{𝕋³} e^{2πi(k+l+m)·x}=δ_{k+l+m=0}`:
+`b(u,v,w) = Σ_i Σ_a Σ_{k,l} û_a(k)·(2πi l_a)·v̂_i(l)·ŵ_i(-(k+l))`.
+Define the FINITE (box-`n`) version as a `def` (a `Finset.sum` over `fourierBox n × fourierBox n`,
+take `.re`):
+```
+def galerkinConvection (n : ℕ) (u v w : L2VF) : ℝ :=
+  (∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n, ∑ l ∈ fourierBox n,
+     (mFourierCoeff3 (L2VF_projComponentC a u) k)
+       * (2 * (Real.pi : ℂ) * Complex.I * (l a : ℂ))
+       * (mFourierCoeff3 (L2VF_projComponentC i v) l)
+       * (mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))).re
+```
+This is well-defined (finite), generically nonzero ⇒ excludes `b=0`.
 
-Either way `b u u u = 0` is the proved lemma; antisymmetry is `b u v w = -b u w v`.
+**A4 as a structure + pinned existence axiom:**
+```
+structure Torus3NSForms where
+  b : L2Sigma → L2Sigma → L2Sigma → ℝ
+  b_antisymm : ∀ u v w, b u v w = - b u w v
+  C_b : ℝ ; C_b_pos : 0 < C_b
+  b_bound : ∀ u v w, memH1Sigma (u:L2VF) → memH1Sigma (v:L2VF) →
+    |b u v w| ≤ C_b * Real.sqrt (h1EnergySq (u:L2VF)) * Real.sqrt (h1EnergySq (v:L2VF)) * ‖(w:L2VF)‖
+  b_galerkin : ∀ (n : ℕ) (u v w : L2Sigma),               -- the non-vacuity PIN (dense set)
+    velocityProjection_n n (u:L2VF) = (u:L2VF) → velocityProjection_n n (v:L2VF) = (v:L2VF) →
+    velocityProjection_n n (w:L2VF) = (w:L2VF) →
+    b u v w = galerkinConvection n (u:L2VF) (v:L2VF) (w:L2VF)
+  stokes : L2Sigma → L2Sigma → ℝ
+  stokes_nonneg : ∀ u, 0 ≤ stokes u u
+  stokes_eq : ∀ u, stokes u u = viscousFormSq 1 (u:L2VF)     -- makes (2π)² load-bearing
+axiom torus3_NSForms_exist : Nonempty Torus3NSForms
+  -- ALLOW_AXIOM: existence of the 𝕋³ NS convection form (= galerkinConvection on trig
+  -- polynomials, extended by the 3D continuity bound) with div-free antisymmetry, and the
+  -- Stokes form; TRUE (the genuine convection form is a witness), NON-VACUOUS (b=0 fails
+  -- b_galerkin since galerkinConvection ≢ 0). Blocked in Lean by the missing torus (u·∇)v
+  -- operator + integration-by-parts. Temam II.§1; RRS §3.2.
+```
+`b u u u = 0` is the proved lemma (`b_antisymm`); antisymmetry is `b u v w = -b u w v`.
+**FLAG for the Codex non-vacuity/truth audit:** (i) `galerkinConvection` is the correct
+convection structure constant; (ii) `b_galerkin` genuinely excludes `b=0`; (iii)
+`torus3_NSForms_exist` is TRUE (real convection form witnesses it); (iv) the 3D `b_bound` is
+the true Ladyzhenskaya form; (v) `stokes_eq`/(2π)² correct. If `galerkinConvection` proves too
+heavy to typecheck, fall back to a single hand-computed nonzero calibration triple and flag.
 
 ### A1 `galerkin_ode_solution` (per-`n`) — returns `GalerkinSolutionData F ν u₀ n` with:
 `u : Time → L2Sigma`; `u 0 = Pₙu₀`; range in `Vₙ` (`(u t:L2VF)=velocityProjection_n n (u t)`);
@@ -127,6 +159,162 @@ Every `axiom` line: same-line `-- ALLOW_AXIOM: <reason + Temam/RRS ref>` + a `##
 section + `docs/STATUS.md` ledger entry. Names avoid the reserved overclaim terms. Every `sorry`
 gets `-- ALLOW_SORRY:`. `#print axioms exists_lerayHopf_torus3` must list EXACTLY the 4 axioms
 (+ propext/Choice/Quot) — no `sorryAx`.
+
+## Codex axiom audit v1 (verdict needs-attention) — REQUIRED FIXES
+
+Three soundness defects found; all fixable without building the H¹ Hilbert space. These
+OVERRIDE the earlier A4/WeakFormNS text above.
+
+**Fix 1 (critical — hidden inconsistency): `b` trilinear + `stokes` bilinear.**
+The diagonal-only constraints let a pathological `F` have `stokes(u,0)≠0` / `b(u,u,0)≠0`;
+since `galerkin_ode_solution` is ∀-quantified over `F` and `u_ode` tests `w=0`, the ODE then
+demands `ν·stokes(u,0)=0` — impossible ⇒ the axiom asserts a non-existent object ⇒ `False`.
+Add multilinearity fields to `Torus3NSForms` (TRUE of the genuine forms, so existence axiom
+stays true; pathological `F` excluded):
+- `stokes_add_left/right`, `stokes_smul_left/right` (bilinear), giving `stokes u 0 = 0`.
+- `b_add_i`, `b_smul_i` for i=1,2,3 (trilinear), giving `b u u 0 = 0`, `b 0 v w = 0`, etc.
+  (A compact way: state `b` is additive+ℝ-homogeneous in each of its three arguments.)
+
+**Fix 2 (critical — false/wrong-shape bound): smooth-test convection bound.**
+Replace `b_bound` (the false `H¹×H¹→L²`) with the TRUE limit-passage-compatible estimate:
+for a **smooth (Galerkin) test** `w`, the converging slots are in L²:
+`b_bound : ∀ (w : L2Sigma), IsGalerkinTest w → ∃ C : ℝ, ∀ u v : L2Sigma, |b u v w| ≤ C * ‖(u:L2VF)‖ * ‖(v:L2VF)‖`.
+TRUE: by antisymmetry `b(u,v,w) = -∫(u·∇)w·v`, so `|b(u,v,w)| ≤ ‖∇w‖_∞‖u‖_{L²}‖v‖_{L²}`
+(`‖∇w‖_∞<∞` for trig polynomials). This is the shape strong-L²(0,T) convergence consumes
+(controls `b(uₙ-u,uₙ,w)` via `‖uₙ-u‖_{L²}`). Drop `C_b`/`C_b_pos`/the old `b_bound`.
+
+**Fix 3 (high — test space): restrict `WeakFormNS` to smooth/H¹ div-free tests.**
+- `def IsGalerkinTest (w : L2Sigma) : Prop := ∃ n, velocityProjection_n n (w:L2VF) = (w:L2VF)`
+  (finite Fourier support ⇒ smooth div-free — the standard Faedo–Galerkin test class).
+- Add a field `isTest : H → Prop` to `DissipativeEvolution`; `WeakFormNS` quantifies
+  `∀ w : E.H, E.isTest w → <identity>` (not all of `E.H`). `torus3Evolution` sets
+  `isTest := fun w => IsGalerkinTest w`.
+
+**Non-vacuity note (Codex follow-up):** `b_galerkin` (pin to `galerkinConvection`) stays — it is
+what excludes `b=0`. A machine-checkable witness `∃ Galerkin u v w n, galerkinConvection n u v w ≠ 0`
+is DEFERRED (documented in STATUS) unless Codex re-blocks on it; mathematically clear (the
+convection structure constants do not all vanish).
+
+After these fixes, re-run the Codex axiom audit (blocking) before the prover builds the assembly.
+
+## Codex axiom audit v2 (needs-attention) — REQUIRED FIXES (the 3 v1 defects are confirmed fixed)
+
+Two chain-faithfulness fixes (no inconsistency this round):
+
+**Fix A (A2 sequence ownership): tie the Aubin–Lions package to the input sequence.**
+Make `galSeq` a STRUCTURE PARAMETER of `AubinLionsPackage` and drop the internal `galSeq` field:
+`structure AubinLionsPackage (F) (ν T) (u₀) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) where φ; φ_mono; u; strong_convergence`
+with `strong_convergence` stated against the PARAMETER `galSeq`
+(`Tendsto (fun n => ∫ t in 0..T, ‖((galSeq (φ n)).u t : L2VF) - (u t : L2VF)‖^2) atTop (𝓝 0)`).
+Then `aubin_lions … (galSeq) (spatial) : AubinLionsPackage F ν T u₀ galSeq` and
+`galerkin_limit_passage … (galSeq) (alPkg : AubinLionsPackage F ν T u₀ galSeq) : …` — the A1→A2→A3
+chain is now type-enforced on one sequence. `build_galerkin_package` passes the single A1 `galSeq`
+through both A2 and A3.
+
+**Fix B (interval scoping): the energy inequality holds only on `[0,T]`.**
+In `galerkin_limit_passage`'s conclusion, in `GalerkinCompactnessPackageFull.energy_ineq_limit`, and
+in `LerayHopfSolutionFull.energy_ineq`, change the hypothesis `0 ≤ t →` to `0 ≤ t → t ≤ T →`.
+
+## Codex axiom audit v3 (needs-attention) — REQUIRED FIX (v2 fixes confirmed good)
+
+One remaining `[high]`: `stokes` is pinned only on the diagonal, leaving a free skew bilinear
+term `K` (with `K u u = 0`) that would appear in `WeakFormNS` as a non-NS viscosity term.
+**Symmetry fully pins it** (a symmetric bilinear form is determined by its diagonal via
+polarization). Add to `Torus3NSForms`:
+- `stokes_symm : ∀ (u v : L2Sigma), stokes u v = stokes v u`
+  (excludes the skew `K`; TRUE: `∫∇u:∇v` is symmetric.)
+- `stokes_bound : ∀ (w : L2Sigma), IsGalerkinTest w → ∃ C : ℝ, ∀ u : L2Sigma, |stokes u w| ≤ C * Real.sqrt (h1EnergySq (u : L2VF))`
+  (Galerkin-test continuity for faithful limit passage; TRUE: `|∫∇u:∇w| ≤ ‖∇u‖_{L²}‖∇w‖_{L²} ≤ C_w·√(h1EnergySq u)`,
+  `‖∇w‖_{L²}<∞` for trig polynomials.)
+Both hold for the genuine viscous form, so `torus3_NSForms_exist` stays true; together with
+bilinearity + `stokes_eq` they pin `stokes` to exactly the NS viscous form.
+
+## Codex axiom audit v4 (needs-attention) — REQUIRED FIX: de-axiomatize Stokes (make it concrete)
+
+`[critical]`: a TOTAL real-valued bilinear `stokes` on `L2Sigma` with diagonal `= viscousFormSq 1`
+cannot be witnessed by the genuine viscous form (`∫|∇u|² = +∞` off H¹, while the `tsum`
+convention gives 0) ⇒ `torus3_NSForms_exist` over-pins an impossible object. The viscous form is
+used two ways; split them, and make BOTH concrete (no Stokes axiom at all — strictly shrinks the
+trusted base to just the convection form):
+
+1. **Test-slot pairing → concrete `def`** (always finite: used only with a smooth/Galerkin `w`):
+```
+noncomputable def stokesTestPairing (u w : L2VF) : ℝ :=
+  ∑ j : Fin 3, ∑' k : Fin 3 → ℤ,
+    (2 * Real.pi) ^ 2 * (∑ i : Fin 3, (k i : ℝ) ^ 2) *
+      (mFourierCoeff3 (L2VF_projComponentC j u) k *
+        (starRingEnd ℂ) (mFourierCoeff3 (L2VF_projComponentC j w) k)).re
+```
+(= `⟨∇u, ∇w⟩`; for Galerkin `w` the `tsum` is a finite sum; diagonal `stokesTestPairing u u = viscousFormSq 1 u`.)
+
+2. **Diagonal dissipation → use the existing concrete `viscousFormSq ν`** in the energy inequality.
+
+**Edits (coder):**
+- **DELETE from `Torus3NSForms` ALL Stokes fields** (`stokes`, `stokes_nonneg`, `stokes_eq`,
+  `stokes_symm`, `stokes_bound`, `stokes_add_left/right`, `stokes_smul_left/right`). `Torus3NSForms`
+  keeps only the convection form `b` + its properties (antisymm, trilinearity, smooth-test `b_bound`,
+  `b_galerkin`). Update the structure docstring + `torus3_NSForms_exist` justification.
+- Add the `stokesTestPairing` def (before `torus3Evolution`).
+- `torus3Evolution.viscousForm := fun u w => stokesTestPairing (u : L2VF) (w : L2VF)`.
+- `GalerkinSolutionData.u_ode`: replace `ν * F.stokes (u t) w` with `ν * stokesTestPairing (u t : L2VF) (w : L2VF)`.
+- Energy-inequality fields (in `galerkin_limit_passage` conclusion, `GalerkinCompactnessPackageFull.energy_ineq_limit`,
+  `LerayHopfSolutionFull.energy_ineq`): replace `ν * ∫ s in 0..t, F.stokes (u s) (u s)` with
+  `∫ s in (0:ℝ)..t, viscousFormSq ν (u s : L2VF)`. (`viscousFormSq ν u = ν‖∇u‖²` — the genuine dissipation.)
+- Remove `hν`/`F` args that become unused only if truly unused (keep `F` — still needed for `b`).
+
+After this, A4 = convection form only; the viscous form is fully concrete. Re-audit.
+
+## Codex axiom audit v5 (needs-attention) — REQUIRED FIX: proof-carry the energy class
+
+`[high]`: the energy inequality `∫ viscousFormSq ν (u s)` is a `tsum` that collapses to a real
+default off H¹, so it can hold WITHOUT `u ∈ L²(0,T;H¹_σ)` — the Leray–Hopf energy class isn't
+enforced. Fix: A3 (and the two solution structures) must PROOF-CARRY the energy class. Add a field
+`energy_class` to `galerkin_limit_passage`'s conclusion, `GalerkinCompactnessPackageFull`, and
+`LerayHopfSolutionFull`:
+```
+energy_class :
+  (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF (u t : L2VF)) ∧
+  IntervalIntegrable (fun s => viscousFormSq ν (u s : L2VF)) MeasureTheory.volume 0 T
+```
+(a.e. — NOT ∀-everywhere, which would be false: L² solutions are H¹ only a.e.). TRUE: genuine
+Leray–Hopf solutions satisfy `u ∈ L²(0,T;H¹_σ)` ⇒ a.e. `memH1VF` + integrable dissipation. This
+makes the energy inequality meaningful (genuine finite dissipation a.e., not a `tsum`-collapse) and
+the assembled solution faithful. `exists_lerayHopf_from_package_full` copies this field too.
+
+## Codex axiom audit v6 (needs-attention) — REQUIRED FIX: A3 must produce a GOOD representative
+
+`[critical]`: `galerkin_limit_passage` concludes POINTWISE properties (energy ineq at every `t`,
+initial trace) for `alPkg.u`, but `alPkg.u` is pinned only via the integral strong-convergence
+(blind to measure-zero changes). A null-set spike preserves the hypotheses but breaks the pointwise
+conclusion ⇒ A3 is FALSE for such representatives. Fix: make A3 **existential** — it asserts a good
+representative EXISTS (true), not properties of an arbitrary one.
+
+**Edit (coder):** change `galerkin_limit_passage`'s conclusion from properties-of-`alPkg.u` to:
+```
+∃ u : Time → L2Sigma,
+  WeakFormNS ν T (torus3Evolution F) u ∧
+  (∀ t, 0 ≤ t → t ≤ T → (1/2)*‖(u t:L2VF)‖^2 + ∫ s in (0:ℝ)..t, viscousFormSq ν (u s:L2VF) ≤ (1/2)*‖(u₀:L2VF)‖^2) ∧
+  Filter.Tendsto (fun t => (u t:L2VF)) (nhdsWithin 0 (Set.Ici 0)) (nhds (u₀:L2VF)) ∧
+  ((∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF (u t:L2VF)) ∧
+   IntervalIntegrable (fun s => viscousFormSq ν (u s:L2VF)) MeasureTheory.volume 0 T)
+```
+A3 still takes `galSeq` + `alPkg` as hypotheses (they justify the existence). The `*Full` structures
+are UNCHANGED (they carry a specific curve + proof fields); `build_galerkin_package` (sorry-stub)
+will `obtain ⟨u, …⟩` the witness and pack it. Only A3's statement changes.
+
+## Codex axiom audit v7 (needs-attention) — REQUIRED FIX: link the existential to the Aubin–Lions limit
+
+`[high]`: the v6 existential `u` is now UNTETHERED from `alPkg.u`, so A3 reads as "∃ a standalone
+Leray–Hopf solution for the data" — essentially the conclusion (not minimal / not-the-conclusion).
+Fix: keep the existential good representative BUT add an a.e.-equality link to the Aubin–Lions limit,
+so `u` is the good representative OF that limit (not an unrelated solution). Add ONE conjunct to
+`galerkin_limit_passage`'s existential (as the FIRST conjunct):
+```
+(∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), u t = alPkg.u t) ∧
+WeakFormNS … ∧ <energy ineq> ∧ <initial trace> ∧ <energy_class>
+```
+(a.e. equality preserves null-set invariance AND ties A3 to the compactness limit it upgrades.)
+`u t = alPkg.u t` is equality in `L2Sigma`. This is the only change.
 
 ## Defect-fix checklist (all must hold)
 (1) proof-carrying fields ✓ (2) WeakFormNS endpoints vanish via tsupport⊆Ioo 0 T ✓

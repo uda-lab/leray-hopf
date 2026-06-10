@@ -34,6 +34,7 @@ import LerayHopf.RellichEmbedding
 import LerayHopf.VelocityGalerkin
 import LerayHopf.H1Sigma
 import LerayHopf.EvolutionTriple
+import LerayHopf.AxiomaticClosure
 import LerayHopf.Statement
 import LerayHopf.GalerkinPackage
 import LerayHopf.ExistenceFromPackage

@@ -61,6 +61,9 @@ structure DissipativeEvolution where
   /-- Antisymmetry of the convection form in the last two arguments:
   `b(u, v, w) = -b(u, w, v)`. -/
   convForm_antisymm : ∀ u v w, convForm u v w = - convForm u w v
+  /-- Predicate selecting the admissible spatial test vectors for the weak NS equation.
+  Typical instance: `IsGalerkinTest w` (finite Fourier support ⇒ smooth div-free). -/
+  isTest : H → Prop
 
 /-! ### Derived lemma: convForm_self_zero -/
 
@@ -81,18 +84,23 @@ theorem DissipativeEvolution.convForm_self_zero
 A curve `u` satisfies the weak NS equation on `(0, T)` with viscosity `ν` iff
 for every test function `ψ : Time → ℝ` that is `C¹`, has compact support contained
 in the open interval `(0, T)` (so boundary terms vanish), and for every spatial
-test vector `w : E.H`, the following integral identity holds:
+test vector `w : E.H` satisfying `E.isTest w` (e.g. a smooth/Galerkin test function),
+the following integral identity holds:
 
   `∫ t in 0..T, (-(⟪u t, w⟫_ℝ) * ψ'(t) + ψ(t) * (ν * E.viscousForm (u t) w + E.convForm (u t) (u t) w)) = 0`
 
 The `tsupport ψ ⊆ Set.Ioo 0 T` condition ensures the test function vanishes at the
-endpoints, so the integration-by-parts boundary terms are zero (fixing defect 2). -/
+endpoints, so the integration-by-parts boundary terms are zero (fixing defect 2).
+
+The `E.isTest w` condition restricts spatial tests to the admissible class
+(e.g. smooth/Galerkin div-free vectors), matching the Faedo–Galerkin limit-passage
+argument (Fix 3 of the Codex axiom audit). -/
 def WeakFormNS (ν T : ℝ) (E : DissipativeEvolution) (u : Time → E.H) : Prop :=
   letI := E.instNACG
   letI := E.instIPS
   ∀ (ψ : Time → ℝ), HasCompactSupport ψ → tsupport ψ ⊆ Set.Ioo 0 T →
     ContDiff ℝ 1 ψ →
-  ∀ (w : E.H),
+  ∀ (w : E.H), E.isTest w →
     ∫ t in (0 : ℝ)..T,
       (-(inner (𝕜 := ℝ) (u t) w) * deriv ψ t +
         ψ t * (ν * E.viscousForm (u t) w + E.convForm (u t) (u t) w)) = 0
