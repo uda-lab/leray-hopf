@@ -38,6 +38,7 @@ maintains this ledger as the final report.
 | M4 | Finite-dim Galerkin ODE + energy identity | **abstract done** (axiom-free); concrete = frontier |
 | M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | **Rellich done** (axiom-free); time-compactness + limit passage = frontier |
 | M6 | **Sound minimal-axiom closure of T³ existence** (`exists_lerayHopf_torus3`) | **DONE** — proved modulo exactly 4 Codex-approved axioms; abstract evolution framework for R³ reuse |
+| R3 | **Whole-space ℝ³ Leray–Hopf existence** (`exists_lerayHopf_r3`) — the real target (Leray 1934) | **DONE** — proved modulo exactly 6 Codex-approved axioms; ℝ³ spatial+regularity layer built axiom-free; abstract layer reused unmodified |
 
 ## M2 design decisions (orchestrator, adopted)
 
@@ -69,6 +70,29 @@ The four axioms (in `LerayHopf/AxiomaticClosure.lean`; `## Assumptions` section 
 `b(u,u,u)=0` is a **proved lemma** (`Torus3NSForms.b_self_zero`) from antisymmetry, NOT an axiom.
 `#print axioms exists_lerayHopf_torus3` → exactly these 4 + `propext`/`Classical.choice`/`Quot.sound`
 (no `sorryAx`).
+
+### ℝ³ (whole-space) — the 6 axioms (`LerayHopf/R3/AxiomaticClosure.lean`)
+
+The ℝ³ spatial+regularity layer is **built axiom-free** (`R3/Domain.lean`, `DivergenceFree.lean`,
+`Regularity.lean`): `L2Sigma_R3 := ⨅ φ:𝓢, ker(divTestFunctional φ)` (weak divergence against Schwartz
+tests; closed div-free subspace), `lerayProjection_R3`, `memH1VF_R3` (via `MemSobolev`),
+`stokesTestPairing_R3`/`viscousFormSq_R3` (via the L² Fourier transform `Lp.fourierTransformₗᵢ`),
+`convIntegralSchwartz` (the genuine convection integral on Schwartz fields). The abstract
+`DissipativeEvolution`/`WeakFormNS`/`AbstractEnergyLaw` layer is **reused unmodified**.
+
+| Axiom | Role | T³ analogue | Why ℝ³ needs it |
+|---|---|---|---|
+| `r3GalerkinScheme_exists` | Galerkin approximation-projection family (range Schwartz div-free) | T³ **PROVED** `velocityProjection_n` | ℝ³ frequency-truncation subspaces are infinite-dim; indicator Fourier multiplier not in mathlib (Paley–Wiener) |
+| `r3_NSForms_exist` | ℝ³ convection form `b` (antisym, trilinear, smooth-test bound), **non-vacuity pinned** to the genuine `convIntegralSchwartz` | T³ A4 `torus3_NSForms_exist` | missing `(u·∇)v` operator on ℝ³ |
+| `galerkin_ode_solution_R3` | approximate ODE + uniform energy/dissipation bounds + H¹ regularity | T³ A1 | Temam III.3 |
+| `spatial_compactness_R3` | **LOCAL** Rellich `H¹(B_R)↪↪L²(B_R)` ⇒ L²_loc-convergent subsequence | T³ **PROVED** `rellich_L2Sigma` | **global Rellich FAILS on ℝ³** — the structurally-new axiom; local form is TRUE without tightness |
+| `aubin_lions_R3` | Aubin–Lions; takes `spatial_compactness_R3` as hypothesis (not discharged) | T³ A2 | Temam III.2.1 |
+| `galerkin_limit_passage_R3` | existential good representative (a.e.-linked), weak form + energy-ineq + trace + energy-class | T³ A3 | Temam III.3; local convergence + Schwartz-test decay |
+
+The 2 extra axioms vs T³ (`r3GalerkinScheme_exists`, `spatial_compactness_R3`) are **exactly the two
+pieces T³ PROVED** (`velocityProjection_n`, `rellich_L2Sigma`) but ℝ³ cannot — the honest cost of the
+unbounded domain. `R3NSForms.b_self_zero` is a proved lemma. `#print axioms exists_lerayHopf_r3` →
+exactly these 6 + `propext`/`Classical.choice`/`Quot.sound` (no `sorryAx`).
 
 **Earlier (M2) axiom eliminated:** the M2 plan tentatively proposed `L2Sigma_eq_divFreeL2`
 (closure-of-span ↔ Fourier-diagonal). **Eliminated**: `L²_σ` is defined *directly* as
@@ -203,6 +227,16 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
   `∀ᵐ t, u t = alPkg.u t` to the Aubin–Lions limit; (v8) **approve**.
   Final assembly proved sorry-free; `#print axioms exists_lerayHopf_torus3` = the 4 axioms +
   `propext`/`Classical.choice`/`Quot.sound`.
+- **R3 ℝ³ axiomatic closure** (`/codex:adversarial-review --effort xhigh`, `R3/AxiomaticClosure.lean`):
+  **2 rounds** → **`approve`** (the T³ audit lessons applied preemptively converged it fast). Codex
+  caught and forced fixes to: (v1-crit) `R3GalerkinScheme` admitting the identity map (which collapsed
+  `IsGalerkinTest_R3` to all of L² and falsified `b_bound`/`reg_mem`) ⇒ added `range_schwartz` forcing
+  the projector range to be Schwartz div-free; (v1-high) `aubin_lions_R3` asserting **global** ℝ³
+  compactness (false without tightness) ⇒ reformulated `spatial_compactness_R3`/`aubin_lions_R3` to
+  **LOCAL** L²(B_R) convergence (true local Rellich, no tightness; Schwartz-test decay handles the
+  tail); (v2) **approve**. Final assembly proved sorry-free; `#print axioms exists_lerayHopf_r3` = the
+  6 ℝ³ axioms + `propext`/`Classical.choice`/`Quot.sound`. The ℝ³ spatial+regularity layer
+  (`R3/Domain`, `DivergenceFree`, `Regularity`) is axiom-free.
 
 ## Notes
 

@@ -45,3 +45,4 @@ import LerayHopf.NonuniquenessStatement
 import LerayHopf.R3.Domain
 import LerayHopf.R3.DivergenceFree
 import LerayHopf.R3.Regularity
+import LerayHopf.R3.AxiomaticClosure
