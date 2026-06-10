@@ -34,7 +34,7 @@ maintains this ledger as the final report.
 | M1 | Structural spine (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton) | in progress |
 | Side A/B | Blow-up lower bound · nonuniqueness statement | done (pending commit) |
 | M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | **done** (axiom-free) |
-| M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | pending |
+| M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | in progress (part 1 done) |
 | M4 | Finite-dim Galerkin ODE + energy identity | pending |
 | M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | pending |
 
@@ -119,6 +119,15 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
 - **M2 `L2Sigma`** (`--effort xhigh`, `Leray.lean`): verdict *approve*. `⨅ k, ker(divSymbol k)`
   is the genuine divergence-free subspace by construction; closedness sound (continuous kernels
   + arbitrary closed intersection); axiom-free (`#print axioms`: only propext/Choice/Quot).
+- **M3-part1 projections** (`--effort xhigh`, `Leray.lean`/`GalerkinProjection.lean`): verdict
+  *needs-attention*, 2 findings, both fixed.
+  - [medium] `lerayProjection` docstring overclaimed a Helmholtz gradient-kernel theorem not
+    formalized → **fixed**: docstring states only the proved orthogonal-projection facts
+    (kernel = `L2Sigma`ᗮ); Helmholtz identification flagged as future work.
+  - [medium] `Pₙ` not connected to Fourier truncation → **fixed**: proved
+    `fourierProjection_n_mFourierCoeff` (`P̂ₙf(k) = if k ∈ box then f̂(k) else 0`), the genuine
+    Fourier-multiplier formula, sorry-free/axiom-clean. Leray projection (idempotent, range,
+    self-adjoint, contraction, fixes div-free) + `Pₙ` convergence `Pₙf→f` all sorry-free.
 
 ## Notes
 

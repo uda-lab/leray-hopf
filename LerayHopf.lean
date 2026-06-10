@@ -29,6 +29,7 @@ import LerayHopf.FunctionSpaces
 import LerayHopf.SobolevTorus
 import LerayHopf.DivergenceFree
 import LerayHopf.Leray
+import LerayHopf.GalerkinProjection
 import LerayHopf.Statement
 import LerayHopf.GalerkinPackage
 import LerayHopf.ExistenceFromPackage
