@@ -36,7 +36,7 @@ maintains this ledger as the final report.
 | M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | **done** (axiom-free) |
 | M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | **done** (axiom-free) |
 | M4 | Finite-dim Galerkin ODE + energy identity | **abstract done** (axiom-free); concrete = frontier |
-| M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | pending |
+| M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | **Rellich done** (axiom-free); time-compactness + limit passage = frontier |
 
 ## M2 design decisions (orchestrator, adopted)
 
@@ -75,7 +75,8 @@ interfaces (`AbstractEnergyLaw`, `GalerkinCompactnessPackage`) already in place 
 | Concrete NS convection `b(u,v,w)` | `∫_{𝕋³} ((u·∇)v)·w` on `L²/H¹` torus fields | mathlib has no `(u·∇)v` for `Lp` a.e.-classes; needs torus weak-derivative/Fourier-convection API |
 | Nonlinear cancellation `b(u,u,u)=0` | skew-symmetry for divergence-free `u` | needs torus integration-by-parts; mathlib's divergence theorem is for ℝⁿ boxes only |
 | Galerkin ODE existence | `uₙ` solving the projected ODE via `PicardLindelof` | API exists but gated on the concrete RHS above |
-| **Aubin–Lions / Rellich on T³** | `H¹(𝕋³) ↪ L²(𝕋³)` compact, via Fourier-tail decay | not in mathlib; **provable from `memH1Torus` + Fourier tails** — the next target |
+| ~~Rellich on T³~~ **DONE** | `H¹(𝕋³)`-ball totally bounded in `L²(𝕋³)` (`H1_ball_totallyBounded`), via Fourier-tail decay | ✅ proved axiom-free (M5) — the Aubin–Lions *spatial* linchpin |
+| Aubin–Lions (full, time) | time-equicontinuity + Rellich ⟹ strong `L²(0,T;L²)` compactness | needs Bochner time-derivative bounds + Arzelà–Ascoli plumbing (Rellich half done) |
 | Limit passage | weak-* + strong-L² limits ⟹ weak solution | needs the above + Banach–Alaoglu plumbing |
 
 The **abstract energy law ⟹ energy inequality ⟹ nonincreasing energy** chain is fully proved
@@ -158,6 +159,12 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
     a full Galerkin construction) → **fixed**: renamed `AbstractEnergyLaw` with a docstring
     stating the concrete Galerkin construction is frontier. Abstract energy identity/inequality
     proved sorry-free/axiom-clean.
+- **M5 Rellich compact embedding** (`--effort xhigh`, `RellichEmbedding.lean`): verdict
+  *approve*, no findings. Confirmed `H1_ball_totallyBounded` is the GENUINE non-vacuous Rellich
+  (H¹-ball precompact in the ambient L² metric; set non-empty via `memH1Torus_zero`), Parseval
+  (L1) correct, tail bound (L3) correct, `‖f−Pₙf‖²` = out-of-box tail (L2) correct. All 6 lemmas
+  (L1–L4, the finite-rank compactness Bonus, L5) sorry-free and `#print axioms`-clean. The
+  Aubin–Lions *spatial* linchpin on T³ — the user's key strategy — is cracked, axiom-free.
 
 ## Notes
 
