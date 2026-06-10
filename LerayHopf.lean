@@ -42,3 +42,5 @@ import LerayHopf.EnergySkeleton
 import LerayHopf.EnergyEstimate
 import LerayHopf.BlowupLowerBound
 import LerayHopf.NonuniquenessStatement
+import LerayHopf.R3.Domain
+import LerayHopf.R3.DivergenceFree
