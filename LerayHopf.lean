@@ -32,6 +32,8 @@ import LerayHopf.Leray
 import LerayHopf.GalerkinProjection
 import LerayHopf.RellichEmbedding
 import LerayHopf.VelocityGalerkin
+import LerayHopf.H1Sigma
+import LerayHopf.EvolutionTriple
 import LerayHopf.Statement
 import LerayHopf.GalerkinPackage
 import LerayHopf.ExistenceFromPackage
