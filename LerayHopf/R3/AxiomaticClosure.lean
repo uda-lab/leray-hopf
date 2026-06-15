@@ -74,8 +74,15 @@ Six axioms are added in this file (names below with justifications):
    on `L²_σ(ℝ³)` with smooth (Schwartz) range (e.g. frequency-ball truncation or smooth
    Hermite/mollification basis). The `range_schwartz` field excludes `P = id` (L² ⊄
    Schwartz), ensuring every Galerkin test field is Schwartz so `b_bound` and `reg_mem`
-   are non-vacuous. TRUE classically (Paley–Wiener; smooth Galerkin bases exist);
-   blocked in Lean by the missing indicator Fourier-multiplier on Lp. Lemarié-Rieusset §2.
+   are non-vacuous.  The `tendsto_id` field is RESTRICTED to `u ∈ L2Sigma_R3` (strong
+   convergence on the divergence-free subspace only): a divergence-free Galerkin scheme is
+   total only in `L²_σ(ℝ³)`, never in all of `L²(ℝ³; ℝ³)`, so an unrestricted
+   `∀ u : L2VF_R3` form was a latent over-strength (Codex-confirmed) and has been removed;
+   every consumer applies `P n` only to div-free data. TRUE classically (Paley–Wiener;
+   smooth Galerkin bases exist); blocked in Lean by the missing indicator Fourier-multiplier
+   on Lp. Lemarié-Rieusset §2.  See `LerayHopf/R3/GalerkinScheme.lean`
+   (`nonempty_r3GalerkinScheme_of_basis`) for the axiom-free constructive witness of this
+   structure from a single density hypothesis.
 
 2. `r3_NSForms_exist` — existence of the ℝ³ NS convection form `b`. The genuine
    `∫(u·∇)v·w` form witnesses it; non-vacuity pinned via `b_galerkin` to
@@ -115,8 +122,14 @@ with the five key properties needed for the Galerkin construction:
 
 - `preserves_sigma`: each `P n` maps `L2Sigma_R3` into itself (the approximation respects
   the divergence-free constraint; follows for frequency-ball truncation or mollification);
-- `tendsto_id`: `P n u → u` in `L²_σ` as `n → ∞` for every `u` (strong convergence of the
-  approximation; Paley–Wiener approximation theory);
+- `tendsto_id`: `P n u → u` in `L²` as `n → ∞` **for every `u ∈ L2Sigma_R3`** (strong
+  convergence of the approximation on the divergence-free subspace; Paley–Wiener
+  approximation theory).  The convergence is RESTRICTED to `L2Sigma_R3`: a divergence-free
+  Galerkin scheme is total only in `L²_σ(ℝ³)`, never in all of `L²(ℝ³; ℝ³)` (its prefix-span
+  projections land in the closed div-free subspace, so an unrestricted `∀ u : L2VF_R3` form
+  would force every `u` to be divergence-free — a latent over-strength, Codex-confirmed).
+  Every consumer applies `P n` only to div-free data, so the Σ-restriction is exactly what
+  the Leray–Hopf assembly needs;
 - `norm_le`: `‖P n u‖ ≤ ‖u‖` (non-expansiveness; follows e.g. from the fact that `P n` is
   the L² projection onto a subspace);
 - `idem`: `P n ∘ P n = P n` (idempotence; `P n` is a projection);
@@ -128,8 +141,12 @@ structure R3GalerkinScheme where
   P : ℕ → (L2VF_R3 →L[ℝ] L2VF_R3)
   /-- P n preserves the divergence-free subspace. -/
   preserves_sigma : ∀ (n : ℕ) (u : L2VF_R3), u ∈ L2Sigma_R3 → P n u ∈ L2Sigma_R3
-  /-- Strong convergence: P n u → u in L² for every u. -/
-  tendsto_id : ∀ (u : L2VF_R3), Filter.Tendsto (fun n => P n u) Filter.atTop (nhds u)
+  /-- Strong convergence on the divergence-free subspace: `P n u → u` in `L²` for every
+  `u ∈ L2Sigma_R3`.  The Σ-restriction is mathematically necessary — a div-free Galerkin
+  scheme is total only in `L²_σ(ℝ³)`, not in all of `L²(ℝ³; ℝ³)` — and is exactly the
+  range used by every consumer (`P n` is only ever applied to div-free data). -/
+  tendsto_id : ∀ (u : L2VF_R3), u ∈ L2Sigma_R3 →
+    Filter.Tendsto (fun n => P n u) Filter.atTop (nhds u)
   /-- Non-expansiveness: ‖P n u‖ ≤ ‖u‖. -/
   norm_le : ∀ (n : ℕ) (u : L2VF_R3), ‖P n u‖ ≤ ‖u‖
   /-- Idempotence: P n (P n u) = P n u. -/
@@ -159,7 +176,8 @@ it is a fixed point of some approximation projector:
   `IsGalerkinTest_R3 𝔊 w ↔ ∃ n, 𝔊.P n (w : L2VF_R3) = (w : L2VF_R3)`.
 
 Mirrors `IsGalerkinTest` on T³.  Every element of the range of `𝔊.P n` satisfies this.
-The class is dense in `L²_σ(ℝ³)` (by `𝔊.tendsto_id`) and is the standard Faedo–Galerkin
+The class is dense in `L²_σ(ℝ³)` (by `𝔊.tendsto_id`, the Σ-restricted strong convergence)
+and is the standard Faedo–Galerkin
 test class used in the weak NS formulation. -/
 def IsGalerkinTest_R3 (𝔊 : R3GalerkinScheme) (w : L2Sigma_R3) : Prop :=
   ∃ n : ℕ, 𝔊.P n (w : L2VF_R3) = (w : L2VF_R3)
@@ -456,7 +474,8 @@ Consumes the Galerkin sequence `galSeq` and the Aubin–Lions package `alPkg`
 
 The a.e.-equality link ties `u` to the Aubin–Lions limit (not a standalone solution).
 Strong L²(0,T) convergence from AX-2 kills the nonlinear error via `b_bound`;
-energy inequality by lsc; initial trace from `𝔊.tendsto_id`.
+energy inequality by lsc; initial trace from `𝔊.tendsto_id` (applied at the div-free
+initial datum `u₀ ∈ L2Sigma_R3`, within the Σ-restricted convergence).
 
 Blocked in Lean by: nonlinear limit passage requires `b_bound` applied to strong
 L² convergence.  Temam III.3. -/
