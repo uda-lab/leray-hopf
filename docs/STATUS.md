@@ -39,6 +39,7 @@ maintains this ledger as the final report.
 | M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | **Rellich done** (axiom-free); time-compactness + limit passage = frontier |
 | M6 | **Sound minimal-axiom closure of T³ existence** (`exists_lerayHopf_torus3`) | **DONE** — proved modulo exactly 4 Codex-approved axioms; abstract evolution framework for R³ reuse |
 | R3 | **Whole-space ℝ³ Leray–Hopf existence** (`exists_lerayHopf_r3`) — the real target (Leray 1934) | **DONE** — proved modulo exactly 6 Codex-approved axioms; ℝ³ spatial+regularity layer built axiom-free; abstract layer reused unmodified |
+| R3-d | **Concrete trilinear convection estimate** (`LerayHopf/R3/TrilinearEstimate.lean`) — upgrades the `r3_NSForms_exist` axiom's *justification prose* into 11 proved, axiom-free lemmas about `convIntegralSchwartz` | **DONE** (axiom-free) — multilinearity (6), integrability, direct H¹ bound, **IBP identity**, **antisymmetry under div-free**, and the genuine **`b_bound` shape** `\|b(u,v,w)\| ≤ C(w)·‖u‖₂·‖v‖₂`; each `#print axioms`-clean (only propext/Classical.choice/Quot.sound). Does NOT remove the axiom (defining `b` on all of L²_σ still needs the `(u·∇)v` operator), but substantiates its analytic content |
 
 ## M2 design decisions (orchestrator, adopted)
 

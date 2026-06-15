@@ -115,4 +115,31 @@ Defined as `L2Sigma_R3.orthogonalProjectionOnto`. -/
 noncomputable def lerayProjection_R3 : L2VF_R3 →L[ℝ] L2Sigma_R3 :=
   L2Sigma_R3.orthogonalProjectionOnto
 
+/-! ### Genuine Schwartz convection integral (non-vacuity pin) -/
+
+/-- **The genuine Schwartz convection integral `∫(u·∇)v·w`.**
+
+Concretely:
+  `convIntegralSchwartz ψu ψv ψw = ∑ i : Fin 3, ∑ a : Fin 3,
+    ∫ x, (ψu a x) * (∂_a ψv_i)(x) * (ψw i x) ∂volume`
+
+where:
+- `(ψu a) x` is the pointwise value of the Schwartz function `ψu a` at `x` (via `DFunLike`);
+- `lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a 1) (ψv i)` is the
+  partial derivative `∂_a (ψv i)` as a Schwartz function (via `LineDeriv.lineDerivOpCLM`);
+- the integral `∫ x, f x ∂volume` is a Bochner integral (unconditional: returns 0 on
+  non-integrable integrands, but products of Schwartz functions are in L¹ so this is genuine).
+
+This equals `∫ (u·∇)v·w` when `u_a = ψu a`, `v_i = ψv i`, `w_i = ψw i` component-wise.
+It is **sorry-free and axiom-free** — the definition is purely analytic. -/
+noncomputable def convIntegralSchwartz
+    (ψu ψv ψw : Fin 3 → SchwartzMap Domain3 ℝ) : ℝ :=
+  ∑ i : Fin 3, ∑ a : Fin 3,
+    ∫ x : Domain3,
+      (ψu a x) *
+      (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+        (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψv i)) x *
+      (ψw i x)
+    ∂(volume : Measure Domain3)
+
 end LerayHopf

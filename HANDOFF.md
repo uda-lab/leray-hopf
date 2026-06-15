@@ -26,6 +26,11 @@ equation (`WeakFormNS`, over canonical Schwartz/smooth div-free tests), the ener
 - The entire **spatial+regularity layer** on both domains is built **axiom-free**.
 - Each axiom set passed a **Codex `--effort xhigh` adversarial soundness audit** (T³: 8 rounds;
   ℝ³: 2 rounds + a final faithfulness fix) → **approve**.
+- **R3-d (post-merge):** the `r3_NSForms_exist` axiom's analytic content is now **proved axiom-free** in
+  `LerayHopf/R3/TrilinearEstimate.lean` — 11 lemmas on `convIntegralSchwartz` (multilinearity, integrability,
+  IBP, antisymmetry under div-free, and the genuine `b_bound` shape `|b(u,v,w)| ≤ C(w)·‖u‖₂·‖v‖₂`), each
+  `#print axioms`-clean. The axiom itself remains (defining `b` on **all** of L²_σ still needs the `(u·∇)v`
+  operator), but its justification prose is no longer admitted — it is verified.
 
 ## 2. How to verify (commands)
 

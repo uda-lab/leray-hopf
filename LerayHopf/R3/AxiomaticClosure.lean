@@ -49,7 +49,7 @@ calibration constant, and does not vanish on all Schwartz triples.
 - `R3GalerkinScheme`                 : structure bundling the approximation-projection family
 - `r3GalerkinScheme_exists`          : axiom — existence of `R3GalerkinScheme`
 - `IsGalerkinTest_R3`                : test-function predicate for ℝ³
-- `convIntegralSchwartz`             : genuine `∑_{i,a} ∫ u_a (∂_a v_i) w_i` convection integral on Schwartz fields
+- `convIntegralSchwartz`             : genuine `∑_{i,a} ∫ u_a (∂_a v_i) w_i` convection integral on Schwartz fields (defined in `DivergenceFree.lean`)
 - `R3NSForms`                        : structure bundling the ℝ³ NS convection form
 - `r3_NSForms_exist`                 : axiom — existence of `R3NSForms`
 - `R3NSForms.b_self_zero`            : proved lemma — `b u u u = 0` from antisymmetry
@@ -163,33 +163,6 @@ The class is dense in `L²_σ(ℝ³)` (by `𝔊.tendsto_id`) and is the standard
 test class used in the weak NS formulation. -/
 def IsGalerkinTest_R3 (𝔊 : R3GalerkinScheme) (w : L2Sigma_R3) : Prop :=
   ∃ n : ℕ, 𝔊.P n (w : L2VF_R3) = (w : L2VF_R3)
-
-/-! ### Genuine Schwartz convection integral (non-vacuity pin) -/
-
-/-- **The genuine Schwartz convection integral `∫(u·∇)v·w`.**
-
-Concretely:
-  `convIntegralSchwartz ψu ψv ψw = ∑ i : Fin 3, ∑ a : Fin 3,
-    ∫ x, (ψu a x) * (∂_a ψv_i)(x) * (ψw i x) ∂volume`
-
-where:
-- `(ψu a) x` is the pointwise value of the Schwartz function `ψu a` at `x` (via `DFunLike`);
-- `lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a 1) (ψv i)` is the
-  partial derivative `∂_a (ψv i)` as a Schwartz function (via `LineDeriv.lineDerivOpCLM`);
-- the integral `∫ x, f x ∂volume` is a Bochner integral (unconditional: returns 0 on
-  non-integrable integrands, but products of Schwartz functions are in L¹ so this is genuine).
-
-This equals `∫ (u·∇)v·w` when `u_a = ψu a`, `v_i = ψv i`, `w_i = ψw i` component-wise.
-It is **sorry-free and axiom-free** — the definition is purely analytic. -/
-noncomputable def convIntegralSchwartz
-    (ψu ψv ψw : Fin 3 → SchwartzMap Domain3 ℝ) : ℝ :=
-  ∑ i : Fin 3, ∑ a : Fin 3,
-    ∫ x : Domain3,
-      (ψu a x) *
-      (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
-        (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψv i)) x *
-      (ψw i x)
-    ∂(volume : Measure Domain3)
 
 /-! ### AX-4: ℝ³ Navier–Stokes forms structure -/
 
