@@ -48,3 +48,4 @@ import LerayHopf.R3.TrilinearEstimate
 import LerayHopf.R3.Regularity
 import LerayHopf.R3.AxiomaticClosure
 import LerayHopf.R3.GalerkinScheme
+import LerayHopf.R3.SpatialCompactness
