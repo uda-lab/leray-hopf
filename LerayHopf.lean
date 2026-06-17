@@ -49,3 +49,4 @@ import LerayHopf.R3.Regularity
 import LerayHopf.R3.AxiomaticClosure
 import LerayHopf.R3.GalerkinScheme
 import LerayHopf.R3.SpatialCompactness
+import LerayHopf.R3.AubinLionsLimitPassage

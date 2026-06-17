@@ -42,6 +42,7 @@ maintains this ledger as the final report.
 | R3-d | **Concrete trilinear convection estimate** (`LerayHopf/R3/TrilinearEstimate.lean`) — upgrades the `r3_NSForms_exist` axiom's *justification prose* into 11 proved, axiom-free lemmas about `convIntegralSchwartz` | **DONE** (axiom-free) — multilinearity (6), integrability, direct H¹ bound, **IBP identity**, **antisymmetry under div-free**, and the genuine **`b_bound` shape** `\|b(u,v,w)\| ≤ C(w)·‖u‖₂·‖v‖₂`; each `#print axioms`-clean (only propext/Classical.choice/Quot.sound). Does NOT remove the axiom (defining `b` on all of L²_σ still needs the `(u·∇)v` operator), but substantiates its analytic content |
 | P5 | **Galerkin scheme constructive content** (`LerayHopf/R3/GalerkinScheme.lean`) — substantiates the `r3GalerkinScheme_exists` axiom by *constructing* the scheme from a Schwartz div-free basis | **DONE** (axiom-free) — `nonempty_r3GalerkinScheme_of_basis (B : SchwartzGalerkinBasis) : Nonempty R3GalerkinScheme` builds all six structure fields from orthogonal projections (`Submodule.starProjection`) onto finite prefix-spans of `B`; the one classical input (density of smooth div-free fields in L²_σ, a Helmholtz/Weyl fact) is the bundled hypothesis `B.dense_span`, not an axiom. `#print axioms`-clean. **Soundness fix (Codex-confirmed):** `R3GalerkinScheme.tendsto_id` weakened from `∀ u : L2VF_R3` to the honest `∀ u ∈ L2Sigma_R3` (a div-free Galerkin scheme is total only in Σ; the unrestricted form was a latent over-strength never consumed by the closure). `exists_lerayHopf_r3` unaffected (still 6 project axioms, no sorryAx). Does NOT remove the axiom (unconditional `Nonempty SchwartzGalerkinBasis` still needs the density fact) |
 | P3 | **LOCAL Rellich–Kondrachov on ℝ³** (`LerayHopf/R3/SpatialCompactness.lean`) — substantiates the `spatial_compactness_R3` axiom by proving the full reduction axiom-free from one isolated frontier hypothesis | **DONE** (axiom-free) — `localCompactness_R3_of_ballCompact (B : LocalRellichInput)` reproduces the **byte-identical** `spatial_compactness_R3` conclusion (per-ball L² subsequence convergence of any L²∩H¹-bounded div-free sequence, limit in `L2Sigma_R3`). The reduction is fully proved: per-ball extraction (`IsCompact.tendsto_subseq`), countable diagonal over expanding balls, global glue `g₀ x := g(⌈dist x 0⌉)x` with `MemLp` via ball-exhaustion, div-free closure via the **G5 ε/3 ball-truncation** (`divTestFunctional φ g = lim = 0`: ball part by local convergence + Cauchy–Schwarz tail uniform in `n` via `‖z n‖≤M` + Schwartz/L²-tail→0). The ONE classical input — local compact embedding `H¹(B_R)↪↪L²(B_R)` (mathlib lacks Rellich) — is the bundled hypothesis `LocalRellichInput.ballCompact` (Codex-confirmed non-smuggling), not an axiom. `#print axioms`-clean. `exists_lerayHopf_r3` unaffected. Does NOT remove the axiom (unconditional local compactness still needs the embedding) |
+| P2 | **Aubin–Lions time-compactness + limit passage** (`LerayHopf/R3/AubinLionsLimitPassage.lean`) — substantiates the *reusable analytic core* of the `aubin_lions_R3` / `galerkin_limit_passage_R3` axioms | **PARTIAL** (honest) — **PROVED axiom-free** (`#print axioms`-clean, no sorryAx): `spatialInput_R3_of_localRellich` (the `aubin_lions_R3` spatial half, by reusing P3), `bForm_tendsto_of_strongL2` (nonlinear convection b-term passes to the limit under strong L², the R3-d `b_bound` payoff), and the Steklov interval-averaging building blocks (`steklovAvg`, its uniform L² bound, the time-modulus approximation). **OPEN** (`sorry` + truthful TODO, NOT smuggled, no new axioms): `kineticEnergy_lsc_bound` (E1) — statement CORRECTED at the Codex statement gate from the original `∀ t` pointwise form (smuggling — claimed pointwise-time representative control the package lacks) to the honest **a.e.-in-time** form, and still OPEN because `AubinLionsPackage_R3` carries no time-measurability for its limit; `aubinLionsPackage_R3_of_timeCompactness` (C2, the full Aubin–Lions assembly) — viable via the Steklov route (Codex-confirmed NOT unsound) but the δ-mesh diagonalization + H¹/Jensen-on-average + Bochner-average measurability + boundary-strip handling remain an open engineering target (mathlib lacks `W^{1,p}(0,T;X)` / Simon's lemma). Isolated time-frontier hypothesis: `TimeCompactnessInput`. `exists_lerayHopf_r3` unaffected (6 project axioms, no sorryAx) |
 
 ## M2 design decisions (orchestrator, adopted)
 
@@ -104,9 +105,26 @@ and `L²_σ` is a closed submodule giving its Hilbert structure + Leray projecti
 
 ## Sorry frontier
 
-**In the Lean tree:** still ZERO frontier `sorry`. The only `sorry` is the deliberate target
-statement `exists_lerayHopf_torus3_statement` (not frontier debt — see Notes). No axioms.
-Every M1–M4(abstract) must-prove target is sorry-free and `#print axioms`-clean.
+**In the Lean tree:** the headline existence theorems (`exists_lerayHopf_torus3`,
+`exists_lerayHopf_r3`) and the R3-d/P5/P3 deliverables are sorry-free and `#print axioms`-clean.
+Marked (`ALLOW_SORRY`) `sorry` declarations currently present:
+- `Statement.lean:exists_lerayHopf_torus3_statement` — the deliberate scaffold target (not
+  frontier debt; superseded by the proved `exists_lerayHopf_torus3`; kept by the no-rename rule).
+- **P2 (`LerayHopf/R3/AubinLionsLimitPassage.lean`), two intentional open frontier sorries:**
+  - `kineticEnergy_lsc_bound` (E1) — a.e.-in-time kinetic-energy bound; blocked because
+    `AubinLionsPackage_R3` carries no time-measurability for its limit `u` (needs vector-valued
+    Bochner-time / measurable-representative theory, absent in mathlib). `#print axioms` shows
+    `sorryAx` for this declaration (intentional, marked).
+  - `aubinLionsPackage_R3_of_timeCompactness` (C2) — the full Aubin–Lions assembly; the Steklov
+    interval-averaging route is viable (Codex-confirmed, not unsound) but the δ-mesh
+    diagonalization + H¹-Jensen on the average + Bochner-average measurability + boundary strip
+    remain open (mathlib lacks `W^{1,p}(0,T;X)` / Simon's lemma). `#print axioms` shows `sorryAx`
+    (intentional, marked). The Steklov building blocks + S1 + N1 in the same file are proved
+    axiom-clean.
+
+**`exists_lerayHopf_r3` and `exists_lerayHopf_torus3` are unaffected by the P2 sorries** —
+neither imports `AubinLionsLimitPassage`; their `#print axioms` show only the project axioms +
+the 3 kernel axioms, no `sorryAx`. No new project axioms were introduced by R3-d/P5/P3/P2.
 
 **The genuine analytic frontier (NOT coded — documented here, not faked as sorry/axiom).**
 Reaching unconditional T³ existence requires the following, each blocked by *structural mathlib
