@@ -29,7 +29,9 @@ gradient ⇒ modulus bridge are assembled here, but the assembly is reduced down
 
 `FrechetKolmogorovInput` is the **global-representative** precompactness criterion: each
 family member `f : L2ballR3 R` carries a global representative `rep f : L2VF_R3` with
-`restrictToBall R (rep f) = f`, and the uniform modulus is the GLOBAL L²-translation modulus
+`restrictToBall R (rep f) = f`, the family is uniformly L²-bounded both inside the ball
+(`‖f‖ ≤ C`) and GLOBALLY on the representative (`‖rep f‖ ≤ C`, the standard Riesz full-mass
+control), and the uniform modulus is the GLOBAL L²-translation modulus
 `‖translate_L2VF h (rep f) − rep f‖`.  This is a legitimate, sound, non-smuggling criterion
 (it mentions no Sobolev/gradient/`L2Sigma`/velocity object); it is INTENTIONALLY phrased on
 the global representative.  The Navier–Stokes bridge content lives entirely in T0b/T0c (the
@@ -167,13 +169,28 @@ it is the abstract compactness *criterion*, not the H¹↪↪L² embedding.
 
 The implication direction (modulus ⇒ precompact) is exactly the content mathlib lacks; the
 modulus *hypothesis* itself is supplied downstream from the gradient bound (T0c) — whose
-peeling is axiom-free but inherits T0b's open `sorry`. -/
+peeling is axiom-free but inherits T0b's open `sorry`.
+
+**Global mass bound `bddGlobal` (Codex Gate round 3 fix).**  Beyond the single-radius ball
+mass bound `∀ f ∈ S, ‖f‖ ≤ C` (= `‖restrictToBall R (rep f)‖`), the criterion ALSO demands a
+uniform GLOBAL L²-norm bound on the representatives, `∀ f ∈ S, ‖rep f‖ ≤ C`.  This is the
+honest, standard form of Fréchet–Kolmogorov (the classical Riesz criterion controls the FULL
+L²-mass, not just the mass inside one fixed ball): single-ball mass + a translation modulus do
+NOT control the mass on an annulus `B_{R+r} ∖ B_R`, so the mollifier helpers' enlarged-ball
+bound (kernel reach) is NOT recoverable from the single-ball datum alone.  A plain global
+L²-norm bound makes any enlarged-ball bound `‖restrictToBall R' (rep f)‖ ≤ C` (for ANY radius
+`R'`) immediate by monotonicity of ball mass.  This is STILL a genuine FK criterion: it is a
+plain L²-norm bound only — it mentions NO Sobolev/gradient/`viscousFormSq`/`L2Sigma`/subsequence/
+limit object, smuggling none of the Rellich conclusion.  Making the hypothesis stronger (more
+to supply) is sound: the actual Navier–Stokes admissible family is GLOBALLY `‖w‖ ≤ M` bounded,
+so the call site `localRellichInput_of_frechetKolmogorov` can supply it. -/
 structure FrechetKolmogorovInput where
   precompact_of_uniform_modulus :
     ∀ (R C : ℝ) (S : Set (L2ballR3 R))
       (rep : L2ballR3 R → L2VF_R3)
       (hrep : ∀ f ∈ S, restrictToBall R (rep f) = f),
     (∀ f ∈ S, ‖f‖ ≤ C) →
+    (∀ f ∈ S, ‖rep f‖ ≤ C) →
     (∀ ε > 0, ∃ δ > 0, ∀ f ∈ S, ∀ h : Domain3, ‖h‖ < δ →
         ‖translate_L2VF h (rep f) - rep f‖ < ε) →
     ∃ K : Set (L2ballR3 R), IsCompact K ∧ S ⊆ K
@@ -483,6 +500,11 @@ theorem localRellichInput_of_frechetKolmogorov (FK : FrechetKolmogorovInput) :
     intro f hf
     obtain ⟨w, hw, rfl⟩ := hf
     exact admissible_family_uniform_bound M R w hw.2.2.1
+  -- Uniform GLOBAL L²-bound C := M on the representatives (the new `bddGlobal` slot).
+  -- The admissible family is globally `‖w‖ ≤ M` (admissibility), and `rep f` is admissible.
+  have hboundGlobal : ∀ f ∈ S, ‖rep f‖ ≤ M := by
+    intro f hf
+    exact (hrep_adm f hf).2.2.1
   -- Uniform global translation modulus (T0c), the slot FK consumes.
   have hmod : ∀ ε > 0, ∃ δ > 0, ∀ f ∈ S, ∀ h : Domain3, ‖h‖ < δ →
       ‖translate_L2VF h (rep f) - rep f‖ < ε := by
@@ -506,7 +528,8 @@ theorem localRellichInput_of_frechetKolmogorov (FK : FrechetKolmogorovInput) :
       _ < (ε / (max M 0 + 1)) * (max M 0 + 1) := by
             apply mul_lt_mul_of_pos_right hh hden
       _ = ε := by field_simp
-  obtain ⟨K, hK, hKS⟩ := FK.precompact_of_uniform_modulus R M S rep hrep hbound hmod
+  obtain ⟨K, hK, hKS⟩ :=
+    FK.precompact_of_uniform_modulus R M S rep hrep hbound hboundGlobal hmod
   refine ⟨K, hK, ?_⟩
   intro w hmem hH1 hnorm hvf
   apply hKS

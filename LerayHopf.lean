@@ -56,3 +56,9 @@ import LerayHopf.R3.SpatialCompactness
 import LerayHopf.R3.FourierL2
 import LerayHopf.R3.RellichBall
 import LerayHopf.R3.AubinLionsLimitPassage
+import LerayHopf.R3.CurlDensity
+import LerayHopf.R3.FrechetKolmogorov
+import LerayHopf.R3.ConvectionOperator
+import LerayHopf.R3.ConvectionForm
+import LerayHopf.Bochner.GelfandTriple
+import LerayHopf.Bochner.TimeSobolev
