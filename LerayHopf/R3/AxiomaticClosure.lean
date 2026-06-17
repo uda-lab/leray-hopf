@@ -328,12 +328,23 @@ structure GalerkinSolutionData_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
   u_initial : u 0 = ⟨𝔊.P n (u₀ : L2VF_R3), 𝔊.preserves_sigma n (u₀ : L2VF_R3) u₀.2⟩
   /-- Range in the n-th approximation subspace: `(u t : L2VF_R3) = 𝔊.P n (u t : L2VF_R3)`. -/
   u_inVn : ∀ t, (u t : L2VF_R3) = 𝔊.P n (u t : L2VF_R3)
-  /-- The curve `t ↦ (u t : L2VF_R3)` is differentiable at every `t`. -/
-  u_hasDeriv : ∀ t, HasDerivAt (fun s => (u s : L2VF_R3))
+  /-- The curve `t ↦ (u t : L2VF_R3)` is differentiable at every **forward** time `t ≥ 0`.
+
+  SOUNDNESS (forward-only): physical Galerkin solutions are confined by the forward energy
+  bound `½‖u(t)‖² ≤ ½‖𝔊.P n u₀‖²`, which controls the solution only for `t ≥ 0`.  This
+  quadratic-in-`u` ODE field can blow up in finite *backward* time, so asserting the
+  derivative for all `t : ℝ` was a latent over-strength claim (an un-physical guarantee that
+  the global solver cannot honor).  Restricted to `0 ≤ t`. -/
+  u_hasDeriv : ∀ t, 0 ≤ t → HasDerivAt (fun s => (u s : L2VF_R3))
     (deriv (fun s => (u s : L2VF_R3)) t) t
-  /-- The projected Galerkin ODE: for all test vectors `w` with `𝔊.P n w = w`,
-  `⟪u'(t), w⟫ + ν · stokesTestPairing_R3(u(t), w) + b(u(t), u(t), w) = 0`. -/
-  u_ode : ∀ t, ∀ w : L2Sigma_R3,
+  /-- The projected Galerkin ODE at **forward** times: for `t ≥ 0` and all test vectors `w`
+  with `𝔊.P n w = w`,
+  `⟪u'(t), w⟫ + ν · stokesTestPairing_R3(u(t), w) + b(u(t), u(t), w) = 0`.
+
+  SOUNDNESS (forward-only): same rationale as `u_hasDeriv` — the ODE identity is only
+  guaranteed on the forward time interval where the energy estimate confines the solution;
+  the all-`t` form was a latent over-strength claim.  Restricted to `0 ≤ t`. -/
+  u_ode : ∀ t, 0 ≤ t → ∀ w : L2Sigma_R3,
     (w : L2VF_R3) = 𝔊.P n (w : L2VF_R3) →
     inner (𝕜 := ℝ) (deriv (fun s => (u s : L2VF_R3)) t) (w : L2VF_R3) +
     ν * stokesTestPairing_R3 (u t : L2VF_R3) (w : L2VF_R3) + F.b (u t) (u t) w = 0

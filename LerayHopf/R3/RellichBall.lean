@@ -1,10 +1,12 @@
 import LerayHopf.R3.SpatialCompactness          -- LocalRellichInput, L2ballR3, restrictToBall (P3 plumbing)
+import LerayHopf.R3.FourierL2                    -- F5/F7/F8/F9 Fourier-modulation foundation (T0b)
 import Mathlib.Analysis.Fourier.LpSpace          -- Lp.fourierTransformₗᵢ, 𝓕 on L² (Plancherel)
 import Mathlib.MeasureTheory.Measure.Haar.Unique -- volume add-invariance (translation measure-preserving)
 import Mathlib.MeasureTheory.Function.LpSpace.Indicator
 
 namespace LerayHopf
 open MeasureTheory Filter Topology Metric
+open scoped FourierTransform
 
 /-!
 # LOCAL Rellich–Kondrachov on a ball, reduced to Fréchet–Kolmogorov (Pillar B)
@@ -54,14 +56,24 @@ Plancherel-modulation lemma.  The status of each piece, with no rounding up:
   criterion) is complete and axiom-free; its ONLY gap is the T0b lemma it consumes
   transitively through T0c, so it currently carries `sorryAx` via T0b alone.
 
-**OPEN frontier (marked `sorry`):**
+**PROVED (now closed via the shared Fourier–L² foundation `FourierL2.lean`):**
 - T0b `normSq_translate_sub_le_viscousFormSq` — the Plancherel translation-modulation
-  estimate `‖τ_h w − w‖² ≤ ‖h‖²·viscousFormSq_R3 1 w`.  This is the SOLE `sorry` in the
-  file.  It is blocked because mathlib lacks the Lp-level Fourier modulation identity
-  `𝓕(τ_h f) = phase · 𝓕 f` (a bounded phase-multiplier on L²C + the Schwartz-level
-  modulation identity + density extension — a multi-hundred-line development).  It is
-  **NOT impossible, just unbuilt**; see the in-line `-- TODO:` at the `sorry` for the
-  exact grep-confirmed blocker and the remaining axiom-free decomposition.
+  estimate `‖τ_h w − w‖² ≤ ‖h‖²·viscousFormSq_R3 1 w`.  The Lp-level Fourier modulation
+  identity that previously blocked it (`𝓕(τ_h f) = phase · 𝓕 f`) is now supplied by
+  `FourierL2` (F5), together with the Plancherel weight bookkeeping (F7), the Plancherel
+  core (F8), and the pointwise phase estimate (F9).  The component decomposition (step (a))
+  is `componentC_translate_ae` + the Euclidean norm decomposition.  The proof body is
+  axiom-free EXCEPT for the one residual analytic input below.
+
+**OPEN frontier (the SOLE marked `sorry`):**
+- `integrable_viscous_integrand_of_memH1` — the H¹ ⇒ concrete weighted-L²
+  integrability of the L²-Fourier transform.  `memH1VF_R3 w` (= `MemSobolev 1 2` on each
+  complex component) must imply `Integrable (fun ξ ↦ (2π)²‖ξ‖²‖(𝓕 cⱼ) ξ‖²)`.  This is a
+  separate frontier from the Fourier-modulation foundation: it needs an a.e.
+  characterization of `TemperedDistribution.smulLeftCLM` for the UNBOUNDED weight
+  `(1+‖ξ‖²)^(1/2)` on an `Lp`-coerced distribution (mathlib's
+  `Lp.toTemperedDistribution_smul_eq` only handles `MemLp`-bounded multipliers).  T0b
+  consumes ONLY this lemma; everything else of T0b is proved.
 
 **Isolated hypothesis (mathlib-absent, a hypothesis is not an axiom):**
 - `FrechetKolmogorovInput` — the standard Fréchet–Kolmogorov (Riesz) L²-precompactness
@@ -99,7 +111,8 @@ R3/Regularity.lean   (L2VF_R3, L2Sigma_R3, memH1VF_R3, viscousFormSq_R3, Domain3
 
 - `translate_L2VF`                              : T0a — L² translation `τ_h w (x) = w (x − h)`
 - `FrechetKolmogorovInput`                      : isolated frontier (abstract FK precompactness)
-- `normSq_translate_sub_le_viscousFormSq`       : T0b — Plancherel translation-modulus core [OPEN: marked `sorry`, sole gap]
+- `integrable_viscous_integrand_of_memH1`       : T0b integrability input [OPEN: sole marked `sorry`]
+- `normSq_translate_sub_le_viscousFormSq`       : T0b — Plancherel translation-modulus core [PROVED via FourierL2 F5/F7/F8/F9, modulo the integrability input]
 - `norm_translate_sub_le_of_viscousBound`       : T0c — uniform modulus from the gradient bound
 - `admissible_family_uniform_bound`             : T1b — uniform L²-bound of the restricted family
 - `localRellichInput_of_frechetKolmogorov`      : T2 — DELIVERABLE (conditional `LocalRellichInput`)
@@ -112,10 +125,12 @@ axiom:
 1. **Hypothesis** `FrechetKolmogorovInput` — the mathlib-absent Fréchet–Kolmogorov
    precompactness criterion, carried as an explicit hypothesis structure exactly as
    P3's `LocalRellichInput` and R3-d's `hdiv`.  A hypothesis is not an axiom.
-2. **Marked `sorry`** on T0b `normSq_translate_sub_le_viscousFormSq` — the Plancherel
-   Fourier-modulation estimate, blocked by an unbuilt (but not impossible) mathlib
-   development; see its in-line `-- TODO:`.  This is the SOLE `sorry` in the file and the
-   ONLY source of `sorryAx` in the deliverable.
+2. **Marked `sorry`** on `integrable_viscous_integrand_of_memH1` — the H¹ ⇒ concrete
+   weighted-L² integrability of the L²-Fourier transform (a separate analytic frontier
+   needing an a.e. characterization of an UNBOUNDED `smulLeftCLM` multiplier, mathlib-absent).
+   T0b `normSq_translate_sub_le_viscousFormSq` is otherwise fully proved via the
+   `FourierL2` foundation (F5/F7/F8/F9) and consumes ONLY this lemma.  This is the SOLE
+   `sorry` in the file and the ONLY source of `sorryAx` in the deliverable.
 -/
 
 /-! ### Tier 0 — translation plumbing -/
@@ -163,45 +178,232 @@ structure FrechetKolmogorovInput where
         ‖translate_L2VF h (rep f) - rep f‖ < ε) →
     ∃ K : Set (L2ballR3 R), IsCompact K ∧ S ⊆ K
 
+/-- L²-norm-squared as an integral of the pointwise squared norm, for an element of `L²(ℝ³;ℝ³)`.
+(Local copy of the private `SpatialCompactness.normSq_eq_integral_normSq`.) -/
+private theorem normSq_eq_integral_normSq_VF (f : L2VF_R3) :
+    ‖f‖ ^ 2 = ∫ ξ : Domain3, ‖(f ξ : EuclideanSpace ℝ (Fin 3))‖ ^ 2
+      ∂(volume : Measure Domain3) := by
+  have hre : ‖f‖ ^ 2 = (inner ℝ f f : ℝ) := by
+    have := norm_sq_eq_re_inner (𝕜 := ℝ) f
+    simpa using this
+  rw [hre, MeasureTheory.L2.inner_def]
+  refine integral_congr_ae ?_
+  filter_upwards with ξ
+  exact real_inner_self_eq_norm_sq _
+
+/-- The complex `j`-component of the L²-translate equals the L²-translate of the complex
+`j`-component, a.e.:
+`(L2VF_projComponentC_R3 j (translate_L2VF h w)) ξ = (compMeasurePreserving (·+h) cⱼ) ξ`. -/
+private theorem componentC_translate_ae (h : Domain3) (w : L2VF_R3) (j : Fin 3) :
+    ((L2VF_projComponentC_R3 j (translate_L2VF h w) : L2C_R3) : Domain3 → ℂ)
+      =ᵐ[volume] (Lp.compMeasurePreserving (· + h)
+          (measurePreserving_add_right (volume : Measure Domain3) h)
+          (L2VF_projComponentC_R3 j w) : L2C_R3) := by
+  -- LHS a.e. = `((translate_L2VF h w) ξ) j` (componentC of an element)
+  have hL : ((L2VF_projComponentC_R3 j (translate_L2VF h w) : L2C_R3) : Domain3 → ℂ)
+      =ᵐ[volume] fun ξ => (((translate_L2VF h w : L2VF_R3) ξ) j : ℂ) := by
+    have h1 := (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL
+      (L2VF_projComponent_R3 j (translate_L2VF h w))
+    have h2 := (EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL (translate_L2VF h w)
+    filter_upwards [h1, h2] with ξ hx1 hx2
+    simp only [L2VF_projComponentC_R3, ContinuousLinearMap.compLpL,
+      ContinuousLinearMap.coe_comp', Function.comp_apply] at hx1 ⊢
+    rw [hx1]
+    simp only [L2VF_projComponent_R3] at hx2 ⊢
+    rw [hx2, RCLike.ofRealCLM_apply]
+    rfl
+  -- RHS a.e. = `(cⱼ (ξ+h))` = `((w (ξ+h)) j : ℂ)`
+  have hR : (Lp.compMeasurePreserving (· + h)
+        (measurePreserving_add_right (volume : Measure Domain3) h)
+        (L2VF_projComponentC_R3 j w) : Domain3 → ℂ)
+      =ᵐ[volume] fun ξ => (((w : L2VF_R3) (ξ + h)) j : ℂ) := by
+    have h1 := Lp.coeFn_compMeasurePreserving (L2VF_projComponentC_R3 j w)
+      (measurePreserving_add_right (volume : Measure Domain3) h)
+    have h2 : ((L2VF_projComponentC_R3 j w : L2C_R3) : Domain3 → ℂ)
+        =ᵐ[volume] fun ξ => (((w : L2VF_R3) ξ) j : ℂ) := by
+      have k1 := (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL (L2VF_projComponent_R3 j w)
+      have k2 := (EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL w
+      filter_upwards [k1, k2] with ξ hk1 hk2
+      simp only [L2VF_projComponentC_R3, ContinuousLinearMap.compLpL,
+        ContinuousLinearMap.coe_comp', Function.comp_apply] at hk1 ⊢
+      rw [hk1]
+      simp only [L2VF_projComponent_R3] at hk2 ⊢
+      rw [hk2, RCLike.ofRealCLM_apply]
+      rfl
+    have h2' : (fun ξ => ((L2VF_projComponentC_R3 j w : L2C_R3) : Domain3 → ℂ) (ξ + h))
+        =ᵐ[volume] fun ξ => (((w : L2VF_R3) (ξ + h)) j : ℂ) :=
+      (measurePreserving_add_right (volume : Measure Domain3) h).quasiMeasurePreserving.ae_eq h2
+    filter_upwards [h1, h2'] with ξ hx1 hx2
+    rw [hx1, Function.comp_apply]
+    exact hx2
+  -- combine, after expanding the LHS translate's coeFn
+  have hL2 : (fun ξ => (((translate_L2VF h w : L2VF_R3) ξ) j : ℂ))
+      =ᵐ[volume] fun ξ => (((w : L2VF_R3) (ξ + h)) j : ℂ) := by
+    have ht := Lp.coeFn_compMeasurePreserving w
+      (measurePreserving_add_right (volume : Measure Domain3) h)
+    -- `translate_L2VF h w = compMeasurePreserving (·+h) w`
+    filter_upwards [ht] with ξ hxt
+    simp only [translate_L2VF]
+    rw [hxt, Function.comp_apply]
+  exact hL.trans (hL2.trans hR.symm)
+
+/-- **T0b integrability input.** For `w ∈ H¹(ℝ³)`, the spectral viscous integrand
+`(2π)² ‖ξ‖² ‖(𝓕 cⱼ) ξ‖²` (with `cⱼ = L2VF_projComponentC_R3 j w`) is Lebesgue-integrable.
+
+This is the ONE genuinely missing analytic fact: it is the statement that the H¹-membership
+`memH1VF_R3 w` (defined as `TemperedDistribution.MemSobolev 1 2` on each complex component)
+implies the *concrete* weighted-L² integrability `∫ (1+‖ξ‖²) ‖(𝓕 cⱼ) ξ‖² < ∞` of the
+**L²-Fourier transform** `𝓕 cⱼ = Lp.fourierTransformₗᵢ cⱼ`.
+
+**OPEN — isolated frontier (see TODO):** `MemSobolev 1 2 (cⱼ : 𝓢')` unfolds to
+`∃ f' : Lp ℂ 2, besselPotential E ℂ 1 (cⱼ : 𝓢') = f'`, equivalently (mathlib
+`memSobolev_iff_exists_smulLeftCLM_fourier`) `∃ f', smulLeftCLM (fun ξ ↦ (1+‖ξ‖²)^(1/2)) (𝓕 (cⱼ : 𝓢')) = f'`.
+To turn this into the concrete integrability one must (i) bridge `𝓕 (cⱼ : 𝓢')` to the
+L²-Fourier `(𝓕 cⱼ : Lp)` via `Lp.fourier_toTemperedDistribution_eq`, and (ii) extract the
+a.e. pointwise identity `(1+‖ξ‖²)^(1/2) · (𝓕 cⱼ) ξ = f' ξ` from
+`smulLeftCLM weight ((𝓕 cⱼ : Lp) : 𝓢') = (f' : 𝓢')`.  Step (ii) needs an a.e. characterization
+of `smulLeftCLM` applied to an `Lp`-coerced distribution for an **unbounded** multiplier
+`weight = (1+‖ξ‖²)^(1/2)`; mathlib's `Lp.toTemperedDistribution_smul_eq` only covers
+`MemLp`-bounded multipliers (and `weight ∉ Lᵖ`), so this a.e.-extraction-for-unbounded-weights
+is the missing piece.  Once it lands, `‖ξ‖² ≤ 1 + ‖ξ‖²` gives the claim by domination.
+Everything else in T0b is fully proved and consumes only this lemma. -/
+private theorem integrable_viscous_integrand_of_memH1 (w : L2VF_R3) (hw : memH1VF_R3 w)
+    (j : Fin 3) :
+    Integrable (fun ξ : Domain3 =>
+        (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2)
+      (volume : Measure Domain3) := by
+  sorry -- ALLOW_SORRY: T0b residual analytic frontier — H¹ (MemSobolev 1 2) ⇒ concrete
+  -- weighted-L² integrability of the L²-Fourier transform.  Requires an a.e. characterization
+  -- of `TemperedDistribution.smulLeftCLM` for the UNBOUNDED weight `(1+‖ξ‖²)^(1/2)` on an
+  -- `Lp`-coerced distribution, which mathlib lacks (`Lp.toTemperedDistribution_smul_eq` only
+  -- covers `MemLp`-bounded multipliers).  See the lemma docstring for the exact reduction.
+  -- This is the SOLE remaining `sorry` in the file; the rest of T0b (decomposition,
+  -- Plancherel, F8/F9 pointwise estimate, F7 weight recognition) is fully proved.
+
 /-- **T0b.** L²-translation modulus controlled by the spectral gradient form (Plancherel):
 `‖τ_h w − w‖²_{L²(ℝ³)} ≤ ‖h‖² · viscousFormSq_R3 1 w`.
 
-This is the Navier–Stokes-specific core.  **OPEN:** it is the sole `sorry` in this file —
-blocked by the unbuilt Lp-level Fourier modulation identity (see the in-line `-- TODO:` at
-the proof). Everything downstream (T0c, T1b, T2/deliverable) is assembled axiom-free and
-consumes ONLY this statement, so closing it discharges the whole pillar. -/
+This is the Navier–Stokes-specific core, now CLOSED via the shared Fourier–L² foundation
+(`FourierL2.lean`, F5/F7/F8/F9).  The proof: (a) decompose the ℝ³-valued L²-norm into the
+sum over the three complex components `cⱼ = L2VF_projComponentC_R3 j w`
+(`componentC_translate_ae` + the Euclidean norm decomposition); (b) Plancherel
+`‖τ_h^C cⱼ − cⱼ‖ = ‖𝓕(τ_h^C cⱼ) − 𝓕 cⱼ‖` (`Lp.norm_fourier_eq`); (c) the Fourier-modulation
+Plancherel core `FourierL2.normSq_sub_eq_integral_phase_sub` (F8); (d) the pointwise phase
+estimate `FourierL2.normSq_phaseFun_sub_one_le` (F9) integrated up to recognize
+`FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier` (F7).
+
+Everything downstream (T0c, T1b, T2/deliverable) consumes ONLY this statement, so closing it
+discharges the whole pillar modulo the `FrechetKolmogorovInput` hypothesis. -/
 theorem normSq_translate_sub_le_viscousFormSq (h : Domain3) (w : L2VF_R3)
     (hw : memH1VF_R3 w) :
     ‖translate_L2VF h w - w‖ ^ 2 ≤ ‖h‖ ^ 2 * viscousFormSq_R3 1 w := by
-  sorry -- ALLOW_SORRY: rellich-balls lean-prover target (T0b, G-PLANCHEREL) — STOP per
-  -- AGENTS.md Hard rule 8 / task contract §7-§8. Statement intact; no axiom, no weakening.
-  -- TODO (exact blocker): the L²-level Fourier-translation/modulation identity
-  --   `𝓕 (Lp.compMeasurePreserving (· + h) (measurePreserving_add_right volume h) f)
-  --      = phaseMul h (𝓕 f)`   for the L²-Fourier transform `Lp.fourierTransformₗᵢ`,
-  -- where `phaseMul h g` is the Lp class of `ξ ↦ e^{2πi⟨h,ξ⟩} g(ξ)`, is ABSENT from mathlib at
-  -- EVERY layer (grep-confirmed): `Lp.fourierTransformₗᵢ` occurs only in its defining file with
-  -- NO translation/modulation lemma; `TemperedDistribution`/`FourierSchwartz` carry none either;
-  -- and the only mathlib translation lemma `VectorFourier.fourierIntegral_comp_add_right` is at
-  -- the raw-integral level (`fourierIntegral e μ L (f ∘ (· + v₀)) = fun w ↦ e (L v₀ w) • …`),
-  -- not on the a.e. Lp class that `viscousFormSq_R3` is built on.
-  -- Closing it requires building, from scratch: (1) the bounded phase-multiplier CLM
-  -- `phaseMul h : L2C_R3 →L[ℂ] L2C_R3` (no bounded-`L∞`-multiplier-on-`Lp` operator exists in
-  -- mathlib), (2) the Schwartz-level modulation identity bridging
-  -- `fourierIntegral_comp_add_right` to `SchwartzMap.toLp_fourier_eq`, and (3) extension by
-  -- continuity over the dense Schwartz range (`DenseRange.induction_on`) — a multi-hundred-line
-  -- analytic development. Everything downstream (T0c, T1b, T2/deliverable) is proved axiom-free
-  -- and consumes ONLY this statement, so completing it discharges the whole pillar.
-  --
-  -- Remaining axiom-free, structurally-complete decomposition once the bridge above lands:
-  -- (a) `‖translate_L2VF h w − w‖² = ∑_j ‖τ_h^C cⱼ − cⱼ‖²`  (cⱼ := L2VF_projComponentC_R3 j w;
-  --     component proj commutes with `compMeasurePreserving` a.e.; Euclidean-norm decomposition;
-  --     `RCLike.ofRealCLM` is norm-preserving);
-  -- (b) Plancherel `‖τ_h^C cⱼ − cⱼ‖ = ‖𝓕(τ_h^C cⱼ) − 𝓕 cⱼ‖`  (`Lp.norm_fourier_eq`);
-  -- (c) modulation bridge (THE BLOCKER) ⇒ `‖𝓕(τ_h^C cⱼ) − 𝓕 cⱼ‖²
-  --       = ∫ |e^{2πi⟨h,ξ⟩}−1|² ‖(𝓕 cⱼ) ξ‖² dξ`;
-  -- (d) pointwise `|e^{2πi⟨h,ξ⟩}−1|² ≤ (2π)²‖h‖²‖ξ‖²` (`Complex.norm_exp_ofReal_mul_I_sub_one_le`
-  --     / `|e^{iθ}−1| ≤ |θ|`, Cauchy–Schwarz `|⟨h,ξ⟩| ≤ ‖h‖‖ξ‖`); integrate and pull out `‖h‖²`
-  --     to recognize `∑_j ∫ (2π)²‖ξ‖²‖(𝓕 cⱼ) ξ‖² = viscousFormSq_R3 1 w`.
+  classical
+  -- abbreviations for the three complex components and their L²-translates
+  set c : Fin 3 → L2C_R3 := fun j => L2VF_projComponentC_R3 j w with hc
+  set τc : Fin 3 → L2C_R3 := fun j =>
+    Lp.compMeasurePreserving (· + h)
+      (measurePreserving_add_right (volume : Measure Domain3) h) (c j) with hτc
+  -- (a) `‖translate_L2VF h w − w‖² = ∑_j ‖τc j − c j‖²`
+  have hstepa : ‖translate_L2VF h w - w‖ ^ 2 = ∑ j : Fin 3, ‖τc j - c j‖ ^ 2 := by
+    -- ℝ³-valued L² norm as integral of pointwise squared norm
+    rw [normSq_eq_integral_normSq_VF (translate_L2VF h w - w)]
+    -- pointwise: `‖(D ξ)‖²_{ℝ³} = ∑_j ‖(τc j − c j) ξ‖²`
+    have hpt : (fun ξ : Domain3 =>
+          ‖((translate_L2VF h w - w) ξ : EuclideanSpace ℝ (Fin 3))‖ ^ 2)
+        =ᵐ[volume] fun ξ => ∑ j : Fin 3, ‖((τc j - c j : L2C_R3) : Domain3 → ℂ) ξ‖ ^ 2 := by
+      have hsub := Lp.coeFn_sub (translate_L2VF h w) w
+      have hcomp : ∀ j : Fin 3,
+          ((τc j - c j : L2C_R3) : Domain3 → ℂ)
+            =ᵐ[volume] fun ξ => (((translate_L2VF h w - w : L2VF_R3) ξ) j : ℂ) := by
+        intro j
+        have ha := componentC_translate_ae h w j
+        have hbsub := Lp.coeFn_sub (τc j) (c j)
+        have hcj : ((c j : L2C_R3) : Domain3 → ℂ)
+            =ᵐ[volume] fun ξ => (((w : L2VF_R3) ξ) j : ℂ) := by
+          have k1 := (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL (L2VF_projComponent_R3 j w)
+          have k2 := (EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL w
+          filter_upwards [k1, k2] with ξ hk1 hk2
+          simp only [hc, L2VF_projComponentC_R3, ContinuousLinearMap.compLpL,
+            ContinuousLinearMap.coe_comp', Function.comp_apply] at hk1 ⊢
+          rw [hk1]
+          simp only [L2VF_projComponent_R3] at hk2 ⊢
+          rw [hk2, RCLike.ofRealCLM_apply]
+          rfl
+        -- `τc j` a.e. = componentC of translate (by `componentC_translate_ae`, reversed)
+        have hτcj : ((τc j : L2C_R3) : Domain3 → ℂ)
+            =ᵐ[volume] fun ξ => (((translate_L2VF h w : L2VF_R3) ξ) j : ℂ) := by
+          have hLcomp : ((L2VF_projComponentC_R3 j (translate_L2VF h w) : L2C_R3) : Domain3 → ℂ)
+              =ᵐ[volume] fun ξ => (((translate_L2VF h w : L2VF_R3) ξ) j : ℂ) := by
+            have k1 := (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL
+              (L2VF_projComponent_R3 j (translate_L2VF h w))
+            have k2 := (EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL (translate_L2VF h w)
+            filter_upwards [k1, k2] with ξ hk1 hk2
+            simp only [L2VF_projComponentC_R3, ContinuousLinearMap.compLpL,
+              ContinuousLinearMap.coe_comp', Function.comp_apply] at hk1 ⊢
+            rw [hk1]
+            simp only [L2VF_projComponent_R3] at hk2 ⊢
+            rw [hk2, RCLike.ofRealCLM_apply]
+            rfl
+          exact (ha.symm.trans hLcomp)
+        filter_upwards [hbsub, hτcj, hcj, hsub] with ξ hxb hxτ hxc hxs
+        rw [hxb, Pi.sub_apply, hxτ, hxc, hxs, Pi.sub_apply]
+        rw [PiLp.sub_apply]
+        push_cast
+        ring
+      -- combine pointwise
+      filter_upwards [hsub, hcomp 0, hcomp 1, hcomp 2] with ξ hxs hx0 hx1 hx2
+      rw [EuclideanSpace.norm_sq_eq]
+      rw [Fin.sum_univ_three, Fin.sum_univ_three, hx0, hx1, hx2]
+      simp only [Complex.norm_real]
+    rw [integral_congr_ae hpt]
+    -- swap sum and integral; each summand integral = ‖τc j − c j‖²
+    rw [MeasureTheory.integral_finsetSum]
+    · refine Finset.sum_congr rfl (fun j _ => ?_)
+      rw [← FourierL2.normSq_eq_integral_normSq_C (τc j - c j)]
+    · intro j _
+      exact (memLp_two_iff_integrable_sq_norm
+        (Lp.aestronglyMeasurable (τc j - c j))).mp (Lp.memLp (τc j - c j))
+  rw [hstepa]
+  -- (b)+(c)+(d): bound each summand
+  have hbound : ∀ j : Fin 3, ‖τc j - c j‖ ^ 2
+      ≤ ‖h‖ ^ 2 * ∫ ξ : Domain3,
+          (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 (c j) : L2C_R3) ξ‖ ^ 2
+          ∂(volume : Measure Domain3) := by
+    intro j
+    -- (b) Plancherel
+    have hb : ‖τc j - c j‖ ^ 2 = ‖𝓕 (τc j) - 𝓕 (c j)‖ ^ 2 := by
+      have hfs : 𝓕 (τc j - c j) = 𝓕 (τc j) - 𝓕 (c j) :=
+        (Lp.fourierTransformₗᵢ Domain3 ℂ).map_sub (τc j) (c j)
+      rw [← hfs, Lp.norm_fourier_eq]
+    -- (c) F8
+    rw [hb, FourierL2.normSq_sub_eq_integral_phase_sub]
+    -- (d) F9 pointwise + integrate
+    rw [← integral_const_mul]
+    refine integral_mono_of_nonneg ?_ ?_ ?_
+    · filter_upwards with ξ
+      positivity
+    · -- integrability of the dominating function (the isolated frontier; see lemma above)
+      have hint : Integrable (fun ξ : Domain3 =>
+          (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 (c j) : L2C_R3) ξ‖ ^ 2)
+          (volume : Measure Domain3) :=
+        integrable_viscous_integrand_of_memH1 w hw j
+      exact hint.const_mul (‖h‖ ^ 2)
+    · filter_upwards with ξ
+      have hF9 := FourierL2.normSq_phaseFun_sub_one_le h ξ
+      have hnn : (0:ℝ) ≤ ‖(𝓕 (c j) : L2C_R3) ξ‖ ^ 2 := by positivity
+      calc ‖FourierL2.phaseFun h ξ - 1‖ ^ 2 * ‖(𝓕 (c j) : L2C_R3) ξ‖ ^ 2
+          ≤ ((2 * Real.pi) ^ 2 * ‖h‖ ^ 2 * ‖ξ‖ ^ 2) * ‖(𝓕 (c j) : L2C_R3) ξ‖ ^ 2 :=
+            mul_le_mul_of_nonneg_right hF9 hnn
+        _ = ‖h‖ ^ 2 * ((2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 (c j) : L2C_R3) ξ‖ ^ 2) := by ring
+  calc ∑ j : Fin 3, ‖τc j - c j‖ ^ 2
+      ≤ ∑ j : Fin 3, ‖h‖ ^ 2 * ∫ ξ : Domain3,
+          (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 (c j) : L2C_R3) ξ‖ ^ 2
+          ∂(volume : Measure Domain3) := Finset.sum_le_sum (fun j _ => hbound j)
+    _ = ‖h‖ ^ 2 * ∑ j : Fin 3, ∫ ξ : Domain3,
+          (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 (c j) : L2C_R3) ξ‖ ^ 2
+          ∂(volume : Measure Domain3) := by rw [Finset.mul_sum]
+    _ = ‖h‖ ^ 2 * viscousFormSq_R3 1 w := by
+        rw [FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier]
 
 /-- **T0c.** Uniform translation modulus for the admissible family: from `0 ≤ M` and
 `viscousFormSq_R3 1 w ≤ M²`, `‖τ_h w − w‖ ≤ ‖h‖·M`.  Supplies the modulus hypothesis of

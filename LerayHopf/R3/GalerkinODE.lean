@@ -93,13 +93,20 @@ structure GalerkinODEInput (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
   u_initial : u 0 = ⟨𝔊.P n (u₀ : L2VF_R3), 𝔊.preserves_sigma n (u₀ : L2VF_R3) u₀.2⟩
   /-- The curve stays in the n-th approximation subspace (so it is a genuine Galerkin curve). -/
   u_inVn : ∀ t, (u t : L2VF_R3) = 𝔊.P n (u t : L2VF_R3)
-  /-- Global differentiability of the ambient curve `t ↦ (u t : L2VF_R3)`. -/
-  u_hasDeriv : ∀ t, HasDerivAt (fun s => (u s : L2VF_R3))
+  /-- Forward differentiability of the ambient curve `t ↦ (u t : L2VF_R3)` at `t ≥ 0`.
+
+  SOUNDNESS (forward-only): physical Galerkin solutions are confined only on forward time by
+  the energy bound; this quadratic ODE field can blow up in finite backward time, so the
+  all-`t` form was a latent over-strength claim.  Restricted to `0 ≤ t` to match the genuine
+  Picard–Lindelöf+continuation guarantee. -/
+  u_hasDeriv : ∀ t, 0 ≤ t → HasDerivAt (fun s => (u s : L2VF_R3))
     (deriv (fun s => (u s : L2VF_R3)) t) t
-  /-- The weak projected Galerkin ODE (the defining equation): for all test vectors `w` with
-  `𝔊.P n w = w`,
-  `⟪u'(t), w⟫ + ν · stokesTestPairing_R3(u(t), w) + b(u(t), u(t), w) = 0`. -/
-  u_ode : ∀ t, ∀ w : L2Sigma_R3,
+  /-- The weak projected Galerkin ODE (the defining equation) at forward times `t ≥ 0`: for
+  all test vectors `w` with `𝔊.P n w = w`,
+  `⟪u'(t), w⟫ + ν · stokesTestPairing_R3(u(t), w) + b(u(t), u(t), w) = 0`.
+
+  SOUNDNESS (forward-only): same rationale as `u_hasDeriv`; restricted to `0 ≤ t`. -/
+  u_ode : ∀ t, 0 ≤ t → ∀ w : L2Sigma_R3,
     (w : L2VF_R3) = 𝔊.P n (w : L2VF_R3) →
     inner (𝕜 := ℝ) (deriv (fun s => (u s : L2VF_R3)) t) (w : L2VF_R3) +
     ν * stokesTestPairing_R3 (u t : L2VF_R3) (w : L2VF_R3) + F.b (u t) (u t) w = 0
@@ -171,23 +178,26 @@ theorem galerkinCurve_reg_mem (𝔊 : R3GalerkinScheme) (n : ℕ) (v : L2VF_R3)
 
 /-! ### E1 — the energy identity (analytic core) -/
 
-/-- Energy identity: `½ d/dt ‖u(t)‖² = −ν · viscousFormSq_R3 1 (u t)` along the ODE.
-Equivalently `HasDerivAt (fun s => ½‖u s‖²) (−ν·viscousFormSq_R3 1 (u t)) t`. -/
+/-- Energy identity at forward times `t ≥ 0`: `½ d/dt ‖u(t)‖² = −ν · viscousFormSq_R3 1 (u t)`
+along the ODE.  Equivalently `HasDerivAt (fun s => ½‖u s‖²) (−ν·viscousFormSq_R3 1 (u t)) t`.
+
+Forward-only: it consumes `u_hasDeriv`/`u_ode`, both now restricted to `0 ≤ t`. -/
 theorem galerkin_energy_identity (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ) (I : GalerkinODEInput 𝔊 F ν u₀ n) (t : Time) :
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ) (I : GalerkinODEInput 𝔊 F ν u₀ n) (t : Time)
+    (ht : 0 ≤ t) :
     HasDerivAt (fun s => (1 / 2 : ℝ) * ‖(I.u s : L2VF_R3)‖ ^ 2)
       (- ν * viscousFormSq_R3 1 (I.u t : L2VF_R3)) t := by
   -- abbreviations
   set u' := deriv (fun s => (I.u s : L2VF_R3)) t with hu'
   -- the ODE, tested against `w = I.u t` (a legal test by `I.u_inVn t`)
-  have hode := I.u_ode t (I.u t) (I.u_inVn t)
+  have hode := I.u_ode t ht (I.u t) (I.u_inVn t)
   rw [R3NSForms.b_self_zero F (I.u t), add_zero, stokesTestPairing_R3_diag] at hode
   -- hode : ⟪u', u t⟫ + ν * viscousFormSq_R3 1 (u t) = 0
   -- the derivative of `s ↦ ⟪u s, u s⟫` is `⟪u t, u'⟫ + ⟪u', u t⟫`
   have hinner :
       HasDerivAt (fun s => inner (𝕜 := ℝ) (I.u s : L2VF_R3) (I.u s : L2VF_R3))
         (inner (𝕜 := ℝ) (I.u t : L2VF_R3) u' + inner (𝕜 := ℝ) u' (I.u t : L2VF_R3)) t :=
-    (I.u_hasDeriv t).inner ℝ (I.u_hasDeriv t)
+    (I.u_hasDeriv t ht).inner ℝ (I.u_hasDeriv t ht)
   -- rewrite `½‖u s‖²` as `½ * ⟪u s, u s⟫`
   have hfun : (fun s => (1 / 2 : ℝ) * ‖(I.u s : L2VF_R3)‖ ^ 2)
       = fun s => (1 / 2 : ℝ) * inner (𝕜 := ℝ) (I.u s : L2VF_R3) (I.u s : L2VF_R3) := by
@@ -215,19 +225,27 @@ theorem galerkin_energy_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (t : Time) (ht : 0 ≤ t) :
     (1 / 2 : ℝ) * ‖(I.u t : L2VF_R3)‖ ^ 2 ≤
     (1 / 2 : ℝ) * ‖𝔊.P n (u₀ : L2VF_R3)‖ ^ 2 := by
-  -- the energy `E s := ½‖u s‖²` is globally antitone (derivative `= -ν·viscousFormSq ≤ 0`)
+  -- the energy `E s := ½‖u s‖²` is antitone on forward time `Ici 0`
+  -- (derivative `= -ν·viscousFormSq ≤ 0`); forward-only since E1 holds only for `s ≥ 0`.
   set E : ℝ → ℝ := fun s => (1 / 2 : ℝ) * ‖(I.u s : L2VF_R3)‖ ^ 2 with hE
-  have hanti : Antitone E := by
-    refine antitone_of_hasDerivAt_nonpos
-      (f' := fun s => - ν * viscousFormSq_R3 1 (I.u s : L2VF_R3))
-      (fun s => galerkin_energy_identity 𝔊 F ν u₀ n I s) ?_
-    intro s
-    simp only [Pi.zero_apply, neg_mul]
-    have : 0 ≤ ν * viscousFormSq_R3 1 (I.u s : L2VF_R3) :=
-      mul_nonneg hν.le (viscousFormSq_R3_nonneg zero_le_one _)
-    linarith
+  have hanti : AntitoneOn E (Set.Ici (0 : ℝ)) := by
+    refine antitoneOn_of_hasDerivWithinAt_nonpos (convex_Ici 0)
+      (f' := fun s => - ν * viscousFormSq_R3 1 (I.u s : L2VF_R3)) ?_ ?_ ?_
+    · -- continuity of `E` on `Ici 0` from forward differentiability
+      intro x hx
+      have hx0 : 0 ≤ x := hx
+      exact (galerkin_energy_identity 𝔊 F ν u₀ n I x hx0).continuousAt.continuousWithinAt
+    · intro x hx
+      rw [interior_Ici] at hx
+      have hx0 : 0 ≤ x := le_of_lt hx
+      exact (galerkin_energy_identity 𝔊 F ν u₀ n I x hx0).hasDerivWithinAt
+    · intro x _
+      simp only [neg_mul]
+      have : 0 ≤ ν * viscousFormSq_R3 1 (I.u x : L2VF_R3) :=
+        mul_nonneg hν.le (viscousFormSq_R3_nonneg zero_le_one _)
+      linarith
   -- `E t ≤ E 0`
-  have h0 : E t ≤ E 0 := hanti ht
+  have h0 : E t ≤ E 0 := hanti (Set.left_mem_Ici) ht ht
   -- `E 0 = ½‖𝔊.P n u₀‖²` via `u_initial`
   have hinit : E 0 = (1 / 2 : ℝ) * ‖𝔊.P n (u₀ : L2VF_R3)‖ ^ 2 := by
     rw [hE]; simp only; rw [I.u_initial]
@@ -265,9 +283,10 @@ theorem galerkin_reg_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     have hderiv : ∀ x ∈ Set.Ioo (0 : ℝ) T,
         HasDerivWithinAt (fun s => - E s)
           (ν * viscousFormSq_R3 1 (I.u x : L2VF_R3)) (Set.Ioi x) x := by
-      intro x _
+      intro x hx
+      have hx0 : 0 ≤ x := le_of_lt hx.1
       have hd : HasDerivAt E (- ν * viscousFormSq_R3 1 (I.u x : L2VF_R3)) x :=
-        galerkin_energy_identity 𝔊 F ν u₀ n I x
+        galerkin_energy_identity 𝔊 F ν u₀ n I x hx0
       have hneg : HasDerivAt (fun s => - E s)
           (ν * viscousFormSq_R3 1 (I.u x : L2VF_R3)) x := by
         have := hd.neg
@@ -275,8 +294,9 @@ theorem galerkin_reg_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
       exact hneg.hasDerivWithinAt
     have hcont : ContinuousOn (fun s => - E s) (Set.Icc (0 : ℝ) T) := by
       apply ContinuousOn.neg
-      intro x _
-      exact (galerkin_energy_identity 𝔊 F ν u₀ n I x).continuousAt.continuousWithinAt
+      intro x hx
+      have hx0 : 0 ≤ x := hx.1
+      exact (galerkin_energy_identity 𝔊 F ν u₀ n I x hx0).continuousAt.continuousWithinAt
     have hφint : MeasureTheory.IntegrableOn
         (fun t => viscousFormSq_R3 ν (I.u t : L2VF_R3)) (Set.Icc (0 : ℝ) T) volume :=
       (intervalIntegrable_iff_integrableOn_Icc_of_le hT.le).1 hint

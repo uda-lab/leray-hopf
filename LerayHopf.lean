@@ -52,5 +52,6 @@ import LerayHopf.R3.SchwartzDivFreeBasis
 import LerayHopf.R3.GalerkinODE
 import LerayHopf.R3.GalerkinODEExistence
 import LerayHopf.R3.SpatialCompactness
+import LerayHopf.R3.FourierL2
 import LerayHopf.R3.RellichBall
 import LerayHopf.R3.AubinLionsLimitPassage

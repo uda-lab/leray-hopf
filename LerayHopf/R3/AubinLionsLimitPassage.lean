@@ -276,13 +276,17 @@ interval-averaging route to C2 (the real Aubin–Lions argument). They are prove
 independently of the final assembly so that the route's reusable pieces are landed even
 while the full space-time diagonalization remains open (see the C2 TODO). -/
 
-/-- The Galerkin velocity curve `t ↦ ((galSeq n).u t : L2VF_R3)` is continuous (it is
-even differentiable by `u_hasDeriv`). -/
+/-- The Galerkin velocity curve `t ↦ ((galSeq n).u t : L2VF_R3)` is continuous on **forward**
+time `Set.Ici 0` (it is even differentiable there by `u_hasDeriv`).
+
+Forward-only: `u_hasDeriv` now guarantees differentiability only for `t ≥ 0` (the curve is a
+physical Galerkin solution, confined only on forward time).  Everything downstream uses the
+curve only on `[0,T] ⊆ Ici 0`, so forward continuity suffices. -/
 private theorem galerkin_curve_continuous (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
     (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
-    Continuous (fun s => (gs.u s : L2VF_R3)) :=
-  continuous_iff_continuousAt.mpr fun t => (gs.u_hasDeriv t).continuousAt
+    ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
+  fun t ht => (gs.u_hasDeriv t ht).continuousAt.continuousWithinAt
 
 /-- **Steklov interval-average of a Galerkin curve.** For mesh `δ` and base time `t`,
 `steklovAvg gs δ t := δ⁻¹ • ∫_{t}^{t+δ} (gs.u s : L2VF_R3) ds` (Bochner interval integral
@@ -300,8 +304,6 @@ private theorem steklovAvg_norm_le_u0 (𝔊 : R3GalerkinScheme) (F : R3NSForms �
     (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) :
     ‖steklovAvg 𝔊 F ν u₀ n gs δ t‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
   -- Bound the integral by `δ · ‖u₀‖` using the pointwise norm bound, then divide by δ.
-  have hcont : Continuous (fun s => (gs.u s : L2VF_R3)) :=
-    galerkin_curve_continuous 𝔊 F ν u₀ n gs
   have hle : t ≤ t + δ := by linarith
   -- pointwise bound on `Ι t (t+δ)`: every `s` there is `≥ t ≥ 0`, so `galerkin_norm_le_u0`.
   have hbd : ‖∫ s in t..(t + δ), (gs.u s : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ * δ := by
@@ -336,14 +338,18 @@ C2 route TODO). This lemma itself only requires `hmod` on `uIoc t (t+δ)` and is
 source. -/
 private theorem steklovAvg_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
-    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t ε : ℝ} (hδ : 0 < δ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t ε : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t)
     (hmod : ∀ s ∈ Set.uIoc t (t + δ), ‖(gs.u t : L2VF_R3) - (gs.u s : L2VF_R3)‖ ≤ ε) :
     ‖(gs.u t : L2VF_R3) - steklovAvg 𝔊 F ν u₀ n gs δ t‖ ≤ ε := by
-  have hcont : Continuous (fun s => (gs.u s : L2VF_R3)) :=
-    galerkin_curve_continuous 𝔊 F ν u₀ n gs
   have hle : t ≤ t + δ := by linarith
+  -- forward continuity of the curve on `Ici 0` ⊇ the window `[t, t+δ]` (since `0 ≤ t`)
+  have hcont : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
+    galerkin_curve_continuous 𝔊 F ν u₀ n gs
+  have hwin : Set.uIcc t (t + δ) ⊆ Set.Ici (0 : ℝ) := by
+    rw [Set.uIcc_of_le hle]
+    intro s hs; exact le_trans ht hs.1
   have hint : IntervalIntegrable (fun s => (gs.u s : L2VF_R3)) volume t (t + δ) :=
-    hcont.intervalIntegrable t (t + δ)
+    (hcont.mono hwin).intervalIntegrable
   -- write `gs.u t = δ⁻¹ • ∫ (gs.u t)` (constant integral), then subtract under the integral.
   have hconst : (gs.u t : L2VF_R3) = δ⁻¹ • ∫ _s in t..(t + δ), (gs.u t : L2VF_R3) := by
     rw [intervalIntegral.integral_const, smul_smul]

@@ -448,12 +448,20 @@ structure FinDimGlobalODE (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBa
   c : Time → galerkinSpan B n
   /-- Initial condition: `c 0 = galerkinP B n u₀` (in `L2VF_R3`). -/
   c_initial : (c 0 : L2VF_R3) = galerkinP B n (u₀ : L2VF_R3)
-  /-- Global differentiability of the ambient curve `t ↦ (c t : L2VF_R3)`. -/
-  c_hasDeriv : ∀ t, HasDerivAt (fun s => (c s : L2VF_R3))
+  /-- Forward differentiability of the ambient curve `t ↦ (c t : L2VF_R3)` at `t ≥ 0`.
+
+  SOUNDNESS (forward-only): the global solver guarantees the finite-dim curve only on forward
+  time (the energy bound confines `c` for `t ≥ 0`); this quadratic vector field can blow up in
+  finite backward time, so the all-`t` form was a latent over-strength claim.  Restricted to
+  `0 ≤ t`. -/
+  c_hasDeriv : ∀ t, 0 ≤ t → HasDerivAt (fun s => (c s : L2VF_R3))
     (deriv (fun s => (c s : L2VF_R3)) t) t
-  /-- The AUTONOMOUS finite-dim vector-field equation `c'(t) = G_n (c t)` (NOT the weak
-  form — that is derived in R3 from this via the Riesz characterization R2). -/
-  ode : ∀ t, deriv (fun s => (c s : L2VF_R3)) t
+  /-- The AUTONOMOUS finite-dim vector-field equation `c'(t) = G_n (c t)` at forward times
+  `t ≥ 0` (NOT the weak form — that is derived in R3 from this via the Riesz characterization
+  R2).
+
+  SOUNDNESS (forward-only): same rationale as `c_hasDeriv`; restricted to `0 ≤ t`. -/
+  ode : ∀ t, 0 ≤ t → deriv (fun s => (c s : L2VF_R3)) t
       = (galerkinODE_vectorField B F ν n (c t) : L2VF_R3)
 
 /-! ### R3 — assemble the `GalerkinODEInput` from a global curve -/
@@ -486,11 +494,11 @@ noncomputable def galerkinODEInput_of_globalCurve
     intro t
     show (G.c t : L2VF_R3) = galerkinP B n (G.c t : L2VF_R3)
     exact ((galerkinSpan B n).starProjection_eq_self_iff.mpr (G.c t).2).symm
-  · -- The ambient-curve derivative is exactly the `c_hasDeriv` field.
-    intro t
-    exact G.c_hasDeriv t
+  · -- The ambient-curve derivative is exactly the `c_hasDeriv` field (forward time).
+    intro t ht
+    exact G.c_hasDeriv t ht
   · -- Derive the weak Galerkin ODE from the autonomous field equation `c' = G_n(c)` + R2.
-    intro t w hw
+    intro t ht w hw
     -- `w ∈ galerkinSpan B n` since `(w : L2VF_R3) = galerkinP B n w` (i.e. `P n` fixes `w`).
     have hwmem : (w : L2VF_R3) ∈ galerkinSpan B n := by
       rw [hw]; exact galerkinP_mem_span B n (w : L2VF_R3)
@@ -502,7 +510,7 @@ noncomputable def galerkinODEInput_of_globalCurve
     -- The transported curve coerces back to `G.c`, so its ambient derivative is `G.c`'s.
     simp only [galerkinSpanToSigma_coe]
     -- Rewrite the derivative via the autonomous field equation, then apply the Riesz spec R2.
-    rw [G.ode t]
+    rw [G.ode t ht]
     have hspec := galerkinODE_vectorField_spec B F ν n (G.c t) wV
     -- `hspec : ⟨G_n(c t), w⟩ = -ν·stokes(c t, w) - b(c t, c t, w)`.
     rw [hspec]
