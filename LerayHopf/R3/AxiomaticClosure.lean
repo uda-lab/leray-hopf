@@ -344,11 +344,14 @@ structure GalerkinSolutionData_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (1 / 2 : ℝ) * ‖(u t : L2VF_R3)‖ ^ 2 ≤
     (1 / 2 : ℝ) * ‖𝔊.P n (u₀ : L2VF_R3)‖ ^ 2
   /-- Uniform (n-independent) regularity bound:
-  `∫₀ᵀ viscousFormSq_R3 ν (u t) dt ≤ T‖u₀‖² + ‖u₀‖²/(2ν)`.
-  The RHS is n-independent; follows from integrating the energy identity. -/
+  `∫₀ᵀ viscousFormSq_R3 ν (u t) dt ≤ ½‖u₀‖²`.
+  The RHS is n-independent and `T`-independent; it follows from integrating the energy
+  identity `∫₀ᵀ viscousFormSq_R3 ν (u t) = ½‖u(0)‖² − ½‖u(T)‖² ≤ ½‖𝔊.P n u₀‖² ≤ ½‖u₀‖²`
+  (using `‖u(0)‖ = ‖𝔊.P n u₀‖ ≤ ‖u₀‖` and `½‖u(T)‖² ≥ 0`).  Note: `viscousFormSq_R3`
+  already carries the `ν` factor (`= ν · ‖∇u‖²`), so the bound is `ν`-independent. -/
   reg_bound : ∀ T, 0 < T →
     ∫ t in (0 : ℝ)..T, viscousFormSq_R3 ν (u t : L2VF_R3) ≤
-    T * ‖(u₀ : L2VF_R3)‖ ^ 2 + ‖(u₀ : L2VF_R3)‖ ^ 2 / (2 * ν)
+    (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2
 
 /-! ### Axiom AX-1: Galerkin ODE existence on ℝ³ -/
 

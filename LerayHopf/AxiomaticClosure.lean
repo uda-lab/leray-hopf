@@ -263,7 +263,14 @@ structure GalerkinSolutionData (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma) (
     (1 / 2 : ℝ) * ‖(u t : L2VF)‖ ^ 2 ≤
     (1 / 2 : ℝ) * ‖velocityProjection_n n (u₀ : L2VF)‖ ^ 2
   /-- Uniform (n-independent) regularity bound: `∫₀ᵀ h1EnergySq(u(t)) dt ≤ T‖u₀‖² + ‖u₀‖²/(2ν)`.
-  The RHS is generous and n-independent; follows from integrating the energy identity. -/
+  The RHS is generous and n-independent; follows from integrating the energy identity.
+
+  NOTE (scaling, unlike the ℝ³ `viscousFormSq_R3` field): here the integrand is the full
+  `h1EnergySq u = ‖u‖²_{L²} + ∑ⱼ∑'ₖ(∑ᵢkᵢ²)‖ûⱼ(k)‖²`, which carries NO `ν` and NO `(2π)²`
+  factor.  Decomposing, `∫₀ᵀ h1EnergySq(u t) = ∫₀ᵀ‖u t‖²_{L²} + (ν(2π)²)⁻¹ ∫₀ᵀ viscousFormSq ν (u t)`.
+  By the energy identity `∫₀ᵀ‖u t‖²_{L²} ≤ T‖u₀‖²` and `∫₀ᵀ viscousFormSq ν (u t) ≤ ½‖u₀‖²`,
+  the gradient part is `≤ ‖u₀‖²/(2ν(2π)²) ≤ ‖u₀‖²/(2ν)` (since `(2π)² ≥ 1`).  So this RHS is a
+  TRUE upper bound (the `T‖u₀‖²` L²-part is needed; the `/(2ν)` gradient part is generous). -/
   reg_bound : ∀ T, 0 < T →
     ∫ t in (0 : ℝ)..T, h1EnergySq (u t : L2VF) ≤
     T * ‖(u₀ : L2VF)‖ ^ 2 + ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν)
