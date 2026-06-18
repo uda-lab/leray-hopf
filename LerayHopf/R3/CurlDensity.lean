@@ -3,7 +3,7 @@ import LerayHopf.R3.FourierL2
 
 namespace LerayHopf
 
-open MeasureTheory SchwartzMap FourierTransform
+open MeasureTheory SchwartzMap FourierTransform LineDeriv
 open scoped Topology RealInnerProductSpace FourierTransform
 
 /-!
@@ -115,6 +115,47 @@ noncomputable def potentialComponentC (ψ : Fin 3 → SchwartzMap Domain3 ℝ) (
   (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
     ((ψ k).toLp 2 (volume : Measure Domain3))
 
+/-- Complexification of a real Schwartz map by post-composing with `ℝ →L[ℝ] ℂ`. -/
+private noncomputable def schwartzC (f : SchwartzMap Domain3 ℝ) : SchwartzMap Domain3 ℂ :=
+  f.postcompCLM (RCLike.ofRealCLM (K := ℂ))
+
+private theorem schwartzC_apply (f : SchwartzMap Domain3 ℝ) (x : Domain3) :
+    schwartzC f x = (f x : ℂ) := rfl
+
+/-- The complex L²-class of a complexified real Schwartz map is the `compLpL`-embedding of the
+real class — i.e. exactly `potentialComponentC`-shaped. -/
+private theorem toLp_schwartzC_eq (f : SchwartzMap Domain3 ℝ) :
+    (schwartzC f).toLp 2 (volume : Measure Domain3)
+      = (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
+          (f.toLp 2 (volume : Measure Domain3)) := by
+  haveI : Fact ((1 : ENNReal) ≤ 2) := ⟨by norm_num⟩
+  refine Lp.ext ?_
+  filter_upwards [(schwartzC f).coeFn_toLp 2 (volume : Measure Domain3),
+    (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL (f.toLp 2 (volume : Measure Domain3)),
+    f.coeFn_toLp 2 (volume : Measure Domain3)] with x hx hc hf
+  rw [hx, hc, hf, schwartzC_apply, RCLike.ofRealCLM_apply]
+  rfl
+
+/-- `potentialComponentC ψ k` is the complex L²-class of the complexified potential `schwartzC (ψ k)`. -/
+private theorem potentialComponentC_eq (ψ : Fin 3 → SchwartzMap Domain3 ℝ) (k : Fin 3) :
+    potentialComponentC ψ k = (schwartzC (ψ k)).toLp 2 (volume : Measure Domain3) := by
+  rw [potentialComponentC, toLp_schwartzC_eq]
+
+/-- Line derivative commutes with complexification: `∂_m (schwartzC f) = schwartzC (∂_m f)`. -/
+private theorem lineDerivOp_schwartzC (f : SchwartzMap Domain3 ℝ) (m : Domain3) :
+    (∂_{m} (schwartzC f)) = schwartzC (∂_{m} f) := by
+  ext x
+  rw [lineDerivOp_apply_eq_fderiv, schwartzC_apply, lineDerivOp_apply_eq_fderiv]
+  -- `schwartzC f = ofRealCLM ∘ f`; push fderiv through the CLM
+  have hcomp : ((schwartzC f : Domain3 → ℂ))
+      = (RCLike.ofRealCLM (K := ℂ)) ∘ (f : Domain3 → ℝ) := by
+    funext y; rw [schwartzC_apply]; rfl
+  rw [hcomp]
+  rw [fderiv_comp x (RCLike.ofRealCLM (K := ℂ)).differentiableAt
+    (f.smooth 1).differentiable_one.differentiableAt]
+  rw [(RCLike.ofRealCLM (K := ℂ)).fderiv]
+  simp [ContinuousLinearMap.comp_apply]
+
 /-- **Step 1 (curl Fourier multiplier).**  The Fourier transform of the `j`-th component of
 the curl of a Schwartz potential is, pointwise, the `j`-th component of the cross-product
 symbol `(2π i) ξ × ψ̂(ξ)`, where `ψ̂` is the Fourier transform of the underlying POTENTIAL
@@ -191,9 +232,50 @@ theorem cross_iξ_spans_transverse
     (ξ : Domain3) (hξ : ξ ≠ 0) (b : Fin 3 → ℂ)
     (hb : ∑ j : Fin 3, (ξ j : ℂ) * b j = 0) :
     ∃ a : Fin 3 → ℂ, crossWithIξ ξ a = b := by
-  sorry -- ALLOW_SORRY: cross-product linear algebra — `image (ξ × ·) = ξ^⊥` in ℂ³ with the
-  -- explicit transverse preimage `a = (ξ × b)/(2π i ‖ξ‖²)`.  Finite-dimensional bookkeeping
-  -- in the cyclic-index convention; lean-prover target.
+  -- `N = ‖ξ‖²` (the real squared norm), positive since `ξ ≠ 0`.
+  set N : ℝ := (ξ 0) ^ 2 + (ξ 1) ^ 2 + (ξ 2) ^ 2 with hN
+  have hNpos : 0 < N := by
+    have hex : ξ 0 ≠ 0 ∨ ξ 1 ≠ 0 ∨ ξ 2 ≠ 0 := by
+      by_contra h
+      push Not at h
+      obtain ⟨h0, h1, h2⟩ := h
+      exact hξ (by ext i; fin_cases i <;> simp [h0, h1, h2])
+    have h0 : (0 : ℝ) ≤ (ξ 0) ^ 2 := sq_nonneg _
+    have h1 : (0 : ℝ) ≤ (ξ 1) ^ 2 := sq_nonneg _
+    have h2 : (0 : ℝ) ≤ (ξ 2) ^ 2 := sq_nonneg _
+    rw [hN]
+    rcases hex with h | h | h <;> nlinarith [sq_pos_of_ne_zero h]
+  have hNC : (N : ℂ) ≠ 0 := by exact_mod_cast hNpos.ne'
+  have hpiC : (Real.pi : ℂ) ≠ 0 := by exact_mod_cast Real.pi_ne_zero
+  have hfac : (2 * (Real.pi : ℂ) * Complex.I) ≠ 0 := by
+    simp [hpiC, Complex.I_ne_zero]
+  have hden : (2 * (Real.pi : ℂ) * Complex.I) * (N : ℂ) ≠ 0 := mul_ne_zero hfac hNC
+  -- the cross product `c = ξ × b`, then the explicit preimage `a = -c / (2π i N)`.
+  refine ⟨fun k =>
+      -(((ξ (k + 1) : ℂ)) * b (k + 2) - ((ξ (k + 2) : ℂ)) * b (k + 1)) /
+        ((2 * (Real.pi : ℂ) * Complex.I) * (N : ℂ)), ?_⟩
+  -- transversality `∑ ξⱼ bⱼ = 0` written out on the three indices.
+  have hb3 : (ξ 0 : ℂ) * b 0 + (ξ 1 : ℂ) * b 1 + (ξ 2 : ℂ) * b 2 = 0 := by
+    have := hb
+    rw [Fin.sum_univ_three] at this
+    exact this
+  -- `N` as a complex polynomial in the components.
+  have hNcast : (N : ℂ) = (ξ 0 : ℂ) ^ 2 + (ξ 1 : ℂ) ^ 2 + (ξ 2 : ℂ) ^ 2 := by
+    rw [hN]; push_cast; ring
+  funext i
+  -- target component value `(2π i)(ξ_{i+1} a_{i+2} − ξ_{i+2} a_{i+1}) = b i`
+  simp only [crossWithIξ]
+  fin_cases i <;> simp only [Fin.isValue, Fin.reduceFinMk, Fin.reduceAdd]
+  · -- i = 0 : `ξ₂ c₁ − ξ₁ c₂ = N b₀`; substitute `N` then `linear_combination -ξ₀ · hb3`.
+    rw [hNcast] at hNC ⊢
+    field_simp
+    linear_combination (-(ξ 0 : ℂ)) * hb3
+  · rw [hNcast] at hNC ⊢
+    field_simp
+    linear_combination (-(ξ 1 : ℂ)) * hb3
+  · rw [hNcast] at hNC ⊢
+    field_simp
+    linear_combination (-(ξ 2 : ℂ)) * hb3
 
 /-! ### Step 4 — density transfer (the Helmholtz/Weyl analytic core) -/
 
