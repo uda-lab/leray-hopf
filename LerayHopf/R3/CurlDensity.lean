@@ -550,7 +550,7 @@ test symbol obtainable from a *real* `φ` is anti-Hermitian, so the all-`g` hypo
 mathlib's `ae_eq_zero_of_integral_contDiff_smul_eq_zero` cannot be met by a single `φ`; an
 even/odd reduction over this symmetry is required.  Proof: `fourier_schwartzC_hermitian`
 gives `φ̂(-ξ) = conj(φ̂(ξ))`, and `conj((2πi)·) = -2πi·conj(·)` flips the sign of the
-constant `2πi`. -/
+factor `2πi`. -/
 private theorem testSymbol_antiHermitian (φ : SchwartzMap Domain3 ℝ) (ξ : Domain3) :
     testSymbol φ (-ξ) = -(starRingEnd ℂ) (testSymbol φ ξ) := by
   -- `conj(2πi) = -2πi`
