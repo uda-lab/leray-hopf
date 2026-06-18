@@ -156,6 +156,59 @@ private theorem lineDerivOp_schwartzC (f : SchwartzMap Domain3 ℝ) (m : Domain3
   rw [(RCLike.ofRealCLM (K := ℂ)).fderiv]
   simp [ContinuousLinearMap.comp_apply]
 
+/-- Pointwise Fourier symbol of the complexified line derivative: for a real Schwartz `f` and
+direction `m`, the Schwartz Fourier transform of `schwartzC (∂_m f)` at `ξ` is
+`(2π i)(inner ℝ ξ m)·𝓕(schwartzC f)(ξ)`.
+
+This is `fourier_lineDerivOp_eq` applied to the complexified map `schwartzC f`, using
+`lineDerivOp_schwartzC` to identify `schwartzC (∂_m f) = ∂_m (schwartzC f)`. -/
+private theorem fourier_schwartzC_lineDeriv_apply
+    (f : SchwartzMap Domain3 ℝ) (m : Domain3) (ξ : Domain3) :
+    (𝓕 (schwartzC (∂_{m} f)) : SchwartzMap Domain3 ℂ) ξ
+      = (2 * Real.pi * Complex.I) * ((inner ℝ ξ m : ℝ) : ℂ)
+          * ((𝓕 (schwartzC f) : SchwartzMap Domain3 ℂ) ξ) := by
+  have hC : schwartzC (∂_{m} f) = ∂_{m} (schwartzC f) := (lineDerivOp_schwartzC f m).symm
+  rw [hC]
+  have hg : (inner ℝ · m : Domain3 → ℝ).HasTemperateGrowth :=
+    ((innerSL ℝ).flip m).hasTemperateGrowth
+  have hkey := SchwartzMap.fourier_lineDerivOp_eq (schwartzC f) m
+  rw [hkey]
+  -- evaluate the RHS SchwartzMap at `ξ`
+  rw [SchwartzMap.smul_apply, SchwartzMap.smulLeftCLM_apply_apply hg]
+  rw [smul_eq_mul, Complex.real_smul]
+  ring
+
+/-- Schwartz-level curl Fourier multiplier (pointwise, everywhere).  The Schwartz Fourier
+transform of the complexified curl component `schwartzC (curlSchwartz ψ j)` at `ξ` equals the
+`j`-th cross-product symbol on the complexified potential Fourier transforms. -/
+private theorem fourier_schwartzC_curl_apply
+    (ψ : Fin 3 → SchwartzMap Domain3 ℝ) (j : Fin 3) (ξ : Domain3) :
+    (𝓕 (schwartzC (curlSchwartz ψ j)) : SchwartzMap Domain3 ℂ) ξ
+      = crossWithIξ ξ
+          (fun k => (𝓕 (schwartzC (ψ k)) : SchwartzMap Domain3 ℂ) ξ) j := by
+  -- expand the curl component as a difference of two complexified line derivatives
+  have hcurl : schwartzC (curlSchwartz ψ j)
+      = schwartzC (∂_{(EuclideanSpace.single (j + 1) (1 : ℝ) : Domain3)} (ψ (j + 2)))
+        - schwartzC (∂_{(EuclideanSpace.single (j + 2) (1 : ℝ) : Domain3)} (ψ (j + 1))) := by
+    unfold curlSchwartz schwartzC
+    rw [map_sub, lineDerivOpCLM_apply, lineDerivOpCLM_apply]
+  rw [hcurl]
+  rw [show (𝓕 (schwartzC (∂_{(EuclideanSpace.single (j + 1) (1 : ℝ) : Domain3)} (ψ (j + 2)))
+        - schwartzC (∂_{(EuclideanSpace.single (j + 2) (1 : ℝ) : Domain3)} (ψ (j + 1))))
+          : SchwartzMap Domain3 ℂ)
+        = 𝓕 (schwartzC (∂_{(EuclideanSpace.single (j + 1) (1 : ℝ) : Domain3)} (ψ (j + 2))))
+          - 𝓕 (schwartzC (∂_{(EuclideanSpace.single (j + 2) (1 : ℝ) : Domain3)} (ψ (j + 1))))
+        from by
+          rw [← SchwartzMap.fourierTransformCLM_apply (𝕜 := ℂ), map_sub,
+            SchwartzMap.fourierTransformCLM_apply, SchwartzMap.fourierTransformCLM_apply]]
+  rw [SchwartzMap.sub_apply,
+    fourier_schwartzC_lineDeriv_apply, fourier_schwartzC_lineDeriv_apply]
+  -- rewrite the inner products `⟪ξ, e_a⟫ = ξ a`
+  simp only [EuclideanSpace.inner_single_right, map_one, mul_one, RCLike.conj_to_real]
+  simp only [crossWithIξ]
+  push_cast
+  ring
+
 /-- **Step 1 (curl Fourier multiplier).**  The Fourier transform of the `j`-th component of
 the curl of a Schwartz potential is, pointwise, the `j`-th component of the cross-product
 symbol `(2π i) ξ × ψ̂(ξ)`, where `ψ̂` is the Fourier transform of the underlying POTENTIAL
@@ -178,12 +231,39 @@ theorem fourier_curlSchwartz_eq_cross
       =ᵐ[volume] fun ξ =>
         crossWithIξ ξ
           (fun k => (𝓕 (potentialComponentC ψ k) : L2C_R3) ξ) j := by
-  sorry -- ALLOW_SORRY: Fourier symbol of curl `𝓕(∂_a ψ) = 2π i ξ_a ψ̂` threaded through
-  -- `lineDerivOpCLM`, the Lp-level component Fourier transform, and the cyclic-index
-  -- assembly.  LHS curl component identified via `curlSchwartzL2_projComponent`; RHS is the
-  -- cross symbol on the POTENTIAL Fourier transforms `potentialComponentC ψ k`.  Standard but
-  -- non-mechanical; lean-prover target leaning on FourierL2's Schwartz↔Lp Fourier bridge
-  -- (`fourierComponentC_ae_schwartz`).
+  -- The `j`-th complex component of the curl class is the complexified curl Schwartz rep.
+  have hLHScomp : L2VF_projComponentC_R3 j (curlSchwartzL2 ψ)
+      = (schwartzC (curlSchwartz ψ j)).toLp 2 (volume : Measure Domain3) := by
+    rw [L2VF_projComponentC_R3, ContinuousLinearMap.comp_apply, curlSchwartzL2_projComponent,
+      ← toLp_schwartzC_eq]
+  -- LHS coercion is a.e. the genuine Schwartz Fourier transform `𝓕 (schwartzC (curl ψ)_j)`.
+  have hLHS := FourierL2.fourierComponentC_ae_schwartz j (curlSchwartzL2 ψ)
+    (schwartzC (curlSchwartz ψ j)) hLHScomp
+  -- For each potential component `k`, the coercion of `𝓕 (potentialComponentC ψ k)` is a.e.
+  -- the genuine Schwartz Fourier transform `𝓕 (schwartzC (ψ k))`.
+  have hpot : ∀ k : Fin 3,
+      ((𝓕 (potentialComponentC ψ k) : L2C_R3) : Domain3 → ℂ)
+        =ᵐ[volume] ((𝓕 (schwartzC (ψ k)) : SchwartzMap Domain3 ℂ) : Domain3 → ℂ) := by
+    intro k
+    have hF : (𝓕 (potentialComponentC ψ k) : L2C_R3)
+        = (𝓕 (schwartzC (ψ k))).toLp 2 (volume : Measure Domain3) := by
+      rw [potentialComponentC_eq]; exact SchwartzMap.toLp_fourier_eq (schwartzC (ψ k))
+    rw [hF]
+    exact (𝓕 (schwartzC (ψ k))).coeFn_toLp 2 (volume : Measure Domain3)
+  -- assemble: a.e. all four component coercions agree with their Schwartz reps, then the
+  -- everywhere pointwise identity `fourier_schwartzC_curl_apply` finishes.
+  filter_upwards [hLHS, hpot 0, hpot 1, hpot 2] with ξ hx hx0 hx1 hx2
+  rw [hx, fourier_schwartzC_curl_apply ψ j ξ]
+  simp only [crossWithIξ]
+  -- replace each potential-component coercion by its Schwartz value
+  have hpotξ : ∀ k : Fin 3,
+      (𝓕 (potentialComponentC ψ k) : L2C_R3) ξ
+        = (𝓕 (schwartzC (ψ k)) : SchwartzMap Domain3 ℂ) ξ := by
+    intro k; fin_cases k
+    · exact hx0
+    · exact hx1
+    · exact hx2
+  rw [hpotξ, hpotξ]
 
 /-! ### Step 2 — spectral characterization of weak divergence-freeness -/
 
@@ -192,6 +272,194 @@ vector `û(ξ)` is orthogonal to `ξ`, `∑ j, ξ_j û_j(ξ) = 0`.  This is the 
 pointwise constraint `ξ · û(ξ) = 0` characterizing `div u = 0`. -/
 def IsTransverseAt (û : Fin 3 → ℂ) (ξ : Domain3) : Prop :=
   ∑ j : Fin 3, (ξ j : ℂ) * û j = 0
+
+/-- The complex L²-inner product of the complexifications of two real Lp components equals the
+cast of their real L²-inner product.  Both sides are the integral of the pointwise product. -/
+private theorem complexInner_compLpL_ofReal
+    (a b : Lp ℝ 2 (volume : Measure Domain3)) :
+    (inner ℂ ((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) a)
+        ((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) b) : ℂ)
+      = ((inner ℝ a b : ℝ) : ℂ) := by
+  -- real inner as an integral of the pointwise product
+  have hreal : (inner ℝ a b : ℝ)
+      = ∫ x, (a : Domain3 → ℝ) x * (b : Domain3 → ℝ) x ∂(volume : Measure Domain3) := by
+    rw [MeasureTheory.L2.inner_def]
+    refine integral_congr_ae ?_
+    filter_upwards with x
+    rw [RCLike.inner_apply, conj_trivial]
+    ring
+  -- complex inner as the integral of the cast of the pointwise product
+  rw [MeasureTheory.L2.inner_def, hreal]
+  calc (∫ x, (inner ℂ
+        (((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) a : Domain3 → ℂ) x)
+        (((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) b : Domain3 → ℂ) x) : ℂ)
+          ∂(volume : Measure Domain3))
+      = ∫ x, (((a : Domain3 → ℝ) x * (b : Domain3 → ℝ) x : ℝ) : ℂ)
+          ∂(volume : Measure Domain3) := by
+        refine integral_congr_ae ?_
+        filter_upwards [(RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL a,
+          (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL b] with x hax hbx
+        rw [hax, hbx]
+        simp only [RCLike.ofRealCLM_apply, RCLike.inner_apply, RCLike.conj_ofReal]
+        rw [mul_comm]
+        norm_cast
+    _ = ((∫ x, (a : Domain3 → ℝ) x * (b : Domain3 → ℝ) x ∂(volume : Measure Domain3) : ℝ) : ℂ) :=
+        integral_ofReal
+
+/-- Per-component Plancherel pairing: the complex cast of the real L²-inner product
+`⟪(∂_j φ).toLp, u_j⟫` equals the Fourier-side pairing
+`∫ conj((2π i) ξ_j 𝓕(φ̂)(ξ)) û_j(ξ) dξ`, where `φ̂ = 𝓕 (schwartzC φ)` and
+`û_j = 𝓕 (L2VF_projComponentC_R3 j u)`. -/
+private theorem divComponent_eq_fourier_integral
+    (φ : SchwartzMap Domain3 ℝ) (u : L2VF_R3) (j : Fin 3) :
+    ((inner ℝ ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+          (EuclideanSpace.single j (1 : ℝ) : Domain3) φ).toLp 2 (volume : Measure Domain3))
+        (L2VF_projComponent_R3 j u) : ℝ) : ℂ)
+      = ∫ ξ : Domain3,
+          (starRingEnd ℂ)
+              ((2 * Real.pi * Complex.I) * ((ξ j : ℝ) : ℂ)
+                * (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ)
+            * (𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ
+        ∂(volume : Measure Domain3) := by
+  -- complexify the two real Lp factors
+  set g : Lp ℝ 2 (volume : Measure Domain3) :=
+    (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+      (EuclideanSpace.single j (1 : ℝ) : Domain3) φ).toLp 2 (volume : Measure Domain3) with hg
+  rw [← complexInner_compLpL_ofReal g (L2VF_projComponent_R3 j u)]
+  -- the complexified `g` is the toLp of `schwartzC (∂_j φ)`
+  have hgC : (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) g
+      = (schwartzC (∂_{(EuclideanSpace.single j (1 : ℝ) : Domain3)} φ)).toLp 2
+          (volume : Measure Domain3) := by
+    rw [hg, lineDerivOpCLM_apply, ← toLp_schwartzC_eq]
+  -- the complexified component is `L2VF_projComponentC_R3 j u`
+  have huC : (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
+        (L2VF_projComponent_R3 j u)
+      = L2VF_projComponentC_R3 j u := by
+    rw [L2VF_projComponentC_R3, ContinuousLinearMap.comp_apply]
+  rw [hgC, huC]
+  -- Plancherel: `⟪c₁, c₂⟫ = ⟪𝓕 c₁, 𝓕 c₂⟫`
+  rw [← MeasureTheory.Lp.inner_fourier_eq]
+  -- write the inner as an integral of the pointwise product
+  rw [MeasureTheory.L2.inner_def]
+  refine integral_congr_ae ?_
+  -- a.e. the Fourier of the Schwartz-rep factor is the Schwartz Fourier multiplier
+  have hF1 : ((𝓕 ((schwartzC (∂_{(EuclideanSpace.single j (1 : ℝ) : Domain3)} φ)).toLp 2
+          (volume : Measure Domain3)) : L2C_R3) : Domain3 → ℂ)
+      =ᵐ[volume] fun ξ =>
+        (2 * Real.pi * Complex.I) * ((ξ j : ℝ) : ℂ)
+          * (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ := by
+    have h1 : (𝓕 ((schwartzC (∂_{(EuclideanSpace.single j (1 : ℝ) : Domain3)} φ)).toLp 2
+            (volume : Measure Domain3)) : L2C_R3)
+        = (𝓕 (schwartzC (∂_{(EuclideanSpace.single j (1 : ℝ) : Domain3)} φ))).toLp 2
+            (volume : Measure Domain3) :=
+      SchwartzMap.toLp_fourier_eq (schwartzC (∂_{(EuclideanSpace.single j (1 : ℝ) : Domain3)} φ))
+    rw [h1]
+    filter_upwards [(𝓕 (schwartzC (∂_{(EuclideanSpace.single j (1 : ℝ) : Domain3)} φ))).coeFn_toLp
+      2 (volume : Measure Domain3)] with ξ hξ
+    rw [hξ, fourier_schwartzC_lineDeriv_apply]
+    -- `inner ℝ ξ (single j 1) = ξ j`
+    rw [show (inner ℝ ξ (EuclideanSpace.single j (1 : ℝ) : Domain3) : ℝ) = ξ j from by
+      rw [EuclideanSpace.inner_single_right]; simp]
+  filter_upwards [hF1] with ξ hξ
+  rw [RCLike.inner_apply, hξ, mul_comm]
+
+/-- The transverse defect symbol of `u` at `ξ`: `T_u(ξ) = ∑_j ξ_j û_j(ξ)`.  `u ∈ L2Sigma_R3`
+will be characterised by `T_u = 0` a.e. -/
+private noncomputable def transverseDefect (u : L2VF_R3) (ξ : Domain3) : ℂ :=
+  ∑ j : Fin 3, (ξ j : ℂ) * (𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ
+
+/-- The per-component integrand of `divComponent_eq_fourier_integral` is integrable: it is the
+pointwise inner product of two `L²` Fourier transforms. -/
+private theorem integrable_divComponent
+    (φ : SchwartzMap Domain3 ℝ) (u : L2VF_R3) (j : Fin 3) :
+    Integrable (fun ξ : Domain3 =>
+        (starRingEnd ℂ)
+            ((2 * Real.pi * Complex.I) * ((ξ j : ℝ) : ℂ)
+              * (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ)
+          * (𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ)
+      (volume : Measure Domain3) := by
+  -- it equals a.e. the L²-inner integrand `⟪𝓕 c₁, 𝓕 c₂⟫`
+  set c₁ : L2C_R3 := 𝓕 ((schwartzC (∂_{(EuclideanSpace.single j (1 : ℝ) : Domain3)} φ)).toLp 2
+      (volume : Measure Domain3)) with hc₁
+  set c₂ : L2C_R3 := 𝓕 (L2VF_projComponentC_R3 j u) with hc₂
+  have hint := MeasureTheory.L2.integrable_inner (𝕜 := ℂ) c₁ c₂
+  refine hint.congr ?_
+  -- a.e. the Fourier of the Schwartz-rep factor matches the multiplier symbol
+  have hF1 : ((c₁ : L2C_R3) : Domain3 → ℂ)
+      =ᵐ[volume] fun ξ =>
+        (2 * Real.pi * Complex.I) * ((ξ j : ℝ) : ℂ)
+          * (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ := by
+    rw [hc₁, SchwartzMap.toLp_fourier_eq]
+    filter_upwards [(𝓕 (schwartzC (∂_{(EuclideanSpace.single j (1 : ℝ) : Domain3)} φ))).coeFn_toLp
+      2 (volume : Measure Domain3)] with ξ hξ
+    rw [hξ, fourier_schwartzC_lineDeriv_apply]
+    rw [show (inner ℝ ξ (EuclideanSpace.single j (1 : ℝ) : Domain3) : ℝ) = ξ j from by
+      rw [EuclideanSpace.inner_single_right]; simp]
+  filter_upwards [hF1] with ξ hξ
+  rw [RCLike.inner_apply, hξ, mul_comm]
+
+/-- The transverse defect `T_u` is locally integrable: each `û_j ∈ L²` is integrable on every
+compact set, the weight `ξ ↦ ξ_j` is continuous, and the finite sum stays locally integrable. -/
+private theorem locallyIntegrable_transverseDefect (u : L2VF_R3) :
+    LocallyIntegrable (transverseDefect u) (volume : Measure Domain3) := by
+  rw [locallyIntegrable_iff]
+  intro K hK
+  unfold transverseDefect IntegrableOn
+  -- the integrand is a finite sum over `j`
+  refine integrable_finsetSum Finset.univ ?_
+  intro j _
+  -- `û_j` integrable on the compact (finite-measure) `K`
+  have hmem : MemLp ((𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) : Domain3 → ℂ) 2
+      (volume.restrict K) :=
+    (Lp.memLp (𝓕 (L2VF_projComponentC_R3 j u))).restrict K
+  haveI : IsFiniteMeasure ((volume : Measure Domain3).restrict K) :=
+    ⟨by simpa using hK.measure_lt_top (μ := (volume : Measure Domain3))⟩
+  have hintK : IntegrableOn ((𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) : Domain3 → ℂ) K
+      (volume : Measure Domain3) := hmem.integrable (by norm_num)
+  -- multiply by the continuous weight `ξ ↦ ξ_j`
+  have hcont : ContinuousOn (fun ξ : Domain3 => (ξ j : ℂ)) K :=
+    (Complex.continuous_ofReal.comp
+      (EuclideanSpace.proj (𝕜 := ℝ) j).continuous).continuousOn
+  exact hintK.continuousOn_mul hcont hK
+
+/-- The whole weak-divergence functional, complexified, as a single Fourier-side integral
+against the transverse defect:
+`(divTestFunctional φ u : ℂ) = ∫ conj((2π i) 𝓕(φ̂)(ξ)) · T_u(ξ) dξ`. -/
+private theorem divTestFunctional_eq_fourier_integral
+    (φ : SchwartzMap Domain3 ℝ) (u : L2VF_R3) :
+    ((divTestFunctional φ u : ℝ) : ℂ)
+      = ∫ ξ : Domain3,
+          (starRingEnd ℂ) ((2 * Real.pi * Complex.I)
+              * (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ)
+            * transverseDefect u ξ
+        ∂(volume : Measure Domain3) := by
+  -- expand `divTestFunctional` as a finite sum of component pairings
+  rw [divTestFunctional, ContinuousLinearMap.sum_apply, Complex.ofReal_sum]
+  -- each summand is its Fourier integral
+  have hterm : ∀ j : Fin 3,
+      (((((innerSL ℝ ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+            (EuclideanSpace.single j (1 : ℝ) : Domain3) φ).toLp 2 (volume : Measure Domain3))).comp
+          (L2VF_projComponent_R3 j)) u : ℝ)) : ℂ)
+        = ∫ ξ : Domain3,
+            (starRingEnd ℂ)
+                ((2 * Real.pi * Complex.I) * ((ξ j : ℝ) : ℂ)
+                  * (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ)
+              * (𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ
+          ∂(volume : Measure Domain3) := by
+    intro j
+    rw [ContinuousLinearMap.comp_apply, innerSL_apply_apply]
+    exact divComponent_eq_fourier_integral φ u j
+  rw [Finset.sum_congr rfl (fun j _ => hterm j)]
+  -- swap sum and integral (each integrand integrable)
+  rw [← integral_finsetSum _ (fun j _ => integrable_divComponent φ u j)]
+  refine integral_congr_ae ?_
+  filter_upwards with ξ
+  -- pull out the common factor `conj(2πi φ̂)` and use `conj ξ_j = ξ_j`
+  rw [transverseDefect, Finset.mul_sum]
+  refine Finset.sum_congr rfl ?_
+  intro j _
+  simp only [map_mul, Complex.conj_ofReal]
+  ring
 
 /-- **Step 2 (spectral div-free characterization).**  A field `u ∈ L2VF_R3` is weakly
 divergence-free (`u ∈ L2Sigma_R3`) iff its Fourier transform is a.e. transverse:

@@ -264,6 +264,123 @@ private theorem componentC_translate_ae (h : Domain3) (w : L2VF_R3) (j : Fin 3) 
     rw [hxt, Function.comp_apply]
   exact hL.trans (hL2.trans hR.symm)
 
+/-! ### Local Bessel-weight helpers for the T0b integrability input
+
+The H¹ ⇒ weighted-L² integrability technique below is identical to
+`FrechetKolmogorov.memH1_weightedL2_integrable`, but that file IMPORTS this one, so the
+helper cannot be reused (it would be circular).  These `private` declarations replicate the
+needed Bessel-weight machinery self-contained in `RellichBall`, using only `FourierL2`'s
+imports (`Mathlib.Analysis.Fourier.LpSpace` + `Mathlib.Analysis.Distribution.Sobolev`,
+transitively).  They support exactly one lemma, `integrable_viscous_integrand_of_memH1`. -/
+
+/-- The Bessel weight `ξ ↦ ((1 + ‖ξ‖²)^(1/2) : ℝ) : ℂ` of order `s = 1` (`s/2 = 1/2`), the
+multiplier appearing in `memSobolev_iff_exists_smulLeftCLM_fourier` for `MemSobolev 1 2`. -/
+private noncomputable def besselWeightC_R : Domain3 → ℂ :=
+  fun ξ => (((1 + ‖ξ‖ ^ 2) ^ ((1 : ℝ) / 2) : ℝ) : ℂ)
+
+/-- The Bessel weight is real-valued and nonnegative, with squared modulus `1 + ‖ξ‖²`. -/
+private theorem normSq_besselWeightC_R (ξ : Domain3) :
+    ‖besselWeightC_R ξ‖ ^ 2 = 1 + ‖ξ‖ ^ 2 := by
+  have hnn : (0 : ℝ) ≤ 1 + ‖ξ‖ ^ 2 := by positivity
+  rw [besselWeightC_R, Complex.norm_real, Real.norm_eq_abs,
+    abs_of_nonneg (Real.rpow_nonneg hnn _),
+    ← Real.rpow_natCast ((1 + ‖ξ‖ ^ 2) ^ ((1 : ℝ) / 2)) 2, ← Real.rpow_mul hnn]
+  norm_num
+
+/-- The Bessel weight has temperate growth (`= ofReal ∘ (1+‖·‖²)^(1/2)`). -/
+private theorem hasTemperateGrowth_besselWeightC_R :
+    Function.HasTemperateGrowth besselWeightC_R := by
+  have hr : Function.HasTemperateGrowth (fun ξ : Domain3 => (1 + ‖ξ‖ ^ 2) ^ ((1 : ℝ) / 2)) :=
+    Function.hasTemperateGrowth_one_add_norm_sq_rpow Domain3 ((1 : ℝ) / 2)
+  exact (Complex.ofRealCLM.hasTemperateGrowth).comp hr
+
+/-- The Bessel weight is continuous. -/
+private theorem continuous_besselWeightC_R : Continuous besselWeightC_R :=
+  hasTemperateGrowth_besselWeightC_R.1.continuous
+
+/-- The pointwise product `ξ ↦ besselWeightC_R ξ • g ξ` (unbounded multiplier) is locally
+integrable: on each ball the continuous weight is bounded and `g ∈ L²` is integrable. -/
+private theorem locallyIntegrable_besselWeight_smul_R (g : L2C_R3) :
+    LocallyIntegrable (fun ξ : Domain3 => besselWeightC_R ξ • (g : Domain3 → ℂ) ξ)
+      (volume : Measure Domain3) := by
+  intro x
+  refine ⟨Metric.closedBall x 1, Metric.closedBall_mem_nhds x one_pos, ?_⟩
+  have hK : IsCompact (Metric.closedBall x 1) := isCompact_closedBall x 1
+  have hg_int : IntegrableOn (g : Domain3 → ℂ) (Metric.closedBall x 1) volume :=
+    ((Lp.memLp g).locallyIntegrable (by norm_num)).integrableOn_isCompact hK
+  obtain ⟨C, hC⟩ := hK.exists_bound_of_continuousOn
+    (continuous_besselWeightC_R.continuousOn (s := Metric.closedBall x 1))
+  have hmul : IntegrableOn (fun ξ => besselWeightC_R ξ * (g : Domain3 → ℂ) ξ)
+      (Metric.closedBall x 1) volume := by
+    refine hg_int.bdd_mul (c := C) ?_ ?_
+    · exact (continuous_besselWeightC_R.aestronglyMeasurable).restrict
+    · refine ae_restrict_of_forall_mem measurableSet_closedBall (fun y hy => ?_)
+      exact hC y hy
+  simpa only [smul_eq_mul] using hmul
+
+/-- **Local H¹ ⇒ Bessel-weighted-L² integrability** (self-contained replica of
+`FrechetKolmogorov.memH1_weightedL2_integrable`, which cannot be imported here).  For
+`w ∈ H¹(ℝ³)`, the L²-Fourier transform `𝓕 cⱼ` is square-integrable against the genuine `H¹`
+weight `1 + ‖ξ‖²`. -/
+private theorem memH1_weightedL2_integrable_R (w : L2VF_R3) (hw : memH1VF_R3 w) (j : Fin 3) :
+    Integrable (fun ξ : Domain3 =>
+        (1 + ‖ξ‖ ^ 2) * ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2)
+      (volume : Measure Domain3) := by
+  classical
+  set cF : L2C_R3 := 𝓕 (L2VF_projComponentC_R3 j w) with hcF
+  have hsob : TemperedDistribution.MemSobolev (1 : ℝ) 2
+      (L2VF_projComponentC_R3 j w : TemperedDistribution Domain3 ℂ) := hw j
+  obtain ⟨f', hf'⟩ :=
+    TemperedDistribution.memSobolev_iff_exists_smulLeftCLM_fourier.mp hsob
+  have hbridge : (𝓕 (L2VF_projComponentC_R3 j w : TemperedDistribution Domain3 ℂ))
+      = (cF : TemperedDistribution Domain3 ℂ) := by
+    rw [hcF]; exact (MeasureTheory.Lp.fourier_toTemperedDistribution_eq _)
+  rw [hbridge] at hf'
+  have hweq : (fun x : Domain3 => (((1 + ‖x‖ ^ 2) ^ ((1 : ℝ) / 2) : ℝ) : ℂ)) = besselWeightC_R :=
+    rfl
+  rw [hweq] at hf'
+  have hlhs_li : LocallyIntegrable
+      (fun ξ : Domain3 => besselWeightC_R ξ • (cF : Domain3 → ℂ) ξ)
+      (volume : Measure Domain3) := locallyIntegrable_besselWeight_smul_R cF
+  have hrhs_li : LocallyIntegrable (f' : Domain3 → ℂ) (volume : Measure Domain3) :=
+    (Lp.memLp f').locallyIntegrable (by norm_num)
+  have hae : (fun ξ : Domain3 => besselWeightC_R ξ • (cF : Domain3 → ℂ) ξ)
+      =ᵐ[volume] (f' : Domain3 → ℂ) := by
+    refine ae_eq_of_integral_contDiff_smul_eq hlhs_li hrhs_li ?_
+    intro g g_smooth g_cpt
+    have hg_supp : HasCompactSupport (Complex.ofRealCLM ∘ g) := g_cpt.comp_left rfl
+    have hg_diff := Complex.ofRealCLM.contDiff.comp g_smooth
+    set φ : SchwartzMap Domain3 ℂ := hg_supp.toSchwartzMap hg_diff with hφ
+    have hφ_coe : (φ : Domain3 → ℂ) = fun x => ((g x : ℝ) : ℂ) := rfl
+    have hpair : TemperedDistribution.smulLeftCLM ℂ besselWeightC_R
+          (cF : TemperedDistribution Domain3 ℂ) φ
+        = ((f' : TemperedDistribution Domain3 ℂ) φ) := by rw [hf']
+    rw [TemperedDistribution.smulLeftCLM_apply_apply,
+        MeasureTheory.Lp.toTemperedDistribution_apply,
+        MeasureTheory.Lp.toTemperedDistribution_apply] at hpair
+    rw [show (fun x => (g x : ℝ) • (besselWeightC_R x • (cF : Domain3 → ℂ) x))
+          = fun x => ((SchwartzMap.smulLeftCLM ℂ besselWeightC_R φ) x)
+              • (cF : Domain3 → ℂ) x from ?_,
+        show (fun x => (g x : ℝ) • (f' : Domain3 → ℂ) x)
+          = fun x => (φ x) • (f' : Domain3 → ℂ) x from ?_]
+    · exact hpair
+    · funext x
+      show (g x : ℝ) • (f' : Domain3 → ℂ) x = (φ x) • (f' : Domain3 → ℂ) x
+      rw [hφ_coe]
+      simp only [Complex.real_smul, smul_eq_mul]
+    · funext x
+      show (g x : ℝ) • (besselWeightC_R x • (cF : Domain3 → ℂ) x)
+          = ((SchwartzMap.smulLeftCLM ℂ besselWeightC_R φ) x) • (cF : Domain3 → ℂ) x
+      rw [SchwartzMap.smulLeftCLM_apply_apply hasTemperateGrowth_besselWeightC_R, hφ_coe]
+      simp only [Complex.real_smul, smul_eq_mul]
+      ring
+  have hf'_sq : Integrable (fun ξ : Domain3 => ‖(f' : Domain3 → ℂ) ξ‖ ^ 2)
+      (volume : Measure Domain3) :=
+    (memLp_two_iff_integrable_sq_norm (Lp.aestronglyMeasurable f')).mp (Lp.memLp f')
+  refine hf'_sq.congr ?_
+  filter_upwards [hae] with ξ hξ
+  rw [← hξ, norm_smul, mul_pow, normSq_besselWeightC_R]
+
 /-- **T0b integrability input.** For `w ∈ H¹(ℝ³)`, the spectral viscous integrand
 `(2π)² ‖ξ‖² ‖(𝓕 cⱼ) ξ‖²` (with `cⱼ = L2VF_projComponentC_R3 j w`) is Lebesgue-integrable.
 
@@ -289,13 +406,29 @@ private theorem integrable_viscous_integrand_of_memH1 (w : L2VF_R3) (hw : memH1V
     Integrable (fun ξ : Domain3 =>
         (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2)
       (volume : Measure Domain3) := by
-  sorry -- ALLOW_SORRY: T0b residual analytic frontier — H¹ (MemSobolev 1 2) ⇒ concrete
-  -- weighted-L² integrability of the L²-Fourier transform.  Requires an a.e. characterization
-  -- of `TemperedDistribution.smulLeftCLM` for the UNBOUNDED weight `(1+‖ξ‖²)^(1/2)` on an
-  -- `Lp`-coerced distribution, which mathlib lacks (`Lp.toTemperedDistribution_smul_eq` only
-  -- covers `MemLp`-bounded multipliers).  See the lemma docstring for the exact reduction.
-  -- This is the SOLE remaining `sorry` in the file; the rest of T0b (decomposition,
-  -- Plancherel, F8/F9 pointwise estimate, F7 weight recognition) is fully proved.
+  -- The Bessel-weighted integrand `(1+‖ξ‖²)·‖𝓕 cⱼ ξ‖²` is integrable (H¹ ⇒ weighted L²).
+  have hbessel := memH1_weightedL2_integrable_R w hw j
+  -- The `(2π)²‖ξ‖²`-weighted integrand is dominated by `(2π)²` times the Bessel one, since
+  -- `‖ξ‖² ≤ 1 + ‖ξ‖²`.  Both are nonnegative, so `Integrable.mono'` transfers integrability.
+  refine Integrable.mono' (g := fun ξ : Domain3 =>
+      (2 * Real.pi) ^ 2 * ((1 + ‖ξ‖ ^ 2) * ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2))
+    (hbessel.const_mul ((2 * Real.pi) ^ 2)) ?_ ?_
+  · -- the dominated integrand is (a.e. strongly) measurable
+    refine (Continuous.aestronglyMeasurable ?_).mul ?_
+    · exact (continuous_const.mul (continuous_norm.pow 2))
+    · exact ((Lp.aestronglyMeasurable (𝓕 (L2VF_projComponentC_R3 j w))).norm.pow 2)
+  · -- pointwise domination ‖·‖ ≤ dominating function
+    filter_upwards with ξ
+    have hnn : (0 : ℝ) ≤ ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2 := by positivity
+    have hle : ‖ξ‖ ^ 2 ≤ 1 + ‖ξ‖ ^ 2 := by linarith [sq_nonneg ‖ξ‖]
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    calc (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2
+        = (2 * Real.pi) ^ 2 * (‖ξ‖ ^ 2 * ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2) := by
+          ring
+      _ ≤ (2 * Real.pi) ^ 2
+            * ((1 + ‖ξ‖ ^ 2) * ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2) := by
+          apply mul_le_mul_of_nonneg_left _ (by positivity)
+          exact mul_le_mul_of_nonneg_right hle hnn
 
 /-- **T0b.** L²-translation modulus controlled by the spectral gradient form (Plancherel):
 `‖τ_h w − w‖²_{L²(ℝ³)} ≤ ‖h‖² · viscousFormSq_R3 1 w`.
