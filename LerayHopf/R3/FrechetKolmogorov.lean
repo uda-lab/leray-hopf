@@ -1,6 +1,7 @@
 import LerayHopf.R3.RellichBall                  -- FrechetKolmogorovInput, translate_L2VF, L2ballR3, restrictToBall
 import Mathlib.Analysis.Convolution               -- MeasureTheory.convolution, ContDiffBump approximate identity
 import Mathlib.Topology.UniformSpace.Cauchy       -- TotallyBounded, isCompact_iff_totallyBounded_isComplete
+import Mathlib.MeasureTheory.Function.LpSpace.ContinuousCompMeasurePreserving -- Lp translation-continuity (Filter.Tendsto.compMeasurePreservingLp)
 
 namespace LerayHopf
 open MeasureTheory Filter Topology Metric TemperedDistribution
@@ -349,11 +350,45 @@ theorem kernel_translate_L2_tendsto (K : MollifierKernel) :
     Filter.Tendsto
       (fun h : Domain3 => ‖translate_L2R h (kernelL2R K) - kernelL2R K‖)
       (𝓝 (0 : Domain3)) (𝓝 (0 : ℝ)) := by
-  sorry -- ALLOW_SORRY: scaffold — L²-continuity of translation for the kernel.  `K.η` smooth
-  -- (`K.smooth`) + compact support (`K.hasCompactSupport`) ⇒ uniformly continuous with a fixed
-  -- compactly supported `L²` envelope; dominated convergence (mathlib's `Lp` translation-continuity,
-  -- e.g. `Lp.continuous_compMeasurePreserving`/`tendsto` of `τ_h` in `Lp`) yields the vanishing
-  -- modulus.  This is the standard "kernel modulus" feeding `mollifyRep_sub_le`.
+  -- mathlib provides L²-translation continuity off the shelf: `compMeasurePreserving` of an `Lp`
+  -- class with a measure-preserving continuous map is continuous in both arguments
+  -- (`Filter.Tendsto.compMeasurePreservingLp`).  We feed in the translations `(· + h)` (a continuous
+  -- measure-preserving family on `Domain3`) and the constant class `kernelL2R K`.
+  set μ : Measure Domain3 := volume with hμ
+  -- the translation maps as continuous maps, measure preserving for every `h`.
+  set g : Domain3 → C(Domain3, Domain3) :=
+    fun h => ⟨(· + h), continuous_id.add continuous_const⟩ with hg
+  have hgm : ∀ h : Domain3, MeasurePreserving (g h) μ μ := fun h =>
+    measurePreserving_add_right μ h
+  -- `Tendsto (g ·) (𝓝 0) (𝓝 (g 0))`: the family `h ↦ (· + h)` is continuous in `h`.
+  have hgcont : Continuous g := by
+    refine ContinuousMap.continuous_of_continuous_uncurry _ ?_
+    show Continuous (fun p : Domain3 × Domain3 => p.2 + p.1)
+    exact continuous_snd.add continuous_fst
+  have htend := Filter.Tendsto.compMeasurePreservingLp
+    (μ := μ) (ν := μ) (E := ℝ) (p := 2)
+    (f := fun _ : Domain3 => kernelL2R K) (f₀ := kernelL2R K)
+    (g := g) (g₀ := g 0)
+    tendsto_const_nhds (hgcont.tendsto 0) hgm (hgm 0) (by simp)
+  -- identify the two `compMeasurePreserving` expressions with `translate_L2R` and `kernelL2R K`.
+  have heq : (fun h : Domain3 => Lp.compMeasurePreserving (g h) (hgm h) (kernelL2R K))
+      = fun h : Domain3 => translate_L2R h (kernelL2R K) := rfl
+  have h0 : Lp.compMeasurePreserving (g 0) (hgm 0) (kernelL2R K) = kernelL2R K := by
+    have : (g 0 : Domain3 → Domain3) = id := by
+      funext x; simp [hg]
+    -- `g 0 = (· + 0) = id`, so the composition is the identity on `Lp`.
+    refine Lp.ext ?_
+    have hcoe := Lp.coeFn_compMeasurePreserving (kernelL2R K) (hgm 0)
+    filter_upwards [hcoe] with x hx
+    rw [hx]
+    simp [hg]
+  rw [heq, h0] at htend
+  -- continuity of the norm-of-difference turns the `Lp`-convergence into the scalar `Tendsto`.
+  have hsub : Filter.Tendsto
+      (fun h : Domain3 => translate_L2R h (kernelL2R K) - kernelL2R K)
+      (𝓝 0) (𝓝 (kernelL2R K - kernelL2R K)) := htend.sub tendsto_const_nhds
+  have hnorm := hsub.norm
+  simpa using hnorm
 
 /-- **Helper 2 — pointwise sup bound for the mollified field (Cauchy–Schwarz / Young).**
 
