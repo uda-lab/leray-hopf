@@ -267,6 +267,33 @@ theorem fourier_curlSchwartz_eq_cross
 
 /-! ### Step 2 — spectral characterization of weak divergence-freeness -/
 
+/-- **Fourier of a real function is Hermitian.**  For a real Schwartz `φ`, the Fourier
+transform of its complexification satisfies `𝓕(schwartzC φ)(-ξ) = conj (𝓕(schwartzC φ)(ξ))`.
+
+This is the conjugate symmetry of the Fourier transform of a (complexified) real function:
+pushing `conj` through the integral defining `𝓕`, the unit-modulus character contributes
+`conj(𝐞(-⟪v,ξ⟫)) = 𝐞(⟪v,ξ⟫) = 𝐞(-⟪v,-ξ⟫)`, while `conj` acts trivially on the real-valued
+integrand `schwartzC φ`. -/
+private theorem fourier_schwartzC_hermitian (φ : SchwartzMap Domain3 ℝ) (ξ : Domain3) :
+    (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) (-ξ)
+      = (starRingEnd ℂ) ((𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ) := by
+  -- Move to the underlying function `𝓕 (schwartzC φ : Domain3 → ℂ)`.
+  have hcoe : ((𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) : Domain3 → ℂ)
+        = 𝓕 ((schwartzC φ : Domain3 → ℂ)) := SchwartzMap.fourier_coe (schwartzC φ)
+  rw [show (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) (-ξ)
+        = 𝓕 ((schwartzC φ : Domain3 → ℂ)) (-ξ) from congrFun hcoe (-ξ),
+    show (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ
+        = 𝓕 ((schwartzC φ : Domain3 → ℂ)) ξ from congrFun hcoe ξ]
+  -- RHS: push `conj` into the integral defining `𝓕 _ ξ`.
+  rw [Real.fourier_eq, Real.fourier_eq, ← integral_conj]
+  refine integral_congr_ae ?_
+  filter_upwards with v
+  -- Convert both `Circle` actions to complex multiplication.
+  simp only [Circle.smul_def, smul_eq_mul, inner_neg_right, map_mul, schwartzC_apply,
+    Complex.conj_ofReal, neg_neg]
+  -- character: `(𝐞 (⟪v,ξ⟫) : ℂ) = conj ((𝐞 (-⟪v,ξ⟫) : ℂ))`
+  rw [← Circle.coe_inv_eq_conj, ← AddChar.map_neg_eq_inv, neg_neg]
+
 /-- The transverse (divergence-free) symbol condition at a point `ξ`: the complex Fourier
 vector `û(ξ)` is orthogonal to `ξ`, `∑ j, ξ_j û_j(ξ) = 0`.  This is the Fourier form of the
 pointwise constraint `ξ · û(ξ) = 0` characterizing `div u = 0`. -/
@@ -461,6 +488,65 @@ private theorem divTestFunctional_eq_fourier_integral
   simp only [map_mul, Complex.conj_ofReal]
   ring
 
+/-- Membership in `L2Sigma_R3` is exactly: every Schwartz weak-divergence test integral
+vanishes.  Unfolds `L2Sigma_R3 = ⨅ φ, ker (divTestFunctional φ)` and feeds in the Fourier
+form `divTestFunctional_eq_fourier_integral`. -/
+private theorem mem_sigma_iff_fourier_integral_zero (u : L2VF_R3) :
+    u ∈ L2Sigma_R3 ↔
+      ∀ φ : SchwartzMap Domain3 ℝ,
+        ∫ ξ : Domain3,
+            (starRingEnd ℂ) ((2 * Real.pi * Complex.I)
+                * (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ)
+              * transverseDefect u ξ
+          ∂(volume : Measure Domain3) = 0 := by
+  rw [L2Sigma_R3, Submodule.mem_iInf]
+  constructor
+  · intro h φ
+    have hker : divTestFunctional φ u = 0 := by
+      have := h φ; rwa [LinearMap.mem_ker, ContinuousLinearMap.coe_coe] at this
+    have := divTestFunctional_eq_fourier_integral φ u
+    rw [hker] at this
+    simpa using this.symm
+  · intro h φ
+    rw [LinearMap.mem_ker, ContinuousLinearMap.coe_coe]
+    have hfi := divTestFunctional_eq_fourier_integral φ u
+    rw [h φ] at hfi
+    exact_mod_cast hfi
+
+/-- The goal's `EventuallyEq (… True)` form is `∀ᵐ ξ, transverseDefect u ξ = 0`. -/
+private theorem transverse_ae_iff (u : L2VF_R3) :
+    ((fun ξ =>
+          IsTransverseAt
+            (fun j => (𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ) ξ)
+        =ᵐ[volume] fun _ => True)
+      ↔ (∀ᵐ ξ ∂(volume : Measure Domain3), transverseDefect u ξ = 0) := by
+  constructor
+  · intro h
+    filter_upwards [h] with ξ hξ
+    -- `hξ : IsTransverseAt … ξ = True`, so the proposition holds
+    have : IsTransverseAt (fun j => (𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ) ξ := by
+      rw [hξ]; trivial
+    simpa [transverseDefect, IsTransverseAt] using this
+  · intro h
+    filter_upwards [h] with ξ hξ
+    -- turn `transverseDefect u ξ = 0` into `IsTransverseAt … = True`
+    have : IsTransverseAt (fun j => (𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ) ξ := by
+      simpa [transverseDefect, IsTransverseAt] using hξ
+    simp [this]
+
+/-- **Reverse direction (a.e. transverse ⇒ weakly divergence-free).**  If the transverse
+defect `T_u` vanishes a.e., then every Schwartz weak-divergence test integral vanishes, so
+`u ∈ L2Sigma_R3`. -/
+private theorem mem_sigma_of_transverse_ae (u : L2VF_R3)
+    (h : ∀ᵐ ξ ∂(volume : Measure Domain3), transverseDefect u ξ = 0) :
+    u ∈ L2Sigma_R3 := by
+  rw [mem_sigma_iff_fourier_integral_zero]
+  intro φ
+  rw [show (0 : ℂ) = ∫ _ξ : Domain3, (0 : ℂ) ∂(volume : Measure Domain3) by simp]
+  refine integral_congr_ae ?_
+  filter_upwards [h] with ξ hξ
+  rw [hξ, mul_zero]
+
 /-- **Step 2 (spectral div-free characterization).**  A field `u ∈ L2VF_R3` is weakly
 divergence-free (`u ∈ L2Sigma_R3`) iff its Fourier transform is a.e. transverse:
 `∑ j, ξ_j û_j(ξ) = 0` for a.e. `ξ`.
@@ -479,9 +565,32 @@ theorem mem_sigma_iff_fourier_transverse (u : L2VF_R3) :
           IsTransverseAt
             (fun j => (𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ) ξ)
         =ᵐ[volume] fun _ => True := by
-  sorry -- ALLOW_SORRY: spectral characterization `div u = 0 ↔ ξ·û = 0 a.e.`  Needs
-  -- Plancherel applied to `divTestFunctional` and the variational lemma on the Fourier
-  -- side.  Not in mathlib (no Helmholtz/div symbol calculus); lean-prover target.
+  rw [transverse_ae_iff u]
+  constructor
+  · -- Forward (du-Bois-Reymond on the Fourier side): the hard analytic direction.
+    intro hmem
+    -- We have, from `hmem` and `mem_sigma_iff_fourier_integral_zero`:
+    --   ∀ φ real Schwartz, ∫ conj((2πi)·𝓕(schwartzC φ)) · T_u = 0.
+    -- `transverseDefect u` is locally integrable (`locallyIntegrable_transverseDefect`),
+    -- and (by `fourier_schwartzC_hermitian`) the available test symbols
+    --   { conj((2πi)·𝓕(schwartzC φ)) : φ real }
+    -- are exactly the ANTI-HERMITIAN Schwartz symbols, while `T_u` is itself anti-Hermitian
+    -- (`û_j` Hermitian as Fourier of a real component).  Testing an anti-Hermitian locally
+    -- integrable function against all anti-Hermitian Schwartz symbols pins it a.e. to zero
+    -- via the even/odd-part reduction to `ae_eq_zero_of_integral_contDiff_smul_eq_zero`.
+    have _hLI := locallyIntegrable_transverseDefect u
+    have _hzero := (mem_sigma_iff_fourier_integral_zero u).1 hmem
+    -- The available Fourier test symbols `conj((2πi)·𝓕(schwartzC φ))` (real `φ`) are
+    -- anti-Hermitian (see `fourier_schwartzC_hermitian`), so the all-`g` hypothesis of
+    -- mathlib's `ae_eq_zero_of_integral_contDiff_smul_eq_zero` is not directly met.  Closing
+    -- needs (i) surjectivity of `φ ↦ 𝓕(schwartzC φ)` onto Hermitian Schwartz with real/imag
+    -- parts spanning all even/odd real Schwartz, and (ii) the even/odd integral-vanishing
+    -- reduction using the anti-Hermitian symmetry of `transverseDefect u`.  The REVERSE
+    -- direction below is fully proved.
+    sorry -- ALLOW_SORRY: du-Bois-Reymond under the Hermitian test-symbol constraint — needs Fourier surjectivity onto Hermitian Schwartz + even/odd Schwartz density (not in mathlib/repo)
+  · -- Reverse (a.e. transverse ⇒ weakly divergence-free): fully proved.
+    intro htr
+    exact mem_sigma_of_transverse_ae u htr
 
 /-! ### Step 3 — fiberwise transverse spanning by curl symbols -/
 
