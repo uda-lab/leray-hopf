@@ -490,12 +490,145 @@ theorem mollifyRep_sub_le (K : MollifierKernel) (f : L2VF_R3) (R : ℝ)
     ‖mollifyRep K f x - mollifyRep K f y‖
       ≤ ‖restrictToBall (R + K.supportRadius) f‖
           * ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ := by
-  sorry -- ALLOW_SORRY: scaffold — `mollifyRep K f x − mollifyRep K f y = ∫ y', (K.η(x−y') − K.η(y−y')) • f y'`,
-  -- whose integrand involves the kernel difference `K.η(x−·) − K.η(y−·)`, a translate by `x − y` of
-  -- `K.η(y−·)`; by reflection/translation invariance its L²-norm equals
-  -- `‖translate_L2R (x−y) (kernelL2R K) − kernelL2R K‖`.  Both kernel slices are supported so the
-  -- integrand only sees `f` over `B_{R+K.supportRadius}` (`x, y ∈ B_R`, `K.tsupport_subset`); Cauchy–Schwarz
-  -- then gives `(enlarged-ball mass of f) · (kernel translation-modulus at x−y)`.
+  classical
+  set r := K.supportRadius with hr
+  -- The enlarged ball `B_{R+r}` (kernel reach from `B_R`).
+  set B : Set Domain3 := Metric.closedBall (0 : Domain3) (R + r) with hB
+  -- The kernel as an `L²`-class envelope.
+  have hηmem : MemLp K.η 2 (volume : Measure Domain3) :=
+    K.smooth.continuous.memLp_of_hasCompactSupport (p := 2) (μ := volume) K.hasCompactSupport
+  have hηaesm : AEStronglyMeasurable K.η (volume : Measure Domain3) := hηmem.aestronglyMeasurable
+  -- the two measure-preserving slice maps `(x − ·)` and `(y − ·)`.
+  have hmpx := Measure.measurePreserving_sub_left (volume : Measure Domain3) x
+  have hmpy := Measure.measurePreserving_sub_left (volume : Measure Domain3) y
+  -- factor `a = |K.η(x−·) − K.η(y−·)|` (kernel slice difference).
+  have haxmem : MemLp (fun z : Domain3 => K.η (x - z)) 2 (volume : Measure Domain3) :=
+    hηmem.comp_measurePreserving hmpx
+  have haymem : MemLp (fun z : Domain3 => K.η (y - z)) 2 (volume : Measure Domain3) :=
+    hηmem.comp_measurePreserving hmpy
+  have ha : MemLp (fun z : Domain3 => |K.η (x - z) - K.η (y - z)|) 2
+      (volume : Measure Domain3) := (haxmem.sub haymem).abs
+  -- factor `b = 1_B · ‖f·‖` (localized mass).
+  have hfnorm : MemLp (fun y : Domain3 => ‖(f y : EuclideanSpace ℝ (Fin 3))‖) 2
+      (volume : Measure Domain3) := (Lp.memLp f).norm
+  have hb : MemLp (B.indicator (fun y : Domain3 => ‖(f y : EuclideanSpace ℝ (Fin 3))‖)) 2
+      (volume : Measure Domain3) := hfnorm.indicator measurableSet_closedBall
+  -- STEP 0: `mollifyRep K f x − mollifyRep K f y = ∫ z, (K.η(x−z) − K.η(y−z)) • f z`.
+  have hdiff : mollifyRep K f x - mollifyRep K f y
+      = ∫ z : Domain3, (K.η (x - z) - K.η (y - z)) • (f z : EuclideanSpace ℝ (Fin 3))
+          ∂(volume : Measure Domain3) := by
+    rw [mollifyRep, mollifyRep, ← integral_sub]
+    · refine integral_congr_ae ?_
+      filter_upwards with z
+      rw [sub_smul]
+    · exact memLp_one_iff_integrable.mp (MemLp.smul (Lp.memLp f) haxmem (r := 1))
+    · exact memLp_one_iff_integrable.mp (MemLp.smul (Lp.memLp f) haymem (r := 1))
+  -- STEP 1: `‖·‖ ≤ ∫ |K.η(x−z) − K.η(y−z)| · 1_B(z) ‖f z‖` (kernel-reach localization).
+  have hstep1 : ‖mollifyRep K f x - mollifyRep K f y‖
+      ≤ ∫ z : Domain3, |K.η (x - z) - K.η (y - z)| * B.indicator
+          (fun w : Domain3 => ‖(f w : EuclideanSpace ℝ (Fin 3))‖) z
+          ∂(volume : Measure Domain3) := by
+    rw [hdiff]
+    refine le_trans (norm_integral_le_integral_norm _) (le_of_eq (integral_congr_ae ?_))
+    filter_upwards with z
+    rw [norm_smul, Real.norm_eq_abs]
+    by_cases hzero : K.η (x - z) - K.η (y - z) = 0
+    · simp [hzero]
+    · -- at least one of the two kernel slices is nonzero; either reaches `z` into `B`.
+      have hxR : ‖x‖ ≤ R := by simpa [dist_eq_norm] using hx
+      have hyR : ‖y‖ ≤ R := by simpa [dist_eq_norm] using hy
+      have hreach : ∀ {p : Domain3}, ‖p‖ ≤ R → K.η (p - z) ≠ 0 → z ∈ B := by
+        intro p hpR hpne
+        have hmemt : p - z ∈ tsupport K.η := subset_tsupport K.η (by simpa using hpne)
+        have hball : p - z ∈ Metric.closedBall (0 : Domain3) r := K.tsupport_subset hmemt
+        have hpz : ‖p - z‖ ≤ r := by simpa [dist_eq_norm] using hball
+        have hzR : ‖z‖ ≤ R + r := by
+          have h1 : z = p - (p - z) := by abel
+          have h2 : ‖z‖ ≤ ‖p‖ + ‖p - z‖ := by
+            rw [h1]; exact (norm_sub_le _ _).trans_eq (by rw [sub_sub_cancel])
+          linarith
+        simpa [hB, dist_eq_norm] using hzR
+      have hmem : z ∈ B := by
+        rcases (not_and_or.mp (fun hpair => hzero (by rw [hpair.1, hpair.2, sub_self])) :
+            K.η (x - z) ≠ 0 ∨ K.η (y - z) ≠ 0) with hxne | hyne
+        · exact hreach hxR hxne
+        · exact hreach hyR hyne
+      rw [Set.indicator_of_mem hmem]
+  -- STEP 2: Cauchy–Schwarz in `Lp ℝ 2` on the two factors.
+  have hcs := real_inner_le_norm (ha.toLp _) (hb.toLp _)
+  rw [L2.inner_def] at hcs
+  have heq : (∫ z : Domain3, |K.η (x - z) - K.η (y - z)| * B.indicator
+        (fun w : Domain3 => ‖(f w : EuclideanSpace ℝ (Fin 3))‖) z ∂(volume : Measure Domain3))
+      = ∫ z : Domain3, (inner ℝ ((ha.toLp _ : Domain3 → ℝ) z) ((hb.toLp _ : Domain3 → ℝ) z))
+          ∂(volume : Measure Domain3) := by
+    refine integral_congr_ae ?_
+    filter_upwards [ha.coeFn_toLp, hb.coeFn_toLp] with z haz hbz
+    simp only [RCLike.inner_apply, conj_trivial]
+    rw [haz, hbz, mul_comm]
+  -- STEP 3: identify the two `Lp`-norms.
+  -- The mass factor identifies with `‖restrictToBall (R+r) f‖` (verbatim from `mollifyRep_sup_le`).
+  have hnb : ‖hb.toLp _‖ = ‖restrictToBall (R + r) f‖ := by
+    rw [restrictToBall, Lp.norm_toLp, Lp.norm_toLp,
+      ← eLpNorm_norm (f : Domain3 → EuclideanSpace ℝ (Fin 3)),
+      eLpNorm_indicator_eq_eLpNorm_restrict measurableSet_closedBall]
+  -- The kernel-difference factor identifies with the translation modulus
+  -- `‖translate_L2R (x−y) (kernelL2R K) − kernelL2R K‖` via the change of variables
+  -- `z ↦ y − z`:  `K.η(x−z) − K.η(y−z) = D(y−z)` with `D(w) = K.η(w + (x−y)) − K.η(w)`,
+  -- and `D` is the coeFn of `translate_L2R (x−y) (kernelL2R K) − kernelL2R K`.
+  have hna : ‖ha.toLp _‖
+      = ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ := by
+    rw [Lp.norm_toLp]
+    -- coeFn of the translate-difference class.
+    have hD : ((translate_L2R (x - y) (kernelL2R K) - kernelL2R K :
+          Lp ℝ 2 (volume : Measure Domain3)) : Domain3 → ℝ)
+        =ᵐ[volume] fun w : Domain3 => K.η (w + (x - y)) - K.η w := by
+      have hsub := Lp.coeFn_sub (translate_L2R (x - y) (kernelL2R K)) (kernelL2R K)
+      have htr : (translate_L2R (x - y) (kernelL2R K) : Domain3 → ℝ)
+          =ᵐ[volume] fun w : Domain3 => (kernelL2R K : Domain3 → ℝ) (w + (x - y)) := by
+        rw [translate_L2R]
+        exact Lp.coeFn_compMeasurePreserving (kernelL2R K)
+          (measurePreserving_add_right (volume : Measure Domain3) (x - y))
+      have hker : (kernelL2R K : Domain3 → ℝ) =ᵐ[volume] K.η := by
+        rw [kernelL2R]; exact MemLp.coeFn_toLp _
+      have hkershift : (fun w : Domain3 => (kernelL2R K : Domain3 → ℝ) (w + (x - y)))
+          =ᵐ[volume] fun w : Domain3 => K.η (w + (x - y)) :=
+        (measurePreserving_add_right (volume : Measure Domain3)
+          (x - y)).quasiMeasurePreserving.ae_eq_comp hker
+      filter_upwards [hsub, htr, hkershift, hker] with w hw1 hw2 hw3 hw4
+      rw [hw1]
+      simp only [Pi.sub_apply]
+      rw [hw2, hw3, hw4]
+    -- now compute the eLpNorm of the toLp class.
+    rw [Lp.norm_def, eLpNorm_congr_ae hD]
+    -- `K.η(x−z) − K.η(y−z) = D(y−z)` with `D w = K.η(w+(x−y)) − K.η w`.
+    have hcompose : (fun z : Domain3 => |K.η (x - z) - K.η (y - z)|)
+        = (fun w : Domain3 => |K.η (w + (x - y)) - K.η w|) ∘ (fun z : Domain3 => y - z) := by
+      funext z
+      simp only [Function.comp_apply]
+      congr 2
+      · congr 1; abel
+    have hshiftm : AEStronglyMeasurable (fun w : Domain3 => K.η (w + (x - y)))
+        (volume : Measure Domain3) :=
+      hηaesm.comp_measurePreserving
+        (measurePreserving_add_right (volume : Measure Domain3) (x - y))
+    have habsm : AEStronglyMeasurable (fun w : Domain3 => |K.η (w + (x - y)) - K.η w|)
+        (volume : Measure Domain3) :=
+      (hshiftm.sub hηaesm).norm.congr (by filter_upwards with w using (Real.norm_eq_abs _))
+    rw [hcompose, eLpNorm_comp_measurePreserving habsm hmpy]
+    -- drop the absolute value: `‖|·|‖ = ‖·‖`.
+    rw [show (fun w : Domain3 => |K.η (w + (x - y)) - K.η w|)
+        = (fun w : Domain3 => ‖K.η (w + (x - y)) - K.η w‖) from
+        funext fun w => (Real.norm_eq_abs _).symm, eLpNorm_norm]
+  -- Assemble.
+  calc ‖mollifyRep K f x - mollifyRep K f y‖
+      ≤ ∫ z : Domain3, |K.η (x - z) - K.η (y - z)| * B.indicator
+          (fun w : Domain3 => ‖(f w : EuclideanSpace ℝ (Fin 3))‖) z
+          ∂(volume : Measure Domain3) := hstep1
+    _ = ∫ z : Domain3, (inner ℝ ((ha.toLp _ : Domain3 → ℝ) z) ((hb.toLp _ : Domain3 → ℝ) z))
+          ∂(volume : Measure Domain3) := heq
+    _ ≤ ‖ha.toLp _‖ * ‖hb.toLp _‖ := hcs
+    _ = ‖restrictToBall (R + r) f‖ * ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ := by
+        rw [hna, hnb, mul_comm]
 
 /-! ### FK step 1 — uniform L²-mollification approximate identity -/
 

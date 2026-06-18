@@ -534,6 +534,38 @@ private theorem transverse_ae_iff (u : L2VF_R3) :
       simpa [transverseDefect, IsTransverseAt] using hξ
     simp [this]
 
+/-- The Fourier test symbol attached to a real Schwartz `φ` in the weak-divergence pairing:
+`testSymbol φ ξ = conj((2π i)·𝓕(schwartzC φ)(ξ))`.  As `φ` ranges over all real Schwartz
+functions this is exactly the available family of test symbols paired against the transverse
+defect in `divTestFunctional_eq_fourier_integral` / `mem_sigma_iff_fourier_integral_zero`. -/
+private noncomputable def testSymbol (φ : SchwartzMap Domain3 ℝ) (ξ : Domain3) : ℂ :=
+  (starRingEnd ℂ)
+    ((2 * Real.pi * Complex.I) * (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ)
+
+/-- **Anti-Hermitian symmetry of the available test symbols.**  For a real Schwartz `φ`, the
+test symbol `testSymbol φ` is anti-Hermitian: `testSymbol φ (-ξ) = -conj(testSymbol φ ξ)`.
+
+This is the structural constraint behind the Hermitian wall in the forward direction: every
+test symbol obtainable from a *real* `φ` is anti-Hermitian, so the all-`g` hypothesis of
+mathlib's `ae_eq_zero_of_integral_contDiff_smul_eq_zero` cannot be met by a single `φ`; an
+even/odd reduction over this symmetry is required.  Proof: `fourier_schwartzC_hermitian`
+gives `φ̂(-ξ) = conj(φ̂(ξ))`, and `conj((2πi)·) = -2πi·conj(·)` flips the sign of the
+constant `2πi`. -/
+private theorem testSymbol_antiHermitian (φ : SchwartzMap Domain3 ℝ) (ξ : Domain3) :
+    testSymbol φ (-ξ) = -(starRingEnd ℂ) (testSymbol φ ξ) := by
+  -- `conj(2πi) = -2πi`
+  have hconj : (starRingEnd ℂ) (2 * Real.pi * Complex.I)
+      = -(2 * Real.pi * Complex.I) := by
+    rw [map_mul, map_mul, Complex.conj_I, Complex.conj_ofReal,
+      show ((2 : ℂ)) = ((2 : ℝ) : ℂ) by norm_num, Complex.conj_ofReal]
+    ring
+  show (starRingEnd ℂ) ((2 * Real.pi * Complex.I) * (𝓕 (schwartzC φ) : _) (-ξ))
+      = -(starRingEnd ℂ) ((starRingEnd ℂ) ((2 * Real.pi * Complex.I)
+          * (𝓕 (schwartzC φ) : _) ξ))
+  rw [fourier_schwartzC_hermitian φ ξ, Complex.conj_conj]
+  rw [map_mul, hconj, Complex.conj_conj]
+  ring
+
 /-- **Reverse direction (a.e. transverse ⇒ weakly divergence-free).**  If the transverse
 defect `T_u` vanishes a.e., then every Schwartz weak-divergence test integral vanishes, so
 `u ∈ L2Sigma_R3`. -/
