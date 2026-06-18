@@ -785,7 +785,228 @@ theorem mollified_family_equicontinuous (R C : ℝ) (S : Set (L2ballR3 R))
         exact mul_lt_mul_of_pos_left hmod_lt hMpos
     _ = ε := by field_simp
 
+/-- The volume of the closed ball `B_R ⊆ ℝ³` is finite (it is compact in a proper space), so the
+restricted measure `volume.restrict B_R` is a finite measure: needed to invoke
+`Lp.norm_le_of_ae_bound` for the sup→L² transfer. -/
+instance isFiniteMeasure_volume_restrict_closedBall (R : ℝ) :
+    IsFiniteMeasure ((volume : Measure Domain3).restrict (Metric.closedBall (0 : Domain3) R)) := by
+  refine ⟨?_⟩
+  rw [Measure.restrict_apply_univ]
+  exact (isCompact_closedBall (0 : Domain3) R).measure_lt_top
+
+/-- The "ball mass factor" `V_R := (volume B_R)^{1/2}` controlling the sup→L²(B_R) transfer. -/
+noncomputable def ballMassSqrt (R : ℝ) : ℝ :=
+  (measureUnivNNReal ((volume : Measure Domain3).restrict
+    (Metric.closedBall (0 : Domain3) R)) : ℝ) ^ ((2 : ℝ)⁻¹)
+
+theorem ballMassSqrt_nonneg (R : ℝ) : 0 ≤ ballMassSqrt R := by
+  unfold ballMassSqrt
+  positivity
+
+/-- **Sup→L²(B_R) transfer.**  If two L²(ℝ³) fields `u, v` agree a.e. on `B_R` with functions
+whose pointwise difference is `≤ c` everywhere on `B_R`, then their ball-restrictions are within
+`ballMassSqrt R · c` in `L²(B_R)`. -/
+theorem dist_restrictToBall_le_of_ae_bound (R c : ℝ) (hc : 0 ≤ c) (u v : L2VF_R3)
+    (g₁ g₂ : Domain3 → EuclideanSpace ℝ (Fin 3))
+    (hu : (u : Domain3 → EuclideanSpace ℝ (Fin 3))
+        =ᵐ[(volume : Measure Domain3).restrict (Metric.closedBall (0 : Domain3) R)] g₁)
+    (hv : (v : Domain3 → EuclideanSpace ℝ (Fin 3))
+        =ᵐ[(volume : Measure Domain3).restrict (Metric.closedBall (0 : Domain3) R)] g₂)
+    (hbound : ∀ x ∈ Metric.closedBall (0 : Domain3) R, ‖g₁ x - g₂ x‖ ≤ c) :
+    dist (restrictToBall R u) (restrictToBall R v) ≤ ballMassSqrt R * c := by
+  set μ : Measure Domain3 := (volume : Measure Domain3).restrict
+    (Metric.closedBall (0 : Domain3) R) with hμ
+  rw [dist_eq_norm]
+  -- coeFn of the difference of restrictions agrees a.e. with `g₁ - g₂` on `μ`.
+  have hru : (restrictToBall R u : Domain3 → EuclideanSpace ℝ (Fin 3)) =ᵐ[μ] u :=
+    MemLp.coeFn_toLp _
+  have hrv : (restrictToBall R v : Domain3 → EuclideanSpace ℝ (Fin 3)) =ᵐ[μ] v :=
+    MemLp.coeFn_toLp _
+  have hsub := Lp.coeFn_sub (restrictToBall R u) (restrictToBall R v)
+  have haediff : ((restrictToBall R u - restrictToBall R v : L2ballR3 R) :
+        Domain3 → EuclideanSpace ℝ (Fin 3))
+      =ᵐ[μ] fun x => g₁ x - g₂ x := by
+    filter_upwards [hsub, hru, hrv, hu, hv] with x hxs hxu hxv hxg1 hxg2
+    simp only [hxs, Pi.sub_apply, hxu, hxv, hxg1, hxg2]
+  -- a.e. norm bound `≤ c` on `μ` (`μ` lives on `B_R`).
+  have haebd : ∀ᵐ x ∂μ,
+      ‖((restrictToBall R u - restrictToBall R v : L2ballR3 R) :
+        Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ≤ c := by
+    have hmem : ∀ᵐ x ∂μ, x ∈ Metric.closedBall (0 : Domain3) R := by
+      rw [hμ]
+      exact ae_restrict_mem measurableSet_closedBall
+    filter_upwards [haediff, hmem] with x hx hxmem
+    rw [hx]
+    exact hbound x hxmem
+  -- `Lp.norm_le_of_ae_bound` (finite measure) gives the bound with `measureUnivNNReal^{1/2}`.
+  have hb := Lp.norm_le_of_ae_bound (μ := μ) (p := 2)
+    (f := (restrictToBall R u - restrictToBall R v : L2ballR3 R)) hc haebd
+  simpa [ballMassSqrt, hμ, ENNReal.toReal_ofNat] using hb
+
 /-! ### FK step 3 — Arzelà–Ascoli ⇒ total boundedness in L²(ball) -/
+
+set_option maxHeartbeats 1600000 in
+/-- **Abstract Arzelà–Ascoli + sup→L² transfer.**  Let `Φ f` be a representative function for the
+L²(B_R)-class `restrictToBall R (ρf f)` (`hΦae`).  If the family `{Φ f : f ∈ S}` is uniformly
+bounded (`hB`) and uniformly equicontinuous (`hequi`) on the compact ball `B_R`, then the image
+`{restrictToBall R (ρf f) : f ∈ S}` is totally bounded in `L²(B_R)`.
+
+The proof is the classical Arzelà–Ascoli net construction: a finite `δ`-net of centers in the
+compact `B_R` (with `δ` from equicontinuity), a finite value-net of the bounded range, classify
+each `f` by the tuple of nearest value-net points at the centers, choose one representative per
+class; equicontinuity plus the value-net make functions in the same class uniformly close on
+`B_R`, and `dist_restrictToBall_le_of_ae_bound` (finite-measure sup→L² bound) turns that into
+L²(B_R)-closeness. -/
+theorem totallyBounded_image_of_equicont_bdd (R : ℝ) (S : Set (L2ballR3 R))
+    (ρf : L2ballR3 R → L2VF_R3)
+    (Φ : L2ballR3 R → Domain3 → EuclideanSpace ℝ (Fin 3))
+    (hΦae : ∀ f ∈ S, (ρf f : Domain3 → EuclideanSpace ℝ (Fin 3)) =ᵐ[volume] Φ f)
+    (B : ℝ)
+    (hB : ∀ f ∈ S, ∀ x : Domain3, x ∈ Metric.closedBall (0 : Domain3) R → ‖Φ f x‖ ≤ B)
+    (hequi : ∀ ε > 0, ∃ δ > 0, ∀ f ∈ S, ∀ x y : Domain3,
+      x ∈ Metric.closedBall (0 : Domain3) R → y ∈ Metric.closedBall (0 : Domain3) R →
+      ‖x - y‖ < δ → ‖Φ f x - Φ f y‖ < ε) :
+    TotallyBounded ((fun f => restrictToBall R (ρf f)) '' S) := by
+  classical
+  set ball₀ : Set Domain3 := Metric.closedBall (0 : Domain3) R with hball₀
+  -- Mass factor for the sup→L² transfer.
+  set V : ℝ := ballMassSqrt R with hV
+  have hVnn : 0 ≤ V := ballMassSqrt_nonneg R
+  rw [Metric.totallyBounded_iff]
+  intro ε hε
+  rcases S.eq_empty_or_nonempty with hSempty | hSne
+  · exact ⟨∅, Set.finite_empty, by simp [hSempty]⟩
+  haveI : Nonempty ↥S := hSne.to_subtype
+  -- Sup-level tolerance `ε'` with `V · ε' < ε`.
+  set ε' : ℝ := ε / (2 * (V + 1)) with hε'
+  have hVp1 : 0 < V + 1 := by positivity
+  have hε'pos : 0 < ε' := by positivity
+  have hVε' : V * ε' < ε := by
+    rw [hε']
+    rw [div_eq_mul_inv, ← mul_assoc]
+    calc V * ε * (2 * (V + 1))⁻¹ ≤ (V + 1) * ε * (2 * (V + 1))⁻¹ := by
+          apply mul_le_mul_of_nonneg_right _ (by positivity)
+          exact mul_le_mul_of_nonneg_right (by linarith) hε.le
+      _ = ε * ((V + 1) * (2 * (V + 1))⁻¹) := by ring
+      _ = ε * (2⁻¹) := by
+          rw [show (2 * (V + 1))⁻¹ = 2⁻¹ * (V + 1)⁻¹ by rw [mul_inv]]
+          rw [show (V + 1) * (2⁻¹ * (V + 1)⁻¹) = 2⁻¹ * ((V + 1) * (V + 1)⁻¹) by ring,
+            mul_inv_cancel₀ hVp1.ne', mul_one]
+      _ < ε := by nlinarith [hε]
+  -- Per-point tolerances: equicontinuity `ηeq` + value-net `γ`, with `2ηeq + 2γ ≤ ε'`.
+  set ηeq : ℝ := ε' / 8 with hηeq
+  have hηpos : 0 < ηeq := by positivity
+  obtain ⟨δ, hδpos, hδ⟩ := hequi ηeq hηpos
+  -- Finite δ-net of the compact ball `B_R`, with centers IN `B_R`.
+  obtain ⟨cs, hcs_sub, hcs_fin, hcs_cover⟩ :=
+    (isCompact_closedBall (0 : Domain3) R).finite_cover_balls hδpos
+  -- Finite γ-net of the value-ball `closedBall 0 B'` (`B' = max B 0 ≥ 0`).
+  set B' : ℝ := max B 0 with hB'
+  have hB'nn : 0 ≤ B' := le_max_right _ _
+  set γ : ℝ := ε' / 8 with hγ
+  have hγpos : 0 < γ := by positivity
+  obtain ⟨vs, hvs_sub, hvs_fin, hvs_cover⟩ :=
+    (isCompact_closedBall (0 : EuclideanSpace ℝ (Fin 3)) B').finite_cover_balls hγpos
+  set cF : Finset Domain3 := hcs_fin.toFinset with hcF
+  set vF : Finset (EuclideanSpace ℝ (Fin 3)) := hvs_fin.toFinset with hvF
+  have hval_near : ∀ f ∈ S, ∀ c ∈ cF, ∃ w ∈ vs, dist (Φ f c) w < γ := by
+    intro f hf c hc
+    have hc_mem : c ∈ ball₀ := hcs_sub (by simpa [hcF, hcs_fin.mem_toFinset] using hc)
+    have hΦbd : ‖Φ f c‖ ≤ B := hB f hf c hc_mem
+    have hmem : Φ f c ∈ Metric.closedBall (0 : EuclideanSpace ℝ (Fin 3)) B' := by
+      simp only [Metric.mem_closedBall, dist_zero_right]
+      exact le_trans hΦbd (le_max_left _ _)
+    have := hvs_cover hmem
+    simp only [Set.mem_iUnion, Metric.mem_ball, exists_prop] at this
+    exact this
+  set classify : ↥S → (↥cF → ↥vF) := fun f c =>
+    ⟨Classical.choose (hval_near f.1 f.2 c.1 c.2),
+      (hvs_fin.mem_toFinset).2 (Classical.choose_spec (hval_near f.1 f.2 c.1 c.2)).1⟩
+    with hclassify
+  have hclassify_spec : ∀ (f : ↥S) (c : ↥cF),
+      dist (Φ f.1 c.1) (classify f c : EuclideanSpace ℝ (Fin 3)) < γ := by
+    intro f c
+    exact (Classical.choose_spec (hval_near f.1 f.2 c.1 c.2)).2
+  have hrep_exists : ∀ b : ↥(Set.range classify), ∃ f : ↥S, classify f = b.1 := by
+    intro b; exact b.2
+  set chooseRep : ↥(Set.range classify) → ↥S := fun b => Classical.choose (hrep_exists b)
+    with hchooseRep
+  have hchooseRep_spec : ∀ b : ↥(Set.range classify), classify (chooseRep b) = b.1 :=
+    fun b => Classical.choose_spec (hrep_exists b)
+  set T : Set (L2ballR3 R) :=
+    (fun f : ↥S => restrictToBall R (ρf (f : L2ballR3 R))) '' (Set.range chooseRep)
+    with hT
+  refine ⟨T, ?_, ?_⟩
+  · exact (Set.finite_range chooseRep).image _
+  rintro _ ⟨f, hf, rfl⟩
+  set fS : ↥S := ⟨f, hf⟩ with hfS
+  set b : ↥cF → ↥vF := classify fS with hb
+  have hb_mem : b ∈ Set.range classify := ⟨fS, rfl⟩
+  set g : ↥S := chooseRep ⟨b, hb_mem⟩ with hg
+  have hgclass : classify g = b := hchooseRep_spec ⟨b, hb_mem⟩
+  refine Set.mem_iUnion.2 ⟨restrictToBall R (ρf (g : L2ballR3 R)), ?_⟩
+  refine Set.mem_iUnion.2 ⟨?_, ?_⟩
+  · exact ⟨g, ⟨⟨b, hb_mem⟩, rfl⟩, rfl⟩
+  rw [Metric.mem_ball, dist_comm]
+  have hptwise : ∀ x ∈ ball₀, ‖Φ (f) x - Φ (g : L2ballR3 R) x‖ ≤ ε' := by
+    intro x hx
+    have hxcov := hcs_cover hx
+    simp only [Set.mem_iUnion, Metric.mem_ball, exists_prop] at hxcov
+    obtain ⟨c, hc_cs, hxc⟩ := hxcov
+    have hc_cF : c ∈ cF := by simpa [hcF, hcs_fin.mem_toFinset] using hc_cs
+    have hc_ball : c ∈ ball₀ := hcs_sub hc_cs
+    set cS : ↥cF := ⟨c, hc_cF⟩ with hcS
+    have hxc' : ‖x - c‖ < δ := by
+      simpa [dist_eq_norm] using hxc
+    have heq_f : ‖Φ f x - Φ f c‖ < ηeq := hδ f hf x c hx hc_ball hxc'
+    have heq_g : ‖Φ (g : L2ballR3 R) x - Φ (g : L2ballR3 R) c‖ < ηeq :=
+      hδ (g : L2ballR3 R) g.2 x c hx hc_ball hxc'
+    have hbf : dist (Φ f c) (b cS : EuclideanSpace ℝ (Fin 3)) < γ := by
+      have := hclassify_spec fS cS; simpa [hb, hcS, hfS] using this
+    have hbg : dist (Φ (g : L2ballR3 R) c) (b cS : EuclideanSpace ℝ (Fin 3)) < γ := by
+      have hgc := hclassify_spec g cS
+      rw [hgclass] at hgc
+      simpa [hcS] using hgc
+    have hmid : ‖Φ f c - Φ (g : L2ballR3 R) c‖ < 2 * γ := by
+      have h1 : dist (Φ f c) (Φ (g : L2ballR3 R) c)
+          ≤ dist (Φ f c) (b cS : EuclideanSpace ℝ (Fin 3))
+            + dist (b cS : EuclideanSpace ℝ (Fin 3)) (Φ (g : L2ballR3 R) c) :=
+        dist_triangle _ _ _
+      have hbg' : dist (b cS : EuclideanSpace ℝ (Fin 3)) (Φ (g : L2ballR3 R) c) < γ := by
+        rw [dist_comm]; exact hbg
+      have : dist (Φ f c) (Φ (g : L2ballR3 R) c) < 2 * γ := by
+        have := lt_of_le_of_lt h1 (add_lt_add hbf hbg')
+        linarith [this]
+      rwa [dist_eq_norm] at this
+    have htri : ‖Φ f x - Φ (g : L2ballR3 R) x‖
+        ≤ ‖Φ f x - Φ f c‖ + ‖Φ f c - Φ (g : L2ballR3 R) c‖
+          + ‖Φ (g : L2ballR3 R) c - Φ (g : L2ballR3 R) x‖ := by
+      have e1 : Φ f x - Φ (g : L2ballR3 R) x
+          = (Φ f x - Φ f c) + (Φ f c - Φ (g : L2ballR3 R) c)
+            + (Φ (g : L2ballR3 R) c - Φ (g : L2ballR3 R) x) := by abel
+      rw [e1]; exact norm_add₃_le
+    have heq_g' : ‖Φ (g : L2ballR3 R) c - Φ (g : L2ballR3 R) x‖ < ηeq := by
+      rw [show Φ (g : L2ballR3 R) c - Φ (g : L2ballR3 R) x
+          = -(Φ (g : L2ballR3 R) x - Φ (g : L2ballR3 R) c) by abel, norm_neg]
+      exact heq_g
+    have hsum : ηeq + 2 * γ + ηeq ≤ ε' := by rw [hηeq, hγ]; linarith
+    have hlt : ‖Φ f x - Φ (g : L2ballR3 R) x‖ < ηeq + 2 * γ + ηeq := by
+      have := add_lt_add (add_lt_add heq_f hmid) heq_g'
+      exact lt_of_le_of_lt htri this
+    linarith [hlt, hsum]
+  have hdist : dist (restrictToBall R (ρf (g : L2ballR3 R))) (restrictToBall R (ρf f))
+      ≤ V * ε' := by
+    have hd := dist_restrictToBall_le_of_ae_bound R ε' hε'pos.le
+      (ρf (g : L2ballR3 R)) (ρf f) (Φ (g : L2ballR3 R)) (Φ f)
+      ((hΦae (g : L2ballR3 R) g.2).restrict) ((hΦae f hf).restrict)
+      (fun x hx => by
+        have hpx := hptwise x hx
+        rw [show Φ (g : L2ballR3 R) x - Φ f x = -(Φ f x - Φ (g : L2ballR3 R) x) by abel, norm_neg]
+        exact hpx)
+    simpa [hV] using hd
+  calc dist (restrictToBall R (ρf (g : L2ballR3 R))) (restrictToBall R (ρf f))
+      ≤ V * ε' := hdist
+    _ < ε := hVε'
 
 /-- **FK step 3.**  Arzelà–Ascoli: a uniformly bounded, uniformly equicontinuous family of
 continuous functions on the compact ball `B_R` is totally bounded in `C(B_R)`, hence (via the
@@ -810,13 +1031,13 @@ theorem mollified_family_totallyBounded_L2 (R C : ℝ) (S : Set (L2ballR3 R))
     (hρf : ∀ f ∈ S, (ρf f : Domain3 → EuclideanSpace ℝ (Fin 3))
         =ᵐ[volume] mollifyRep K (rep f))
     (hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + K.supportRadius) (rep f)‖ ≤ C) :
-    TotallyBounded ((fun f => restrictToBall R (ρf f)) '' S) := by
-  sorry -- ALLOW_SORRY: scaffold — Arzelà–Ascoli on the compact ball `B_R` (mathlib's abstract
-  -- `ArzelaAscoli.isCompact_of_equicontinuous` / total-boundedness form) from steps 2a+2b
-  -- (each fed the ENLARGED-BALL bound `hbdEnl` on `B_{R+K.supportRadius}` and stated on `B_R`,
-  -- NOT a global bound) for the concrete `mollifyRep K (rep f)`, then transfer
-  -- `C(B_R)`-total-boundedness to `L²(B_R)` via the finite-measure embedding (using `hρf` to
-  -- identify representatives; only `x ∈ B_R` values of `mollifyRep` enter `restrictToBall R`).
+    TotallyBounded ((fun f => restrictToBall R (ρf f)) '' S) :=
+  totallyBounded_image_of_equicont_bdd R S ρf (fun f => mollifyRep K (rep f))
+    (fun f hf => hρf f hf)
+    ((mollified_family_uniformly_bounded R C S rep K hbdEnl).choose)
+    (fun f hf x hx =>
+      (mollified_family_uniformly_bounded R C S rep K hbdEnl).choose_spec f hf x hx)
+    (mollified_family_equicontinuous R C S rep K hbdEnl)
 
 /-! ### FK step 4 — total-boundedness transfer under uniform approximation -/
 
