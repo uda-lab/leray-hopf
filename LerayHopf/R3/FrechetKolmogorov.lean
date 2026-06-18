@@ -306,6 +306,94 @@ noncomputable def mollifyRep (K : MollifierKernel) (f : L2VF_R3) :
   fun x => ∫ y : Domain3, K.η (x - y) • (f y : EuclideanSpace ℝ (Fin 3))
     ∂(volume : Measure Domain3)
 
+/-! ### Mollifier sub-library — kernel as a scalar L²-class and reusable estimates
+
+The two mollifier-family lemmas (`mollified_family_uniformly_bounded`,
+`mollified_family_equicontinuous`) are short consequences of three reusable estimates about the
+CONCRETE kernel.  We factor them out as named lemmas so each family lemma becomes a bounded
+derivation rather than a monolithic analytic proof:
+
+* `kernel_translate_L2_tendsto` — the kernel's own L²-translation modulus vanishes (η smooth +
+  compact support ⇒ uniformly continuous ⇒ DCT).  This is the *uniform* (g-independent) modulus
+  driving equicontinuity.
+* `mollifyRep_sup_le` — Cauchy–Schwarz/Young pointwise sup bound on `B_R`, with the mass factor
+  localized to the kernel-reach enlargement `B_{R + K.supportRadius}`.
+* `mollifyRep_sub_le` — the convolution-difference estimate on `B_R`, factoring the modulus of
+  `mollifyRep K f` through the kernel's L²-translation modulus times the enlarged-ball mass.
+
+To state the kernel modulus we coerce the scalar kernel `K.η : Domain3 → ℝ` into the scalar L²
+space `Lp ℝ 2 volume` (`kernelL2R`) and use the scalar translation `translate_L2R` (the scalar
+mirror of `translate_L2VF`, same measure-preserving `(· + h)` plumbing). -/
+
+/-- Scalar L² translation `τ_h g (x) = g (x − h)`, the `Lp ℝ 2 volume` mirror of
+`translate_L2VF` (same measure-preserving `(· + h)` route). -/
+noncomputable def translate_L2R (h : Domain3) (g : Lp ℝ 2 (volume : Measure Domain3)) :
+    Lp ℝ 2 (volume : Measure Domain3) :=
+  Lp.compMeasurePreserving (· + h)
+    (measurePreserving_add_right (volume : Measure Domain3) h) g
+
+/-- The scalar kernel `K.η`, coerced to a scalar L²-class.  It is `MemLp` because it is continuous
+(`K.smooth.continuous`) with compact support (`K.hasCompactSupport`). -/
+noncomputable def kernelL2R (K : MollifierKernel) : Lp ℝ 2 (volume : Measure Domain3) :=
+  MemLp.toLp K.η
+    (K.smooth.continuous.memLp_of_hasCompactSupport (p := 2) (μ := volume) K.hasCompactSupport)
+
+/-- **Helper 1 — the kernel's L²-translation modulus vanishes.**
+
+For a `MollifierKernel K`, the map `h ↦ ‖translate_L2R h (kernelL2R K) − kernelL2R K‖` tends to `0`
+as `h → 0` in `Domain3`.  `K.η` is smooth with compact support, hence uniformly continuous and
+dominated by a fixed compactly supported `L²` envelope, so dominated convergence gives L²-continuity
+of translation of the kernel.  This is the *uniform* (g-independent) modulus that drives the
+equicontinuity of the mollified family. -/
+theorem kernel_translate_L2_tendsto (K : MollifierKernel) :
+    Filter.Tendsto
+      (fun h : Domain3 => ‖translate_L2R h (kernelL2R K) - kernelL2R K‖)
+      (𝓝 (0 : Domain3)) (𝓝 (0 : ℝ)) := by
+  sorry -- ALLOW_SORRY: scaffold — L²-continuity of translation for the kernel.  `K.η` smooth
+  -- (`K.smooth`) + compact support (`K.hasCompactSupport`) ⇒ uniformly continuous with a fixed
+  -- compactly supported `L²` envelope; dominated convergence (mathlib's `Lp` translation-continuity,
+  -- e.g. `Lp.continuous_compMeasurePreserving`/`tendsto` of `τ_h` in `Lp`) yields the vanishing
+  -- modulus.  This is the standard "kernel modulus" feeding `mollifyRep_sub_le`.
+
+/-- **Helper 2 — pointwise sup bound for the mollified field (Cauchy–Schwarz / Young).**
+
+For `x ∈ closedBall 0 R`, the convolution value `mollifyRep K f x = ∫ y, K.η (x−y) • f y` is bounded
+by `‖kernelL2R K‖ · ‖restrictToBall (R + K.supportRadius) f‖`.  Cauchy–Schwarz on the integrand
+`K.η(x−y) • f y` gives `‖kernel‖₂ · ‖f‖₂`, and because `K.η` is supported in
+`closedBall 0 K.supportRadius` the integral only sees `f` over `y ∈ B_{R + K.supportRadius}`
+(kernel reach from `B_R`), localizing the mass factor to the enlarged ball. -/
+theorem mollifyRep_sup_le (K : MollifierKernel) (f : L2VF_R3) (R : ℝ)
+    {x : Domain3} (hx : x ∈ Metric.closedBall (0 : Domain3) R) :
+    ‖mollifyRep K f x‖
+      ≤ ‖kernelL2R K‖ * ‖restrictToBall (R + K.supportRadius) f‖ := by
+  sorry -- ALLOW_SORRY: scaffold — Cauchy–Schwarz on `∫ y, K.η(x−y) • f y`: the integrand vanishes
+  -- unless `x − y ∈ closedBall 0 K.supportRadius` (`K.tsupport_subset`), i.e. `y ∈ B_{R+K.supportRadius}`
+  -- when `x ∈ B_R`, so `‖mollifyRep K f x‖ ≤ ‖K.η(x−·)‖₂ · ‖restrictToBall (R+K.supportRadius) f‖`;
+  -- `‖K.η(x−·)‖₂ = ‖kernelL2R K‖` by translation/reflection-invariance of the L²-norm.
+
+/-- **Helper 3 — convolution-difference estimate (modulus of the mollified field).**
+
+For `x, y ∈ closedBall 0 R`, the increment of the mollified field is bounded by the enlarged-ball
+mass of `f` times the kernel's own L²-translation modulus at the shift `x − y`:
+
+  `‖mollifyRep K f x − mollifyRep K f y‖`
+      `≤ ‖restrictToBall (R + K.supportRadius) f‖ · ‖translate_L2R (x − y) (kernelL2R K) − kernelL2R K‖`.
+
+After the change of variables `z = x − y'` the difference is `∫ (K.η(x−·) − K.η(y−·)) • f`, and
+Cauchy–Schwarz factors it as (kernel translation-modulus)·(enlarged-ball mass of `f`). -/
+theorem mollifyRep_sub_le (K : MollifierKernel) (f : L2VF_R3) (R : ℝ)
+    {x y : Domain3} (hx : x ∈ Metric.closedBall (0 : Domain3) R)
+    (hy : y ∈ Metric.closedBall (0 : Domain3) R) :
+    ‖mollifyRep K f x - mollifyRep K f y‖
+      ≤ ‖restrictToBall (R + K.supportRadius) f‖
+          * ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ := by
+  sorry -- ALLOW_SORRY: scaffold — `mollifyRep K f x − mollifyRep K f y = ∫ y', (K.η(x−y') − K.η(y−y')) • f y'`,
+  -- whose integrand involves the kernel difference `K.η(x−·) − K.η(y−·)`, a translate by `x − y` of
+  -- `K.η(y−·)`; by reflection/translation invariance its L²-norm equals
+  -- `‖translate_L2R (x−y) (kernelL2R K) − kernelL2R K‖`.  Both kernel slices are supported so the
+  -- integrand only sees `f` over `B_{R+K.supportRadius}` (`x, y ∈ B_R`, `K.tsupport_subset`); Cauchy–Schwarz
+  -- then gives `(enlarged-ball mass of f) · (kernel translation-modulus at x−y)`.
+
 /-! ### FK step 1 — uniform L²-mollification approximate identity -/
 
 /-- **FK step 1.**  Uniform L²-approximation of a translation-equicontinuous family by its
@@ -387,12 +475,14 @@ theorem mollified_family_uniformly_bounded (R C : ℝ) (S : Set (L2ballR3 R))
     (hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + K.supportRadius) (rep f)‖ ≤ C) :
     ∃ B : ℝ, ∀ f ∈ S, ∀ x : Domain3, x ∈ Metric.closedBall (0 : Domain3) R →
         ‖mollifyRep K (rep f) x‖ ≤ B := by
-  sorry -- ALLOW_SORRY: scaffold — for `x ∈ B_R`, Young's inequality `‖(η ⋆ g) x‖ ≤ ‖K.η‖₂ · ‖g‖₂`
-  -- localizes: the integrand `η(x−y)·g(y)` is supported in `y ∈ B_{R + K.supportRadius}` (kernel
-  -- reach), so `‖(η ⋆ g) x‖ ≤ ‖K.η‖₂ · ‖restrictToBall (R+K.supportRadius) g‖`, giving the uniform
-  -- sup-bound `B := ‖K.η‖₂ · C` over `B_R` from the ENLARGED-BALL hypothesis `hbdEnl` (itself
-  -- supplied from `FrechetKolmogorovInput`'s GLOBAL bound `hbddGlobal` by ball-mass monotonicity);
-  -- `K.η ∈ L²` from continuity + compact support (`K.smooth.continuous`, `K.hasCompactSupport`).
+  -- Uniform sup-bound `B := ‖kernelL2R K‖ · C`: each pointwise value is bounded by the kernel
+  -- L²-norm times the enlarged-ball mass (`mollifyRep_sup_le`), which is ≤ C by `hbdEnl`.
+  refine ⟨‖kernelL2R K‖ * C, fun f hf x hx => ?_⟩
+  calc ‖mollifyRep K (rep f) x‖
+      ≤ ‖kernelL2R K‖ * ‖restrictToBall (R + K.supportRadius) (rep f)‖ :=
+        mollifyRep_sup_le K (rep f) R hx
+    _ ≤ ‖kernelL2R K‖ * C :=
+        mul_le_mul_of_nonneg_left (hbdEnl f hf) (norm_nonneg _)
 
 /-- **FK step 2 (equicontinuity).**  The CONCRETE mollified family is uniformly equicontinuous on
 its explicit representative.
@@ -419,12 +509,45 @@ theorem mollified_family_equicontinuous (R C : ℝ) (S : Set (L2ballR3 R))
       x ∈ Metric.closedBall (0 : Domain3) R → y ∈ Metric.closedBall (0 : Domain3) R →
       ‖x - y‖ < δ →
       ‖mollifyRep K (rep f) x - mollifyRep K (rep f) y‖ < ε := by
-  sorry -- ALLOW_SORRY: scaffold — for `x, y ∈ B_R`, `‖(η⋆g)(x)−(η⋆g)(y)‖ ≤ ‖restrictToBall
-  -- (R+K.supportRadius) g‖ · ‖τ_{x−y}K.η − K.η‖₂` with `g = rep f` (kernel reach `K.supportRadius`
-  -- localizes the mass factor to `B_{R+r}`); the kernel modulus is independent of `g` (uniform
-  -- continuity of `K.η` from `K.smooth`/`K.hasCompactSupport`), giving uniform equicontinuity on
-  -- `B_R` over the family from the ENLARGED-BALL hypothesis `hbdEnl` (itself supplied from
-  -- `FrechetKolmogorovInput`'s GLOBAL bound `hbddGlobal` by ball-mass monotonicity).
+  -- ε→δ via the kernel's L²-translation modulus `kernel_translate_L2_tendsto`, scaled by the
+  -- uniform enlarged-ball mass (≤ |C|+1).  The increment is bounded by
+  -- (enlarged mass)·(kernel modulus) via `mollifyRep_sub_le`.
+  intro ε hε
+  -- Uniform mass bound `M := |C| + 1 > 0`, so it can divide ε.
+  set M : ℝ := |C| + 1 with hM
+  have hMpos : 0 < M := by positivity
+  -- The kernel modulus `m h := ‖τ_h kernel − kernel‖ → 0` as `h → 0`; choose δ making it < ε/M.
+  have htend := kernel_translate_L2_tendsto K
+  have hpos : 0 < ε / M := div_pos hε hMpos
+  -- Pull back the `< ε/M` neighborhood of `0 ∈ ℝ` along the modulus to a `0`-neighborhood in
+  -- `Domain3`, then extract a metric radius δ.
+  have hball : {z : ℝ | z < ε / M} ∈ 𝓝 (0 : ℝ) :=
+    IsOpen.mem_nhds (isOpen_Iio) (by simpa using hpos)
+  have hpre : (fun h : Domain3 => ‖translate_L2R h (kernelL2R K) - kernelL2R K‖) ⁻¹'
+      {z : ℝ | z < ε / M} ∈ 𝓝 (0 : Domain3) := htend hball
+  rw [Metric.mem_nhds_iff] at hpre
+  obtain ⟨δ, hδpos, hδsub⟩ := hpre
+  refine ⟨δ, hδpos, fun f hf x y hx hy hxy => ?_⟩
+  -- The shift `x − y` lies in the δ-ball around 0, so the kernel modulus there is `< ε/M`.
+  have hmem : (x - y) ∈ Metric.ball (0 : Domain3) δ := by
+    simp only [Metric.mem_ball, dist_zero_right]
+    simpa using hxy
+  have hmod_lt : ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ < ε / M := hδsub hmem
+  have hmod_nonneg : 0 ≤ ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ := norm_nonneg _
+  -- Enlarged-ball mass ≤ C ≤ |C| < M.
+  have hmass : ‖restrictToBall (R + K.supportRadius) (rep f)‖ ≤ M :=
+    le_trans (hbdEnl f hf) (by rw [hM]; linarith [le_abs_self C])
+  have hmass_nonneg : 0 ≤ ‖restrictToBall (R + K.supportRadius) (rep f)‖ := norm_nonneg _
+  -- Combine: increment ≤ mass · modulus ≤ M · (ε/M) = ε  (strict because modulus < ε/M, M > 0).
+  calc ‖mollifyRep K (rep f) x - mollifyRep K (rep f) y‖
+      ≤ ‖restrictToBall (R + K.supportRadius) (rep f)‖
+          * ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ :=
+        mollifyRep_sub_le K (rep f) R hx hy
+    _ ≤ M * ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ :=
+        mul_le_mul_of_nonneg_right hmass hmod_nonneg
+    _ < M * (ε / M) := by
+        exact mul_lt_mul_of_pos_left hmod_lt hMpos
+    _ = ε := by field_simp
 
 /-! ### FK step 3 — Arzelà–Ascoli ⇒ total boundedness in L²(ball) -/
 
