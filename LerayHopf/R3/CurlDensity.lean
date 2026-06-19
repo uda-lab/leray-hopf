@@ -612,14 +612,34 @@ theorem mem_sigma_iff_fourier_transverse (u : L2VF_R3) :
     -- via the even/odd-part reduction to `ae_eq_zero_of_integral_contDiff_smul_eq_zero`.
     have _hLI := locallyIntegrable_transverseDefect u
     have _hzero := (mem_sigma_iff_fourier_integral_zero u).1 hmem
-    -- The available Fourier test symbols `conj((2πi)·𝓕(schwartzC φ))` (real `φ`) are
-    -- anti-Hermitian (see `fourier_schwartzC_hermitian`), so the all-`g` hypothesis of
-    -- mathlib's `ae_eq_zero_of_integral_contDiff_smul_eq_zero` is not directly met.  Closing
-    -- needs (i) surjectivity of `φ ↦ 𝓕(schwartzC φ)` onto Hermitian Schwartz with real/imag
-    -- parts spanning all even/odd real Schwartz, and (ii) the even/odd integral-vanishing
-    -- reduction using the anti-Hermitian symmetry of `transverseDefect u`.  The REVERSE
-    -- direction below is fully proved.
-    sorry -- ALLOW_SORRY: du-Bois-Reymond under the Hermitian test-symbol constraint — needs Fourier surjectivity onto Hermitian Schwartz + even/odd Schwartz density (not in mathlib/repo)
+    -- Two routes were investigated; both bottom out on the same two genuinely-missing pillars.
+    --
+    -- PHYSICAL ROUTE (via `divComponent_eq_fourier_integral`): for arbitrary real smooth compact
+    -- `g`, writing `m_j(ξ) = g(ξ)·ξ_j` and applying the L² multiplication formula gives
+    -- `∫ g·T_u = ∑_j ∫ 𝓕(m_j^ℂ)(x)·u_j(x) dx`.  To match this to a `divTestFunctional φ` (the
+    -- only zero-pairings `hmem` supplies) one needs a SINGLE real Schwartz `φ` with
+    -- `∂_j φ = 𝓕(m_j^ℂ)` for all `j`, i.e. `φ^ℂ = 𝓕⁻(g^ℂ/(2πi))`.  That `φ` is real only when
+    -- `g^ℂ/(2πi)` is Hermitian, which fails for a generic real `g` — the anti-Hermitian wall.
+    --
+    -- HERMITIAN ROUTE (even/odd reduction): `T_u` is anti-Hermitian — `û_j(-ξ) =ᵐ conj(û_j(ξ))`
+    -- (Fourier of a real component) and `(-ξ)_j = -ξ_j` give `T_u(-ξ) =ᵐ -conj(T_u(ξ))`, so
+    -- `Re T_u` is odd and `Im T_u` is even.  The available test symbols `testSymbol φ` are
+    -- exactly the anti-Hermitian Schwartz functions (`testSymbol_antiHermitian`), whose real
+    -- parts are odd-real and imaginary parts even-real.  Choosing `φ` with `testSymbol φ = g_o`
+    -- (odd) and another with `testSymbol φ = i·g_e` (even) splits `∫ g·T_u = ∫ g_o Re T_u +
+    -- i∫ g_e Im T_u` into two vanishing pieces, feeding `ae_eq_zero_of_integral_contDiff_smul_eq_zero`.
+    --
+    -- Both routes require, beyond what mathlib/repo provide:
+    --   (P1) the a.e. Hermitian symmetry of the L²-Fourier transform of a complexified real
+    --        component, `(𝓕 (L2VF_projComponentC_R3 j u))(-ξ) =ᵐ conj((𝓕 (…)) ξ)` — i.e. an
+    --        L²-level reflection/conjugation Fourier identity (the `(-·)` analogue of
+    --        `FourierL2.fourier_translate_eq`, NOT in `FourierL2` and addable only there); and
+    --   (P2) surjectivity of `φ ↦ testSymbol φ` onto every anti-Hermitian compactly-supported
+    --        smooth symbol, which reduces to: `𝓕⁻` of a Hermitian Schwartz function is the
+    --        complexification of a real Schwartz function (Schwartz-space real-part extraction
+    --        under Hermitian symmetry) — NOT in mathlib.
+    -- Both are isolated analytic frontiers; the REVERSE direction below is fully proved.
+    sorry -- ALLOW_SORRY: forward du-Bois-Reymond under the anti-Hermitian test-symbol constraint — blocked on (P1) an L²-Fourier reflection/conjugation identity for complexified real components (the `(-·)` analogue of FourierL2.fourier_translate_eq, addable only in FourierL2) and (P2) Schwartz surjectivity of `φ ↦ testSymbol φ` onto anti-Hermitian symbols (= `𝓕⁻` of Hermitian Schwartz is a real Schwartz complexification); neither is in mathlib/repo
   · -- Reverse (a.e. transverse ⇒ weakly divergence-free): fully proved.
     intro htr
     exact mem_sigma_of_transverse_ae u htr

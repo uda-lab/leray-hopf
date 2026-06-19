@@ -700,6 +700,92 @@ named helper SIGNATURES (bodies deferred to `lean-prover`):
   translation modulus and `K.supportRadius < δ`, this gives the uniform `< ε` approximation rate.
 -/
 
+/-! ### Shared Bochner-`Lp` integral primitive for the two analytic cores
+
+Both analytic cores (`young_convolution_memLp_L2`, `convolution_sub_L2_le_translation_modulus`)
+follow from a single identity expressing the `L²`-class of the convolution `mollifyRep K g` as an
+`Lp`-valued Bochner integral of kernel-weighted translates:
+
+  `toLp (mollifyRep K g) = ∫ h, K.η h • translate_L2VF h g ∂volume`   (an `L2VF_R3`-valued integral).
+
+Once this identity and the Bochner-integrability of `h ↦ K.η h • translate_L2VF h g` are in hand,
+`MeasureTheory.norm_integral_le_integral_norm` (valid in the Banach space `L2VF_R3`) plus
+`‖translate_L2VF h g‖ = ‖g‖` and the kernel facts (`nonneg`, `mass_one`) deliver both cores. -/
+
+/-- The translation family `h ↦ translate_L2VF h g` is continuous (`Lp` translation-continuity,
+the vector-valued mirror of `kernel_translate_L2_tendsto`'s ingredient). -/
+private theorem continuous_translate_L2VF (g : L2VF_R3) :
+    Continuous (fun h : Domain3 => translate_L2VF h g) := by
+  set g' : Domain3 → C(Domain3, Domain3) :=
+    fun h => ⟨(· + h), continuous_id.add continuous_const⟩ with hg'
+  have hgm : ∀ h : Domain3, MeasurePreserving (g' h) (volume : Measure Domain3) volume :=
+    fun h => measurePreserving_add_right (volume : Measure Domain3) h
+  have hg'cont : Continuous g' := by
+    refine ContinuousMap.continuous_of_continuous_uncurry _ ?_
+    show Continuous (fun p : Domain3 × Domain3 => p.2 + p.1)
+    exact continuous_snd.add continuous_fst
+  have := Continuous.compMeasurePreservingLp (μ := (volume : Measure Domain3))
+    (ν := (volume : Measure Domain3)) (E := EuclideanSpace ℝ (Fin 3)) (p := 2)
+    (f := fun _ : Domain3 => g) (g := g') continuous_const hg'cont hgm (by simp)
+  exact this
+
+/-- The kernel-weighted translation family `h ↦ K.η h • translate_L2VF h g` is Bochner
+integrable as an `L2VF_R3`-valued map: it is continuous (so strongly measurable) and supported in
+`tsupport K.η ⊆ closedBall 0 K.supportRadius` (compact), with `‖K.η h • translate_L2VF h g‖
+= |K.η h| · ‖g‖` bounded. -/
+private theorem integrable_kernel_smul_translate (K : MollifierKernel) (g : L2VF_R3) :
+    Integrable (fun h : Domain3 => K.η h • translate_L2VF h g) (volume : Measure Domain3) := by
+  have hcont : Continuous (fun h : Domain3 => K.η h • translate_L2VF h g) :=
+    (K.smooth.continuous).smul (continuous_translate_L2VF g)
+  -- compact support: outside `tsupport K.η` the scalar factor is `0`.
+  have hsupp : HasCompactSupport (fun h : Domain3 => K.η h • translate_L2VF h g) := by
+    apply HasCompactSupport.intro (K.hasCompactSupport.isCompact) (fun h hh => ?_)
+    have : K.η h = 0 := by
+      by_contra hne
+      exact hh (subset_tsupport K.η (by simpa using hne))
+    simp [this]
+  exact hcont.integrable_of_hasCompactSupport hsupp
+
+/-- `‖K.η h • translate_L2VF h g‖ = K.η h · ‖g‖` (using `K.nonneg` so `|K.η h| = K.η h`). -/
+private theorem norm_kernel_smul_translate (K : MollifierKernel) (g : L2VF_R3) (h : Domain3) :
+    ‖K.η h • translate_L2VF h g‖ = K.η h * ‖g‖ := by
+  rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (K.nonneg h)]
+  congr 1
+  rw [translate_L2VF, Lp.norm_compMeasurePreserving]
+
+/-- The `L¹`-mass of the kernel is `1` (`K.nonneg` ⇒ `|η| = η`, `K.mass_one`). -/
+private theorem norm_kernelL1R (K : MollifierKernel) : ‖kernelL1R K‖ = 1 := by
+  rw [kernelL1R]
+  -- `‖MemLp.toLp K.η _‖ = ∫ |K.η| = ∫ K.η = 1`.
+  have hmem : MemLp K.η 1 (volume : Measure Domain3) :=
+    K.smooth.continuous.memLp_of_hasCompactSupport (p := 1) (μ := volume) K.hasCompactSupport
+  have hint : Integrable K.η (volume : Measure Domain3) := memLp_one_iff_integrable.mp hmem
+  rw [show MemLp.toLp K.η hmem = (hint.toL1 K.η) from rfl, L1.norm_of_fun_eq_integral_norm]
+  rw [show (fun a => ‖K.η a‖) = K.η from funext fun a => by
+    rw [Real.norm_eq_abs, abs_of_nonneg (K.nonneg a)]]
+  exact K.mass_one
+
+/-- **Shared primitive.**  The `L²`-class of `mollifyRep K g` equals the `Lp`-valued Bochner
+integral of the kernel-weighted translates `h ↦ K.η h • translate_L2VF h g`.
+
+`mollifyRep K g x = ∫ y, K.η (x − y) • g y`; the change of variables `y = x + h` (`dy = dh`,
+`x − y = −h`) and `K.even` rewrite this as `∫ h, K.η h • g (x + h) = ∫ h, K.η h • (τ_h g) x`.
+Pairing both sides with an arbitrary test class `φ ∈ L2VF_R3` and commuting the inner product
+(a `CLM`) past the `Lp`-valued integral reduces the identity to the scalar Fubini interchange
+isolated as `mollifyRep_inner_fubini`. -/
+private theorem mollifyRep_eq_lp_integral (K : MollifierKernel) (g : L2VF_R3)
+    (hmem : MemLp (mollifyRep K g) 2 (volume : Measure Domain3)) :
+    hmem.toLp = ∫ h : Domain3, K.η h • translate_L2VF h g ∂(volume : Measure Domain3) := by
+  -- ALLOW_SORRY: Lp-valued Bochner / scalar-Fubini identity. The map `h ↦ K.η h • τ_h g` is Bochner
+  -- integrable (`integrable_kernel_smul_translate`), and the convolution `mollifyRep K g x =
+  -- ∫ y, K.η(x−y)•g y` equals, after the measure-preserving change of variables `y = x + h` and
+  -- `K.even`, the pointwise value `∫ h, K.η h • (τ_h g) x` of that integral. The remaining content
+  -- is the interchange `(∫ h, K.η h • τ_h g : L2VF_R3) x =ᵐ ∫ h, K.η h • (τ_h g) x` — the coeFn of an
+  -- Lp-valued Bochner integral as the scalar integral of coeFns — which mathlib does not provide in
+  -- a directly usable form for this `volume`-on-ℝ³ vector-valued setting (needs a Fubini/Minkowski
+  -- argument via inner-product duality with `ContinuousLinearMap.integral_comp_comm`).
+  sorry
+
 /-- **Analytic core — global Young convolution inequality in `L²`.**
 
 The mollified field `mollifyRep K g = K.η ⋆ g` lies in `L²(ℝ³)` globally, with

@@ -44,8 +44,15 @@ deriving one would overclaim from insufficient inputs (statement-gate fix).
 - `GelfandTriple.IsOfDissipativeEvolution` — `def` of the faithfulness contract (a `Prop`,
   no proof obligation; pure statement).
 - `GelfandTriple.ofDissipativeEvolution` — must-prove construction returning
-  `Σ' GT : GelfandTriple, GT.IsOfDissipativeEvolution …`; body is a marked `sorry` this
-  cycle (lean-prover target). 1 `ALLOW_SORRY`.
+  `Σ' GT : GelfandTriple, GT.IsOfDissipativeEvolution …`. Body assembled: the `Σ'` package,
+  `ι := Subtype.val`, injectivity, dense range (from `hdense`), and the full
+  `IsOfDissipativeEvolution` faithfulness proof (`hH := rfl`, HEq instances, range `= Vsub`,
+  `‖v‖² = E.reg (ι v)` from `hreg_norm`) are all proved. The two algebraic-embedding fields
+  `ι_linear` / `ι_continuous` remain `ALLOW_SORRY`: they are stated against the EXPLICIT
+  input module structure `normV`/`ipsV`, which carries an additive/scalar structure on
+  `↥Vsub` that the signature does not pin to the submodule's own (verified non-defeq), so the
+  coercion's linearity/continuity is not derivable without a lean-coder compatibility-hypothesis
+  signature fix. 2 `ALLOW_SORRY`.
 -/
 
 import LerayHopf.EvolutionTriple
@@ -206,12 +213,59 @@ noncomputable def GelfandTriple.ofDissipativeEvolution
       ∃ C : ℝ, 0 < C ∧ ∀ v : Vsub, ‖(v : E.H)‖ ≤ C * ‖v‖)
     -- the regularity subspace is dense in `E.H` (the Gelfand-triple density property).
     (hdense : letI := E.instNACG; letI := E.instIPS; Dense (Vsub : Set E.H)) :
-    Σ' GT : GelfandTriple, GT.IsOfDissipativeEvolution E Vsub :=
-  -- Set `V := Vsub` with the EXPLICIT Hilbert instances `normV`/`ipsV`/`csV`, `H := E.H`,
-  -- `ι := Subtype.val` (set inclusion). The embedding is injective (subtype value) and dense
-  -- (`hdense`); continuity is `hbdd`; completeness of `V` is `csV`. The faithfulness component
-  -- holds by construction (`hH := rfl`, range = `Vsub`, `‖v‖² = E.reg (ι v)` by `hreg_norm`).
-  -- Assembly deferred.
-  sorry -- ALLOW_SORRY: D0 bridge construction (lean-prover target); package the regularity space V := Vsub with its provided Hilbert structure (normV/ipsV/csV), bundle the dense continuous inclusion into H := E.H, and discharge `IsOfDissipativeEvolution`. No missing mathlib pillar — Hilbert structure is explicit input; only the dense continuous inclusion + density hypothesis `hdense` remain.
+    Σ' GT : GelfandTriple, GT.IsOfDissipativeEvolution E Vsub := by
+  letI := E.instNACG; letI := E.instIPS; letI := E.instCS
+  letI := normV; letI := ipsV; letI := csV
+  -- The set inclusion `Vsub → E.H`, packaged as data for the structure fields.
+  -- Continuity: the `Vsub`-norm is `normV`; the ambient `E.H`-norm is dominated by it (`hbdd`).
+  -- We obtain it from the linear map `Submodule.subtype Vsub` and the explicit bound.
+  -- Build the `GelfandTriple` with `V := Vsub`, `H := E.H`, `ι := Subtype.val`.
+  refine ⟨{
+      V := Vsub
+      H := E.H
+      instNACG_V := normV
+      instIPS_V := ipsV
+      instCS_V := csV
+      instNACG_H := E.instNACG
+      instIPS_H := E.instIPS
+      instCS_H := E.instCS
+      ι := fun v => (v : E.H)
+      ι_linear := ?_
+      ι_continuous := ?_
+      ι_injective := ?_
+      ι_denseRange := ?_ }, ?_⟩
+  · -- linearity of the subtype inclusion `↥Vsub → E.H`.
+    -- The conclusion `IsLinearMap ℝ (fun v => (v : E.H))` is stated with the module structure
+    -- `normV.toAddCommMonoid` / `ipsV.toModule` carried by the EXPLICIT input instances, which
+    -- are NOT definitionally the submodule's own `Vsub.addCommMonoid` / `Vsub.module` (verified:
+    -- `rfl` for `map_add` is rejected with "synthesized Vsub.addCommMonoid / inferred
+    -- normV.toAddCommMonoid"). The signature provides `normV`/`ipsV` as free data with no
+    -- hypothesis pinning their `+`/`•` to the submodule's, so
+    -- `Subtype.val (x +[normV] y) = (x : E.H) + (y : E.H)` is not derivable here.
+    sorry -- ALLOW_SORRY: normV/ipsV-vs-submodule additive/scalar instance-compatibility gap; needs a lean-coder signature fix adding the compatibility hypothesis (e.g. carry `(Submodule.subtype Vsub).IsLinearMap` as data, or `HEq normV.toAddCommGroup Vsub.addCommGroup` + scalar variant).
+  · -- continuity of `↥Vsub → E.H` from the domination bound `hbdd`.
+    -- Same instance-compatibility blocker as `ι_linear`. `ι_continuous` is stated with
+    -- `letI := instNACG_V` (= `normV`); `hbdd` bounds the `E.H`-norm by `normV`'s norm. To turn
+    -- that bound into `Continuous` via `AddMonoidHomClass.continuous_of_bound` one needs the
+    -- inclusion as an additive hom over `normV`'s group structure, which again requires `normV`'s
+    -- `+` to be the submodule's. With the compatibility hypothesis,
+    -- `AddMonoidHomClass.continuous_of_bound (Submodule.subtype Vsub) C hbound`
+    -- (after `obtain ⟨C, _, hbound⟩ := hbdd`) closes it.
+    sorry -- ALLOW_SORRY: same normV-vs-submodule additive-instance gap as ι_linear; lean-coder signature fix (compatibility hypothesis) unblocks it.
+  · -- injectivity of the subtype inclusion
+    exact Subtype.val_injective
+  · -- dense range: range of `Subtype.val` is `Vsub`, which is dense by `hdense`
+    rw [denseRange_iff_closure_range]
+    have hrange : Set.range (fun v : Vsub => (v : E.H)) = (Vsub : Set E.H) :=
+      Subtype.range_val
+    rw [hrange]
+    exact hdense.closure_eq
+  · -- the `IsOfDissipativeEvolution` faithfulness contract
+    refine ⟨rfl, HEq.rfl, HEq.rfl, ?_, ?_⟩
+    · -- range of `cast rfl ∘ ι` is exactly `Vsub`
+      exact (Subtype.range_val : Set.range (fun v : Vsub => (v : E.H)) = (Vsub : Set E.H))
+    · -- norm² = E.reg ∘ ι, by `hreg_norm`
+      intro v
+      simpa using hreg_norm v
 
 end LerayHopf.Bochner
