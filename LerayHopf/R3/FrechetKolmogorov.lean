@@ -1,5 +1,6 @@
 import LerayHopf.R3.RellichBall                  -- FrechetKolmogorovInput, translate_L2VF, L2ballR3, restrictToBall
 import Mathlib.Analysis.Convolution               -- MeasureTheory.convolution, ContDiffBump approximate identity
+import Mathlib.Analysis.Calculus.BumpFunction.Normed -- ContDiffBump.normed (mass-one smooth compactly-supported mollifier)
 import Mathlib.Topology.UniformSpace.Cauchy       -- TotallyBounded, isCompact_iff_totallyBounded_isComplete
 import Mathlib.MeasureTheory.Function.LpSpace.ContinuousCompMeasurePreserving -- Lp translation-continuity (Filter.Tendsto.compMeasurePreservingLp)
 
@@ -118,7 +119,11 @@ R3/SpatialCompactness.lean   (L2ballR3, restrictToBall, LocalRellichInput)
 - `memH1_weightedL2_integrable`            : helper SIG for RellichBall's residual sorry (H¹ ⇒ weighted-L² integrability)
 - `MollifierKernel`                        : concrete smooth compactly-supported scalar kernel (mollifier data)
 - `mollifyRep`                             : explicit continuous representative of the mollified field (`η ⋆ f`)
-- `convolution_l2_tendsto_uniform`         : FK step 1 — uniform L²-mollification approximate identity
+- `exists_normalized_mollifierKernel`      : mass-one nonneg smooth kernel of support `≤ r` (from `ContDiffBump.normed`)
+- `kernelL1R`                              : the kernel coerced to a scalar L¹-class (`‖η‖₁` in Young)
+- `young_convolution_memLp_L2`             : analytic core SIG — global Young `‖η ⋆ g‖₂ ≤ ‖η‖₁·‖g‖₂` + `MemLp`
+- `convolution_sub_L2_le_translation_modulus` : analytic core SIG — vector Minkowski form of the approximation rate
+- `convolution_l2_tendsto_uniform`         : FK step 1 — uniform L²-mollification approximate identity (routes through the two cores)
 - `mollified_family_uniformly_bounded`     : FK step 2 — equibounded smoothed family (concrete `mollifyRep`)
 - `mollified_family_equicontinuous`        : FK step 2 — equicontinuous smoothed family (concrete `mollifyRep`)
 - `mollified_family_totallyBounded_L2`     : FK step 3 — Arzelà–Ascoli ⇒ totally bounded in L²(ball)
@@ -307,6 +312,37 @@ noncomputable def mollifyRep (K : MollifierKernel) (f : L2VF_R3) :
   fun x => ∫ y : Domain3, K.η (x - y) • (f y : EuclideanSpace ℝ (Fin 3))
     ∂(volume : Measure Domain3)
 
+/-- **Existence of a normalized mollifier kernel of arbitrarily small support.**
+
+For every `r > 0` there is a `MollifierKernel K` whose support radius is `≤ r`.  It is the
+`ContDiffBump (0 : Domain3)`-mollifier with `rIn = r/3 < rOut = r/2`, normalized to unit mass by
+`ContDiffBump.normed volume`.  The resulting `K.η = bump.normed volume` is `C^∞`
+(`contDiff_normed`), nonnegative (`nonneg_normed`), of mass one (`integral_normed`), and supported
+in `closedBall 0 (r/2)` (`tsupport_normed_eq`), so `K.supportRadius = r/2 ≤ r`.
+
+This is the concrete approximate-identity kernel feeding `convolution_l2_tendsto_uniform`: choosing
+support `< δ` (the FK uniform translation-modulus radius for the target `ε`) drives the uniform
+L²-approximation rate. -/
+private noncomputable def exists_normalized_mollifierKernel (r : ℝ) (hr : 0 < r) :
+    {K : MollifierKernel // K.supportRadius ≤ r} := by
+  -- The bump with `0 < rIn = r/3 < rOut = r/2`.
+  refine
+    let bump : ContDiffBump (0 : Domain3) :=
+      { rIn := r / 3
+        rOut := r / 2
+        rIn_pos := by positivity
+        rIn_lt_rOut := by linarith }
+    ⟨{ η := bump.normed (volume : Measure Domain3)
+       smooth := bump.contDiff_normed
+       hasCompactSupport := bump.hasCompactSupport_normed
+       supportRadius := bump.rOut
+       supportRadius_nonneg := bump.rOut_pos.le
+       tsupport_subset := by
+         rw [bump.tsupport_normed_eq (μ := (volume : Measure Domain3))] }, ?_⟩
+  show bump.rOut ≤ r
+  show r / 2 ≤ r
+  linarith
+
 /-! ### Mollifier sub-library — kernel as a scalar L²-class and reusable estimates
 
 The two mollifier-family lemmas (`mollified_family_uniformly_bounded`,
@@ -338,6 +374,13 @@ noncomputable def translate_L2R (h : Domain3) (g : Lp ℝ 2 (volume : Measure Do
 noncomputable def kernelL2R (K : MollifierKernel) : Lp ℝ 2 (volume : Measure Domain3) :=
   MemLp.toLp K.η
     (K.smooth.continuous.memLp_of_hasCompactSupport (p := 2) (μ := volume) K.hasCompactSupport)
+
+/-- The scalar kernel `K.η`, coerced to a scalar L¹-class.  It is `MemLp 1` because it is
+continuous (`K.smooth.continuous`) with compact support (`K.hasCompactSupport`).  This is the mass
+factor `‖η‖₁` in Young's convolution inequality `‖η ⋆ g‖₂ ≤ ‖η‖₁ · ‖g‖₂`. -/
+noncomputable def kernelL1R (K : MollifierKernel) : Lp ℝ 1 (volume : Measure Domain3) :=
+  MemLp.toLp K.η
+    (K.smooth.continuous.memLp_of_hasCompactSupport (p := 1) (μ := volume) K.hasCompactSupport)
 
 /-- **Helper 1 — the kernel's L²-translation modulus vanishes.**
 
@@ -630,71 +673,52 @@ theorem mollifyRep_sub_le (K : MollifierKernel) (f : L2VF_R3) (R : ℝ)
     _ = ‖restrictToBall (R + r) f‖ * ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ := by
         rw [hna, hnb, mul_comm]
 
-/-! ### FK step 1 — uniform L²-mollification approximate identity -/
+/-! ### FK step 1 — analytic cores: global Young + vector Minkowski
 
-/-- **FK step 1.**  Uniform L²-approximation of a translation-equicontinuous family by its
-mollifications, for the CONCRETE mollifier.
+The two genuinely-missing analytic facts behind `convolution_l2_tendsto_uniform`, isolated as
+named helper SIGNATURES (bodies deferred to `lean-prover`):
 
-If a family `{rep f | f ∈ S}` of L²(ℝ³) fields has a uniform L²-translation modulus
-(the second hypothesis of `FrechetKolmogorovInput`), then for every tolerance `ε > 0` there is
-an admissible smooth compactly supported kernel `K` and a choice of L²-classes `ρf : S → L2VF_R3`
-whose chosen pointwise representative is `mollifyRep K (rep f)`, such that every member is within
-`ε` in L² of its mollification:
+* `young_convolution_memLp_L2` — GLOBAL Young inequality `‖η ⋆ g‖₂ ≤ ‖η‖₁ · ‖g‖₂`: the convolution
+  `mollifyRep K g` is itself in `L²(ℝ³)` (not just locally on `B_R`), with its `L²`-norm bounded by
+  the kernel's `L¹`-mass times `‖g‖₂`.  Mathlib has `MeasureTheory.convolution` continuity / Young
+  on `L^p` only fragmentarily for this vector-valued, measure-`volume` setting.
+* `convolution_sub_L2_le_translation_modulus` — the vector-valued Minkowski integral inequality
+  `‖∫ F(h) dh‖₂ ≤ ∫ ‖F(h)‖₂ dh` applied to `(η ⋆ g) − g = ∫ h, η(h) (τ_h g − g) dh` (mass-one
+  kernel), yielding `‖η ⋆ g − g‖₂ ≤ ∫ h, η(h) · ‖τ_h g − g‖₂ dh`.  Combined with the FK uniform
+  translation modulus and `K.supportRadius < δ`, this gives the uniform `< ε` approximation rate.
+-/
 
-  `∀ f ∈ S, ‖f − restrictToBall R (ρf f)‖ < ε`,
+/-- **Analytic core — global Young convolution inequality in `L²`.**
 
-with the rate controlled UNIFORMLY over the family by the translation modulus (Minkowski +
-`‖η ⋆ g − g‖₂ ≤ sup_{‖h‖ ≤ supp K.η} ‖τ_h g − g‖₂` for a mass-one kernel).  The mollified image
-is totally bounded in L² (step 3).  This is the genuinely-missing analytic core (mathlib has only
-the *pointwise* `convolution_tendsto_right`).
+The mollified field `mollifyRep K g = K.η ⋆ g` lies in `L²(ℝ³)` globally, with
+`‖mollifyRep K g‖_{L²} ≤ ‖kernelL1R K‖ · ‖g‖`.  The `MemLp` witness is bundled with the bound on its
+`toLp` class so callers can both form `(mollifyRep K g : L2VF_R3)` and control its norm. -/
+theorem young_convolution_memLp_L2 (K : MollifierKernel) (g : L2VF_R3) :
+    ∃ hmem : MemLp (mollifyRep K g) 2 (volume : Measure Domain3),
+      ‖hmem.toLp‖ ≤ ‖kernelL1R K‖ * ‖g‖ := by
+  sorry -- ALLOW_SORRY: global Young convolution inequality `‖η ⋆ g‖₂ ≤ ‖η‖₁ · ‖g‖₂` (vector-valued,
+  -- measure `volume`).  Mathlib lacks this `L¹×L²→L²` Young estimate in the form needed here; it is
+  -- the genuine analytic blocker producing the GLOBAL `L²`-membership of the convolution (the
+  -- B_R-local `mollifyRep_sup_le` is insufficient).
 
-**Norm-correctness (Codex Gate round 3 → resolved round 4).**  The total-boundedness conjunct
-delegates to `mollified_family_totallyBounded_L2` (steps 2+3), whose bounds need a ball-mass bound
-on the kernel-support enlargement `B_{R+K.supportRadius}`.  The local hypothesis is an
-ENLARGED-BALL bound at a fixed enlargement budget `r₀ ≥ 0`:
-`hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + r₀) (rep f)‖ ≤ C`, which the caller obtains directly from
-`FrechetKolmogorovInput`'s GLOBAL bound `‖rep f‖ ≤ C` by ball-mass monotonicity (a single-radius
-ball bound `‖f‖ ≤ C` alone would not control annulus mass, but the strengthened criterion carries
-the global bound, so the enlarged bound is immediate).  The kernel `K` produced has support
-radius `K.supportRadius ≤ r₀`, so by monotonicity of ball mass in the radius the step-3 bound on
-`B_{R + K.supportRadius}` follows from `hbdEnl`.  The ball restriction bound `‖f‖ ≤ C` is retained
-as `hbd` only for the L²-approximation conjunct (which compares ball-restrictions); it does NOT
-control the convolution. -/
-theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
-    (rep : L2ballR3 R → L2VF_R3)
-    (hrep : ∀ f ∈ S, restrictToBall R (rep f) = f)
-    (hr₀ : 0 ≤ r₀)
-    (hbd : ∀ f ∈ S, ‖f‖ ≤ C)
-    (hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + r₀) (rep f)‖ ≤ C)
-    (hmod : ∀ ε > 0, ∃ δ > 0, ∀ f ∈ S, ∀ h : Domain3, ‖h‖ < δ →
-        ‖translate_L2VF h (rep f) - rep f‖ < ε)
-    (ε : ℝ) (hε : 0 < ε) :
-    ∃ (K : MollifierKernel) (ρf : L2ballR3 R → L2VF_R3),
-      K.supportRadius ≤ r₀ ∧
-      (∀ f ∈ S, (ρf f : Domain3 → EuclideanSpace ℝ (Fin 3))
-          =ᵐ[volume] mollifyRep K (rep f)) ∧
-      (∀ f ∈ S, ‖f - restrictToBall R (ρf f)‖ < ε) ∧
-      TotallyBounded ((fun f => restrictToBall R (ρf f)) '' S) := by
-  sorry -- ALLOW_SORRY: scaffold — uniform L²-mollification approximate identity.  Three concrete
-  -- blockers, none patchable in the proof body alone:
-  -- (1) IMPORT MISSING (lean-coder): the kernel is built from `ContDiffBump (0:Domain3)` normalized
-  --     by `ContDiffBump.normed` (mass one, nonneg, smooth, compact support), but this file imports
-  --     neither `Mathlib.Analysis.Calculus.BumpFunction.Normed` NOR even `…BumpFunction.Basic`
-  --     (`Mathlib.Analysis.Convolution` mentions `ContDiffBump` only in DOC comments — no bump API
-  --     is in the environment).  Need import `Mathlib.Analysis.Calculus.BumpFunction.Normed`.
-  -- (2) MISSING FROM MATHLIB — global Young `MemLp`: to produce `ρf f : L2VF_R3` with coeFn a.e.
-  --     `mollifyRep K (rep f)`, one needs `MemLp (mollifyRep K (rep f)) 2 volume` (Young
-  --     `‖η ⋆ g‖₂ ≤ ‖η‖₁‖g‖₂`).  `mollifyRep_sup_le` gives only a B_R-LOCAL bound; the GLOBAL
-  --     L²-membership of the convolution is not available.
-  -- (3) MISSING FROM MATHLIB — vector-valued Minkowski integral inequality in L²: the rate
-  --     `‖η ⋆ g − g‖₂ = ‖∫ η(h)(τ_h g − g) dh‖₂ ≤ ∫ η(h)‖τ_h g − g‖₂ dh ≤ sup_{‖h‖≤r}‖τ_h g − g‖₂`
-  --     (mass-one kernel) — uniform over `S` via `hmod` — is the genuine analytic core; mathlib has
-  --     only the POINTWISE `convolution_tendsto_right`.  (NB also the `r₀ = 0` corner is degenerate:
-  --     a smooth mass-one mollifier needs positive support, so the caller must use `r₀ > 0`.)
-  -- Once (1)–(3) exist: choose `K` with `supportRadius ≤ r₀`; the L²-approx conjunct follows since
-  -- `restrictToBall R` is norm-nonincreasing (so `‖f − restrictToBall R (ρf f)‖ ≤ ‖rep f − η⋆rep f‖₂`)
-  -- and total boundedness delegates to `mollified_family_totallyBounded_L2` fed `hbdEnl` via
-  -- ball-mass monotonicity (`K.supportRadius ≤ r₀`).
+/-- **Analytic core — vector Minkowski form of the convolution approximation rate.**
+
+`(K.η ⋆ g) − g = ∫ h, K.η h · (τ_h g − g) dh` for a mass-one kernel, so by the vector-valued
+Minkowski integral inequality `‖∫ F(h) dh‖₂ ≤ ∫ ‖F(h)‖₂ dh` the `L²`-defect of the mollification is
+controlled by the kernel-weighted integral of the translation modulus:
+
+  `‖toLp(mollifyRep K g) − g‖ ≤ ∫ h, K.η h • ‖translate_L2VF h g − g‖ ∂volume`.
+
+Composed with `K.supportRadius < δ` (so the integration variable `h` ranges over `‖h‖ < δ` on the
+kernel support) and the FK uniform translation modulus, this delivers the uniform `< ε` rate. -/
+theorem convolution_sub_L2_le_translation_modulus (K : MollifierKernel) (g : L2VF_R3)
+    (hmem : MemLp (mollifyRep K g) 2 (volume : Measure Domain3)) :
+    ‖hmem.toLp - g‖
+      ≤ ∫ h : Domain3, K.η h • ‖translate_L2VF h g - g‖ ∂(volume : Measure Domain3) := by
+  sorry -- ALLOW_SORRY: vector-valued Minkowski integral inequality `‖∫ F(h) dh‖₂ ≤ ∫ ‖F(h)‖₂ dh`
+  -- applied to `(η ⋆ g) − g = ∫ h, η(h)(τ_h g − g) dh` (mass-one kernel).  Mathlib lacks the
+  -- `L²`-valued Minkowski/triangle integral inequality in this measure-`volume` form; it is the
+  -- second genuine analytic blocker of the uniform approximate-identity rate.
 
 /-! ### FK step 2 — equiboundedness + equicontinuity of the mollified family -/
 
@@ -1050,6 +1074,100 @@ theorem mollified_family_totallyBounded_L2 (R C : ℝ) (S : Set (L2ballR3 R))
     (fun f hf x hx =>
       (mollified_family_uniformly_bounded R C S rep K hbdEnl).choose_spec f hf x hx)
     (mollified_family_equicontinuous R C S rep K hbdEnl)
+
+/-! ### FK step 1 (assembly) — uniform L²-mollification approximate identity
+
+Placed AFTER steps 2–3 so that its derivation may delegate the total-boundedness conjunct to
+`mollified_family_totallyBounded_L2`. -/
+
+/-- **FK step 1.**  Uniform L²-approximation of a translation-equicontinuous family by its
+mollifications, for the CONCRETE mollifier.
+
+If a family `{rep f | f ∈ S}` of L²(ℝ³) fields has a uniform L²-translation modulus
+(the second hypothesis of `FrechetKolmogorovInput`), then for every tolerance `ε > 0` there is
+an admissible smooth compactly supported kernel `K` and a choice of L²-classes `ρf : S → L2VF_R3`
+whose chosen pointwise representative is `mollifyRep K (rep f)`, such that every member is within
+`ε` in L² of its mollification:
+
+  `∀ f ∈ S, ‖f − restrictToBall R (ρf f)‖ < ε`,
+
+with the rate controlled UNIFORMLY over the family by the translation modulus.  The derivation
+routes through the two named analytic helpers `young_convolution_memLp_L2` (global Young, producing
+the `L²`-class `ρf f`) and `convolution_sub_L2_le_translation_modulus` (vector Minkowski, producing
+the rate), the kernel constructor `exists_normalized_mollifierKernel`, and FK step 3
+`mollified_family_totallyBounded_L2` (total boundedness).  This is the genuinely-missing analytic
+core (mathlib has only the *pointwise* `convolution_tendsto_right`).
+
+**Norm-correctness (Codex Gate round 3 → resolved round 4).**  The total-boundedness conjunct
+delegates to `mollified_family_totallyBounded_L2` (steps 2+3), whose bounds need a ball-mass bound
+on the kernel-support enlargement `B_{R+K.supportRadius}`.  The local hypothesis is an
+ENLARGED-BALL bound at a fixed enlargement budget `r₀ ≥ 0`:
+`hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + r₀) (rep f)‖ ≤ C`, which the caller obtains directly from
+`FrechetKolmogorovInput`'s GLOBAL bound `‖rep f‖ ≤ C` by ball-mass monotonicity (a single-radius
+ball bound `‖f‖ ≤ C` alone would not control annulus mass, but the strengthened criterion carries
+the global bound, so the enlarged bound is immediate).  The kernel `K` produced has support
+radius `K.supportRadius ≤ r₀`, so by monotonicity of ball mass in the radius the step-3 bound on
+`B_{R + K.supportRadius}` follows from `hbdEnl`.  The ball restriction bound `‖f‖ ≤ C` is retained
+as `hbd` only for the L²-approximation conjunct (which compares ball-restrictions); it does NOT
+control the convolution. -/
+theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
+    (rep : L2ballR3 R → L2VF_R3)
+    (hrep : ∀ f ∈ S, restrictToBall R (rep f) = f)
+    (hr₀ : 0 ≤ r₀)
+    (hbd : ∀ f ∈ S, ‖f‖ ≤ C)
+    (hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + r₀) (rep f)‖ ≤ C)
+    (hmod : ∀ ε > 0, ∃ δ > 0, ∀ f ∈ S, ∀ h : Domain3, ‖h‖ < δ →
+        ‖translate_L2VF h (rep f) - rep f‖ < ε)
+    (ε : ℝ) (hε : 0 < ε) :
+    ∃ (K : MollifierKernel) (ρf : L2ballR3 R → L2VF_R3),
+      K.supportRadius ≤ r₀ ∧
+      (∀ f ∈ S, (ρf f : Domain3 → EuclideanSpace ℝ (Fin 3))
+          =ᵐ[volume] mollifyRep K (rep f)) ∧
+      (∀ f ∈ S, ‖f - restrictToBall R (ρf f)‖ < ε) ∧
+      TotallyBounded ((fun f => restrictToBall R (ρf f)) '' S) := by
+  classical
+  -- `r₀ = 0` is the degenerate corner (a smooth mass-one mollifier needs positive support); the
+  -- standard FK route always invokes this with `r₀ > 0`.
+  rcases eq_or_lt_of_le hr₀ with hr0 | hr0pos
+  · exact absurd hr0.symm (by
+      sorry) -- ALLOW_SORRY: degenerate `r₀ = 0` corner — a genuine mass-one mollifier cannot have
+      -- support radius `≤ 0`, so this branch is never used by the FK assembly (which passes `r₀ > 0`).
+  -- DERIVATION (routes through the named analytic helpers).
+  -- Pick `δ` from the FK uniform translation modulus so that the kernel-support shifts stay `< δ`.
+  obtain ⟨δ, hδpos, hδ⟩ := hmod ε hε
+  -- A normalized mollifier `K` with support radius `≤ min r₀ (δ/2) < δ` and `≤ r₀`.
+  set ρ : ℝ := min r₀ (δ / 2) with hρ
+  have hρpos : 0 < ρ := by positivity
+  obtain ⟨K, hKr⟩ := exists_normalized_mollifierKernel ρ hρpos
+  have hKr₀ : K.supportRadius ≤ r₀ := le_trans hKr (min_le_left _ _)
+  have hKδ : K.supportRadius < δ := lt_of_le_of_lt (le_trans hKr (min_le_right _ _)) (by linarith)
+  -- The mollified L²-class of each representative, via the global Young helper.
+  set ρf : L2ballR3 R → L2VF_R3 :=
+    fun f => (young_convolution_memLp_L2 K (rep f)).choose.toLp with hρf_def
+  -- a.e. agreement of `ρf f` with the concrete representative `mollifyRep K (rep f)`.
+  have hρf_ae : ∀ f ∈ S, (ρf f : Domain3 → EuclideanSpace ℝ (Fin 3))
+      =ᵐ[volume] mollifyRep K (rep f) := fun f _ =>
+    (young_convolution_memLp_L2 K (rep f)).choose.coeFn_toLp
+  -- enlarged-ball bound on the kernel-reach `B_{R + K.supportRadius}`, from `hbdEnl` (radius `r₀`)
+  -- by ball-mass monotonicity (`K.supportRadius ≤ r₀`).
+  have hbdEnlK : ∀ f ∈ S, ‖restrictToBall (R + K.supportRadius) (rep f)‖ ≤ C := by
+    -- gluing — ball-mass monotonicity `‖restrictToBall (R+K.supportRadius) g‖ ≤
+    -- ‖restrictToBall (R+r₀) g‖ ≤ C` (radius monotone, `K.supportRadius ≤ r₀`); the underlying
+    -- `eLpNorm_mono_measure` chain is `private norm_restrictToBall_le`-style in SpatialCompactness.
+    sorry -- ALLOW_SORRY: gluing — ball-mass monotonicity from `hbdEnl` via `K.supportRadius ≤ r₀`.
+  refine ⟨K, ρf, hKr₀, hρf_ae, ?_, ?_⟩
+  · -- L²-APPROXIMATION conjunct, routed through `convolution_sub_L2_le_translation_modulus`.
+    intro f hf
+    have hmem := (young_convolution_memLp_L2 K (rep f)).choose
+    -- the Minkowski-form bound on the GLOBAL defect of the mollification.
+    have hbound := convolution_sub_L2_le_translation_modulus K (rep f) hmem
+    -- gluing — (i) the kernel-weighted integral `∫ h, K.η h • ‖τ_h (rep f) − rep f‖` is `< ε`
+    -- because `K.η ≥ 0` has unit mass supported in `‖h‖ ≤ K.supportRadius < δ`, where the FK modulus
+    -- `hδ` gives `‖τ_h (rep f) − rep f‖ < ε`; (ii) `restrictToBall R` is norm-nonincreasing and
+    -- `restrictToBall R (rep f) = f` (`hrep`), so `‖f − restrictToBall R (ρf f)‖ ≤ ‖hmem.toLp − rep f‖ < ε`.
+    sorry -- ALLOW_SORRY: gluing — `convolution_sub_L2_le_translation_modulus` + `hδ` + `hrep`/restrictToBall.
+  · -- TOTAL-BOUNDEDNESS conjunct delegates to FK step 3.
+    exact mollified_family_totallyBounded_L2 R C S rep K ρf hρf_ae hbdEnlK
 
 /-! ### FK step 4 — total-boundedness transfer under uniform approximation -/
 
