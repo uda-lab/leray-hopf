@@ -784,7 +784,7 @@ private theorem mollifyRep_eq_lp_integral (K : MollifierKernel) (g : L2VF_R3)
   -- Lp-valued Bochner integral as the scalar integral of coeFns — which mathlib does not provide in
   -- a directly usable form for this `volume`-on-ℝ³ vector-valued setting (needs a Fubini/Minkowski
   -- argument via inner-product duality with `ContinuousLinearMap.integral_comp_comm`).
-  sorry
+  sorry -- ALLOW_SORRY: Lp-valued Bochner / scalar-Fubini integral identity (mollifyRep K g = ∫ h, K.η h • τ_h g as an Lp-valued Bochner integral)
 
 /-- **Analytic core — global Young convolution inequality in `L²`.**
 
