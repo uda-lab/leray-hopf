@@ -296,6 +296,15 @@ structure MollifierKernel where
   supportRadius_nonneg : 0 ≤ supportRadius
   /-- The kernel is supported in `closedBall 0 supportRadius`. -/
   tsupport_subset : tsupport η ⊆ Metric.closedBall (0 : Domain3) supportRadius
+  /-- The kernel is nonnegative (an approximate-identity weight).  From
+  `ContDiffBump.nonneg_normed`. -/
+  nonneg : ∀ x, 0 ≤ η x
+  /-- The kernel has unit mass (normalized approximate identity).  From
+  `ContDiffBump.integral_normed`. -/
+  mass_one : ∫ x, η x ∂(volume : Measure Domain3) = 1
+  /-- The kernel is even (radial): `η (−h) = η h`.  `ContDiffBump.normed` depends on `x` only
+  through `‖x‖`, and `‖−h‖ = ‖h‖`. -/
+  even : ∀ h, η (-h) = η h
 
 /-- **Explicit continuous representative of the mollified field.**
 
@@ -338,7 +347,10 @@ private noncomputable def exists_normalized_mollifierKernel (r : ℝ) (hr : 0 < 
        supportRadius := bump.rOut
        supportRadius_nonneg := bump.rOut_pos.le
        tsupport_subset := by
-         rw [bump.tsupport_normed_eq (μ := (volume : Measure Domain3))] }, ?_⟩
+         rw [bump.tsupport_normed_eq (μ := (volume : Measure Domain3))]
+       nonneg := fun x => bump.nonneg_normed (μ := (volume : Measure Domain3)) x
+       mass_one := bump.integral_normed (μ := (volume : Measure Domain3))
+       even := fun h => bump.normed_neg (μ := (volume : Measure Domain3)) h }, ?_⟩
   show bump.rOut ≤ r
   show r / 2 ≤ r
   linarith
@@ -715,10 +727,22 @@ theorem convolution_sub_L2_le_translation_modulus (K : MollifierKernel) (g : L2V
     (hmem : MemLp (mollifyRep K g) 2 (volume : Measure Domain3)) :
     ‖hmem.toLp - g‖
       ≤ ∫ h : Domain3, K.η h • ‖translate_L2VF h g - g‖ ∂(volume : Measure Domain3) := by
-  sorry -- ALLOW_SORRY: vector-valued Minkowski integral inequality `‖∫ F(h) dh‖₂ ≤ ∫ ‖F(h)‖₂ dh`
-  -- applied to `(η ⋆ g) − g = ∫ h, η(h)(τ_h g − g) dh` (mass-one kernel).  Mathlib lacks the
-  -- `L²`-valued Minkowski/triangle integral inequality in this measure-`volume` form; it is the
-  -- second genuine analytic blocker of the uniform approximate-identity rate.
+  sorry -- ALLOW_SORRY: STATEMENT GAP, not a missing mathlib lemma. The Bochner route works
+  -- (`norm_integral_le_integral_norm` holds in the Banach space `Lp`, giving
+  -- `‖∫ F‖ ≤ ∫ ‖F‖` with `F h = K.η h • (translate_L2VF h g − g) ∈ L2VF_R3`), BUT it produces
+  -- `∫ |K.η h| · ‖τ_h g − g‖`, while the conclusion asks for `∫ K.η h • ‖τ_h g − g‖`. Moreover the
+  -- Lp-valued identity `toLp(mollifyRep K g) − g = ∫ h, K.η h • (τ_h g − g)` needs THREE kernel
+  -- facts that `MollifierKernel` does NOT carry: (1) mass one `∫ K.η = 1` (to write
+  -- `g = ∫ K.η h • g dh`), (2) nonnegativity `K.η ≥ 0` (so `|K.η h| = K.η h`), and (3) evenness
+  -- `K.η (−h) = K.η h`, because the change of variables `y = x + h` in
+  -- `mollifyRep K g x = ∫ y, K.η (x − y) • g y` yields `∫ h, K.η (−h) • (translate_L2VF h g) x`,
+  -- not `K.η h`. (`translate_L2VF h g x = g (x + h)` by `coeFn_compMeasurePreserving`.) For a
+  -- general `MollifierKernel` (e.g. an odd zero-mean smooth bump-derivative) the inequality is
+  -- FALSE: RHS can be ≤ 0 while LHS > 0. FIX is a SIGNATURE change owned by lean-coder — add
+  -- `nonneg : 0 ≤ K.η`, `mass_one : ∫ K.η = 1`, `even : ∀ h, K.η (−h) = K.η h` to `MollifierKernel`
+  -- (all satisfied by `ContDiffBump.normed` via `nonneg_normed`, `integral_normed`, and bump
+  -- radial evenness), OR restate RHS as `∫ |K.η h| · ‖τ_{−h} g − g‖`. Until the structure carries
+  -- these, the proof body cannot be completed without weakening the statement.
 
 /-! ### FK step 2 — equiboundedness + equicontinuity of the mollified family -/
 
