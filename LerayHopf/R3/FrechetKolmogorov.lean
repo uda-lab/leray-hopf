@@ -675,14 +675,26 @@ theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
           =ᵐ[volume] mollifyRep K (rep f)) ∧
       (∀ f ∈ S, ‖f - restrictToBall R (ρf f)‖ < ε) ∧
       TotallyBounded ((fun f => restrictToBall R (ρf f)) '' S) := by
-  sorry -- ALLOW_SORRY: scaffold — uniform L²-mollification approximate identity.  The rate
-  -- `‖η ⋆ g − g‖₂ ≤ sup_{‖h‖≤K.supportRadius} ‖τ_h g − g‖₂` (mass-one kernel) is bounded uniformly
-  -- over `S` by the FK modulus `hmod`; mathlib has only the pointwise `convolution_tendsto_right`,
-  -- so this is the missing L²-norm convolution approximate-identity.  Choose the kernel with
-  -- support radius `≤ r₀` (small enough to make the rate `< ε`).  Total boundedness of the mollified
-  -- image comes from `mollified_family_totallyBounded_L2` (Arzelà–Ascoli, step 3), fed the
-  -- ENLARGED-BALL bound on `B_{R+K.supportRadius}` obtained from `hbdEnl` (at radius `R+r₀`) by
-  -- monotonicity of ball mass in the radius (`K.supportRadius ≤ r₀`).
+  sorry -- ALLOW_SORRY: scaffold — uniform L²-mollification approximate identity.  Three concrete
+  -- blockers, none patchable in the proof body alone:
+  -- (1) IMPORT MISSING (lean-coder): the kernel is built from `ContDiffBump (0:Domain3)` normalized
+  --     by `ContDiffBump.normed` (mass one, nonneg, smooth, compact support), but this file imports
+  --     neither `Mathlib.Analysis.Calculus.BumpFunction.Normed` NOR even `…BumpFunction.Basic`
+  --     (`Mathlib.Analysis.Convolution` mentions `ContDiffBump` only in DOC comments — no bump API
+  --     is in the environment).  Need import `Mathlib.Analysis.Calculus.BumpFunction.Normed`.
+  -- (2) MISSING FROM MATHLIB — global Young `MemLp`: to produce `ρf f : L2VF_R3` with coeFn a.e.
+  --     `mollifyRep K (rep f)`, one needs `MemLp (mollifyRep K (rep f)) 2 volume` (Young
+  --     `‖η ⋆ g‖₂ ≤ ‖η‖₁‖g‖₂`).  `mollifyRep_sup_le` gives only a B_R-LOCAL bound; the GLOBAL
+  --     L²-membership of the convolution is not available.
+  -- (3) MISSING FROM MATHLIB — vector-valued Minkowski integral inequality in L²: the rate
+  --     `‖η ⋆ g − g‖₂ = ‖∫ η(h)(τ_h g − g) dh‖₂ ≤ ∫ η(h)‖τ_h g − g‖₂ dh ≤ sup_{‖h‖≤r}‖τ_h g − g‖₂`
+  --     (mass-one kernel) — uniform over `S` via `hmod` — is the genuine analytic core; mathlib has
+  --     only the POINTWISE `convolution_tendsto_right`.  (NB also the `r₀ = 0` corner is degenerate:
+  --     a smooth mass-one mollifier needs positive support, so the caller must use `r₀ > 0`.)
+  -- Once (1)–(3) exist: choose `K` with `supportRadius ≤ r₀`; the L²-approx conjunct follows since
+  -- `restrictToBall R` is norm-nonincreasing (so `‖f − restrictToBall R (ρf f)‖ ≤ ‖rep f − η⋆rep f‖₂`)
+  -- and total boundedness delegates to `mollified_family_totallyBounded_L2` fed `hbdEnl` via
+  -- ball-mass monotonicity (`K.supportRadius ≤ r₀`).
 
 /-! ### FK step 2 — equiboundedness + equicontinuity of the mollified family -/
 
