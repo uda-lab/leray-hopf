@@ -81,12 +81,17 @@ helper SIGNATURE `memH1_weightedL2_integrable` (distribution-faithful, derived d
 `MemSobolev 1 2` definition of `memH1VF_R3`), so the prover can wire it into the RellichBall
 body without editing any RellichBall *statement*.
 
-## Honest scope (no overclaim) — SCAFFOLD pass
+## Honest scope (no overclaim) — ONE isolated frontier remains
 
-This file is presently **scaffold only**: every obligation below is a marked `sorry`
-(`-- ALLOW_SORRY:`) for `lean-prover` to fill.  No `axiom`/`opaque`/`constant` is introduced.
-`frechetKolmogorov_holds` is a genuine DISCHARGE target (a term of the existing
-`FrechetKolmogorovInput` type), not a new isolated hypothesis.
+This file is **proved down to a single isolated frontier**.  Both named analytic cores
+(`young_convolution_memLp_L2`, `convolution_sub_L2_le_translation_modulus`), all assembly
+plumbing, and the deliverable `frechetKolmogorov_holds` are proved; the SOLE remaining marked
+`sorry` is `convL2_coeFn_ae` — the `Lp`-valued Bochner-integral coeFn identity
+`coeFn(∫ h, K.η h • τ_h g) =ᵐ mollifyRep K g` (mathlib-absent; the raw `ℝ³×ℝ³` double integral
+is not absolutely convergent, so a naive scalar Fubini is unavailable — see its docstring for the
+honest finite-set inner-product-duality route).  No `axiom`/`opaque`/`constant` is introduced.
+`frechetKolmogorov_holds` is a genuine DISCHARGE of the existing `FrechetKolmogorovInput` type
+(not a new isolated hypothesis); it carries `sorryAx` only via `convL2_coeFn_ae`.
 
 **Codex Gate round 3 (high) — local helper bounds vs. the deliverable, RESOLVED upstream.**
 The mollifier-family helper bounds (steps 1–3) are TRUE only with an ENLARGED-BALL mass bound on
@@ -132,9 +137,10 @@ R3/SpatialCompactness.lean   (L2ballR3, restrictToBall, LocalRellichInput)
 
 ## Assumptions
 
-Zero new `axiom`/`opaque`/`constant`.  Every gap is a marked `-- ALLOW_SORRY:` proof body,
-to be discharged by `lean-prover`.  `frechetKolmogorov_holds` is a real discharge of an
-existing hypothesis type, not a new hypothesis.
+Zero new `axiom`/`opaque`/`constant`.  Exactly ONE marked `-- ALLOW_SORRY:` proof body remains
+(`convL2_coeFn_ae`, the `Lp`-valued Bochner-integral coeFn identity); everything else is proved.
+`frechetKolmogorov_holds` is a real discharge of an existing hypothesis type, not a new
+hypothesis.
 -/
 
 /-! ### Helper for RellichBall's residual `sorry` -/
@@ -931,12 +937,17 @@ theorem convolution_sub_L2_le_translation_modulus (K : MollifierKernel) (g : L2V
     rw [integral_smul_const, K.mass_one, one_smul]
   have hdefect : hmem.toLp - g
       = ∫ h : Domain3, K.η h • (translate_L2VF h g - g) ∂(volume : Measure Domain3) := by
-    rw [mollifyRep_eq_lp_integral K g hmem, ← hg_int, ← integral_sub hI1 hI2]
+    have e1 : hmem.toLp - g
+        = (∫ h : Domain3, K.η h • translate_L2VF h g ∂(volume : Measure Domain3))
+          - ∫ h : Domain3, K.η h • g ∂(volume : Measure Domain3) := by
+      rw [mollifyRep_eq_lp_integral K g hmem, hg_int]
+    rw [e1, ← integral_sub hI1 hI2]
     refine integral_congr_ae (Filter.Eventually.of_forall fun h => ?_)
     rw [smul_sub]
   rw [hdefect]
   refine le_trans (norm_integral_le_integral_norm _) (le_of_eq ?_)
   refine integral_congr_ae (Filter.Eventually.of_forall fun h => ?_)
+  simp only []
   rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (K.nonneg h), smul_eq_mul]
 
 /-! ### FK step 2 — equiboundedness + equicontinuity of the mollified family -/
@@ -1418,7 +1429,10 @@ theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
     -- (ii) `restrictToBall R` is norm-nonincreasing and `restrictToBall R (rep f) = f` (`hrep`).
     have hf_eq : f = restrictToBall R (rep f) := (hrep f hf).symm
     have hstep : ‖f - restrictToBall R (ρf f)‖ ≤ ‖rep f - ρf f‖ := by
-      rw [hf_eq, ← restrictToBall_sub]
+      have hsub_eq : f - restrictToBall R (ρf f)
+          = restrictToBall R (rep f - ρf f) := by
+        rw [restrictToBall_sub]; conv_lhs => rw [hf_eq]
+      rw [hsub_eq]
       exact norm_restrictToBall_le_global R (rep f - ρf f)
     have hρf_eq : ρf f = hmem.toLp := rfl
     calc ‖f - restrictToBall R (ρf f)‖
