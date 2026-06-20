@@ -59,10 +59,15 @@ prior hypothesis-free forms were FALSE; Vitali counterexamples kept in their doc
 bundled as a genuine `H →L[ℝ] V'`, equal to `hToVprime` pointwise), and
 `isWeakTimeDeriv_comp_clm` (transport of a weak time derivative through a CLM, given
 interval-integrability of the Bochner integrands).
-Must-prove (body deferred — `ALLOW_SORRY`): `isWeakTimeDeriv_unique`. `W1pTime.ofHValuedDeriv`
-is reduced to exactly TWO interval-integrability obligations (`ALLOW_SORRY`), which are provable
-under `1 ≤ p`/`1 ≤ q` but FALSE for `p, q < 1` — an over-strength signature flagged for a
-lean-coder fix (add `1 ≤ p ∧ 1 ≤ q`).
+Must-prove (body deferred — `ALLOW_SORRY`): `isWeakTimeDeriv_unique`.
+`W1pTime.ofHValuedDeriv` is **sorry-free this cycle**: under the domain guards `1 ≤ p` /
+`1 ≤ q` (the Lions–Magenes space is only defined for exponents ≥ 1, so these are faithful
+preconditions, not proof-strengthening), the two interval-integrability obligations are
+discharged via `MemLp.integrable` on the finite measure combined with the private helper
+`intervalIntegrable_smul_of_integrableOn_Icc` (bounded continuous test factor + support in
+`Ioo 0 T`). The `1 ≤ p` / `1 ≤ q` signature guards (added commit c362d9b) are the minimal
+honest domain restriction; the previous over-strength-flagged form (without those guards) was
+corrected before the proof was attempted.
 Months-class residual (scaffold-only + `TODO`): `w1pTime_continuous_in_H`.
 -/
 
@@ -340,7 +345,10 @@ This is the H-valued ⇒ V' embedding direction kept SEPARATE from the primary `
 definition (per the Gelfand-triple discipline: the primary object lives in `V'`; the
 `H`-valued version is a stronger input, not the contract).
 
-**Must-prove (body deferred to lean-prover this cycle).** -/
+**Proved this cycle** (sorry-free). Route: post-compose with `hToVprimeCLM`; `MemLp` carried
+by `comp_memLp'`; weak-derivative identity transported by `isWeakTimeDeriv_comp_clm`;
+both interval-integrability obligations discharged by `intervalIntegrable_smul_of_integrableOn_Icc`
+using `MemLp.integrable` under the `1 ≤ p` / `1 ≤ q` guards. -/
 -- Domain-of-definition guard: `W^{1,p}(0,T;·)` requires `1 ≤ p`; the V′-valued IBP identity
 -- in `weakDeriv` is ill-defined without L¹ control (`MemLp _ p` on a finite measure only implies
 -- integrability when `1 ≤ p`). Same for `q`. These are NOT proof-strengthening hypotheses but
