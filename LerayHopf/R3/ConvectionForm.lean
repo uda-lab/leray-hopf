@@ -78,8 +78,8 @@ extension**; it carries no `LerayHopfSolution` / `WeakFormNS` / energy-inequalit
 
 ## Scaffold status
 
-Proof body of `R3NSForms_of_gap` is placeholder this pass; it carries an `ALLOW_SORRY`
-marker. **No new `axiom`/`opaque`/`constant`. `AxiomaticClosure.lean` is not edited.**
+All proof bodies of `R3NSForms_of_gap` are now discharged. **No new `axiom`/`opaque`/`constant`.
+`AxiomaticClosure.lean` is not edited.**
 -/
 
 namespace LerayHopf
@@ -228,6 +228,7 @@ discharges `r3_NSForms_exist` for free, with no edit to `AxiomaticClosure.lean`,
 vacuously (the `convFormSchwartz_eq_witness` pin through `b_extends` excludes `b = 0`). -/
 theorem R3NSForms_of_gap (𝔊 : R3GalerkinScheme) (g : ConvectionGap 𝔊) :
     Nonempty (R3NSForms 𝔊) := by
+  obtain ⟨B, hB⟩ := g.b_multilinear
   refine ⟨{ b := g.b
           , b_antisymm := ?b_antisymm
           , b_add_1 := ?b_add_1
@@ -239,35 +240,84 @@ theorem R3NSForms_of_gap (𝔊 : R3GalerkinScheme) (g : ConvectionGap 𝔊) :
           , b_bound := ?b_bound
           , b_galerkin := ?b_galerkin }⟩
   case b_antisymm =>
-    -- DERIVED: directly from g.b_antisymm_gap (asserted over arbitrary L²_σ as the honest
-    -- residual of the missing weak operator; NOT derived from continuity).
-    sorry -- ALLOW_SORRY: scaffold (Tier G); derive R3NSForms.b_antisymm directly from g.b_antisymm_gap (∀ u v w, g.b u v w = - g.b u w v over arbitrary L2Sigma_R3); proved by lean-prover
+    -- Directly from g.b_antisymm_gap (asserted over arbitrary L²_σ)
+    exact g.b_antisymm_gap
   case b_add_1 =>
-    -- DERIVED: from g.b_multilinear — obtain B, rewrite g.b _ _ _ = B _ _ _, close by B's
-    -- map_add in slot 1. No continuity, no density; arbitrary u u' v w : L²_σ.
-    sorry -- ALLOW_SORRY: scaffold (Tier G); derive R3NSForms.b_add_1 from g.b_multilinear — obtain B, rewrite g.b _ _ _ to B _ _ _, close by (B _ _).map_add / B.map_add in slot 1; works for arbitrary L2Sigma_R3 with no continuity/density; proved by lean-prover
+    -- From g.b_multilinear: rewrite to B then close by map_add + LinearMap.add_apply
+    intro u u' v w
+    simp only [hB, map_add, LinearMap.add_apply]
   case b_add_2 =>
-    sorry -- ALLOW_SORRY: scaffold (Tier G); derive R3NSForms.b_add_2 from g.b_multilinear — obtain B, rewrite to B, close by map_add in slot 2; proved by lean-prover
+    -- From g.b_multilinear: close by map_add in slot 2
+    intro u v v' w
+    simp only [hB, map_add, LinearMap.add_apply]
   case b_add_3 =>
-    -- DERIVED: from g.b_multilinear via B's map_add in slot 3. The third-slot additivity over
-    -- arbitrary w w' : L²_σ is purely algebraic (B is genuinely trilinear) — NO continuity.
-    sorry -- ALLOW_SORRY: scaffold (Tier G); derive R3NSForms.b_add_3 from g.b_multilinear — obtain B, rewrite to B, close by map_add in the THIRD slot; this is the slot the false b_cont was wrongly invoked for, now supplied algebraically by the trilinear witness with no continuity; proved by lean-prover
+    -- From g.b_multilinear: close by map_add in slot 3 (purely algebraic)
+    intro u v w w'
+    simp only [hB, map_add]
   case b_smul_1 =>
-    sorry -- ALLOW_SORRY: scaffold (Tier G); derive R3NSForms.b_smul_1 from g.b_multilinear — obtain B, rewrite to B, close by map_smul in slot 1; proved by lean-prover
+    -- From g.b_multilinear: close by map_smul in slot 1
+    intro c u v w
+    simp only [hB, map_smul, LinearMap.smul_apply, smul_eq_mul]
   case b_smul_2 =>
-    sorry -- ALLOW_SORRY: scaffold (Tier G); derive R3NSForms.b_smul_2 from g.b_multilinear — obtain B, rewrite to B, close by map_smul in slot 2; proved by lean-prover
+    -- From g.b_multilinear: close by map_smul in slot 2
+    intro c u v w
+    simp only [hB, map_smul, LinearMap.smul_apply, smul_eq_mul]
   case b_smul_3 =>
-    -- DERIVED: from g.b_multilinear via B's map_smul in slot 3 (purely algebraic, NO continuity).
-    sorry -- ALLOW_SORRY: scaffold (Tier G); derive R3NSForms.b_smul_3 from g.b_multilinear — obtain B, rewrite to B, close by map_smul in the THIRD slot; algebraic, no continuity; proved by lean-prover
+    -- From g.b_multilinear: close by map_smul in slot 3 (purely algebraic)
+    intro c u v w
+    simp only [hB, map_smul, smul_eq_mul]
   case b_bound =>
-    -- DERIVED: convFormSchwartz_bound (Tier S) gives the constant C at the GIVEN Schwartz w
-    -- via g.b_extends; g.b_cont_fixedTest w hw (slots 1,2 at the fixed w) + g.schwartz_dense
-    -- extend the inequality to all u v (the third slot w is fixed throughout).
-    sorry -- ALLOW_SORRY: scaffold (Tier G); derive R3NSForms.b_bound — take the C from convFormSchwartz_bound w hw (w fixed, IsSchwartzDivFree_R3 w from the hypothesis); on the Schwartz class g.b_extends turns |g.b u v w| into |convFormSchwartz …| ≤ C‖u‖‖v‖; g.b_cont_fixedTest w hw (continuity of (u,v) ↦ g.b u v w at the fixed Schwartz w) + g.schwartz_dense extend the bound to all u v : L2Sigma_R3 with continuity of the norms; proved by lean-prover
+    -- Derive b_bound from g.b_extends + convFormSchwartz_bound + g.b_cont_fixedTest + g.schwartz_dense
+    intro w hw
+    -- Get the constant C from the Tier-S Schwartz-class bound
+    obtain ⟨C, hC⟩ := convFormSchwartz_bound w hw
+    -- For u, v in the Schwartz class: |g.b u v w| = |convFormSchwartz u v w| ≤ C * ‖u‖ * ‖v‖
+    -- For general u, v: use g.b_cont_fixedTest + g.schwartz_dense to extend by continuity
+    refine ⟨C, fun u v => ?_⟩
+    -- Approximate u, v by Schwartz sequences
+    obtain ⟨su, hsu_sch, hsu_lim⟩ := g.schwartz_dense u
+    obtain ⟨sv, hsv_sch, hsv_lim⟩ := g.schwartz_dense v
+    -- The map (u', v') ↦ g.b u' v' w is continuous (b_cont_fixedTest)
+    have hcont := g.b_cont_fixedTest w hw
+    -- The bound holds on each diagonal term of the sequence
+    have hbound_seq : ∀ n : ℕ,
+        |g.b (su n) (sv n) w| ≤ C * ‖(su n : L2VF_R3)‖ * ‖(sv n : L2VF_R3)‖ := by
+      intro n
+      rw [g.b_extends (su n) (sv n) w (hsu_sch n) (hsv_sch n) hw]
+      exact hC (su n) (sv n) (hsu_sch n) (hsv_sch n)
+    -- Diagonal sequence (su n, sv n) → (u, v) in the product topology
+    have hlim_pair : Filter.Tendsto (fun n => (su n, sv n)) Filter.atTop (nhds (u, v)) :=
+      (Prod.tendsto_iff _ _).mpr ⟨hsu_lim, hsv_lim⟩
+    -- b(su n, sv n, w) → b(u, v, w) by continuity of (u', v') ↦ b u' v' w
+    have hlim_b : Filter.Tendsto (fun n => g.b (su n) (sv n) w)
+        Filter.atTop (nhds (g.b u v w)) :=
+      (hcont.tendsto (u, v)).comp hlim_pair
+    -- The bound passes to the limit: since |b(su n, sv n, w)| ≤ C * ‖su n‖ * ‖sv n‖
+    -- and b(su n, sv n, w) → b(u, v, w), ‖su n‖ → ‖u‖, ‖sv n‖ → ‖v‖
+    -- we get |b(u, v, w)| ≤ C * ‖u‖ * ‖v‖
+    have hlim_norm_u : Filter.Tendsto (fun n => ‖(su n : L2VF_R3)‖) Filter.atTop (nhds ‖(u : L2VF_R3)‖) :=
+      (continuous_norm.tendsto _).comp
+        ((continuous_subtype_val.tendsto _).comp hsu_lim)
+    have hlim_norm_v : Filter.Tendsto (fun n => ‖(sv n : L2VF_R3)‖) Filter.atTop (nhds ‖(v : L2VF_R3)‖) :=
+      (continuous_norm.tendsto _).comp
+        ((continuous_subtype_val.tendsto _).comp hsv_lim)
+    have hlim_rhs : Filter.Tendsto (fun n => C * ‖(su n : L2VF_R3)‖ * ‖(sv n : L2VF_R3)‖)
+        Filter.atTop (nhds (C * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖)) :=
+      ((tendsto_const_nhds.mul hlim_norm_u).mul hlim_norm_v)
+    -- Apply le_of_tendsto_of_tendsto to pass the bound to the limit
+    apply le_of_tendsto_of_tendsto
+      ((continuous_abs.tendsto _).comp hlim_b)
+      hlim_rhs
+    exact Filter.Eventually.of_forall (fun n => hbound_seq n)
   case b_galerkin =>
-    -- DERIVED: convFormSchwartz_eq_witness (Tier S) + g.b_extends. The hypotheses give
-    -- IsSchwartzDivFree_R3 u v w (the ψ's are the witnesses), so g.b_extends applies, then
-    -- convFormSchwartz_eq_witness rewrites convFormSchwartz to convIntegralSchwartz ψu ψv ψw.
-    sorry -- ALLOW_SORRY: scaffold (Tier G); derive R3NSForms.b_galerkin — from the toLp hypotheses build IsSchwartzDivFree_R3 u/v/w, rewrite g.b u v w to convFormSchwartz via g.b_extends, then close with convFormSchwartz_eq_witness u v w … ψu ψv ψw; proved by lean-prover
+    -- From convFormSchwartz_eq_witness via g.b_extends
+    intro ψu ψv ψw u v w hpu hpv hpw
+    -- Build IsSchwartzDivFree_R3 witnesses from the toLp hypotheses
+    have hu : IsSchwartzDivFree_R3 u := ⟨ψu, hpu⟩
+    have hv : IsSchwartzDivFree_R3 v := ⟨ψv, hpv⟩
+    have hw : IsSchwartzDivFree_R3 w := ⟨ψw, hpw⟩
+    -- Rewrite g.b to convFormSchwartz via b_extends, then use eq_witness
+    rw [g.b_extends u v w hu hv hw,
+        convFormSchwartz_eq_witness u v w hu hv hw ψu ψv ψw hpu hpv hpw]
 
 end LerayHopf
