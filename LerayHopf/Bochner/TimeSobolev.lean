@@ -114,9 +114,72 @@ theorem isWeakTimeDeriv_unique {T : ℝ} (hT : 0 < T) {u v₁ v₂ : ℝ → X}
     (h₁ : IsWeakTimeDeriv T u v₁) (h₂ : IsWeakTimeDeriv T u v₂)
     (hv₁ : IntervalIntegrable v₁ volume 0 T) (hv₂ : IntervalIntegrable v₂ volume 0 T) :
     v₁ =ᵐ[volume.restrict (Set.Ioo 0 T)] v₂ := by
-  -- From `h₁`, `h₂`: `∫ ψ • v₁ = ∫ ψ • v₂` for all admissible `ψ`, i.e. `∫ ψ • (v₁ - v₂) = 0`;
-  -- du Bois-Reymond gives `v₁ = v₂` a.e. on `Ioo 0 T`.
-  sorry -- ALLOW_SORRY: D1 weak-derivative a.e. uniqueness (lean-prover target). Fundamental lemma of calc. of variations for Bochner integrals; reachable from mathlib's Bochner machinery + density of `C¹_c(Ioo 0 T)`.
+  -- STATEMENT-GATE FINDING (Lane-D, issue #13-B): this statement is FALSE for a NON-complete
+  -- `X`, so it is NOT provable from mathlib primitives as currently stated. The genuinely
+  -- missing, mathematically-necessary hypothesis is `[CompleteSpace X]` (the SAME faithful
+  -- domain restriction already carried by `hasDerivAt_isWeakTimeDeriv` in this file, and the
+  -- direct analogue of the D2 `AEStronglyMeasurable` precedent). It is NOT a separability /
+  -- second-countability hypothesis: mathlib's vector-valued du Bois-Reymond
+  -- (`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`) needs only completeness of the
+  -- target, no countable separating dual family.
+  --
+  -- WHY FALSE WITHOUT COMPLETENESS. `IsWeakTimeDeriv` is stated with Bochner interval
+  -- integrals, and for a non-complete `X` the Bochner integral is defined to be `0`
+  -- (`MeasureTheory.integral_of_not_completeSpace`). Hence `∫ ψ • vᵢ = 0` for every test `ψ`,
+  -- so BOTH `h₁` and `h₂` hold trivially (`0 = -0`) for ARBITRARY `v₁, v₂` — e.g. `u = v₁ = 0`
+  -- and `v₂` any nonzero interval-integrable curve satisfy all hypotheses, yet `v₁ ≠ᵐ v₂`.
+  -- So completeness cannot be dropped; it is irreducible, not proof-strengthening.
+  --
+  -- DISCHARGE (verified to compile sorry-free once the signature gains `[CompleteSpace X]` and
+  -- the file imports `Mathlib.Analysis.Distribution.AEEqOfIntegralContDiff` — both lean-coder
+  -- edits, outside the prover's proof-body scope). The complete proof is, verbatim:
+  --
+  --   set w : ℝ → X := fun t => v₁ t - v₂ t with hw
+  --   have hIoo : (0:ℝ) ≤ T := hT.le
+  --   have hv₁Ioo : IntegrableOn v₁ (Set.Ioo 0 T) volume :=
+  --     (intervalIntegrable_iff_integrableOn_Ioo_of_le hIoo).mp hv₁
+  --   have hv₂Ioo : IntegrableOn v₂ (Set.Ioo 0 T) volume :=
+  --     (intervalIntegrable_iff_integrableOn_Ioo_of_le hIoo).mp hv₂
+  --   have hwIoo : IntegrableOn w (Set.Ioo 0 T) volume := by
+  --     have h := hv₁Ioo.sub hv₂Ioo; rw [hw]; exact h
+  --   have hwLoc : LocallyIntegrableOn w (Set.Ioo 0 T) volume := hwIoo.locallyIntegrableOn
+  --   have key : ∀ g : ℝ → ℝ, ContDiff ℝ (⊤ : ℕ∞) g → HasCompactSupport g →
+  --       tsupport g ⊆ Set.Ioo 0 T → ∫ x, g x • w x ∂volume = 0 := by
+  --     intro g hgsmooth hgcs hgsupp
+  --     have hgC1 : ContDiff ℝ 1 g := hgsmooth.of_le (by norm_num)
+  --     have hcompl : ∀ x, x ∉ Set.Ioo 0 T → g x • w x = 0 := by
+  --       intro x hx
+  --       have : g x = 0 := by
+  --         by_contra hgx; exact hx (hgsupp (subset_tsupport g (by simpa using hgx)))
+  --       simp [this]
+  --     have hfull : ∫ x, g x • w x ∂volume = ∫ x in Set.Ioo 0 T, g x • w x ∂volume :=
+  --       (setIntegral_eq_integral_of_forall_compl_eq_zero hcompl).symm
+  --     have hInterval : ∫ x in Set.Ioo 0 T, g x • w x ∂volume = ∫ t in (0:ℝ)..T, g t • w t := by
+  --       rw [intervalIntegral.integral_of_le hIoo, integral_Ioc_eq_integral_Ioo]
+  --     have e1 := h₁ g hgcs hgsupp hgC1
+  --     have e2 := h₂ g hgcs hgsupp hgC1
+  --     have heq : (∫ t in (0:ℝ)..T, g t • v₁ t) = ∫ t in (0:ℝ)..T, g t • v₂ t := by
+  --       have : -(∫ t in (0:ℝ)..T, g t • v₁ t) = -∫ t in (0:ℝ)..T, g t • v₂ t := by
+  --         rw [← e1, ← e2]
+  --       simpa using this
+  --     have hgcont : ContinuousOn g (Set.uIcc (0:ℝ) T) := hgC1.continuous.continuousOn
+  --     have hi1 : IntervalIntegrable (fun t => g t • v₁ t) volume 0 T := hv₁.continuousOn_smul hgcont
+  --     have hi2 : IntervalIntegrable (fun t => g t • v₂ t) volume 0 T := hv₂.continuousOn_smul hgcont
+  --     have hwsplit : ∫ t in (0:ℝ)..T, g t • w t
+  --         = (∫ t in (0:ℝ)..T, g t • v₁ t) - ∫ t in (0:ℝ)..T, g t • v₂ t := by
+  --       rw [← intervalIntegral.integral_sub hi1 hi2]; congr 1; funext t; simp only [hw, smul_sub]
+  --     rw [hfull, hInterval, hwsplit, heq, sub_self]
+  --   have main : ∀ᵐ x ∂volume, x ∈ Set.Ioo 0 T → w x = 0 :=
+  --     isOpen_Ioo.ae_eq_zero_of_integral_contDiff_smul_eq_zero hwLoc key
+  --   rw [Filter.EventuallyEq, ae_restrict_iff' measurableSet_Ioo]
+  --   filter_upwards [main] with t ht hmem
+  --   simpa [hw, sub_eq_zero] using ht hmem
+  --
+  -- TODO (lean-coder, statement-gate fix mirroring the D2 `AEStronglyMeasurable` precedent):
+  -- add `[CompleteSpace X]` to the `variable` block / this signature and import
+  -- `Mathlib.Analysis.Distribution.AEEqOfIntegralContDiff`, then replace this body with the
+  -- proof transcribed above (verified to elaborate sorry-free against current mathlib).
+  sorry -- ALLOW_SORRY: D1 weak-derivative a.e. uniqueness is FALSE as stated for non-complete `X` (Bochner integral collapses to 0 ⇒ `h₁,h₂` trivial; `v₁ ≠ᵐ v₂` counterexample above). Needs the genuinely-necessary `[CompleteSpace X]` (lean-coder signature fix + `AEEqOfIntegralContDiff` import); the full proof under that hypothesis is given verbatim above and was verified to compile sorry-free.
 
 /-- **A classical (strong) derivative is a weak time derivative.** If `u` has strong
 derivative `v` at every interior time `t ∈ Ioo 0 T` and both `u`, `v` are interval-integrable,
