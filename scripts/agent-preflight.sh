@@ -41,4 +41,7 @@ bash scripts/check-theorem-names.sh
 echo "==> scripts/check-axioms.sh"
 bash scripts/check-axioms.sh
 
+echo "==> scripts/check-axioms-live.sh"
+bash scripts/check-axioms-live.sh
+
 echo "PREFLIGHT OK"

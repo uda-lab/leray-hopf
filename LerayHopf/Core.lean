@@ -13,7 +13,7 @@ import LerayHopf.VelocityGalerkin
 -- Abstract ODE/energy skeleton (no axioms, no sorry)
 import LerayHopf.EnergySkeleton
 
--- Scaffold-era declarations (sorry in body, axiom-free; no sorryAx leakage from Core)
+-- Scaffold-era declarations (sorry-free, axiom-free; included for module-graph completeness)
 import LerayHopf.GalerkinPackage
 import LerayHopf.NonuniquenessStatement
 

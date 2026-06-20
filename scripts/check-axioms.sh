@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
-# Axiom-leak gate: verify that Core modules are project-axiom-free and sorryAx-free,
-# and that Axiomatic modules declare only their explicitly-listed justified axioms.
+# FAST STATIC PRE-FILTER for the axiom-leak gate.
 #
-# This script is a STATIC CHECK (grep-based) rather than a live `#print axioms` query,
-# because running `lake env lean` interactively on individual files in CI is expensive
-# and fragile.  The static approach is sound because:
+# This script is a grep-based STRUCTURAL check — it is fast (no Lean compilation)
+# but it only sees DIRECT imports of Core.lean, not transitive ones.
+# It is a necessary-but-not-sufficient gate.
 #
-#   1. Only two files (`AxiomaticClosure.lean`, `R3/AxiomaticClosure.lean`) contain
-#      `axiom` declarations (checked by `check-no-axiom.sh`).
-#   2. `LerayHopf/Core.lean` must NOT import those two files, directly or transitively.
-#      We verify this by checking Core.lean's import list.
-#   3. Capstone theorem names must carry `_axiomatic` suffix so callers know they
-#      depend on project axioms (name-check catches leakage into well-named public API).
+# The real backstop is `scripts/check-axioms-live.sh`, which runs
+# `lake env lean scripts/print_axioms.lean` and asserts the EXACT axiom sets
+# for both capstones and two Core representatives via `#print axioms`.
+# That live job catches transitive leaks this static check cannot.
 #
-# For a live `#print axioms` pin, see the CI job "Axiom print check" which uses
-# a dedicated Lean script (scripts/print_axioms.lean).
+# Two-tier design:
+#   check-axioms.sh      — fast static pre-filter (this file); fails on direct violations.
+#   check-axioms-live.sh — live `#print axioms` pin; catches transitive leaks.
+#   Together they are fail-closed.
+#
+# What this file checks:
+#   1. Core.lean's direct imports do not include any axiomatic module.
+#   2. Bare capstone names (without _axiomatic) are absent from Lean sources.
+#   3. All axioms in axiomatic files carry ALLOW_AXIOM markers.
 #
 # FAIL-CLOSED: set -euo pipefail; any grep/awk failure aborts with nonzero status.
 
