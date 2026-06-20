@@ -115,8 +115,13 @@ abstract weak-derivative API (integration by parts via
 `intervalIntegral.integral_smul_deriv_eq_deriv_smul_of_hasDerivAt`, boundary terms killed by
 `tsupport ψ ⊆ Ioo 0 T`).
 
+`CompleteSpace X` is required: the Bochner interval-integral integration-by-parts lemma
+(`intervalIntegral.integral_smul_deriv_eq_deriv_smul_of_hasDerivAt`) needs the target space
+complete. The intended consumers (Galerkin velocity curves in `L2VF_R3` / the pivot Hilbert
+space `H`) are complete, so this is a faithful precondition, not a weakening.
+
 **Proved this cycle** (sorry-free). -/
-theorem hasDerivAt_isWeakTimeDeriv {T : ℝ} (hT : 0 < T) {u v : ℝ → X}
+theorem hasDerivAt_isWeakTimeDeriv [CompleteSpace X] {T : ℝ} (hT : 0 < T) {u v : ℝ → X}
     (hu : ∀ t ∈ Set.Ioo (0 : ℝ) T, HasDerivAt u (v t) t)
     (hu_cont : ContinuousOn u (Set.Icc 0 T))
     (hv_cont : ContinuousOn v (Set.Icc 0 T)) :
@@ -138,7 +143,7 @@ theorem hasDerivAt_isWeakTimeDeriv {T : ℝ} (hT : 0 < T) {u v : ℝ → X}
   have hψT : ψ T = 0 :=
     image_eq_zero_of_notMem_tsupport (fun h => (lt_irrefl T) (hψsupp h).2)
   -- IBP: `∫ ψ • v = ψ(T)•u(T) - ψ(0)•u(0) - ∫ (deriv ψ) • u`.
-  have hibp := integral_smul_deriv_eq_deriv_smul_of_hasDerivAt
+  have hibp := intervalIntegral.integral_smul_deriv_eq_deriv_smul_of_hasDerivAt
     (u := ψ) (v := u) (u' := deriv ψ) (v' := v) (a := (0 : ℝ)) (b := T)
     (by rw [huIcc]; exact hψcont.continuousOn)
     (by rw [huIcc]; exact hu_cont)
@@ -146,8 +151,10 @@ theorem hasDerivAt_isWeakTimeDeriv {T : ℝ} (hT : 0 < T) {u v : ℝ → X}
     (by rw [hmin, hmax]; exact hu)
     (hderivψcont.intervalIntegrable 0 T)
     (by rw [← huIcc] at hv_cont; exact hv_cont.intervalIntegrable)
-  -- substitute the vanishing endpoints, then rearrange to the weak-derivative identity.
-  rw [hψ0, hψT, zero_smul, zero_smul, sub_zero, sub_zero] at hibp
+  -- substitute the vanishing endpoints (`ψ 0 = ψ T = 0`), killing the boundary term:
+  -- `hibp : ∫ ψ • v = 0 • u T - 0 • u 0 - ∫ (deriv ψ) • u = - ∫ (deriv ψ) • u`.
+  rw [hψ0, hψT] at hibp
+  simp only [zero_smul, sub_zero, zero_sub] at hibp
   -- `hibp : ∫ ψ • v = - ∫ (deriv ψ) • u`; the goal is `∫ (deriv ψ) • u = - ∫ ψ • v`.
   rw [hibp, neg_neg]
 
