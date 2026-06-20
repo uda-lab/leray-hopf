@@ -32,3 +32,6 @@ jobs:
 
       - name: Guardrail — no overclaiming theorem names
         run: bash scripts/check-theorem-names.sh
+
+      - name: Guardrail — axiom-leak gate (Core must be project-axiom-free)
+        run: bash scripts/check-axioms.sh

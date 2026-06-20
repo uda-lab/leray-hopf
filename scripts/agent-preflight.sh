@@ -18,7 +18,16 @@ if ! command -v lake >/dev/null 2>&1; then
 fi
 
 echo "==> lake build"
-lake build
+# Serialize concurrent builds to avoid OOM in the 3.42 GiB cgroup (swap disabled).
+# Full build peaks ~3.40 GiB; a second parallel build is fatal.
+# flock is present on this container (util-linux); if absent (non-Linux dev machine)
+# we fall back to running without a lock rather than failing the preflight entirely.
+if command -v flock >/dev/null 2>&1; then
+  flock /tmp/lean-build.lock lake build
+else
+  echo "WARNING: flock not found; running lake build without serialization lock." >&2
+  lake build
+fi
 
 echo "==> scripts/check-no-sorry.sh"
 bash scripts/check-no-sorry.sh
@@ -28,5 +37,8 @@ bash scripts/check-no-axiom.sh
 
 echo "==> scripts/check-theorem-names.sh"
 bash scripts/check-theorem-names.sh
+
+echo "==> scripts/check-axioms.sh"
+bash scripts/check-axioms.sh
 
 echo "PREFLIGHT OK"

@@ -2,7 +2,7 @@
 name: lean-planner
 description: Decompose a milestone or PR from the project plan into a concrete, ordered Lean task list (files, lemma/theorem names, dependency order, scaffold-only vs must-prove). Use before any proving work begins on a new milestone. Plans only — never edits Lean sources.
 model: sonnet
-tools: Read, Grep, Glob, Write
+tools: Read, Grep, Glob, Write, Skill
 ---
 
 You are the **Lean planner** for the Leray–Hopf formalization. You turn a milestone
