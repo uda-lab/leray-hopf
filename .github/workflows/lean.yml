@@ -32,3 +32,15 @@ jobs:
 
       - name: Guardrail — no overclaiming theorem names
         run: bash scripts/check-theorem-names.sh
+
+      - name: Guardrail — axiom-leak gate, static pre-filter (Core direct imports)
+        run: bash scripts/check-axioms.sh
+
+      - name: Guardrail — axiom live pin (#print axioms exact match on capstones + Core)
+        # Runs lake env lean scripts/print_axioms.lean and asserts:
+        #   exists_lerayHopf_torus3_axiomatic = exactly 4 project axioms + 3 kernel, no sorryAx
+        #   exists_lerayHopf_r3_axiomatic     = exactly 6 project axioms + 3 kernel, no sorryAx
+        #   lower_bound_from_inverse_square_lifespan = kernel axioms only, no project, no sorryAx
+        #   localCompactness_R3_of_ballCompact       = kernel axioms only, no project, no sorryAx
+        # Catches transitive leaks that the static pre-filter cannot.
+        run: bash scripts/check-axioms-live.sh

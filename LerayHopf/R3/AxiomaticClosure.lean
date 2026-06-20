@@ -64,7 +64,7 @@ calibration constant, and does not vanish on all Schwartz triples.
 - `GalerkinCompactnessPackageFull_R3`: proof-carrying Galerkin compactness package
 - `build_galerkin_package_R3`        : assembly — chains A1 → A2 (spatial_compactness_R3) → A3
 - `exists_lerayHopf_from_package_full_R3` : lifts a package to `Nonempty (LerayHopfSolutionFull_R3 …)`
-- `exists_lerayHopf_r3`              : main existence theorem
+- `exists_lerayHopf_r3_axiomatic`    : main existence theorem (axiom-dependent; renamed from `exists_lerayHopf_r3`)
 
 ## Assumptions
 
@@ -626,10 +626,16 @@ theorem exists_lerayHopf_from_package_full_R3 (𝔊 : R3GalerkinScheme) (F : R3N
        initial_trace := pkg.initial_trace_limit
        energy_class := pkg.energy_class_limit }⟩
 
-/-- **Main existence theorem on ℝ³:** For any `u₀ ∈ L²_σ(ℝ³)`, `ν > 0`, `T > 0`, there
-exist a Galerkin scheme `𝔊`, an NS-forms bundle `F`, and a Leray–Hopf solution `u` on
-`[0, T]`. -/
-theorem exists_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
+/-- **Main existence theorem on ℝ³ (axiomatic):** For any `u₀ ∈ L²_σ(ℝ³)`, `ν > 0`,
+`T > 0`, there exist a Galerkin scheme `𝔊`, an NS-forms bundle `F`, and a Leray–Hopf
+solution `u` on `[0, T]`.
+
+The name `_axiomatic` advertises that this result depends on the six project axioms
+(`r3GalerkinScheme_exists`, `r3_NSForms_exist`, `galerkin_ode_solution_R3`,
+`spatial_compactness_R3`, `aubin_lions_R3`, `galerkin_limit_passage_R3`).
+It is explicitly instructed (Issue #1 item 3); see `LerayHopf/Core.lean` for the
+axiom-free layer. Renamed from `exists_lerayHopf_r3`. -/
+theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),
     Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀) := by

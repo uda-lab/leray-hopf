@@ -19,46 +19,48 @@ Side branches (independent of the existence spine):
 * `LerayHopf.BlowupLowerBound`  (Branch A) — algebraic blow-up lower bound, sorry-free.
 * `LerayHopf.NonuniquenessStatement` (Branch B) — non-uniqueness proposition, scaffold only.
 
+## Import surface structure (Wave-0 axiom-removal refactor)
+
+The import surface is now split:
+- `import LerayHopf.Core`            — axiom-free, sorryAx-free spatial/regularity layer
+- `import LerayHopf.TorusAxiomatic`  — T³ axiomatic closure (4 project axioms)
+- `import LerayHopf.R3Axiomatic`     — ℝ³ axiomatic closure (6 project axioms)
+- `import LerayHopf`                 — (this file) re-exports all three layers
+
+Core work that does not require the axiomatic closures should use
+`import LerayHopf.Core` to stay project-axiom-free.
+
 No claim is made that existence, regularity, uniqueness, or nonuniqueness of the
 Navier–Stokes equations has been formalized.
 -/
 
-import LerayHopf.Basic
-import LerayHopf.TorusDomain
-import LerayHopf.FunctionSpaces
-import LerayHopf.SobolevTorus
-import LerayHopf.DivergenceFree
-import LerayHopf.Leray
-import LerayHopf.GalerkinProjection
+-- Axiom-free core layer (no project axioms, no sorryAx)
+import LerayHopf.Core
+
+-- Torus-layer files not covered by Core (sorry-carrying, axiom-free)
 import LerayHopf.RellichEmbedding
-import LerayHopf.VelocityGalerkin
 import LerayHopf.H1Sigma
 import LerayHopf.EvolutionTriple
-import LerayHopf.AxiomaticClosure
 import LerayHopf.Statement
-import LerayHopf.GalerkinPackage
 import LerayHopf.ExistenceFromPackage
-import LerayHopf.EnergySkeleton
 import LerayHopf.EnergyEstimate
-import LerayHopf.BlowupLowerBound
-import LerayHopf.NonuniquenessStatement
-import LerayHopf.R3.Domain
-import LerayHopf.R3.DivergenceFree
-import LerayHopf.R3.TrilinearEstimate
-import LerayHopf.R3.Regularity
-import LerayHopf.R3.AxiomaticClosure
+
+-- Axiomatic closure layers (project axioms live here)
+import LerayHopf.TorusAxiomatic
+import LerayHopf.R3Axiomatic
+
+-- R3 files not covered by Core (sorry-carrying or axiom-dependent)
 import LerayHopf.R3.GalerkinScheme
 import LerayHopf.R3.SchwartzDivFreeBasis
 import LerayHopf.R3.GalerkinODE
 import LerayHopf.R3.GalerkinODEExistence
 import LerayHopf.R3.GalerkinODESolve
-import LerayHopf.R3.SpatialCompactness
-import LerayHopf.R3.FourierL2
-import LerayHopf.R3.RellichBall
 import LerayHopf.R3.AubinLionsLimitPassage
 import LerayHopf.R3.CurlDensity
 import LerayHopf.R3.FrechetKolmogorov
 import LerayHopf.R3.ConvectionOperator
 import LerayHopf.R3.ConvectionForm
+
+-- Bochner layer (sorry-carrying)
 import LerayHopf.Bochner.GelfandTriple
 import LerayHopf.Bochner.TimeSobolev

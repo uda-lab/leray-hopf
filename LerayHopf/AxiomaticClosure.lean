@@ -44,7 +44,7 @@ sound for all `u : L2VF`.  The energy-inequality fields use `viscousFormSq ν` d
 - `GalerkinCompactnessPackageFull`  : proof-carrying Galerkin compactness package
 - `build_galerkin_package`          : assembly — chains A1 → A2 (with rellich_L2Sigma) → A3
 - `exists_lerayHopf_from_package_full` : copies proofs from package to solution
-- `exists_lerayHopf_torus3`         : main existence theorem
+- `exists_lerayHopf_torus3_axiomatic` : main existence theorem (axiom-dependent; renamed from `exists_lerayHopf_torus3`)
 
 ## Assumptions
 
@@ -524,9 +524,14 @@ theorem exists_lerayHopf_from_package_full (F : Torus3NSForms) (ν T : ℝ) (u�
        initial_trace := pkg.initial_trace_limit
        energy_class := pkg.energy_class_limit }⟩
 
-/-- **Main existence theorem:** For any `u₀ ∈ L²_σ`, `ν > 0`, `T > 0`, there exists
-a Torus3NSForms bundle `F` and a Leray–Hopf solution `u` on `[0, T]`. -/
-theorem exists_lerayHopf_torus3 (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν)
+/-- **Main existence theorem (axiomatic):** For any `u₀ ∈ L²_σ`, `ν > 0`, `T > 0`, there
+exists a Torus3NSForms bundle `F` and a Leray–Hopf solution `u` on `[0, T]`.
+
+The name `_axiomatic` advertises that this result depends on the four project axioms
+(`torus3_NSForms_exist`, `galerkin_ode_solution`, `aubin_lions`, `galerkin_limit_passage`).
+It is explicitly instructed (Issue #1 item 3); see `LerayHopf/Core.lean` for the
+axiom-free layer. Renamed from `exists_lerayHopf_torus3`. -/
+theorem exists_lerayHopf_torus3_axiomatic (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ F : Torus3NSForms, Nonempty (LerayHopfSolutionFull F ν T u₀) := by
   obtain ⟨F⟩ := torus3_NSForms_exist
