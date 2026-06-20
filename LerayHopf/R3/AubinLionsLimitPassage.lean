@@ -28,9 +28,10 @@ the deliverables are proved axiom-free, two are still open (`sorry` with truthfu
 
 **OPEN / PARTIAL (currently `sorry` with truthful TODO — NOT impossible, NOT unsound):**
 
-* `kineticEnergy_lsc_bound` (E1, ~line 256) — blocked only on time-measurability of the package's
-  limit `u` (the package does not currently expose it); the provable core uniform bound `hgal` is
-  discharged via `galerkin_norm_le_u0`. See the in-body TODO.
+* `kineticEnergy_lsc_bound` (E1, ~line 256) — the blocker (time-measurability of the package's
+  limit `u`) is now supplied by the new `u_aestronglyMeasurable` field added in #14-C; the
+  provable core uniform bound `hgal` is discharged via `galerkin_norm_le_u0`. Discharge of the
+  full body is #14-P (lean-prover target). See the in-body TODO.
 * `aubinLionsPackage_R3_of_timeCompactness` (C2, ~line 417) — the centerpiece Aubin–Lions
   assembly via the viable Steklov interval-averaging route. The building blocks above are proved;
   the REMAINING work is an OPEN ENGINEERING target: δ-mesh diagonalization + H¹/Jensen bound on
@@ -220,13 +221,13 @@ private theorem galerkin_norm_le_u0 (𝔊 : R3GalerkinScheme) (F : R3NSForms �
 with the uniform Galerkin energy bound, gives `½‖u t‖² ≤ ½‖u₀‖²` at the limit, A.E. IN TIME.
 
 Honesty (no-smuggle, Codex Gate-1): the conclusion is A.E.-in-`t` over `[0,T]`, NOT `∀ t`.
-`AubinLionsPackage_R3` supplies only LOCAL space-time integral convergence — it carries no
-pointwise-in-time representative / weak-time-continuity / trace field, so the value of
-`alPkg.u` on any single time slice is not pinned down by the package (altering it on a null
-time set preserves the space-time convergence). A `∀ t` bound would therefore smuggle the
-GOOD-REPRESENTATIVE (pointwise-in-time) content that the milestone ADDENDUM explicitly keeps
-as the residual frontier. The a.e.-in-time bound is the honest derivable form; promoting it
-to `∀ t` requires the residual good-representative frontier we do NOT reconstruct here. -/
+`AubinLionsPackage_R3` supplies LOCAL space-time integral convergence, and (as of #14-C) also
+`u_aestronglyMeasurable` (time-measurability of `t ↦ u t`). The measurability field enables
+the a.e.-`t` norm-lsc transfer (E1 lean-prover target, #14-P). A `∀ t` bound would still
+smuggle the GOOD-REPRESENTATIVE (pointwise-in-time) content — strong time-measurability is NOT
+a pointwise representative. The a.e.-in-time bound is the honest derivable form; promoting it
+to `∀ t` requires the good-representative frontier (weak-time-continuity / trace), which this
+package deliberately does not carry. -/
 theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν T : ℝ) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
@@ -252,22 +253,18 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
   --   `t`, equivalently joint `(t,x)`-measurability of the integrand, equivalently time-
   --   measurability of `alPkg.u`.
   --
-  --   `AubinLionsPackage_R3` carries NO time-measurability / pointwise-in-time representative
-  --   field for `u` (Codex-approved as the deliberately weak local package), and `intervalIntegral`
-  --   returns `0` on non-integrable integrands, so the `strong_convergence` hypothesis is
-  --   INVARIANT under modifying `alPkg.u` on any `t`-null set — hence it can pin down `alPkg.u t`
-  --   only up to a null set, i.e. it gives NO measurable handle on `t ↦ alPkg.u t`. Supplying such
-  --   a representative/measurability would be exactly the residual GOOD-REPRESENTATIVE /
-  --   `W^{1,p}(0,T;X)` Bochner-time frontier the milestone keeps unreconstructed, and adding it
-  --   here would smuggle content the package does not have.
+  --   **UPDATE (#14-C):** `AubinLionsPackage_R3` NOW carries the `u_aestronglyMeasurable` field
+  --   (`AEStronglyMeasurable (fun t => (alPkg.u t : L2VF_R3)) ...`), added as the green-lit #14-C
+  --   struct field. This is the minimal time-regularity field that unblocks the a.e.-`t` extraction:
+  --   `alPkg.u_aestronglyMeasurable` gives measurability of `t ↦ alPkg.u t`, so
+  --   `TendstoInMeasure.exists_seq_tendsto_ae` can now be applied to `g_n(t) = ∫_{B_k} ‖…‖²`.
   --
   -- TODO(E1, minimal): a.e.-`t` kinetic-lsc transfer of `hgal` to `alPkg.u`. The ONLY missing
-  -- ingredient is time-measurability of `alPkg.u` (joint `(t,x)`-measurability of the package
-  -- integrand): with it, `TendstoInMeasure.exists_seq_tendsto_ae` + per-`t` ball-exhaustion
-  -- norm-lsc closes the bound; without it the package cannot constrain `alPkg.u` off a null set.
-  -- Missing mathlib pillar: vector-valued Bochner-time / `W^{1,p}(0,T;X)` measurable-representative
-  -- theory (the same pillar behind axiom `aubin_lions_R3`).
-  sorry -- ALLOW_SORRY: P2 lean-prover target (E1) — minimal residual: needs time-measurability of the package's `u` (see TODO above); provable core `hgal` discharged via galerkin_norm_le_u0
+  -- step is wiring `alPkg.u_aestronglyMeasurable` into the `TendstoInMeasure.exists_seq_tendsto_ae`
+  -- + per-`t` ball-exhaustion norm-lsc argument. With the new field supplied, this is an
+  -- engineering discharge target for lean-prover (#14-P). Dischargeable via D2 primitive
+  -- `aeStronglyMeasurable_of_spaceTimeL2` (Bochner/TimeSobolev.lean).
+  sorry -- ALLOW_SORRY: P2 lean-prover target (E1) — minimal residual: `alPkg.u_aestronglyMeasurable` (#14-C field) now supplies the needed handle; discharge path = TendstoInMeasure.exists_seq_tendsto_ae + per-t ball-exhaustion norm-lsc; provable core `hgal` discharged via galerkin_norm_le_u0
 
 /-! ### Tier C-prep — Steklov interval-average building blocks for the Aubin–Lions route
 
@@ -459,6 +456,11 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
   -- the `AubinLionsPackage_R3` `strong_convergence` field. This is reachable from `galSeq` + `Htime`
   -- + P3 via the proved Steklov helpers; it is an engineering target, NOT blocked by a missing
   -- mathlib pillar. Statement/hypotheses kept intact (Hard rule 8); deferred this cycle.
-  sorry -- ALLOW_SORRY: P2 lean-prover target (C2 — centerpiece) — open engineering assembly: the Steklov interval-averaging route (proved helpers steklovAvg/_norm_le_u0/_approx) is viable; remaining = H¹ Jensen bound on the average + Bochner-average measurability + δ-mesh diagonalization (see TODO)
+  --
+  -- TODO(E1-scaffold): the new `u_aestronglyMeasurable` field (added in #14-C) is also covered
+  -- by this sorry. Its discharge path: use `aeStronglyMeasurable_of_spaceTimeL2` (the D2
+  -- primitive in `Bochner/TimeSobolev.lean`) applied to the Steklov-assembled limit curve once
+  -- C2 is resolved. See `#14-P` (#14-P E1 measurability target).
+  sorry -- ALLOW_SORRY: #14-P E1 measurability + C2 centerpiece — this sorry covers: (1) `u_aestronglyMeasurable` (new #14-C field): discharged via D2 primitive aeStronglyMeasurable_of_spaceTimeL2 once C2 is resolved; (2) `strong_convergence` (C2): Steklov interval-averaging route viable, helpers proved, remaining = H¹ Jensen bound + Bochner-avg measurability + δ-mesh diagonalization
 
 end LerayHopf
