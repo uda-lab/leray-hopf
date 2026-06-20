@@ -28,10 +28,18 @@ the deliverables are proved axiom-free, two are still open (`sorry` with truthfu
 
 **OPEN / PARTIAL (currently `sorry` with truthful TODO — NOT impossible, NOT unsound):**
 
-* `kineticEnergy_lsc_bound` (E1, ~line 256) — the blocker (time-measurability of the package's
-  limit `u`) is now supplied by the new `u_aestronglyMeasurable` field added in #14-C; the
-  provable core uniform bound `hgal` is discharged via `galerkin_norm_le_u0`. Discharge of the
-  full body is #14-P (lean-prover target). See the in-body TODO.
+* `kineticEnergy_lsc_bound` (E1, ~line 435) — #14-P discharge. The full norm-lsc-transfer +
+  ball-exhaustion proof is now built (`kineticEnergyLscTransfer`, `continuous_restrictToBall`,
+  `norm_restrictToBall_le'`, `normSq_restrictToBall_eq_setIntegral`,
+  `tendsto_normSq_restrictToBall`, `eLpNorm_two_eq_ofReal_sqrt`), wired through the #14-C
+  `u_aestronglyMeasurable` field and `galerkin_norm_le_u0`. Exactly ONE residual `sorry` remains
+  (line ~514): `MemLp (fun t => restrictToBall k (u t)) 2 (volume.restrict (Icc 0 T))`, i.e.
+  time-integrability of the `strong_convergence` integrand. This is NOT derivable from the present
+  `AubinLionsPackage_R3` fields — `strong_convergence` is stated as a `Bochner` interval integral
+  (defined as `0` for non-integrable integrands), so it is vacuously satisfiable without
+  integrability and cannot drive the `eLpNorm` convergence by itself. FIX is field-level
+  (`lean-coder`): strengthen `strong_convergence` to its faithful `eLpNorm`-form. See the in-body
+  ALLOW_SORRY for the precise statement.
 * `aubinLionsPackage_R3_of_timeCompactness` (C2, ~line 417) — the centerpiece Aubin–Lions
   assembly via the viable Steklov interval-averaging route. The building blocks above are proved;
   the REMAINING work is an OPEN ENGINEERING target: δ-mesh diagonalization + H¹/Jensen bound on
@@ -217,6 +225,210 @@ private theorem galerkin_norm_le_u0 (𝔊 : R3GalerkinScheme) (F : R3NSForms �
     nlinarith [henergy, h2]
   exact le_of_sq_le_sq hsq (norm_nonneg _)
 
+/-- The Galerkin velocity curve `t ↦ ((galSeq n).u t : L2VF_R3)` is continuous on **forward**
+time `Set.Ici 0` (it is even differentiable there by `u_hasDeriv`).
+
+Forward-only: `u_hasDeriv` now guarantees differentiability only for `t ≥ 0` (the curve is a
+physical Galerkin solution, confined only on forward time).  Everything downstream uses the
+curve only on `[0,T] ⊆ Ici 0`, so forward continuity suffices. -/
+private theorem galerkin_curve_continuous (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
+    ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
+  fun t ht => (gs.u_hasDeriv t ht).continuousAt.continuousWithinAt
+
+/-- For an a.e.-strongly-measurable `β`-valued time curve `h` whose pointwise squared norm is
+integrable, the time-`L²` seminorm is `ENNReal.ofReal (√(∫ ‖h t‖² dμ))`. (Standard `eLpNorm`
+unfolding for `p = 2`; used to feed the integral-to-`eLpNorm` step of E1.) -/
+private theorem eLpNorm_two_eq_ofReal_sqrt {β : Type*} [NormedAddCommGroup β]
+    {μ : Measure ℝ} (h : ℝ → β)
+    (hint : Integrable (fun t => ‖h t‖ ^ 2) μ) :
+    eLpNorm h 2 μ = ENNReal.ofReal (Real.sqrt (∫ t, ‖h t‖ ^ 2 ∂μ)) := by
+  rw [eLpNorm_eq_eLpNorm' (by norm_num) (by norm_num), eLpNorm'_eq_lintegral_enorm]
+  -- The exponent: `(2 : ENNReal).toReal = 2`.
+  have htwo : (2 : ENNReal).toReal = (2 : ℝ) := by norm_num
+  rw [htwo]
+  -- Pointwise: `‖h t‖ₑ ^ (2:ℝ) = ENNReal.ofReal (‖h t‖²)`.
+  have hpt : (fun t => ‖h t‖ₑ ^ (2 : ℝ)) = fun t => ENNReal.ofReal (‖h t‖ ^ 2) := by
+    funext t
+    rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, ENNReal.rpow_natCast,
+      ← ofReal_norm (h t), ← ENNReal.ofReal_pow (norm_nonneg _)]
+  rw [hpt]
+  -- `∫⁻ ofReal (‖h t‖²) = ofReal (∫ ‖h t‖²)`.
+  have hnn : 0 ≤ᵐ[μ] fun t => ‖h t‖ ^ 2 :=
+    Filter.Eventually.of_forall fun t => sq_nonneg _
+  rw [← ofReal_integral_eq_lintegral_ofReal hint hnn]
+  -- `(ofReal I)^(1/2) = ofReal (I^(1/2)) = ofReal (√I)`.
+  rw [ENNReal.ofReal_rpow_of_nonneg (integral_nonneg fun t => sq_nonneg _)
+      (by norm_num : (0:ℝ) ≤ 1 / 2),
+    ← Real.sqrt_eq_rpow]
+
+/-- **Abstract a.e.-`t` norm-lsc transfer (local copy of `Bochner.TimeSobolev`'s
+`kineticEnergy_lsc_transfer`).** Inlined here because `AubinLionsLimitPassage` does not import
+`Bochner.TimeSobolev` (and adding an import is a `lean-coder`-owned change). Same statement and
+proof: from `L²(μ)`-convergence of an a.e.-strongly-measurable sequence `f` to an
+a.e.-strongly-measurable limit `g`, with a uniform a.e. pointwise bound `‖f n t‖ ≤ M`, the limit
+inherits the bound at `μ`-a.e. `t`.
+
+The isolated measurability pillar `hg : AEStronglyMeasurable g μ` is mandatory (Lane-D
+statement-gate fix; without it the statement is FALSE via a Vitali-set counterexample — see the
+`Bochner.TimeSobolev` docstring). Route: L²-convergence ⇒ convergence in measure
+(`tendstoInMeasure_of_tendsto_eLpNorm`, which itself requires `hg`) ⇒ a.e.-convergent subsequence
+(`TendstoInMeasure.exists_seq_tendsto_ae`) ⇒ pass the bound through the a.e. limit. -/
+private theorem kineticEnergyLscTransfer {β : Type*} [NormedAddCommGroup β]
+    {μ : Measure ℝ} {f : ℕ → ℝ → β} {g : ℝ → β} {M : ℝ}
+    (hf : ∀ n, AEStronglyMeasurable (f n) μ)
+    (hg : AEStronglyMeasurable g μ)
+    (hconv : Tendsto (fun n => eLpNorm (fun t => f n t - g t) 2 μ) atTop (𝓝 0))
+    (hbound : ∀ n, ∀ᵐ t ∂μ, ‖f n t‖ ≤ M) :
+    ∀ᵐ t ∂μ, ‖g t‖ ≤ M := by
+  -- L²-convergence ⇒ convergence in measure (uses `hg`), then extract an a.e. subsequence.
+  have hconv' : Tendsto (fun n => eLpNorm (f n - g) 2 μ) atTop (𝓝 0) := hconv
+  have htim : TendstoInMeasure μ f atTop g :=
+    tendstoInMeasure_of_tendsto_eLpNorm (by norm_num) hf hg hconv'
+  obtain ⟨φ, _hφ, hae⟩ := htim.exists_seq_tendsto_ae
+  -- The uniform bound holds for all `n` simultaneously at a.e. `t`.
+  have hbound_all : ∀ᵐ t ∂μ, ∀ k, ‖f (φ k) t‖ ≤ M :=
+    (ae_all_iff.2 fun k => hbound (φ k))
+  -- At a.e. `t`: `‖f (φ k) t‖ → ‖g t‖` and `‖f (φ k) t‖ ≤ M`, so `‖g t‖ ≤ M`.
+  filter_upwards [hae, hbound_all] with t htlim htbd
+  exact le_of_tendsto' htlim.norm htbd
+
+/-! ### Tier E-prep — ball-restriction plumbing for the a.e.-`t` norm-lsc transfer
+
+These `private` helpers carry the ball-restriction analysis that the E1 transfer needs:
+`restrictToBall R` is `1`-Lipschitz (hence continuous, so it transports time-measurability),
+its squared norm is the ball set-integral of `‖·‖²`, and that ball set-integral increases to
+the full L²(ℝ³) norm-squared as the radius exhausts `ℝ³`. They reuse P3's `restrictToBall`
+(`R3.SpatialCompactness`) and the bridge `setIntegral_normSq_eq_dist_sq_restrictToBall`. -/
+
+/-- `restrictToBall R` is `1`-Lipschitz on `L2VF_R3` (local copy: the P3 norm bound is
+`private`). Used to obtain continuity, hence time-measurability transport. -/
+private theorem restrictToBall_dist_le (R : ℝ) (u v : L2VF_R3) :
+    dist (restrictToBall R u) (restrictToBall R v) ≤ dist u v := by
+  rw [dist_eq_norm, dist_eq_norm, Lp.norm_def, Lp.norm_def]
+  have hle : volume.restrict (Metric.closedBall (0 : Domain3) R) ≤ (volume : Measure Domain3) :=
+    Measure.restrict_le_self
+  -- The underlying function of `restrictToBall R u - restrictToBall R v` agrees a.e. (on `B_R`)
+  -- with `u - v`'s underlying function.
+  have hcongR : ⇑(restrictToBall R u - restrictToBall R v)
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+        (fun x => (u x : EuclideanSpace ℝ (Fin 3)) - (v x : EuclideanSpace ℝ (Fin 3))) := by
+    have hsub := Lp.coeFn_sub (restrictToBall R u) (restrictToBall R v)
+    have hu : ⇑(restrictToBall R u)
+        =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+          (u : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+    have hv : ⇑(restrictToBall R v)
+        =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+          (v : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+    filter_upwards [hsub, hu, hv] with x hx hxu hxv
+    simp only [hx, Pi.sub_apply, hxu, hxv]
+  have hcongG : ⇑(u - v)
+      =ᵐ[(volume : Measure Domain3)]
+        (fun x => (u x : EuclideanSpace ℝ (Fin 3)) - (v x : EuclideanSpace ℝ (Fin 3))) :=
+    Lp.coeFn_sub u v
+  rw [eLpNorm_congr_ae hcongR, eLpNorm_congr_ae hcongG]
+  refine ENNReal.toReal_mono ?_ (eLpNorm_mono_measure _ hle)
+  rw [← eLpNorm_congr_ae hcongG]
+  exact (Lp.memLp (u - v)).2.ne
+
+/-- L²-norm-squared as an integral of the pointwise squared norm (local copy; P3's is
+`private`). -/
+private theorem normSq_eq_integral_normSq' {μ : Measure Domain3}
+    (h : Lp (EuclideanSpace ℝ (Fin 3)) 2 μ) :
+    ‖h‖ ^ 2 = ∫ x, ‖(h x : EuclideanSpace ℝ (Fin 3))‖ ^ 2 ∂μ := by
+  have hre : ‖h‖ ^ 2 = (inner ℝ h h : ℝ) := by
+    have := norm_sq_eq_re_inner (𝕜 := ℝ) h
+    simpa using this
+  rw [hre, MeasureTheory.L2.inner_def]
+  refine integral_congr_ae ?_
+  filter_upwards with x
+  exact real_inner_self_eq_norm_sq _
+
+/-- `restrictToBall R` sends `0` to `0`. -/
+private theorem restrictToBall_zero (R : ℝ) : restrictToBall R (0 : L2VF_R3) = 0 := by
+  apply Lp.ext
+  have h1 : ⇑(restrictToBall R (0 : L2VF_R3))
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+        ((0 : L2VF_R3) : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+  have h0 : ((0 : L2VF_R3) : Domain3 → EuclideanSpace ℝ (Fin 3))
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)] (0 : Domain3 → _) :=
+    (Lp.coeFn_zero (E := EuclideanSpace ℝ (Fin 3)) (p := 2) (μ := volume)).restrict
+  have hz0 : ⇑(0 : L2ballR3 R)
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)] (0 : Domain3 → _) :=
+    Lp.coeFn_zero (E := EuclideanSpace ℝ (Fin 3)) (p := 2)
+      (μ := volume.restrict (Metric.closedBall (0 : Domain3) R))
+  filter_upwards [h1, h0, hz0] with x hx hx0 hxz
+  simp only [hx, hx0, hxz, Pi.zero_apply]
+
+/-- Restriction to a ball does not increase the L²-norm (local copy; P3's is `private`). -/
+private theorem norm_restrictToBall_le' (R : ℝ) (w : L2VF_R3) :
+    ‖restrictToBall R w‖ ≤ ‖w‖ := by
+  have := restrictToBall_dist_le R w 0
+  rwa [restrictToBall_zero, dist_zero_right, dist_zero_right] at this
+
+/-- Continuity of `restrictToBall R : L2VF_R3 → L2ballR3 R` (it is `1`-Lipschitz). -/
+private theorem continuous_restrictToBall (R : ℝ) :
+    Continuous (fun w : L2VF_R3 => restrictToBall R w) := by
+  refine Metric.continuous_iff.2 fun w ε hε => ⟨ε, hε, fun w' hw' => ?_⟩
+  calc dist (restrictToBall R w') (restrictToBall R w)
+      ≤ dist w' w := restrictToBall_dist_le R w' w
+    _ < ε := hw'
+
+/-- The squared L²(B_R)-norm of `restrictToBall R w` equals the ball set-integral of `‖w·‖²`. -/
+private theorem normSq_restrictToBall_eq_setIntegral (R : ℝ) (w : L2VF_R3) :
+    ‖restrictToBall R w‖ ^ 2
+      = ∫ x in Metric.closedBall (0 : Domain3) R,
+          ‖(w x : EuclideanSpace ℝ (Fin 3))‖ ^ 2 ∂(volume : Measure Domain3) := by
+  -- Use the bridge with `v = 0`: `restrictToBall R 0 = 0`, so the ball integral of `‖w - 0‖²`
+  -- equals `dist (restrictToBall R w) 0 ^ 2 = ‖restrictToBall R w‖²`.
+  have hbridge := setIntegral_normSq_eq_dist_sq_restrictToBall R w 0
+  rw [restrictToBall_zero, dist_zero_right] at hbridge
+  -- Rewrite the integrand: `w x - (0 : L2VF_R3) x = w x` a.e.
+  rw [← hbridge]
+  refine setIntegral_congr_ae measurableSet_closedBall ?_
+  have h0 : ((0 : L2VF_R3) : Domain3 → EuclideanSpace ℝ (Fin 3)) =ᵐ[volume] (0 : Domain3 → _) :=
+    Lp.coeFn_zero (E := EuclideanSpace ℝ (Fin 3)) (p := 2) (μ := volume)
+  filter_upwards [h0] with x hx _
+  rw [hx]; simp
+
+/-- **Ball exhaustion of the L²(ℝ³) norm.** The squared L²(B_k)-norm of `restrictToBall k w`
+increases to `‖w‖²` as the integer radius `k → ∞` (the balls exhaust `ℝ³`). -/
+private theorem tendsto_normSq_restrictToBall (w : L2VF_R3) :
+    Tendsto (fun k : ℕ => ‖restrictToBall (k : ℝ) w‖ ^ 2) atTop (𝓝 (‖w‖ ^ 2)) := by
+  -- The integrand `x ↦ ‖w x‖²`.
+  set F : Domain3 → ℝ := fun x => ‖(w x : EuclideanSpace ℝ (Fin 3))‖ ^ 2 with hF
+  -- Integrability of `F` over `ℝ³`: `‖w‖² = ∫ F`, and `F` is the pointwise square norm of an L²
+  -- function, hence integrable (`MemLp.integrable_norm_rpow`-style; here directly via `L2`).
+  have hInt : Integrable F (volume : Measure Domain3) := by
+    have hmem : MemLp (w : Domain3 → EuclideanSpace ℝ (Fin 3)) 2 volume := Lp.memLp w
+    have hr := hmem.integrable_norm_rpow (by norm_num) (by norm_num)
+    refine hr.congr ?_
+    filter_upwards with x
+    simp only [hF, show (2 : ENNReal).toReal = (2 : ℝ) by norm_num, Real.rpow_two]
+  -- Each ball term is the set-integral of `F`.
+  have hterm : ∀ k : ℕ, ‖restrictToBall (k : ℝ) w‖ ^ 2
+      = ∫ x in Metric.closedBall (0 : Domain3) (k : ℝ), F x ∂volume :=
+    fun k => normSq_restrictToBall_eq_setIntegral (k : ℝ) w
+  -- The full norm is `∫ F`.
+  have hfull : ‖w‖ ^ 2 = ∫ x, F x ∂volume := by
+    have := normSq_eq_integral_normSq' (μ := (volume : Measure Domain3)) w
+    simpa [hF] using this
+  -- Monotone ball exhaustion of the set-integral.
+  have hcov : (⋃ k : ℕ, Metric.closedBall (0 : Domain3) (k : ℝ)) = Set.univ :=
+    Metric.iUnion_closedBall_nat 0
+  have hmono : Monotone (fun k : ℕ => Metric.closedBall (0 : Domain3) (k : ℝ)) :=
+    fun a b hab => Metric.closedBall_subset_closedBall (by exact_mod_cast hab)
+  have hIntOn : IntegrableOn F (⋃ k : ℕ, Metric.closedBall (0 : Domain3) (k : ℝ)) volume := by
+    rw [hcov, integrableOn_univ]; exact hInt
+  have htends :=
+    tendsto_setIntegral_of_monotone
+      (fun k => measurableSet_closedBall) hmono hIntOn
+  rw [hcov] at htends
+  simp only [Measure.restrict_univ] at htends
+  rw [hfull]
+  simpa only [hterm] using htends
+
 /-- Lower-semicontinuity of the kinetic energy under the (local strong) L² limit, combined
 with the uniform Galerkin energy bound, gives `½‖u t‖² ≤ ½‖u₀‖²` at the limit, A.E. IN TIME.
 
@@ -240,31 +452,133 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
   have hgal : ∀ (n : ℕ) {t : ℝ}, 0 ≤ t →
       ‖((galSeq n).u t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ :=
     fun n {t} ht => galerkin_norm_le_u0 𝔊 F ν u₀ n (galSeq n) ht
-  -- The remaining step — transferring `hgal` to the LIMIT `alPkg.u` at a.e. time — is the
-  -- genuine blocker, and it is IRREDUCIBLE FROM THE PACKAGE ALONE for a precise, structural
-  -- reason (verified from several angles, not a giving-up):
-  --
-  --   The norm-lsc transfer needs, for a.e. `t` and each ball radius `k`, an extraction
-  --   `restrictToBall k ((galSeq (φ m)).u t) → restrictToBall k (alPkg.u t)` in `L²(B_k)`,
-  --   obtained from `∫₀ᵀ (∫_{B_k} ‖(galSeq (φ n)).u t − alPkg.u t‖²) dt → 0` by extracting an
-  --   a.e.-`t` subsequence of the INNER integral `g_n(t) := ∫_{B_k} ‖(galSeq (φ n)).u t − …‖²`.
-  --   That a.e.-`t` extraction (`TendstoInMeasure.exists_seq_tendsto_ae` /
-  --   `tendstoInMeasure_of_tendsto_eLpNorm`) REQUIRES `g_n` to be (a.e.-strongly) MEASURABLE in
-  --   `t`, equivalently joint `(t,x)`-measurability of the integrand, equivalently time-
-  --   measurability of `alPkg.u`.
-  --
-  --   **UPDATE (#14-C):** `AubinLionsPackage_R3` NOW carries the `u_aestronglyMeasurable` field
-  --   (`AEStronglyMeasurable (fun t => (alPkg.u t : L2VF_R3)) ...`), added as the green-lit #14-C
-  --   struct field. This is the minimal time-regularity field that unblocks the a.e.-`t` extraction:
-  --   `alPkg.u_aestronglyMeasurable` gives measurability of `t ↦ alPkg.u t`, so
-  --   `TendstoInMeasure.exists_seq_tendsto_ae` can now be applied to `g_n(t) = ∫_{B_k} ‖…‖²`.
-  --
-  -- TODO(E1, minimal): a.e.-`t` kinetic-lsc transfer of `hgal` to `alPkg.u`. The ONLY missing
-  -- step is wiring `alPkg.u_aestronglyMeasurable` into the `TendstoInMeasure.exists_seq_tendsto_ae`
-  -- + per-`t` ball-exhaustion norm-lsc argument. With the new field supplied, this is an
-  -- engineering discharge target for lean-prover (#14-P). Dischargeable via D2 primitive
-  -- `aeStronglyMeasurable_of_spaceTimeL2` (Bochner/TimeSobolev.lean).
-  sorry -- ALLOW_SORRY: P2 lean-prover target (E1) — minimal residual: `alPkg.u_aestronglyMeasurable` (#14-C field) now supplies the needed handle; discharge path = TendstoInMeasure.exists_seq_tendsto_ae + per-t ball-exhaustion norm-lsc; provable core `hgal` discharged via galerkin_norm_le_u0
+  -- Degenerate window `T < 0`: `Icc 0 T = ∅`, so the a.e.-statement is vacuous.
+  by_cases hT : 0 ≤ T
+  · -- The time measure `μ = volume.restrict (Icc 0 T)` is finite (`Icc 0 T` bounded).
+    set μ : Measure ℝ := volume.restrict (Set.Icc (0 : ℝ) T) with hμ
+    haveI hμfin : IsFiniteMeasure μ := by
+      rw [hμ]; refine isFiniteMeasure_restrict.2 ?_
+      rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top
+    -- a.e. `t ∈ Icc 0 T`, in particular `0 ≤ t`.
+    have hμ_ge : ∀ᵐ t ∂μ, 0 ≤ t := by
+      rw [hμ]; refine ae_restrict_of_forall_mem measurableSet_Icc ?_; intro t ht; exact ht.1
+    -- ════ For each integer radius `k`: the limit's ball restriction is L²-bounded by ‖u₀‖. ════
+    -- This is the `kineticEnergyLscTransfer` (norm-lsc) step, applied in `β = L2ballR3 k`, with
+    --   f n := t ↦ restrictToBall k ((galSeq (alPkg.φ n)).u t),   g := t ↦ restrictToBall k (u t).
+    have hperBall : ∀ k : ℕ,
+        ∀ᵐ t ∂μ, ‖restrictToBall (k : ℝ) (alPkg.u t)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
+      intro k
+      set R : ℝ := (k : ℝ) with hR
+      set f : ℕ → ℝ → L2ballR3 R :=
+        fun n t => restrictToBall R ((galSeq (alPkg.φ n)).u t) with hf
+      set g : ℝ → L2ballR3 R := fun t => restrictToBall R (alPkg.u t) with hg
+      -- (1) `g` is a.e.-strongly measurable: `restrictToBall R` continuous ∘ `u` measurable.
+      have hg_meas : AEStronglyMeasurable g μ := by
+        simp only [hg]
+        exact (continuous_restrictToBall R).comp_aestronglyMeasurable
+          (by rw [hμ]; exact alPkg.u_aestronglyMeasurable)
+      -- (2) each `f n` is a.e.-strongly measurable: galerkin curve continuous on `Ici 0 ⊇ Icc 0 T`.
+      have hf_meas : ∀ n, AEStronglyMeasurable (f n) μ := by
+        intro n
+        have hcurve : ContinuousOn
+            (fun t => ((galSeq (alPkg.φ n)).u t : L2VF_R3)) (Set.Icc (0 : ℝ) T) :=
+          (galerkin_curve_continuous 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n))).mono
+            (by intro t ht; exact ht.1)
+        have hcurve_meas : AEStronglyMeasurable
+            (fun t => ((galSeq (alPkg.φ n)).u t : L2VF_R3)) μ := by
+          rw [hμ]; exact hcurve.aestronglyMeasurable measurableSet_Icc
+        simp only [hf]
+        exact (continuous_restrictToBall R).comp_aestronglyMeasurable hcurve_meas
+      -- (3) the uniform a.e. bound `‖f n t‖ ≤ ‖u₀‖` (restriction ≤ global, then `hgal`).
+      have hf_bound : ∀ n, ∀ᵐ t ∂μ, ‖f n t‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
+        intro n
+        filter_upwards [hμ_ge] with t ht
+        simp only [hf]
+        calc ‖restrictToBall R ((galSeq (alPkg.φ n)).u t)‖
+            ≤ ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ :=
+              norm_restrictToBall_le' R ((galSeq (alPkg.φ n)).u t)
+          _ ≤ ‖(u₀ : L2VF_R3)‖ := hgal (alPkg.φ n) ht
+      -- (4) the L²-in-time convergence `eLpNorm (f n - g) 2 μ → 0`, from `strong_convergence`.
+      have hconv : Tendsto (fun n => eLpNorm (fun t => f n t - g t) 2 μ) atTop (𝓝 0) := by
+        -- The pointwise squared norm equals the ball set-integral (bridge): `‖f n t - g t‖²` is
+        -- exactly the inner integral of the `strong_convergence` integrand.
+        have hptSq : ∀ n t, ‖f n t - g t‖ ^ 2
+            = ∫ x in Metric.closedBall (0 : Domain3) R,
+                ‖(((galSeq (alPkg.φ n)).u t : L2VF_R3) x : EuclideanSpace ℝ (Fin 3)) -
+                 ((alPkg.u t : L2VF_R3) x : EuclideanSpace ℝ (Fin 3))‖ ^ 2
+                ∂(volume : Measure Domain3) := by
+          intro n t
+          simp only [hf, hg]
+          rw [setIntegral_normSq_eq_dist_sq_restrictToBall, dist_eq_norm]
+        -- ── The SINGLE genuinely-missing input: `MemLp g 2 μ`, i.e. the limit curve's ball
+        -- restriction is space-time L². Equivalently, the `strong_convergence` integrand is
+        -- integrable in time. `AubinLionsPackage_R3` carries NO bound / `MemLp` field for its limit
+        -- `u` (`AxiomaticClosure.lean:420–455`: only `φ, u, u_aestronglyMeasurable,
+        -- strong_convergence`); the `intervalIntegral` encoding of `strong_convergence` is faithful
+        -- to its `eLpNorm`-form intent ONLY when the integrand is integrable, which is exactly this
+        -- `MemLp g`. It is therefore NOT derivable from the present fields and must be supplied by
+        -- strengthening `strong_convergence` to its `eLpNorm`-form (lean-coder, #14-C field shape).
+        have hg_memLp : MemLp g 2 μ := by
+          sorry -- ALLOW_SORRY: #14-P E1 residual = `MemLp (fun t => restrictToBall k (alPkg.u t)) 2 (volume.restrict (Icc 0 T))`, equivalently time-integrability of the `strong_convergence` integrand. NOT derivable from current `AubinLionsPackage_R3` fields (no bound/MemLp on the limit `u`; only φ/u/u_aestronglyMeasurable/strong_convergence). FIX (lean-coder): strengthen `strong_convergence` to its faithful `eLpNorm`-form `eLpNorm (uₙ−u) 2 (volume.restrict (Icc 0 T)) → 0` (ball-restricted), which directly supplies this. The remainder of this proof (norm-lsc transfer + ball-exhaustion) is then complete and sorry-free.
+        -- `MemLp (f n) 2 μ`: each `f n` is bounded by `‖u₀‖` (finite measure).
+        have hf_memLp : ∀ n, MemLp (f n) 2 μ :=
+          fun n => MemLp.of_bound (hf_meas n) ‖(u₀ : L2VF_R3)‖ (hf_bound n)
+        -- Hence the difference is `MemLp`, and `‖f n − g‖²` is integrable in time.
+        have hfg_int : ∀ n, Integrable (fun t => ‖f n t - g t‖ ^ 2) μ := by
+          intro n
+          have hmem : MemLp (fun t => f n t - g t) 2 μ := (hf_memLp n).sub hg_memLp
+          have hr := hmem.integrable_norm_rpow (by norm_num) (by norm_num)
+          refine hr.congr ?_
+          filter_upwards with t
+          simp only [show (2 : ENNReal).toReal = (2 : ℝ) by norm_num, Real.rpow_two]
+        -- `eLpNorm (f n − g) 2 μ = ofReal √(∫ ‖f n − g‖² dμ)`.
+        have heLp : ∀ n, eLpNorm (fun t => f n t - g t) 2 μ
+            = ENNReal.ofReal (Real.sqrt (∫ t, ‖f n t - g t‖ ^ 2 ∂μ)) :=
+          fun n => eLpNorm_two_eq_ofReal_sqrt _ (hfg_int n)
+        -- The time integral equals the `strong_convergence` integrand (`∫ over restrict = ∫₀ᵀ`).
+        have hI : ∀ n, (∫ t, ‖f n t - g t‖ ^ 2 ∂μ)
+            = ∫ t in (0 : ℝ)..T,
+                ∫ x in Metric.closedBall (0 : Domain3) R,
+                  ‖(((galSeq (alPkg.φ n)).u t : L2VF_R3) x : EuclideanSpace ℝ (Fin 3)) -
+                   ((alPkg.u t : L2VF_R3) x : EuclideanSpace ℝ (Fin 3))‖ ^ 2
+                  ∂(volume : Measure Domain3) := by
+          intro n
+          rw [hμ, intervalIntegral.integral_of_le hT, ← integral_Icc_eq_integral_Ioc]
+          simp only [hptSq n]
+        -- The `strong_convergence` integrand → 0 (at radius `R = k`).
+        have hsc := alPkg.strong_convergence R
+        -- So `∫ t, ‖f n t − g t‖² ∂μ → 0`, hence `√(·) → 0`, hence `ofReal √(·) → 0`.
+        have hItends : Tendsto (fun n => ∫ t, ‖f n t - g t‖ ^ 2 ∂μ) atTop (𝓝 0) := by
+          simpa only [hI] using hsc
+        have hsqrt : Tendsto (fun n => Real.sqrt (∫ t, ‖f n t - g t‖ ^ 2 ∂μ)) atTop (𝓝 0) := by
+          have := (Real.continuous_sqrt.tendsto 0).comp hItends
+          simpa [Function.comp_def] using this
+        have : Tendsto (fun n => ENNReal.ofReal (Real.sqrt (∫ t, ‖f n t - g t‖ ^ 2 ∂μ)))
+            atTop (𝓝 0) := by
+          have := (ENNReal.continuous_ofReal.tendsto 0).comp hsqrt
+          simpa [Function.comp_def] using this
+        simpa only [heLp] using this
+      -- (5) assemble: `kineticEnergyLscTransfer` gives the a.e. ball-restricted bound.
+      exact kineticEnergyLscTransfer hf_meas hg_meas hconv hf_bound
+    -- ════ Combine over all radii `k`, then exhaust `R → ∞` to recover the full L²(ℝ³) bound. ════
+    have hallBall : ∀ᵐ t ∂μ, ∀ k : ℕ,
+        ‖restrictToBall (k : ℝ) (alPkg.u t)‖ ≤ ‖(u₀ : L2VF_R3)‖ :=
+      ae_all_iff.2 hperBall
+    filter_upwards [hallBall] with t ht
+    -- `‖u t‖² = lim_k ‖restrictToBall k (u t)‖² ≤ ‖u₀‖²`, hence the kinetic bound.
+    have hlim := tendsto_normSq_restrictToBall (alPkg.u t)
+    have hboundSq : ∀ k : ℕ, ‖restrictToBall (k : ℝ) (alPkg.u t)‖ ^ 2 ≤ ‖(u₀ : L2VF_R3)‖ ^ 2 :=
+      fun k => by
+        have := ht k
+        nlinarith [norm_nonneg (restrictToBall (k : ℝ) (alPkg.u t)), norm_nonneg (u₀ : L2VF_R3)]
+    have huSq : ‖(alPkg.u t : L2VF_R3)‖ ^ 2 ≤ ‖(u₀ : L2VF_R3)‖ ^ 2 :=
+      le_of_tendsto' hlim hboundSq
+    nlinarith [huSq]
+  · -- `T < 0`: the restricted measure is zero, so every a.e. statement holds.
+    have hz : volume.restrict (Set.Icc (0 : ℝ) T) = 0 := by
+      rw [Set.Icc_eq_empty hT, Measure.restrict_empty]
+    rw [hz]
+    simp
 
 /-! ### Tier C-prep — Steklov interval-average building blocks for the Aubin–Lions route
 
@@ -272,18 +586,6 @@ These `private` helpers are the genuine, axiom-free sub-lemmas of the Steklov
 interval-averaging route to C2 (the real Aubin–Lions argument). They are proved here
 independently of the final assembly so that the route's reusable pieces are landed even
 while the full space-time diagonalization remains open (see the C2 TODO). -/
-
-/-- The Galerkin velocity curve `t ↦ ((galSeq n).u t : L2VF_R3)` is continuous on **forward**
-time `Set.Ici 0` (it is even differentiable there by `u_hasDeriv`).
-
-Forward-only: `u_hasDeriv` now guarantees differentiability only for `t ≥ 0` (the curve is a
-physical Galerkin solution, confined only on forward time).  Everything downstream uses the
-curve only on `[0,T] ⊆ Ici 0`, so forward continuity suffices. -/
-private theorem galerkin_curve_continuous (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
-    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
-    ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
-  fun t ht => (gs.u_hasDeriv t ht).continuousAt.continuousWithinAt
 
 /-- **Steklov interval-average of a Galerkin curve.** For mesh `δ` and base time `t`,
 `steklovAvg gs δ t := δ⁻¹ • ∫_{t}^{t+δ} (gs.u s : L2VF_R3) ds` (Bochner interval integral
