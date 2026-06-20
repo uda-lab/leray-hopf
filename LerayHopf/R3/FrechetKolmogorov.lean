@@ -943,7 +943,7 @@ theorem convolution_sub_L2_le_translation_modulus (K : MollifierKernel) (g : L2V
       rw [mollifyRep_eq_lp_integral K g hmem, hg_int]
     rw [e1, ← integral_sub hI1 hI2]
     refine integral_congr_ae (Filter.Eventually.of_forall fun h => ?_)
-    rw [smul_sub]
+    simp only [smul_sub]
   rw [hdefect]
   refine le_trans (norm_integral_le_integral_norm _) (le_of_eq ?_)
   refine integral_congr_ae (Filter.Eventually.of_forall fun h => ?_)
@@ -1429,9 +1429,12 @@ theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
     -- (ii) `restrictToBall R` is norm-nonincreasing and `restrictToBall R (rep f) = f` (`hrep`).
     have hf_eq : f = restrictToBall R (rep f) := (hrep f hf).symm
     have hstep : ‖f - restrictToBall R (ρf f)‖ ≤ ‖rep f - ρf f‖ := by
+      -- rewrite ONLY the leading standalone `f` (the `f` inside `ρf f` must stay), then fold the
+      -- difference of restrictions into a single restriction (`restrictToBall_sub`).
       have hsub_eq : f - restrictToBall R (ρf f)
           = restrictToBall R (rep f - ρf f) := by
-        rw [restrictToBall_sub]; conv_lhs => rw [hf_eq]
+        nth_rewrite 1 [hf_eq]
+        rw [← restrictToBall_sub]
       rw [hsub_eq]
       exact norm_restrictToBall_le_global R (rep f - ρf f)
     have hρf_eq : ρf f = hmem.toLp := rfl
