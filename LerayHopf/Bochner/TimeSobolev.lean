@@ -300,6 +300,37 @@ theorem isWeakTimeDeriv_comp_clm {X Y : Type*}
     simpa only [map_smul] using this
   rw [hLu, hLv, hX, map_neg]
 
+/-- Helper for `W1pTime.ofHValuedDeriv`: a Bochner curve `g` integrable on `Icc 0 T`,
+scalar-multiplied by a continuous, compactly-supported test factor `φ` whose support sits
+inside `Ioo 0 T`, is interval-integrable on `0..T`. The test factor is bounded (continuous
+with compact support), so the `smul` stays in `L¹`; for `T < 0` the support constraint forces
+`φ = 0`. -/
+private theorem intervalIntegrable_smul_of_integrableOn_Icc
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {T : ℝ} {g : ℝ → E} {φ : ℝ → ℝ}
+    (hg : Integrable g (volume.restrict (Set.Icc 0 T)))
+    (hφc : Continuous φ) (hφcs : HasCompactSupport φ)
+    (hφsupp : tsupport φ ⊆ Set.Ioo 0 T) :
+    IntervalIntegrable (fun t => φ t • g t) volume 0 T := by
+  rcases le_or_gt 0 T with hT | hT
+  · -- `Ι 0 T = Ioc 0 T ⊆ Icc 0 T`; the `smul` is integrable on `Icc 0 T` by boundedness of `φ`.
+    obtain ⟨C, hC⟩ := hφc.bounded_above_of_compact_support hφcs
+    have hint : Integrable (fun t => φ t • g t) (volume.restrict (Set.Icc 0 T)) :=
+      hg.bdd_smul C hφc.aestronglyMeasurable (Filter.Eventually.of_forall hC)
+    rw [intervalIntegrable_iff]
+    have hsub : Set.uIoc 0 T ⊆ Set.Icc 0 T := by
+      rw [Set.uIoc_of_le hT]; exact Set.Ioc_subset_Icc_self
+    have hint' : IntegrableOn (fun t => φ t • g t) (Set.Icc 0 T) volume := hint
+    exact hint'.mono_set hsub
+  · -- `T < 0`: `Ioo 0 T = ∅`, so `tsupport φ = ∅` and `φ = 0`; the integrand vanishes.
+    have hIoo : Set.Ioo 0 T = (∅ : Set ℝ) := Set.Ioo_eq_empty (by exact not_lt.2 hT.le)
+    have hφ0 : φ = 0 := by
+      funext t
+      exact image_eq_zero_of_notMem_tsupport (fun ht => by
+        have := hφsupp ht; rw [hIoo] at this; exact this.elim)
+    subst hφ0
+    simp only [Pi.zero_apply, zero_smul]
+    exact IntervalIntegrable.zero (μ := volume) (a := (0:ℝ)) (b := T) (E := E)
+
 /-- **Stronger `H`-valued-derivative specialization.** If a curve admits a weak time
 derivative `u'H` valued in the pivot space `H` (a STRICTLY STRONGER condition than the
 Lions–Magenes `u' ∈ V'` requirement), and that `H`-valued derivative is `L^q(0,T;H)`, then
@@ -345,16 +376,24 @@ theorem W1pTime.ofHValuedDeriv (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ}
       -- available as `hp`/`hq`) are what make these obligations provable:
       -- `MemLp.mono_exponent` lowers to `MemLp 1` on the finite measure, and `deriv ψ` (resp. `ψ`),
       -- continuous with compact support in `Ioo 0 T`, is bounded, so the `smul` stays in `L¹`.
-      (fun ψ _ _ _ => by
-        -- TODO(#13-A): interval-integrability of `t ↦ deriv ψ t • ι (uV t)` on `[0,T]`.
-        -- Smallest interface gap: add a `1 ≤ p` hypothesis to `W1pTime.ofHValuedDeriv`
-        -- (lean-coder), after which this is `MemLp.mono_exponent` + bounded-`deriv ψ` Hölder.
-        sorry) -- ALLOW_SORRY: not provable / ill-defined without `1 ≤ p` (now in context as `hp`); discharge via `MemLp.mono_exponent` on finite measure + bounded compactly-supported `deriv ψ`.
-      (fun ψ _ _ _ => by
-        -- TODO(#13-A): interval-integrability of `t ↦ ψ t • u'H t` on `[0,T]`.
-        -- Smallest interface gap: add a `1 ≤ q` hypothesis (lean-coder), then `MemLp.mono_exponent`
-        -- + bounded-`ψ` Hölder. Same over-strength point as the `p`-obligation above.
-        sorry) -- ALLOW_SORRY: not provable / ill-defined without `1 ≤ q` (now in context as `hq`); discharge via `MemLp.mono_exponent` on finite measure + bounded compactly-supported `ψ`.
+      (fun ψ hψcs hψsupp hψC1 => by
+        -- Interval-integrability of `t ↦ deriv ψ t • ι (uV t)` on `[0,T]`.
+        -- `MemLp uV p` (finite measure, `1 ≤ p`) ⇒ `Integrable (ι ∘ uV)`; `deriv ψ` is
+        -- continuous, compactly supported in `Ioo 0 T`, hence bounded, so the `smul` is `L¹`.
+        have hg : Integrable (fun t => GT.ι (uV t)) (volume.restrict (Set.Icc 0 T)) := by
+          have h := (GT.ιCLM.comp_memLp' mem_p).integrable hp
+          simpa only [Function.comp_def, GelfandTriple.ιCLM, IsLinearMap.mk'_apply,
+            ContinuousLinearMap.coe_mk', LinearMap.coe_mk, AddHom.coe_mk] using h
+        exact intervalIntegrable_smul_of_integrableOn_Icc hg
+          hψC1.continuous_deriv_one (HasCompactSupport.deriv hψcs)
+          (tsupport_deriv_subset.trans hψsupp))
+      (fun ψ hψcs hψsupp hψC1 => by
+        -- Interval-integrability of `t ↦ ψ t • u'H t` on `[0,T]`.
+        -- `MemLp u'H q` (finite measure, `1 ≤ q`) ⇒ `Integrable u'H`; `ψ` is continuous,
+        -- compactly supported in `Ioo 0 T`, hence bounded, so the `smul` is `L¹`.
+        have hg : Integrable u'H (volume.restrict (Set.Icc 0 T)) := mem_q.integrable hq
+        exact intervalIntegrable_smul_of_integrableOn_Icc hg
+          hψC1.continuous hψcs hψsupp)
     -- Rewrite `L = hToVprimeCLM` back to `hToVprime` on both curves.
     simpa only [hL, GelfandTriple.hToVprimeCLM_apply] using hbase
   exact ⟨{ u' := fun t => GT.hToVprime (u'H t)
