@@ -394,6 +394,59 @@ noncomputable def kernelL1R (K : MollifierKernel) : Lp ℝ 1 (volume : Measure D
   MemLp.toLp K.η
     (K.smooth.continuous.memLp_of_hasCompactSupport (p := 1) (μ := volume) K.hasCompactSupport)
 
+/-- Ball-mass monotonicity in the radius: restricting to a smaller ball does not increase the
+`L²`-norm (`closedBall 0 a ⊆ closedBall 0 b` for `a ≤ b`, so the restricted measures are nested
+and `eLpNorm_mono_measure` applies).  Mirrors `SpatialCompactness.norm_restrictToBall_le`
+(which is the `b = ∞`/global case) at finite radii. -/
+private theorem norm_restrictToBall_mono {a b : ℝ} (hab : a ≤ b) (w : L2VF_R3) :
+    ‖restrictToBall a w‖ ≤ ‖restrictToBall b w‖ := by
+  rw [Lp.norm_def, Lp.norm_def]
+  have hsub : Metric.closedBall (0 : Domain3) a ⊆ Metric.closedBall (0 : Domain3) b :=
+    Metric.closedBall_subset_closedBall hab
+  have hle : volume.restrict (Metric.closedBall (0 : Domain3) a)
+      ≤ volume.restrict (Metric.closedBall (0 : Domain3) b) := Measure.restrict_mono hsub le_rfl
+  have hca : ⇑(restrictToBall a w)
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) a)]
+        (w : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+  have hcb : ⇑(restrictToBall b w)
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) b)]
+        (w : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+  rw [eLpNorm_congr_ae hca, eLpNorm_congr_ae hcb]
+  refine ENNReal.toReal_mono ?_ (eLpNorm_mono_measure _ hle)
+  rw [← eLpNorm_congr_ae hcb]
+  exact (Lp.memLp (restrictToBall b w)).2.ne
+
+/-- Restriction to a ball does not increase the global `L²`-norm (`restrict_le_self`). -/
+private theorem norm_restrictToBall_le_global (R : ℝ) (w : L2VF_R3) :
+    ‖restrictToBall R w‖ ≤ ‖w‖ := by
+  rw [Lp.norm_def, Lp.norm_def]
+  have hle : volume.restrict (Metric.closedBall (0 : Domain3) R) ≤ (volume : Measure Domain3) :=
+    Measure.restrict_le_self
+  have hcong : ⇑(restrictToBall R w)
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+        (w : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+  rw [eLpNorm_congr_ae hcong]
+  exact ENNReal.toReal_mono (Lp.memLp w).2.ne (eLpNorm_mono_measure _ hle)
+
+/-- Restriction to a ball is additive on differences. -/
+private theorem restrictToBall_sub (R : ℝ) (u v : L2VF_R3) :
+    restrictToBall R (u - v) = restrictToBall R u - restrictToBall R v := by
+  apply Lp.ext
+  have h0 : ⇑(restrictToBall R (u - v))
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+        ((u : Domain3 → EuclideanSpace ℝ (Fin 3)) - v) := by
+    refine (MemLp.coeFn_toLp _).trans ?_
+    exact (ae_restrict_of_ae (Lp.coeFn_sub u v))
+  have hu : ⇑(restrictToBall R u)
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+        (u : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+  have hv : ⇑(restrictToBall R v)
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+        (v : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+  have hsub := Lp.coeFn_sub (restrictToBall R u) (restrictToBall R v)
+  filter_upwards [h0, hu, hv, hsub] with x hx0 hxu hxv hxsub
+  rw [hx0, Pi.sub_apply, hxsub, Pi.sub_apply, hxu, hxv]
+
 /-- **Helper 1 — the kernel's L²-translation modulus vanishes.**
 
 For a `MollifierKernel K`, the map `h ↦ ‖translate_L2R h (kernelL2R K) − kernelL2R K‖` tends to `0`
@@ -765,26 +818,70 @@ private theorem norm_kernelL1R (K : MollifierKernel) : ‖kernelL1R K‖ = 1 := 
     rw [Real.norm_eq_abs, abs_of_nonneg (K.nonneg a)]]
   exact K.mass_one
 
-/-- **Shared primitive.**  The `L²`-class of `mollifyRep K g` equals the `Lp`-valued Bochner
-integral of the kernel-weighted translates `h ↦ K.η h • translate_L2VF h g`.
+/-- **The kernel-weighted-translate `Lp`-valued Bochner integral** — the convolution `η ⋆ g`
+realized as a genuine element of `L²(ℝ³)` (no `MemLp` side-condition needed: the integrand is
+Bochner integrable by `integrable_kernel_smul_translate`). -/
+private noncomputable def convL2 (K : MollifierKernel) (g : L2VF_R3) : L2VF_R3 :=
+  ∫ h : Domain3, K.η h • translate_L2VF h g ∂(volume : Measure Domain3)
 
-`mollifyRep K g x = ∫ y, K.η (x − y) • g y`; the change of variables `y = x + h` (`dy = dh`,
-`x − y = −h`) and `K.even` rewrite this as `∫ h, K.η h • g (x + h) = ∫ h, K.η h • (τ_h g) x`.
-Pairing both sides with an arbitrary test class `φ ∈ L2VF_R3` and commuting the inner product
-(a `CLM`) past the `Lp`-valued integral reduces the identity to the scalar Fubini interchange
-isolated as `mollifyRep_inner_fubini`. -/
+/-- **Global Young bound at the `Lp`-Bochner level (PROVED, no frontier).**
+`‖convL2 K g‖ ≤ ‖g‖` straight from `‖∫ F‖ ≤ ∫ ‖F‖` in the Banach space `L2VF_R3`,
+`‖K.η h • τ_h g‖ = K.η h · ‖g‖` (`norm_kernel_smul_translate`), and `∫ K.η = 1` (`K.mass_one`).
+This is the entire norm content of Young's inequality — it needs neither the pointwise
+convolution nor the (isolated) coeFn identity. -/
+private theorem convL2_norm_le (K : MollifierKernel) (g : L2VF_R3) :
+    ‖convL2 K g‖ ≤ ‖g‖ := by
+  have hle : ‖convL2 K g‖
+      ≤ ∫ h : Domain3, ‖K.η h • translate_L2VF h g‖ ∂(volume : Measure Domain3) :=
+    norm_integral_le_integral_norm _
+  have hcongr : (∫ h : Domain3, ‖K.η h • translate_L2VF h g‖ ∂(volume : Measure Domain3))
+      = ∫ h : Domain3, K.η h * ‖g‖ ∂(volume : Measure Domain3) := by
+    refine integral_congr_ae (Filter.Eventually.of_forall fun h => ?_)
+    exact norm_kernel_smul_translate K g h
+  rw [hcongr, integral_mul_const, K.mass_one, one_mul] at hle
+  exact hle
+
+/-- **The genuine missing-mathlib frontier (isolated coeFn identity).**
+
+The coeFn of the `Lp`-valued Bochner integral `convL2 K g = ∫ h, K.η h • τ_h g` agrees a.e. with
+the pointwise convolution `mollifyRep K g x = ∫ y, K.η (x − y) • g y`.  This is the SINGLE
+remaining analytic gap of Pillar B: mathlib provides **no** "coeFn of an `Lp`-valued Bochner
+integral as the scalar integral of coeFns" lemma for this `volume`-on-ℝ³ vector-valued setting,
+and the raw double integral is NOT absolutely convergent on `ℝ³ × ℝ³` (`φ, g ∈ L²` are not `L¹`),
+so a naive scalar Fubini is unavailable.
+
+The honest provable route (no axiom, no weakening): pair both sides with `indicatorConstLp` of an
+arbitrary FINITE-measure set `s` and use `integral_inner`:
+`⟪convL2 K g, 1_s⟫ = ∫ h, K.η h • ⟪τ_h g, 1_s⟫ = ∫ h, K.η h • ∫_s g(·+h)`; on the FINITE set `s`
+the double integral IS absolutely convergent (`∫_s ‖φ‖ < ∞`), so Fubini + the measure-preserving
+shear `(x,h) ↦ (x, x+h)` (`measurePreserving_prod_add`) + `K.even` rewrite it to
+`∫_s (∫ y, K.η(x−y) • g y) = ∫_s mollifyRep K g`.  Agreement of `∫_s` over all finite `s` forces
+the a.e. equality.  This is ~200 delicate lines (joint a.e.-strong-measurability of
+`(h,x) ↦ g(x+h)` via `AEStronglyMeasurable.comp_quasiMeasurePreserving`, finite-set Fubini,
+`Lp`-`indicatorConstLp` duality); isolated here as the least-abstract honest gap so that BOTH
+analytic cores and the FK assembly are proved *modulo this one lemma*. -/
+private theorem convL2_coeFn_ae (K : MollifierKernel) (g : L2VF_R3) :
+    (convL2 K g : Domain3 → EuclideanSpace ℝ (Fin 3)) =ᵐ[volume] mollifyRep K g := by
+  sorry -- ALLOW_SORRY: coeFn of the Lp-valued Bochner integral `∫ h, K.η h • τ_h g` equals the
+  -- pointwise convolution `mollifyRep K g` a.e. (the finite-set inner-product-duality / shear-Fubini
+  -- route above). mathlib lacks the Lp-valued-integral coeFn lemma; the raw ℝ³×ℝ³ double integral
+  -- is not absolutely convergent, so this is the genuine missing-mathlib frontier of Pillar B.
+
+/-- `mollifyRep K g`, as an a.e. function, lies in `L²`: it agrees a.e. with `convL2 K g`. -/
+private theorem memLp_mollifyRep (K : MollifierKernel) (g : L2VF_R3) :
+    MemLp (mollifyRep K g) 2 (volume : Measure Domain3) :=
+  (Lp.memLp (convL2 K g)).ae_eq (convL2_coeFn_ae K g)
+
+/-- **Shared primitive.**  The `L²`-class of `mollifyRep K g` equals the `Lp`-valued Bochner
+integral `convL2 K g = ∫ h, K.η h • τ_h g`.  Proved (no sorry) from the isolated coeFn identity
+`convL2_coeFn_ae` by `Lp.ext`. -/
 private theorem mollifyRep_eq_lp_integral (K : MollifierKernel) (g : L2VF_R3)
     (hmem : MemLp (mollifyRep K g) 2 (volume : Measure Domain3)) :
     hmem.toLp = ∫ h : Domain3, K.η h • translate_L2VF h g ∂(volume : Measure Domain3) := by
-  -- ALLOW_SORRY: Lp-valued Bochner / scalar-Fubini identity. The map `h ↦ K.η h • τ_h g` is Bochner
-  -- integrable (`integrable_kernel_smul_translate`), and the convolution `mollifyRep K g x =
-  -- ∫ y, K.η(x−y)•g y` equals, after the measure-preserving change of variables `y = x + h` and
-  -- `K.even`, the pointwise value `∫ h, K.η h • (τ_h g) x` of that integral. The remaining content
-  -- is the interchange `(∫ h, K.η h • τ_h g : L2VF_R3) x =ᵐ ∫ h, K.η h • (τ_h g) x` — the coeFn of an
-  -- Lp-valued Bochner integral as the scalar integral of coeFns — which mathlib does not provide in
-  -- a directly usable form for this `volume`-on-ℝ³ vector-valued setting (needs a Fubini/Minkowski
-  -- argument via inner-product duality with `ContinuousLinearMap.integral_comp_comm`).
-  sorry -- ALLOW_SORRY: Lp-valued Bochner / scalar-Fubini integral identity (mollifyRep K g = ∫ h, K.η h • τ_h g as an Lp-valued Bochner integral)
+  show hmem.toLp = convL2 K g
+  apply Lp.ext
+  refine (MemLp.coeFn_toLp hmem).trans ?_
+  exact (convL2_coeFn_ae K g).symm
 
 /-- **Analytic core — global Young convolution inequality in `L²`.**
 
@@ -794,10 +891,14 @@ The mollified field `mollifyRep K g = K.η ⋆ g` lies in `L²(ℝ³)` globally,
 theorem young_convolution_memLp_L2 (K : MollifierKernel) (g : L2VF_R3) :
     ∃ hmem : MemLp (mollifyRep K g) 2 (volume : Measure Domain3),
       ‖hmem.toLp‖ ≤ ‖kernelL1R K‖ * ‖g‖ := by
-  sorry -- ALLOW_SORRY: global Young convolution inequality `‖η ⋆ g‖₂ ≤ ‖η‖₁ · ‖g‖₂` (vector-valued,
-  -- measure `volume`).  Mathlib lacks this `L¹×L²→L²` Young estimate in the form needed here; it is
-  -- the genuine analytic blocker producing the GLOBAL `L²`-membership of the convolution (the
-  -- B_R-local `mollifyRep_sup_le` is insufficient).
+  -- PROVED modulo the single isolated frontier `convL2_coeFn_ae`.  The `MemLp` witness comes from
+  -- `mollifyRep K g =ᵐ convL2 K g` (an honest `Lp` element); the norm bound is `convL2_norm_le`
+  -- (the entire Young content) plus `‖kernelL1R K‖ = 1`.
+  refine ⟨memLp_mollifyRep K g, ?_⟩
+  have heq : (memLp_mollifyRep K g).toLp = convL2 K g :=
+    mollifyRep_eq_lp_integral K g (memLp_mollifyRep K g)
+  rw [heq, norm_kernelL1R, one_mul]
+  exact convL2_norm_le K g
 
 /-- **Analytic core — vector Minkowski form of the convolution approximation rate.**
 
@@ -813,22 +914,30 @@ theorem convolution_sub_L2_le_translation_modulus (K : MollifierKernel) (g : L2V
     (hmem : MemLp (mollifyRep K g) 2 (volume : Measure Domain3)) :
     ‖hmem.toLp - g‖
       ≤ ∫ h : Domain3, K.η h • ‖translate_L2VF h g - g‖ ∂(volume : Measure Domain3) := by
-  sorry -- ALLOW_SORRY: STATEMENT GAP, not a missing mathlib lemma. The Bochner route works
-  -- (`norm_integral_le_integral_norm` holds in the Banach space `Lp`, giving
-  -- `‖∫ F‖ ≤ ∫ ‖F‖` with `F h = K.η h • (translate_L2VF h g − g) ∈ L2VF_R3`), BUT it produces
-  -- `∫ |K.η h| · ‖τ_h g − g‖`, while the conclusion asks for `∫ K.η h • ‖τ_h g − g‖`. Moreover the
-  -- Lp-valued identity `toLp(mollifyRep K g) − g = ∫ h, K.η h • (τ_h g − g)` needs THREE kernel
-  -- facts that `MollifierKernel` does NOT carry: (1) mass one `∫ K.η = 1` (to write
-  -- `g = ∫ K.η h • g dh`), (2) nonnegativity `K.η ≥ 0` (so `|K.η h| = K.η h`), and (3) evenness
-  -- `K.η (−h) = K.η h`, because the change of variables `y = x + h` in
-  -- `mollifyRep K g x = ∫ y, K.η (x − y) • g y` yields `∫ h, K.η (−h) • (translate_L2VF h g) x`,
-  -- not `K.η h`. (`translate_L2VF h g x = g (x + h)` by `coeFn_compMeasurePreserving`.) For a
-  -- general `MollifierKernel` (e.g. an odd zero-mean smooth bump-derivative) the inequality is
-  -- FALSE: RHS can be ≤ 0 while LHS > 0. FIX is a SIGNATURE change owned by lean-coder — add
-  -- `nonneg : 0 ≤ K.η`, `mass_one : ∫ K.η = 1`, `even : ∀ h, K.η (−h) = K.η h` to `MollifierKernel`
-  -- (all satisfied by `ContDiffBump.normed` via `nonneg_normed`, `integral_normed`, and bump
-  -- radial evenness), OR restate RHS as `∫ |K.η h| · ‖τ_{−h} g − g‖`. Until the structure carries
-  -- these, the proof body cannot be completed without weakening the statement.
+  -- PROVED modulo the single isolated frontier `convL2_coeFn_ae` (consumed via the primitive).
+  -- `hmem.toLp = convL2 K g = ∫ h, K.η h • τ_h g`, and `g = ∫ h, K.η h • g` (`K.mass_one`), so the
+  -- defect is the single Bochner integral `∫ h, K.η h • (τ_h g − g)`; `‖∫ F‖ ≤ ∫ ‖F‖` plus
+  -- `‖K.η h • v‖ = K.η h · ‖v‖` (`K.nonneg`) gives the modulus bound, with the kernel weight `K.η h`
+  -- (not `|K.η h|`) since `K.nonneg`.
+  classical
+  have hI1 : Integrable (fun h : Domain3 => K.η h • translate_L2VF h g)
+      (volume : Measure Domain3) := integrable_kernel_smul_translate K g
+  have hηL1 : Integrable K.η (volume : Measure Domain3) :=
+    memLp_one_iff_integrable.mp
+      (K.smooth.continuous.memLp_of_hasCompactSupport (p := 1) (μ := volume) K.hasCompactSupport)
+  have hI2 : Integrable (fun h : Domain3 => K.η h • g) (volume : Measure Domain3) :=
+    hηL1.smul_const g
+  have hg_int : (∫ h : Domain3, K.η h • g ∂(volume : Measure Domain3)) = g := by
+    rw [integral_smul_const, K.mass_one, one_smul]
+  have hdefect : hmem.toLp - g
+      = ∫ h : Domain3, K.η h • (translate_L2VF h g - g) ∂(volume : Measure Domain3) := by
+    rw [mollifyRep_eq_lp_integral K g hmem, ← hg_int, ← integral_sub hI1 hI2]
+    refine integral_congr_ae (Filter.Eventually.of_forall fun h => ?_)
+    rw [smul_sub]
+  rw [hdefect]
+  refine le_trans (norm_integral_le_integral_norm _) (le_of_eq ?_)
+  refine integral_congr_ae (Filter.Eventually.of_forall fun h => ?_)
+  rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (K.nonneg h), smul_eq_mul]
 
 /-! ### FK step 2 — equiboundedness + equicontinuity of the mollified family -/
 
@@ -1223,7 +1332,7 @@ control the convolution. -/
 theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
     (rep : L2ballR3 R → L2VF_R3)
     (hrep : ∀ f ∈ S, restrictToBall R (rep f) = f)
-    (hr₀ : 0 ≤ r₀)
+    (hr₀ : 0 < r₀)
     (hbd : ∀ f ∈ S, ‖f‖ ≤ C)
     (hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + r₀) (rep f)‖ ≤ C)
     (hmod : ∀ ε > 0, ∃ δ > 0, ∀ f ∈ S, ∀ h : Domain3, ‖h‖ < δ →
@@ -1236,15 +1345,12 @@ theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
       (∀ f ∈ S, ‖f - restrictToBall R (ρf f)‖ < ε) ∧
       TotallyBounded ((fun f => restrictToBall R (ρf f)) '' S) := by
   classical
-  -- `r₀ = 0` is the degenerate corner (a smooth mass-one mollifier needs positive support); the
-  -- standard FK route always invokes this with `r₀ > 0`.
-  rcases eq_or_lt_of_le hr₀ with hr0 | hr0pos
-  · exact absurd hr0.symm (by
-      sorry) -- ALLOW_SORRY: degenerate `r₀ = 0` corner — a genuine mass-one mollifier cannot have
-      -- support radius `≤ 0`, so this branch is never used by the FK assembly (which passes `r₀ > 0`).
+  have hr0pos : 0 < r₀ := hr₀
   -- DERIVATION (routes through the named analytic helpers).
-  -- Pick `δ` from the FK uniform translation modulus so that the kernel-support shifts stay `< δ`.
-  obtain ⟨δ, hδpos, hδ⟩ := hmod ε hε
+  -- Pick `δ` from the FK uniform translation modulus at tolerance `ε/2` (so the mass-one
+  -- kernel-weighted average of the modulus is `≤ ε/2 < ε`, a strict bound).
+  have hε2 : (0 : ℝ) < ε / 2 := by linarith
+  obtain ⟨δ, hδpos, hδ⟩ := hmod (ε / 2) hε2
   -- A normalized mollifier `K` with support radius `≤ min r₀ (δ/2) < δ` and `≤ r₀`.
   set ρ : ℝ := min r₀ (δ / 2) with hρ
   have hρpos : 0 < ρ := by positivity
@@ -1261,21 +1367,67 @@ theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
   -- enlarged-ball bound on the kernel-reach `B_{R + K.supportRadius}`, from `hbdEnl` (radius `r₀`)
   -- by ball-mass monotonicity (`K.supportRadius ≤ r₀`).
   have hbdEnlK : ∀ f ∈ S, ‖restrictToBall (R + K.supportRadius) (rep f)‖ ≤ C := by
-    -- gluing — ball-mass monotonicity `‖restrictToBall (R+K.supportRadius) g‖ ≤
-    -- ‖restrictToBall (R+r₀) g‖ ≤ C` (radius monotone, `K.supportRadius ≤ r₀`); the underlying
-    -- `eLpNorm_mono_measure` chain is `private norm_restrictToBall_le`-style in SpatialCompactness.
-    sorry -- ALLOW_SORRY: gluing — ball-mass monotonicity from `hbdEnl` via `K.supportRadius ≤ r₀`.
+    -- ball-mass monotonicity in the radius: `‖restrictToBall (R+K.supportRadius) g‖ ≤
+    -- ‖restrictToBall (R+r₀) g‖ ≤ C` since `R + K.supportRadius ≤ R + r₀` (nested restricted
+    -- measures, `eLpNorm_mono_measure`).
+    intro f hf
+    refine le_trans (norm_restrictToBall_mono (by linarith [hKr₀]) (rep f)) (hbdEnl f hf)
   refine ⟨K, ρf, hKr₀, hρf_ae, ?_, ?_⟩
   · -- L²-APPROXIMATION conjunct, routed through `convolution_sub_L2_le_translation_modulus`.
     intro f hf
     have hmem := (young_convolution_memLp_L2 K (rep f)).choose
     -- the Minkowski-form bound on the GLOBAL defect of the mollification.
     have hbound := convolution_sub_L2_le_translation_modulus K (rep f) hmem
-    -- gluing — (i) the kernel-weighted integral `∫ h, K.η h • ‖τ_h (rep f) − rep f‖` is `< ε`
-    -- because `K.η ≥ 0` has unit mass supported in `‖h‖ ≤ K.supportRadius < δ`, where the FK modulus
-    -- `hδ` gives `‖τ_h (rep f) − rep f‖ < ε`; (ii) `restrictToBall R` is norm-nonincreasing and
-    -- `restrictToBall R (rep f) = f` (`hrep`), so `‖f − restrictToBall R (ρf f)‖ ≤ ‖hmem.toLp − rep f‖ < ε`.
-    sorry -- ALLOW_SORRY: gluing — `convolution_sub_L2_le_translation_modulus` + `hδ` + `hrep`/restrictToBall.
+    -- (i) the kernel-weighted modulus integral is `≤ ε/2`: on `supp K.η ⊆ B_{K.supportRadius}`
+    -- (`‖h‖ < δ`) the FK modulus `hδ` gives `‖τ_h(rep f) − rep f‖ < ε/2`; off support `K.η h = 0`.
+    have hI_modulus : Integrable
+        (fun h : Domain3 => K.η h • ‖translate_L2VF h (rep f) - rep f‖) (volume : Measure Domain3) := by
+      have hcont : Continuous
+          (fun h : Domain3 => K.η h • ‖translate_L2VF h (rep f) - rep f‖) :=
+        (K.smooth.continuous).smul
+          (((continuous_translate_L2VF (rep f)).sub continuous_const).norm)
+      refine hcont.integrable_of_hasCompactSupport ?_
+      apply HasCompactSupport.intro (K.hasCompactSupport.isCompact) (fun h hh => ?_)
+      have : K.η h = 0 := by
+        by_contra hne; exact hh (subset_tsupport K.η (by simpa using hne))
+      simp [this]
+    have hI_const : Integrable (fun h : Domain3 => K.η h • (ε / 2)) (volume : Measure Domain3) := by
+      have hηL1 : Integrable K.η (volume : Measure Domain3) :=
+        memLp_one_iff_integrable.mp
+          (K.smooth.continuous.memLp_of_hasCompactSupport (p := 1) (μ := volume) K.hasCompactSupport)
+      simpa [smul_eq_mul] using hηL1.mul_const (ε / 2)
+    have hmod_le : (∫ h : Domain3, K.η h • ‖translate_L2VF h (rep f) - rep f‖
+        ∂(volume : Measure Domain3)) ≤ ε / 2 := by
+      have hptwise : ∀ h : Domain3,
+          K.η h • ‖translate_L2VF h (rep f) - rep f‖ ≤ K.η h • (ε / 2) := by
+        intro h
+        by_cases hzero : K.η h = 0
+        · simp [hzero]
+        · have hmemh : h ∈ tsupport K.η := subset_tsupport K.η (by simpa using hzero)
+          have hball : h ∈ Metric.closedBall (0 : Domain3) K.supportRadius := K.tsupport_subset hmemh
+          have hhδ : ‖h‖ < δ := by
+            have : ‖h‖ ≤ K.supportRadius := by simpa [dist_eq_norm] using hball
+            exact lt_of_le_of_lt this hKδ
+          -- the modulus hypothesis `hmod` (hence `hδ`) is stated for `f ∈ S` on `rep f`.
+          have := hδ f hf h hhδ
+          exact smul_le_smul_of_nonneg_left this.le (K.nonneg h)
+      calc (∫ h : Domain3, K.η h • ‖translate_L2VF h (rep f) - rep f‖ ∂(volume : Measure Domain3))
+          ≤ ∫ h : Domain3, K.η h • (ε / 2) ∂(volume : Measure Domain3) :=
+            integral_mono hI_modulus hI_const hptwise
+        _ = ε / 2 := by rw [integral_smul_const, K.mass_one, one_smul]
+    -- (ii) `restrictToBall R` is norm-nonincreasing and `restrictToBall R (rep f) = f` (`hrep`).
+    have hf_eq : f = restrictToBall R (rep f) := (hrep f hf).symm
+    have hstep : ‖f - restrictToBall R (ρf f)‖ ≤ ‖rep f - ρf f‖ := by
+      rw [hf_eq, ← restrictToBall_sub]
+      exact norm_restrictToBall_le_global R (rep f - ρf f)
+    have hρf_eq : ρf f = hmem.toLp := rfl
+    calc ‖f - restrictToBall R (ρf f)‖
+        ≤ ‖rep f - ρf f‖ := hstep
+      _ = ‖hmem.toLp - rep f‖ := by rw [hρf_eq, norm_sub_rev]
+      _ ≤ ∫ h : Domain3, K.η h • ‖translate_L2VF h (rep f) - rep f‖ ∂(volume : Measure Domain3) :=
+          hbound
+      _ ≤ ε / 2 := hmod_le
+      _ < ε := by linarith
   · -- TOTAL-BOUNDEDNESS conjunct delegates to FK step 3.
     exact mollified_family_totallyBounded_L2 R C S rep K ρf hρf_ae hbdEnlK
 
@@ -1345,12 +1497,22 @@ ball-mass monotonicity; feed `hbdEnl`, `hbd`, `hrep`, `hmod` into `convolution_l
 bounded `S` is compact (`isCompact_iff_totallyBounded_isComplete`, `L2ballR3 R` complete); take
 `K := closure S`. -/
 theorem frechetKolmogorov_holds : FrechetKolmogorovInput := by
-  sorry -- ALLOW_SORRY: scaffold — pure proof-body fill (no upstream blocker after the
-  -- `FrechetKolmogorovInput` strengthening).  Derive the enlarged-ball bound
-  -- `hbdEnl : ‖restrictToBall (R+r₀) (rep f)‖ ≤ C` from the criterion's GLOBAL bound
-  -- `hbddGlobal : ‖rep f‖ ≤ C` by monotonicity of ball mass in the radius (restrict_le_self /
-  -- eLpNorm_mono_measure, as in RellichBall.admissible_family_uniform_bound).  Then feed
-  -- `hbdEnl`/`hbd`/`hrep`/`hmod` into convolution_l2_tendsto_uniform → totallyBounded_of_uniform_approx
-  -- → take `K := closure S` (compact via isCompact_iff_totallyBounded_isComplete; L2ballR3 R complete).
+  refine ⟨fun R C S rep hrep hbd hbddGlobal hmod => ?_⟩
+  -- Enlarged-ball bound at budget `r₀ = 1`, from the GLOBAL bound by ball-mass monotonicity.
+  have hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + 1) (rep f)‖ ≤ C := fun f hf =>
+    le_trans (norm_restrictToBall_le_global (R + 1) (rep f)) (hbddGlobal f hf)
+  -- `S` is totally bounded: each `ε`-step delivers a totally bounded mollified image approximating
+  -- `S` within `ε` (FK step 1), so the transfer lemma (FK step 4) applies.
+  have hTB : TotallyBounded S := by
+    refine totallyBounded_of_uniform_approx S (fun ε hε => ?_)
+    obtain ⟨K, ρf, _hKr₀, _hρf_ae, happrox, hTBimg⟩ :=
+      convolution_l2_tendsto_uniform R C 1 S rep hrep one_pos hbd hbdEnl hmod ε hε
+    refine ⟨(fun f => restrictToBall R (ρf f)) '' S, hTBimg, fun s hs => ?_⟩
+    exact ⟨restrictToBall R (ρf s), Set.mem_image_of_mem _ hs, by
+      rw [dist_eq_norm]; exact happrox s hs⟩
+  -- Closure of a totally bounded set in the complete space `L2ballR3 R` is compact.
+  refine ⟨closure S, ?_, subset_closure⟩
+  rw [isCompact_iff_totallyBounded_isComplete]
+  exact ⟨hTB.closure, isClosed_closure.isComplete⟩
 
 end LerayHopf
