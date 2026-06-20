@@ -56,17 +56,35 @@ of `span { curlSchwartzL2 ψ : ψ ∈ 𝓢(ℝ³,ℝ)³ }`.  The standard proof 
 
 ## Honest status (the analytic frontier this file isolates)
 
-Steps (1)–(3) are *finite-dimensional / symbolic* facts (cross-product linear algebra +
-the Fourier symbol of a derivative) and are the right shape to be discharged against mathlib.
-Step (4) — turning the fiberwise (a.e.) spanning into an actual L²-closure containment — is
-the genuine Helmholtz/Weyl analytic content: it needs a measurable selection of Schwartz
-potentials whose curl symbols approximate an arbitrary transverse `û` in L², which combines
-Plancherel, the transverse decomposition, and L² density.  **mathlib has none of: a `curl`
-multiplier, the Helmholtz decomposition, or a `closure(span curl) = L²_σ` theorem** (see
-`docs/scratch/helmholtz-density.md` §4).  Each obligation that genuinely depends on this
-missing pillar is left as a `sorry` carrying an `ALLOW_SORRY` marker naming the precise
-blocker.  The TOP-LEVEL type stays exactly `CurlSchwartzDense` — this is a real discharge
-target, never weakened, never given extra hypotheses.
+Steps (1)–(3) are PROVED: the curl Fourier multiplier (`fourier_curlSchwartz_eq_cross`), the
+cross-product fiberwise spanning (`cross_iξ_spans_transverse`), the full Plancherel /
+`divTestFunctional` pairing infrastructure, and the REVERSE spectral characterization
+(`mem_sigma_of_transverse_ae`).  The `(P1)` Lp-level Hermitian reflection identity
+(`fourier_ofReal_reflect_eq_conj`) — once feared to be addable only in `FourierL2` — is now
+also PROVED here, axiom-free.
+
+**Correction to an earlier (stale) assessment.**  The pinned mathlib DOES provide the
+heavy L²-Fourier toolkit this density argument needs: `MeasureTheory.Lp.fourierTransformₗᵢ`
+(the L² Fourier transform as a `LinearIsometryEquiv`, with `Lp.inner_fourier_eq` Parseval and
+`Lp.norm_fourier_eq` Plancherel), the orthogonal-complement density criterion
+(`Submodule.orthogonal_orthogonal_eq_closure` / `topologicalClosure_eq_top_iff`), the
+du-Bois-Reymond lemma (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`), and
+`Lp.compMeasurePreserving` + `Measure.measurePreserving_neg`.  What mathlib still lacks is
+narrowly the *Helmholtz/Leray-specific* content (no `curl`/`divergence` operator, no Helmholtz
+decomposition, no `closure(span curl) = L²_σ`), which this file builds.  The two remaining
+`sorry`s reduce to a SINGLE named missing sub-development:
+
+* `(P2)` — Schwartz surjectivity of `φ ↦ testSymbol φ` onto anti-Hermitian symbols,
+  equivalently: `𝓕⁻` of a Hermitian Schwartz function is the complexification of a *real*
+  Schwartz function (Schwartz-space real-part extraction under Hermitian symmetry).  NOT in
+  mathlib, but constructible (weeks-class) from `SchwartzMap.postcompCLM Complex.conjCLE`
+  (Schwartz conjugation) + a real-valuedness argument + `Complex.reCLM` extraction.
+
+The forward spectral characterization (`mem_sigma_iff_fourier_transverse`, forward) bottoms out
+on `(P2)`; the density transfer (`l2sigma_le_closure_span_curl`) then follows from the
+orthogonal-complement route above once that characterization is available.  Each obligation that
+genuinely depends on `(P2)` is left as a `sorry` carrying an `ALLOW_SORRY` marker.  The TOP-LEVEL
+type stays exactly `CurlSchwartzDense` — a real discharge target, never weakened.
 
 This file introduces **no** `axiom`/`opaque`/`constant`/`unsafe`.
 
@@ -566,6 +584,89 @@ private theorem testSymbol_antiHermitian (φ : SchwartzMap Domain3 ℝ) (ξ : Do
   rw [map_mul, hconj, Complex.conj_conj]
   ring
 
+/-! #### (P1) Lp-level Hermitian reflection of the Fourier transform of a real component
+
+The a.e. Hermitian symmetry of the L²-Fourier transform of a *complexified real* `Lp`
+function: `(𝓕 (ofReal ∘ a))(-ξ) =ᵐ conj((𝓕 (ofReal ∘ a)) ξ)`.  This is the `(-·)` analogue
+of `FourierL2.fourier_translate_eq`, proved by the same `DenseRange.induction_on` template over
+the real Schwartz functions, with base case the already-proved Schwartz-level
+`fourier_schwartzC_hermitian`.  The two sides are realised as honest `Lp` operations:
+reflection `g ↦ g ∘ (-·)` (`Lp.compMeasurePreserving Neg.neg`, the measure-preserving negation
+involution on `volume`) and conjugation `g ↦ conj ∘ g` (`Complex.conjCLE.compLpL`).
+
+This discharges what was, in the forward direction below, the first of two named analytic
+blockers (the `(P1)` reflection identity).  It is genuine analysis, axiom-free, no `sorry`. -/
+
+/-- Base case of (P1): the reflected Fourier transform of a complexified real Schwartz rep
+equals the conjugated one, as `Lp` elements.  Uses the Schwartz-level Hermitian identity
+`fourier_schwartzC_hermitian` lifted through `toLp`. -/
+private theorem reflect_fourier_schwartzC_eq_conj (φ : SchwartzMap Domain3 ℝ) :
+    Lp.compMeasurePreserving (Neg.neg : Domain3 → Domain3)
+        (Measure.measurePreserving_neg (volume : Measure Domain3))
+        (𝓕 ((schwartzC φ).toLp 2 (volume : Measure Domain3)))
+      = (Complex.conjCLE : ℂ →L[ℝ] ℂ).compLpL 2 (volume : Measure Domain3)
+        (𝓕 ((schwartzC φ).toLp 2 (volume : Measure Domain3))) := by
+  rw [SchwartzMap.toLp_fourier_eq]
+  refine Lp.ext ?_
+  have hL := Lp.coeFn_compMeasurePreserving
+    ((𝓕 (schwartzC φ)).toLp 2 (volume : Measure Domain3))
+    (Measure.measurePreserving_neg (volume : Measure Domain3))
+  have hR := (Complex.conjCLE : ℂ →L[ℝ] ℂ).coeFn_compLpL
+    ((𝓕 (schwartzC φ)).toLp 2 (volume : Measure Domain3))
+  have hcoe := (𝓕 (schwartzC φ)).coeFn_toLp 2 (volume : Measure Domain3)
+  have hcoeNeg : (fun ξ => ((𝓕 (schwartzC φ)).toLp 2 (volume : Measure Domain3) : Domain3 → ℂ) (-ξ))
+      =ᵐ[volume] fun ξ => (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) (-ξ) :=
+    (Measure.measurePreserving_neg
+      (volume : Measure Domain3)).quasiMeasurePreserving.ae_eq hcoe
+  filter_upwards [hL, hR, hcoe, hcoeNeg] with ξ hLξ hRξ hcξ hcNegξ
+  rw [hLξ, hRξ, Function.comp_apply, hcNegξ, hcξ]
+  rw [fourier_schwartzC_hermitian φ ξ]
+  rfl
+
+set_option maxHeartbeats 1000000 in
+/-- **(P1) Lp-level Hermitian reflection.**  For a real `a : Lp ℝ 2`, the reflection of the
+Fourier transform of its complexification equals the conjugation of that Fourier transform,
+as elements of `L2C_R3`.  Density extension of `reflect_fourier_schwartzC_eq_conj` over the
+real Schwartz functions (`SchwartzMap.denseRange_toLpCLM`). -/
+private theorem fourier_ofReal_reflect_eq_conj
+    (a : Lp ℝ 2 (volume : Measure Domain3)) :
+    Lp.compMeasurePreserving (Neg.neg : Domain3 → Domain3)
+        (Measure.measurePreserving_neg (volume : Measure Domain3))
+        (𝓕 ((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) a))
+      = (Complex.conjCLE : ℂ →L[ℝ] ℂ).compLpL 2 (volume : Measure Domain3)
+        (𝓕 ((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) a)) := by
+  let emb : Lp ℝ 2 (volume : Measure Domain3) → L2C_R3 := fun a =>
+    (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) a
+  let R : L2C_R3 → L2C_R3 := fun g =>
+    Lp.compMeasurePreserving (Neg.neg : Domain3 → Domain3)
+      (Measure.measurePreserving_neg (volume : Measure Domain3)) g
+  have hRcont : Continuous R :=
+    (Lp.compMeasurePreservingₗᵢ (E := ℂ) (p := 2) ℂ (Neg.neg : Domain3 → Domain3)
+      (Measure.measurePreserving_neg (volume : Measure Domain3))).continuous
+  have hembCont : Continuous emb :=
+    ((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)).continuous
+  refine DenseRange.induction_on
+    (SchwartzMap.denseRange_toLpCLM (F := ℝ) (p := 2) ENNReal.ofNat_ne_top) a
+    (p := fun a => R (𝓕 (emb a))
+      = (Complex.conjCLE : ℂ →L[ℝ] ℂ).compLpL 2 (volume : Measure Domain3) (𝓕 (emb a)))
+    ?_ ?_
+  · refine isClosed_eq ?_ ?_
+    · exact hRcont.comp (continuous_fourier.comp hembCont)
+    · exact ((Complex.conjCLE : ℂ →L[ℝ] ℂ).compLpL 2 (volume : Measure Domain3)).continuous.comp
+        (continuous_fourier.comp hembCont)
+  · intro φ
+    have hembφ : emb (SchwartzMap.toLpCLM ℝ ℝ 2 volume φ)
+        = (schwartzC φ).toLp 2 (volume : Measure Domain3) := by
+      show (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
+          (SchwartzMap.toLpCLM ℝ ℝ 2 volume φ)
+        = (schwartzC φ).toLp 2 (volume : Measure Domain3)
+      rw [SchwartzMap.toLpCLM_apply, ← toLp_schwartzC_eq]
+    show R (𝓕 (emb (SchwartzMap.toLpCLM ℝ ℝ 2 volume φ)))
+      = (Complex.conjCLE : ℂ →L[ℝ] ℂ).compLpL 2 (volume : Measure Domain3)
+          (𝓕 (emb (SchwartzMap.toLpCLM ℝ ℝ 2 volume φ)))
+    rw [hembφ]
+    exact reflect_fourier_schwartzC_eq_conj φ
+
 /-- **Reverse direction (a.e. transverse ⇒ weakly divergence-free).**  If the transverse
 defect `T_u` vanishes a.e., then every Schwartz weak-divergence test integral vanishes, so
 `u ∈ L2Sigma_R3`. -/
@@ -612,34 +713,26 @@ theorem mem_sigma_iff_fourier_transverse (u : L2VF_R3) :
     -- via the even/odd-part reduction to `ae_eq_zero_of_integral_contDiff_smul_eq_zero`.
     have _hLI := locallyIntegrable_transverseDefect u
     have _hzero := (mem_sigma_iff_fourier_integral_zero u).1 hmem
-    -- Two routes were investigated; both bottom out on the same two genuinely-missing pillars.
+    -- The even/odd (Hermitian) reduction.  `T_u` is anti-Hermitian: by the now-PROVED
+    -- `(P1)` reflection identity `fourier_ofReal_reflect_eq_conj`, each component satisfies
+    -- `û_j(-ξ) =ᵐ conj(û_j(ξ))`, so with `(-ξ)_j = -ξ_j` we get `T_u(-ξ) =ᵐ -conj(T_u(ξ))` —
+    -- i.e. `Re T_u` is odd and `Im T_u` is even.  The available test symbols `testSymbol φ`
+    -- are exactly the anti-Hermitian Schwartz functions (`testSymbol_antiHermitian`), whose
+    -- real parts are odd-real and imaginary parts even-real.  Choosing `φ` with
+    -- `testSymbol φ = g_o` (odd) and another with `testSymbol φ = i·g_e` (even) would split
+    -- `∫ g·T_u = ∫ g_o Re T_u + i∫ g_e Im T_u` into two vanishing pieces, feeding
+    -- `ae_eq_zero_of_integral_contDiff_smul_eq_zero` (which IS in mathlib).
     --
-    -- PHYSICAL ROUTE (via `divComponent_eq_fourier_integral`): for arbitrary real smooth compact
-    -- `g`, writing `m_j(ξ) = g(ξ)·ξ_j` and applying the L² multiplication formula gives
-    -- `∫ g·T_u = ∑_j ∫ 𝓕(m_j^ℂ)(x)·u_j(x) dx`.  To match this to a `divTestFunctional φ` (the
-    -- only zero-pairings `hmem` supplies) one needs a SINGLE real Schwartz `φ` with
-    -- `∂_j φ = 𝓕(m_j^ℂ)` for all `j`, i.e. `φ^ℂ = 𝓕⁻(g^ℂ/(2πi))`.  That `φ` is real only when
-    -- `g^ℂ/(2πi)` is Hermitian, which fails for a generic real `g` — the anti-Hermitian wall.
-    --
-    -- HERMITIAN ROUTE (even/odd reduction): `T_u` is anti-Hermitian — `û_j(-ξ) =ᵐ conj(û_j(ξ))`
-    -- (Fourier of a real component) and `(-ξ)_j = -ξ_j` give `T_u(-ξ) =ᵐ -conj(T_u(ξ))`, so
-    -- `Re T_u` is odd and `Im T_u` is even.  The available test symbols `testSymbol φ` are
-    -- exactly the anti-Hermitian Schwartz functions (`testSymbol_antiHermitian`), whose real
-    -- parts are odd-real and imaginary parts even-real.  Choosing `φ` with `testSymbol φ = g_o`
-    -- (odd) and another with `testSymbol φ = i·g_e` (even) splits `∫ g·T_u = ∫ g_o Re T_u +
-    -- i∫ g_e Im T_u` into two vanishing pieces, feeding `ae_eq_zero_of_integral_contDiff_smul_eq_zero`.
-    --
-    -- Both routes require, beyond what mathlib/repo provide:
-    --   (P1) the a.e. Hermitian symmetry of the L²-Fourier transform of a complexified real
-    --        component, `(𝓕 (L2VF_projComponentC_R3 j u))(-ξ) =ᵐ conj((𝓕 (…)) ξ)` — i.e. an
-    --        L²-level reflection/conjugation Fourier identity (the `(-·)` analogue of
-    --        `FourierL2.fourier_translate_eq`, NOT in `FourierL2` and addable only there); and
+    -- (P1) is DISCHARGED above (`fourier_ofReal_reflect_eq_conj`, axiom-free, no `sorry`).
+    -- The single remaining blocker is:
     --   (P2) surjectivity of `φ ↦ testSymbol φ` onto every anti-Hermitian compactly-supported
     --        smooth symbol, which reduces to: `𝓕⁻` of a Hermitian Schwartz function is the
     --        complexification of a real Schwartz function (Schwartz-space real-part extraction
-    --        under Hermitian symmetry) — NOT in mathlib.
-    -- Both are isolated analytic frontiers; the REVERSE direction below is fully proved.
-    sorry -- ALLOW_SORRY: forward du-Bois-Reymond under the anti-Hermitian test-symbol constraint — blocked on (P1) an L²-Fourier reflection/conjugation identity for complexified real components (the `(-·)` analogue of FourierL2.fourier_translate_eq, addable only in FourierL2) and (P2) Schwartz surjectivity of `φ ↦ testSymbol φ` onto anti-Hermitian symbols (= `𝓕⁻` of Hermitian Schwartz is a real Schwartz complexification); neither is in mathlib/repo
+    --        under Hermitian symmetry).  NOT in mathlib; constructible (weeks-class) from
+    --        `SchwartzMap.postcompCLM Complex.conjCLE` (Schwartz conjugation) + a real-valuedness
+    --        argument + `Complex.reCLM` extraction — but not available today.  This is the lone
+    --        surviving analytic frontier of the forward direction; the REVERSE is fully proved.
+    sorry -- ALLOW_SORRY: forward du-Bois-Reymond — sole remaining blocker is (P2) Schwartz surjectivity of `φ ↦ testSymbol φ` onto anti-Hermitian symbols (= `𝓕⁻` of Hermitian Schwartz is a real Schwartz complexification; Schwartz-space real-part extraction under Hermitian symmetry). NOT in mathlib (weeks-class: postcompCLM conjCLE + real-valuedness + reCLM extraction). The (P1) reflection/conjugation identity it previously also required is now PROVED above (`fourier_ofReal_reflect_eq_conj`)
   · -- Reverse (a.e. transverse ⇒ weakly divergence-free): fully proved.
     intro htr
     exact mem_sigma_of_transverse_ae u htr
@@ -713,18 +806,27 @@ Given a transverse field `u ∈ L2Sigma_R3` (Step 2), the fiberwise spanning (St
 approximate `û` in L² by curl symbols `𝓕(curl ψ)`; transferring back through Plancherel places
 `u` in the L²-closure of the span of curls.
 
-Blocker: this is the irreducible analytic pillar — promoting the *fiberwise* (a.e.) spanning to
-an actual L²-closure containment requires a measurable selection of Schwartz potentials whose
-curl symbols converge to `û` in L² (Plancherel + transverse decomposition + Schwartz L²
-density `SchwartzMap.denseRange_toLpCLM`).  This is exactly the Helmholtz/Weyl density fact NOT
-in mathlib (`docs/scratch/helmholtz-density.md` §4).  lean-prover target leaning on
-`FourierL2.normSq_eq_integral_normSq_C` for the Plancherel approximation estimate. -/
+Route (refined; no "measurable selection" needed).  The clean proof is the orthogonal-complement
+density criterion, all pieces of which ARE in pinned mathlib:
+`Submodule.orthogonal_orthogonal_eq_closure` reduces the goal to: every `v` orthogonal to all
+`curlSchwartzL2 ψ` and lying in `L2Sigma_R3` is `0`.  By Parseval (`Lp.inner_fourier_eq`) plus the
+curl symbol `iξ×ψ̂` (Step 1) and the fiberwise spanning (Step 3), `v ⊥ curls` forces `v̂` a.e.
+*longitudinal* (parallel to `ξ`); `v ∈ L2Sigma_R3` forces `v̂` a.e. *transverse* (Step 2 forward);
+the two meet only at `v̂ = 0`, whence `v = 0` by the L² Fourier isometry `Lp.fourierTransformₗᵢ`.
+
+Blocker: this route consumes the FORWARD spectral characterization
+`mem_sigma_iff_fourier_transverse` (transverse ⇒ membership and back), whose forward direction is
+the lone `sorry` blocked on `(P2)` (Schwartz Hermitian real-extraction; see that lemma and the
+file header).  So this density fact is NOT independently months-class — it reduces to `(P2)`.
+Left as a `sorry` until `(P2)` lands. -/
 theorem l2sigma_le_closure_span_curl :
     (L2Sigma_R3 : Submodule ℝ L2VF_R3) ≤
       (Submodule.span ℝ (Set.range curlSchwartzL2)).topologicalClosure := by
-  sorry -- ALLOW_SORRY: Helmholtz/Weyl density core — fiberwise spanning (Steps 1–3) ⇒
-  -- L²-closure containment via measurable selection of Schwartz potentials + Plancherel
-  -- approximation.  THE missing analytic pillar; not in mathlib.  lean-prover target.
+  sorry -- ALLOW_SORRY: curl/Helmholtz density — via the orthogonal-complement route
+  -- (`Submodule.orthogonal_orthogonal_eq_closure` + `Lp.fourierTransformₗᵢ` Parseval + Steps 1–3),
+  -- which reduces to the FORWARD `mem_sigma_iff_fourier_transverse`, itself blocked only on (P2)
+  -- (Schwartz Hermitian real-extraction; not in mathlib, weeks-class). NOT independently
+  -- months-class. lean-prover target once (P2) lands.
 
 /-! ### Deliverable -/
 
