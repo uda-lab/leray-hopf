@@ -30,13 +30,16 @@ without duplication and without import cycles into either domain closure.
 ## Assumptions
 
 No new `axiom`/`opaque`/`constant`. The genuinely-missing analytic inputs (a real **Hilbert**
-structure on the regularity subspace whose squared norm is `E.reg`, plus density of that
-subspace) are isolated as explicit HYPOTHESIS/DATA arguments to `ofDissipativeEvolution`,
-never as axioms — matching the established no-smuggle pattern (P3 `LocalRellichInput`,
-P2 `TimeCompactnessInput`). The Hilbert structure is taken as an explicit
-`InnerProductSpace`/`CompleteSpace` on `Vsub` rather than reconstructed from a seminorm: a
-dominated seminorm with `E.reg = q²` does not force an inner-product/Hilbert structure, so
-deriving one would overclaim from insufficient inputs (statement-gate fix).
+regularity space `V` whose squared norm is `E.reg`, a continuous-linear embedding into `E.H`,
+and density of its range) are isolated as explicit HYPOTHESIS/DATA arguments to
+`ofDissipativeEvolution`, never as axioms — matching the established no-smuggle pattern (P3
+`LocalRellichInput`, P2 `TimeCompactnessInput`). The Hilbert structure is taken as an explicit
+`NormedAddCommGroup`/`InnerProductSpace`/`CompleteSpace` on an abstract `V` rather than
+reconstructed from a seminorm: a dominated seminorm with `E.reg = q²` does not force an
+inner-product/Hilbert structure, so deriving one would overclaim from insufficient inputs
+(statement-gate fix). The embedding is supplied as a genuine `ContinuousLinearMap`
+`ι : V →L[ℝ] E.H`, so its linearity and continuity are part of the input contract (not an
+unprovable obligation against free additive/scalar instances).
 
 ## Scaffold ledger (this cycle)
 
@@ -44,15 +47,15 @@ deriving one would overclaim from insufficient inputs (statement-gate fix).
 - `GelfandTriple.IsOfDissipativeEvolution` — `def` of the faithfulness contract (a `Prop`,
   no proof obligation; pure statement).
 - `GelfandTriple.ofDissipativeEvolution` — must-prove construction returning
-  `Σ' GT : GelfandTriple, GT.IsOfDissipativeEvolution …`. Body assembled: the `Σ'` package,
-  `ι := Subtype.val`, injectivity, dense range (from `hdense`), and the full
-  `IsOfDissipativeEvolution` faithfulness proof (`hH := rfl`, HEq instances, range `= Vsub`,
-  `‖v‖² = E.reg (ι v)` from `hreg_norm`) are all proved. The two algebraic-embedding fields
-  `ι_linear` / `ι_continuous` remain `ALLOW_SORRY`: they are stated against the EXPLICIT
-  input module structure `normV`/`ipsV`, which carries an additive/scalar structure on
-  `↥Vsub` that the signature does not pin to the submodule's own (verified non-defeq), so the
-  coercion's linearity/continuity is not derivable without a lean-coder compatibility-hypothesis
-  signature fix. 2 `ALLOW_SORRY`.
+  `Σ' GT : GelfandTriple, GT.IsOfDissipativeEvolution …`, now **sorry-free**. The embedding is
+  supplied directly as a `ContinuousLinearMap` `ι : V →L[ℝ] E.H` over an abstract Hilbert
+  space `V` (the interface fix authorized by Issue #1 item 1), so `ι_linear` / `ι_continuous`
+  are the CLM's own `map_add`/`map_smul`/`cont` — no reconstruction from an opaque
+  `Subtype.val` against free `normV`/`ipsV` instances, which was the source of the two former
+  `ALLOW_SORRY`. The regularity subspace `Vsub` is then the *derived* range
+  `LinearMap.range ι` (not a free input), and the `IsOfDissipativeEvolution` faithfulness proof
+  (`hH := rfl`, HEq instances, range `= Vsub` by `LinearMap.coe_range`, `‖v‖² = E.reg (ι v)`
+  from `hnorm`) is fully discharged. 0 `sorry` / 0 `ALLOW_SORRY`.
 -/
 
 import LerayHopf.EvolutionTriple
@@ -176,96 +179,73 @@ speaks only about the given `E`/`Vsub`, asserting no downstream compactness/limi
 **Honest Hilbert input (statement-gate fix).** A mere dominated seminorm `q` with
 `E.reg = q²` does NOT force a Hilbert structure (an ℓ¹-type norm on a dense
 finite-dimensional subspace satisfies nonnegativity/triangle/smul/domination yet is not the
-norm of any inner-product space). We therefore take the Hilbert structure on the regularity
-subspace as **explicit input**: a real `InnerProductSpace ℝ Vsub` together with completeness
-`CompleteSpace Vsub`, whose induced squared norm equals `E.reg` pulled back along the
-inclusion (`hreg_norm`), and boundedness of the inclusion `Vsub ↪ E.H` (`hbdd`). Positive
-definiteness, the parallelogram law, and inner-product compatibility are then *consequences*
-of the provided `InnerProductSpace`/`NormedAddCommGroup` instances, not unsupported claims.
+norm of any inner-product space). We therefore take the regularity space `V` and its Hilbert
+structure as **explicit input** — a real `NormedAddCommGroup`/`InnerProductSpace`/
+`CompleteSpace` on an abstract type `V` — and the embedding into `E.H` as a genuine
+`ContinuousLinearMap` `ι : V →L[ℝ] E.H` whose induced squared norm equals `E.reg ∘ ι`
+(`hnorm`). Positive definiteness, the parallelogram law, inner-product compatibility,
+linearity, and continuity are then *consequences* of the provided instances and the CLM, not
+unsupported claims. (This is the interface fix authorized by Issue #1 item 1: the former
+`Subtype.val`-against-free-`normV` formulation left `ι_linear`/`ι_continuous` underivable; a
+`ContinuousLinearMap` input carries exactly that data.) The regularity subspace `Vsub` is the
+*derived* range `LinearMap.range ι`, not a free input, so it is automatically the genuine
+image of the embedding.
 
 This is the construction that makes the whole Stream-D library apply to `torus3Evolution`
 and `r3Evolution` at once.
 
-**Scaffold this cycle:** the body assembling the carved space and the faithfulness proof is
-deferred (lean-prover target). The SIGNATURE — including the `Σ'` contract — is the spec. -/
+The body — the `Σ'` package and the full faithfulness proof — is discharged (no `sorry`). -/
 noncomputable def GelfandTriple.ofDissipativeEvolution
     (E : DissipativeEvolution)
-    -- The regularity subspace carved inside `E.H` on which the V-norm lives.
-    (Vsub : letI := E.instNACG; letI := E.instIPS; Submodule ℝ E.H)
-    -- EXPLICIT Hilbert structure on the regularity subspace `Vsub` (the honest input that a
-    -- dominated seminorm cannot provide): a real normed group, a compatible real
+    -- The abstract regularity space `V` and its EXPLICIT Hilbert structure (the honest input
+    -- that a dominated seminorm cannot provide): a real normed group, a compatible real
     -- inner-product space, and completeness. These are passed as data so the constructed
-    -- `GelfandTriple.V := Vsub` genuinely IS a Hilbert space — positive definiteness, the
+    -- `GelfandTriple.V := V` genuinely IS a Hilbert space — positive definiteness, the
     -- parallelogram law, and inner-product compatibility follow from these instances rather
-    -- than being conjured from `E.reg`. (They are intentionally distinct from the ambient
-    -- norm `Vsub` inherits from `E.H`; the V-norm is the stronger regularity norm.)
-    (normV : letI := E.instNACG; letI := E.instIPS; NormedAddCommGroup Vsub)
-    (ipsV : letI := E.instNACG; letI := E.instIPS;
-      @InnerProductSpace ℝ Vsub _ normV.toSeminormedAddCommGroup)
-    (csV : letI := E.instNACG; letI := E.instIPS;
-      @CompleteSpace Vsub normV.toMetricSpace.toUniformSpace)
-    -- The Hilbert V-norm squared on `Vsub` is exactly `E.reg` pulled back along the inclusion.
-    (hreg_norm : letI := E.instNACG; letI := E.instIPS; letI := normV;
-      ∀ v : Vsub, ‖v‖ ^ 2 = E.reg (v : E.H))
-    -- `V ↪ H` is bounded: the ambient `E.H`-norm is dominated by the V-norm on `Vsub`
-    -- (continuity of the regularity embedding).
-    (hbdd : letI := E.instNACG; letI := E.instIPS; letI := normV;
-      ∃ C : ℝ, 0 < C ∧ ∀ v : Vsub, ‖(v : E.H)‖ ≤ C * ‖v‖)
-    -- the regularity subspace is dense in `E.H` (the Gelfand-triple density property).
-    (hdense : letI := E.instNACG; letI := E.instIPS; Dense (Vsub : Set E.H)) :
-    Σ' GT : GelfandTriple, GT.IsOfDissipativeEvolution E Vsub := by
+    -- than being conjured from `E.reg`.
+    (V : Type*)
+    [instNACG_V : NormedAddCommGroup V]
+    [instIPS_V : InnerProductSpace ℝ V]
+    [instCS_V : CompleteSpace V]
+    -- The embedding `V ↪ H` supplied as a genuine `ContinuousLinearMap`: its linearity and
+    -- continuity (the regularity embedding being bounded) are thus part of the input contract,
+    -- not an obligation to be reconstructed from `Subtype.val` against free additive instances.
+    (ι : letI := E.instNACG; letI := E.instIPS; V →L[ℝ] E.H)
+    -- The embedding is injective: `V` is a genuine subspace of `H`.
+    (hinj : letI := E.instNACG; Function.Injective ι)
+    -- The embedding has dense range (the Gelfand-triple density property).
+    (hdense : letI := E.instNACG; DenseRange ι)
+    -- The Hilbert V-norm squared is exactly `E.reg` pulled back along the embedding.
+    (hnorm : letI := E.instNACG; letI := E.instIPS;
+      ∀ v : V, ‖v‖ ^ 2 = E.reg (ι v)) :
+    letI := E.instNACG; letI := E.instIPS;
+    Σ' GT : GelfandTriple, GT.IsOfDissipativeEvolution E (LinearMap.range (ι : V →ₗ[ℝ] E.H)) := by
   letI := E.instNACG; letI := E.instIPS; letI := E.instCS
-  letI := normV; letI := ipsV; letI := csV
-  -- The set inclusion `Vsub → E.H`, packaged as data for the structure fields.
-  -- Continuity: the `Vsub`-norm is `normV`; the ambient `E.H`-norm is dominated by it (`hbdd`).
-  -- We obtain it from the linear map `Submodule.subtype Vsub` and the explicit bound.
-  -- Build the `GelfandTriple` with `V := Vsub`, `H := E.H`, `ι := Subtype.val`.
+  -- Build the `GelfandTriple` with `V`, `H := E.H`, embedding the CLM `ι` (as a bare function).
   refine ⟨{
-      V := Vsub
+      V := V
       H := E.H
-      instNACG_V := normV
-      instIPS_V := ipsV
-      instCS_V := csV
+      instNACG_V := instNACG_V
+      instIPS_V := instIPS_V
+      instCS_V := instCS_V
       instNACG_H := E.instNACG
       instIPS_H := E.instIPS
       instCS_H := E.instCS
-      ι := fun v => (v : E.H)
+      ι := fun v => ι v
       ι_linear := ?_
       ι_continuous := ?_
-      ι_injective := ?_
-      ι_denseRange := ?_ }, ?_⟩
-  · -- linearity of the subtype inclusion `↥Vsub → E.H`.
-    -- The conclusion `IsLinearMap ℝ (fun v => (v : E.H))` is stated with the module structure
-    -- `normV.toAddCommMonoid` / `ipsV.toModule` carried by the EXPLICIT input instances, which
-    -- are NOT definitionally the submodule's own `Vsub.addCommMonoid` / `Vsub.module` (verified:
-    -- `rfl` for `map_add` is rejected with "synthesized Vsub.addCommMonoid / inferred
-    -- normV.toAddCommMonoid"). The signature provides `normV`/`ipsV` as free data with no
-    -- hypothesis pinning their `+`/`•` to the submodule's, so
-    -- `Subtype.val (x +[normV] y) = (x : E.H) + (y : E.H)` is not derivable here.
-    sorry -- ALLOW_SORRY: normV/ipsV-vs-submodule additive/scalar instance-compatibility gap; needs a lean-coder signature fix adding the compatibility hypothesis (e.g. carry `(Submodule.subtype Vsub).IsLinearMap` as data, or `HEq normV.toAddCommGroup Vsub.addCommGroup` + scalar variant).
-  · -- continuity of `↥Vsub → E.H` from the domination bound `hbdd`.
-    -- Same instance-compatibility blocker as `ι_linear`. `ι_continuous` is stated with
-    -- `letI := instNACG_V` (= `normV`); `hbdd` bounds the `E.H`-norm by `normV`'s norm. To turn
-    -- that bound into `Continuous` via `AddMonoidHomClass.continuous_of_bound` one needs the
-    -- inclusion as an additive hom over `normV`'s group structure, which again requires `normV`'s
-    -- `+` to be the submodule's. With the compatibility hypothesis,
-    -- `AddMonoidHomClass.continuous_of_bound (Submodule.subtype Vsub) C hbound`
-    -- (after `obtain ⟨C, _, hbound⟩ := hbdd`) closes it.
-    sorry -- ALLOW_SORRY: same normV-vs-submodule additive-instance gap as ι_linear; lean-coder signature fix (compatibility hypothesis) unblocks it.
-  · -- injectivity of the subtype inclusion
-    exact Subtype.val_injective
-  · -- dense range: range of `Subtype.val` is `Vsub`, which is dense by `hdense`
-    rw [denseRange_iff_closure_range]
-    have hrange : Set.range (fun v : Vsub => (v : E.H)) = (Vsub : Set E.H) :=
-      Subtype.range_val
-    rw [hrange]
-    exact hdense.closure_eq
-  · -- the `IsOfDissipativeEvolution` faithfulness contract
+      ι_injective := hinj
+      ι_denseRange := hdense }, ?_⟩
+  · -- linearity: the CLM's underlying linear map is linear.
+    exact (ι : V →ₗ[ℝ] E.H).isLinear
+  · -- continuity: the CLM's own continuity.
+    exact ι.continuous
+  · -- the `IsOfDissipativeEvolution` faithfulness contract.
     refine ⟨rfl, HEq.rfl, HEq.rfl, ?_, ?_⟩
-    · -- range of `cast rfl ∘ ι` is exactly `Vsub`
-      exact (Subtype.range_val : Set.range (fun v : Vsub => (v : E.H)) = (Vsub : Set E.H))
-    · -- norm² = E.reg ∘ ι, by `hreg_norm`
+    · -- range of `cast rfl ∘ ι` is exactly `Vsub := LinearMap.range ι` (by `coe_range`).
+      simpa using (LinearMap.coe_range (ι : V →ₗ[ℝ] E.H)).symm
+    · -- norm² = E.reg ∘ ι, by `hnorm`.
       intro v
-      simpa using hreg_norm v
+      simpa using hnorm v
 
 end LerayHopf.Bochner

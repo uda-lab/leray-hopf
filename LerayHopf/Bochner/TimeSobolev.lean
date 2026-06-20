@@ -34,13 +34,13 @@ introduces no import cycle and may be reused by both the T³ and ℝ³ capstones
 ## Stage D2 — measurable representative primitive (KEY — unblocks P2's E1)
 
 - `aeStronglyMeasurable_of_spaceTimeL2` — from L²-in-time convergence of an
-  a.e.-strongly-measurable sequence of Banach-valued curves to a limit `g`, the limit `g`
-  admits an a.e.-strongly-measurable representative AND an a.e.-convergent subsequence
-  (via `TendstoInMeasure.exists_seq_tendsto_ae`). This conclusion is EXACTLY the
-  time-measurability handle that `R3.AubinLionsLimitPassage.kineticEnergy_lsc_bound` (E1)
-  names as its sole blocker.
-- `kineticEnergy_lsc_transfer` — abstract norm-lsc transfer of a uniform pointwise bound to
-  the L²-limit at a.e. time, GIVEN the measurable representative (the abstract core of E1).
+  a.e.-strongly-measurable sequence to an **a.e.-strongly-measurable** limit `g`, there is an
+  a.e.-convergent subsequence (and `g`'s representative is returned). **Statement-gate fix
+  (Lane-D):** the measurability of `g` is an explicit hypothesis `hg`, not a conclusion — without
+  it the statement is FALSE (Vitali-set counterexample in the theorem docstring), since L²-limit
+  measurability cannot be extracted from L²-convergence alone. **Proved sorry-free.**
+- `kineticEnergy_lsc_transfer` — abstract norm-lsc transfer of a uniform pointwise bound to the
+  L²-limit at a.e. time, given the same `hg`. **Proved sorry-free.**
 
 ## Assumptions
 
@@ -51,9 +51,11 @@ hypotheses, never axioms.
 
 Definitions (scaffold): `IsWeakTimeDeriv`, `GelfandTriple.ιCLM`, `GelfandTriple.Vprime`,
 `GelfandTriple.hToVprime`, `W1pTime`.
-Must-prove (body deferred — `ALLOW_SORRY`): `isWeakTimeDeriv_unique`,
-`hasDerivAt_isWeakTimeDeriv`, `W1pTime.ofHValuedDeriv`, `aeStronglyMeasurable_of_spaceTimeL2`,
-`kineticEnergy_lsc_transfer`.
+**Proved this cycle (sorry-free):** `hasDerivAt_isWeakTimeDeriv` (strong⇒weak time derivative
+via Bochner IBP), `aeStronglyMeasurable_of_spaceTimeL2` and `kineticEnergy_lsc_transfer` (both
+after a statement-gate fix adding the isolated `hg : AEStronglyMeasurable g μ` hypothesis — the
+prior hypothesis-free forms were FALSE; Vitali counterexamples kept in their docstrings).
+Must-prove (body deferred — `ALLOW_SORRY`): `isWeakTimeDeriv_unique`, `W1pTime.ofHValuedDeriv`.
 Months-class residual (scaffold-only + `TODO`): `w1pTime_continuous_in_H`.
 -/
 
@@ -110,16 +112,51 @@ then `v` is the weak time derivative of `u` on `(0, T)`.
 
 This is the entry point connecting a Galerkin curve's `HasDerivAt`/`u_hasDeriv` field to the
 abstract weak-derivative API (integration by parts via
-`intervalIntegral.integral_eq_sub_of_hasDerivAt`, boundary terms killed by `tsupport ⊆ Ioo`).
+`intervalIntegral.integral_smul_deriv_eq_deriv_smul_of_hasDerivAt`, boundary terms killed by
+`tsupport ψ ⊆ Ioo 0 T`).
 
-**Scaffold this cycle:** body deferred to lean-prover. -/
-theorem hasDerivAt_isWeakTimeDeriv {T : ℝ} (hT : 0 < T) {u v : ℝ → X}
+`CompleteSpace X` is required: the Bochner interval-integral integration-by-parts lemma
+(`intervalIntegral.integral_smul_deriv_eq_deriv_smul_of_hasDerivAt`) needs the target space
+complete. The intended consumers (Galerkin velocity curves in `L2VF_R3` / the pivot Hilbert
+space `H`) are complete, so this is a faithful precondition, not a weakening.
+
+**Proved this cycle** (sorry-free). -/
+theorem hasDerivAt_isWeakTimeDeriv [CompleteSpace X] {T : ℝ} (hT : 0 < T) {u v : ℝ → X}
     (hu : ∀ t ∈ Set.Ioo (0 : ℝ) T, HasDerivAt u (v t) t)
     (hu_cont : ContinuousOn u (Set.Icc 0 T))
     (hv_cont : ContinuousOn v (Set.Icc 0 T)) :
     IsWeakTimeDeriv T u v := by
   -- IBP on `[0,T]`: `∫ ψ' • u = [ψ • u]₀ᵀ - ∫ ψ • u' = - ∫ ψ • v` since `ψ(0) = ψ(T) = 0`.
-  sorry -- ALLOW_SORRY: D1 strong⇒weak time-derivative (lean-prover target). Bochner IBP via `intervalIntegral.integral_eq_sub_of_hasDerivAt`; boundary terms vanish because `tsupport ψ ⊆ Ioo 0 T`.
+  intro ψ _hψcs hψsupp hψC1
+  have hTle : (0 : ℝ) ≤ T := le_of_lt hT
+  have huIcc : Set.uIcc (0 : ℝ) T = Set.Icc 0 T := Set.uIcc_of_le hTle
+  have hmin : min (0 : ℝ) T = 0 := min_eq_left hTle
+  have hmax : max (0 : ℝ) T = T := max_eq_right hTle
+  -- `ψ` is continuous and differentiable; `deriv ψ` is continuous (ContDiff 1).
+  have hψcont : Continuous ψ := hψC1.continuous
+  have hψderiv : ∀ x : ℝ, HasDerivAt ψ (deriv ψ x) x := fun x =>
+    (hψC1.differentiable one_ne_zero).differentiableAt.hasDerivAt
+  have hderivψcont : Continuous (deriv ψ) := hψC1.continuous_deriv_one
+  -- endpoint values of `ψ` vanish: `0, T ∉ tsupport ψ ⊆ Ioo 0 T`.
+  have hψ0 : ψ 0 = 0 :=
+    image_eq_zero_of_notMem_tsupport (fun h => (lt_irrefl (0 : ℝ)) (hψsupp h).1)
+  have hψT : ψ T = 0 :=
+    image_eq_zero_of_notMem_tsupport (fun h => (lt_irrefl T) (hψsupp h).2)
+  -- IBP: `∫ ψ • v = ψ(T)•u(T) - ψ(0)•u(0) - ∫ (deriv ψ) • u`.
+  have hibp := intervalIntegral.integral_smul_deriv_eq_deriv_smul_of_hasDerivAt
+    (u := ψ) (v := u) (u' := deriv ψ) (v' := v) (a := (0 : ℝ)) (b := T)
+    (by rw [huIcc]; exact hψcont.continuousOn)
+    (by rw [huIcc]; exact hu_cont)
+    (by rw [hmin, hmax]; exact fun x _ => hψderiv x)
+    (by rw [hmin, hmax]; exact hu)
+    (hderivψcont.intervalIntegrable 0 T)
+    (by rw [← huIcc] at hv_cont; exact hv_cont.intervalIntegrable)
+  -- substitute the vanishing endpoints (`ψ 0 = ψ T = 0`), killing the boundary term:
+  -- `hibp : ∫ ψ • v = 0 • u T - 0 • u 0 - ∫ (deriv ψ) • u = - ∫ (deriv ψ) • u`.
+  rw [hψ0, hψT] at hibp
+  simp only [zero_smul, sub_zero, zero_sub] at hibp
+  -- `hibp : ∫ ψ • v = - ∫ (deriv ψ) • u`; the goal is `∫ (deriv ψ) • u = - ∫ ψ • v`.
+  rw [hibp, neg_neg]
 
 end WeakTimeDeriv
 
@@ -268,20 +305,37 @@ ball-exhaustion norm-lsc closes the kinetic bound. The conclusion is genuine
 a.e.-strong-measurability + an a.e. (not merely in-measure) subsequence — no trivial
 representative satisfies it because it is tied to the given `L²`-convergent sequence.
 
-**Must-prove (body deferred to lean-prover this cycle).** Route:
-`eLpNorm`-to-0 ⇒ `TendstoInMeasure` (`tendstoInMeasure_of_tendsto_eLpNorm`) ⇒
-`TendstoInMeasure.exists_seq_tendsto_ae`; the limit's a.e.-strong-measurability follows from
-`aestronglyMeasurable_of_tendsto_ae` on the a.e.-convergent subsequence. -/
+**Isolated missing pillar `hg : AEStronglyMeasurable g μ` (statement-gate fix, Lane-D
+2026-06-20).** The earlier form WITHOUT this hypothesis was FALSE: μ = Lebesgue on `[0,1]`,
+`f n = 0`, `g = 𝟙_V` for a non-measurable Vitali set `V` (inner measure `0`) gives
+`eLpNorm (f n - g) 2 μ = eLpNorm g 2 μ = (∫⁻ ‖g‖²)^(1/2) = 0` (the `∫⁻` of a non-measurable
+function is the *lower* Lebesgue integral, whose largest measurable minorant of `‖g‖²` is `0`
+a.e.), so the convergence hypothesis held yet `g` was not a.e.-strongly-measurable. Measurability
+of an L²-limit genuinely CANNOT be extracted from L²-convergence alone — every
+`tendstoInMeasure_of_tendsto_eLpNorm*` mathlib lemma *requires* `AEStronglyMeasurable g` as an
+INPUT. So `g`'s measurability is the genuine missing pillar; we isolate it as the explicit
+hypothesis `hg` (no-smuggle: it asserts ONLY measurability of `g` — no subsequence, no limit
+identification, no spatial content). The lemma's real content is then the a.e.-convergent
+subsequence; the first conjunct is `hg` itself, kept in the conclusion so the lemma packages
+"measurable representative + a.e. subsequence" for its E1-style consumer.
+
+**Proved this cycle** (sorry-free). Route: `tendstoInMeasure_of_tendsto_eLpNorm` (needs `hg`)
+⇒ `TendstoInMeasure.exists_seq_tendsto_ae`. -/
 theorem aeStronglyMeasurable_of_spaceTimeL2
     {μ : Measure ℝ} {f : ℕ → ℝ → β} {g : ℝ → β}
     (hf : ∀ n, AEStronglyMeasurable (f n) μ)
+    (hg : AEStronglyMeasurable g μ)
     (hconv : Tendsto (fun n => eLpNorm (fun t => f n t - g t) 2 μ) atTop (𝓝 0)) :
     AEStronglyMeasurable g μ ∧
       ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∀ᵐ t ∂μ, Tendsto (fun k => f (φ k) t) atTop (𝓝 (g t)) := by
-  -- eLpNorm → 0  ⇒  TendstoInMeasure (mathlib: `tendstoInMeasure_of_tendsto_eLpNorm`);
-  -- then `TendstoInMeasure.exists_seq_tendsto_ae` gives the a.e.-convergent subsequence,
-  -- and `aestronglyMeasurable_of_tendsto_ae` upgrades the limit to a.e.-strongly-measurable.
-  sorry -- ALLOW_SORRY: D2 KEY measurable-representative primitive (lean-prover target). Route: `tendstoInMeasure_of_tendsto_eLpNorm` → `TendstoInMeasure.exists_seq_tendsto_ae` → `aestronglyMeasurable_of_tendsto_ae`. This is the exact ingredient `kineticEnergy_lsc_bound` (E1) is blocked on.
+  refine ⟨hg, ?_⟩
+  -- `eLpNorm (f n - g) 2 μ → 0`: the pointwise sub `fun t => f n t - g t` IS the `Pi` sub
+  -- `f n - g` (definitionally), so `hconv` already has the form the mathlib lemma consumes.
+  have hconv' : Tendsto (fun n => eLpNorm (f n - g) 2 μ) atTop (𝓝 0) := hconv
+  -- L²-convergence ⇒ convergence in measure (uses `hg`), then extract an a.e. subsequence.
+  have htim : TendstoInMeasure μ f atTop g :=
+    tendstoInMeasure_of_tendsto_eLpNorm (by norm_num) hf hg hconv'
+  exact htim.exists_seq_tendsto_ae
 
 end MeasurableRep
 
@@ -298,15 +352,29 @@ by `le_of_tendsto` + lower-semicontinuity of the norm. The a.e.-in-`t` conclusio
 `∀ t`) is the honest form — the value of `g` on a `μ`-null set is not pinned by `L²`
 convergence (matching `kineticEnergy_lsc_bound`'s a.e. conclusion, no-smuggle).
 
-**Must-prove (body deferred to lean-prover this cycle).** -/
+**Isolated missing pillar `hg : AEStronglyMeasurable g μ` (statement-gate fix, Lane-D
+2026-06-20), exactly as in `aeStronglyMeasurable_of_spaceTimeL2`.** WITHOUT it the statement is
+FALSE: μ = Lebesgue on `[0,1]`, `M = 1`, `f n = 0` (so `hbound` holds), `g = 2 · 𝟙_V` for a
+non-measurable Vitali set `V` gives `eLpNorm (f n - g) 2 μ = eLpNorm g 2 μ = 0` (lower integral
+of a non-measurable function) so `hconv` holds, yet `{t : ‖g t‖ > 1} = V` is not contained in any
+null set (positive outer measure), so `∀ᵐ t, ‖g t‖ ≤ 1` FAILS. The norm bound on the limit
+genuinely needs `g` measurable. No-smuggle: `hg` asserts only measurability of `g`.
+
+**Proved this cycle** (sorry-free), given `hg`. -/
 theorem kineticEnergy_lsc_transfer {β : Type*} [NormedAddCommGroup β]
     {μ : Measure ℝ} {f : ℕ → ℝ → β} {g : ℝ → β} {M : ℝ}
     (hf : ∀ n, AEStronglyMeasurable (f n) μ)
+    (hg : AEStronglyMeasurable g μ)
     (hconv : Tendsto (fun n => eLpNorm (fun t => f n t - g t) 2 μ) atTop (𝓝 0))
     (hbound : ∀ n, ∀ᵐ t ∂μ, ‖f n t‖ ≤ M) :
     ∀ᵐ t ∂μ, ‖g t‖ ≤ M := by
-  -- Extract the a.e.-convergent subsequence via `aeStronglyMeasurable_of_spaceTimeL2`,
-  -- then `‖g t‖ = lim ‖f (φ k) t‖ ≤ M` a.e. by `le_of_tendsto` + `Tendsto.norm`.
-  sorry -- ALLOW_SORRY: D2 norm-lsc transfer (lean-prover target). Uses `aeStronglyMeasurable_of_spaceTimeL2` to get the a.e.-convergent subsequence, then `le_of_tendsto` on `‖f (φ k) t‖ → ‖g t‖`. This is the abstract core consumed by `kineticEnergy_lsc_bound` (E1).
+  -- Extract the a.e.-convergent subsequence `f (φ k) t → g t`.
+  obtain ⟨_, φ, _hφ, hae⟩ := aeStronglyMeasurable_of_spaceTimeL2 hf hg hconv
+  -- The uniform bound holds for all `n` simultaneously at a.e. `t` (`ae_all_iff`).
+  have hbound_all : ∀ᵐ t ∂μ, ∀ k, ‖f (φ k) t‖ ≤ M :=
+    (ae_all_iff.2 fun k => hbound (φ k))
+  -- At a.e. `t`: `‖f (φ k) t‖ → ‖g t‖` and `‖f (φ k) t‖ ≤ M`, so `‖g t‖ ≤ M`.
+  filter_upwards [hae, hbound_all] with t htlim htbd
+  exact le_of_tendsto' htlim.norm htbd
 
 end LerayHopf.Bochner
