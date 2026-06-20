@@ -426,6 +426,19 @@ structure AubinLionsPackage_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
   φ_mono : StrictMono φ
   /-- The limit curve. -/
   u : Time → L2Sigma_R3
+  /-- **Time-measurability of the limit curve:** `t ↦ (u t : L2VF_R3)` is
+  `AEStronglyMeasurable` with respect to the Lebesgue measure restricted to `[0, T]`.
+
+  This is the minimal time-regularity field: it asserts ONLY that the map `t ↦ u t`
+  (coerced to `L2VF_R3`) is almost-everywhere strongly measurable in time — NOT
+  continuity, NOT a Bochner-time-derivative, NOT a weak trace, NOT membership in an
+  energy class (those belong to the good-representative layer above this package).
+  It enables the a.e.-in-`t` norm-lsc transfer in `kineticEnergy_lsc_bound` (E1):
+  measurability of `t ↦ ‖(u t : L2VF_R3)‖` makes `g_n(t) = ∫_{B_R} ‖uₙ t − u t‖²`
+  measurable in `t`, which `TendstoInMeasure.exists_seq_tendsto_ae` needs. -/
+  u_aestronglyMeasurable :
+    AEStronglyMeasurable (fun t => (u t : L2VF_R3))
+      (MeasureTheory.volume.restrict (Set.Icc 0 T))
   /-- **LOCAL space-time convergence** of the subsequence to the limit: for every ball
   radius `R`, `∫₀ᵀ ∫_{B_R} ‖uₙ(t,x) - u(t,x)‖² dx dt → 0` along the subsequence `φ`.
 
