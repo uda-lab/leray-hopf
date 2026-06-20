@@ -310,11 +310,16 @@ definition (per the Gelfand-triple discipline: the primary object lives in `V'`;
 `H`-valued version is a stronger input, not the contract).
 
 **Must-prove (body deferred to lean-prover this cycle).** -/
+-- Domain-of-definition guard: `W^{1,p}(0,T;·)` requires `1 ≤ p`; the V′-valued IBP identity
+-- in `weakDeriv` is ill-defined without L¹ control (`MemLp _ p` on a finite measure only implies
+-- integrability when `1 ≤ p`). Same for `q`. These are NOT proof-strengthening hypotheses but
+-- honest domain restrictions stating where the Lions–Magenes space lives.
 theorem W1pTime.ofHValuedDeriv (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ}
     {uV : ℝ → GT.V}
     (u'H : letI := GT.instNACG_H; ℝ → GT.H)
     (mem_p : letI := GT.instNACG_V; MemLp uV p (volume.restrict (Set.Icc 0 T)))
     (mem_q : letI := GT.instNACG_H; MemLp u'H q (volume.restrict (Set.Icc 0 T)))
+    (hp : 1 ≤ p) (hq : 1 ≤ q)
     (weakDeriv : letI := GT.instNACG_H; letI := GT.instIPS_H;
       IsWeakTimeDeriv (X := GT.H) T (fun t => GT.ι (uV t)) u'H) :
     Nonempty (W1pTime GT p q T uV) := by
@@ -335,26 +340,21 @@ theorem W1pTime.ofHValuedDeriv (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ}
     have hbase := isWeakTimeDeriv_comp_clm (X := GT.H) (Y := GT.Vprime) (T := T)
       (u := fun t => GT.ι (uV t)) (v := u'H) L weakDeriv
       -- Interval-integrability of the two `H`-valued Bochner integrands. This is the GENUINE
-      -- remaining input, and it exposes an OVER-STRENGTH issue in the signature: for a general
-      -- exponent `p`/`q : ℝ≥0∞` with `p, q < 1`, `MemLp _ p` over the finite measure
-      -- `volume.restrict (Icc 0 T)` does NOT imply `L¹`/interval-integrability — and with a
-      -- compact embedding `ι` the `V'`-valued identity can then genuinely FAIL while the
-      -- `H`-valued `weakDeriv` still holds (V'-integrability of `t ↦ hToVprime (ι (uV t))` is
-      -- strictly weaker than H-integrability of `t ↦ ι (uV t)`). The statement is therefore
-      -- only established modulo the missing `1 ≤ p ∧ 1 ≤ q` hypotheses; see the report / TODO.
-      -- Under `1 ≤ p` (resp. `1 ≤ q`) the obligations below ARE provable: `MemLp.mono_exponent`
-      -- lowers to `MemLp 1` on the finite measure, and `deriv ψ` (resp. `ψ`), continuous with
-      -- compact support in `Ioo 0 T`, is bounded, so the `smul` stays in `L¹`.
+      -- remaining input: `MemLp _ p` over the finite measure `volume.restrict (Icc 0 T)` does NOT
+      -- imply `L¹`/interval-integrability for `p < 1`. The `1 ≤ p`/`1 ≤ q` domain guards (now
+      -- available as `hp`/`hq`) are what make these obligations provable:
+      -- `MemLp.mono_exponent` lowers to `MemLp 1` on the finite measure, and `deriv ψ` (resp. `ψ`),
+      -- continuous with compact support in `Ioo 0 T`, is bounded, so the `smul` stays in `L¹`.
       (fun ψ _ _ _ => by
         -- TODO(#13-A): interval-integrability of `t ↦ deriv ψ t • ι (uV t)` on `[0,T]`.
         -- Smallest interface gap: add a `1 ≤ p` hypothesis to `W1pTime.ofHValuedDeriv`
         -- (lean-coder), after which this is `MemLp.mono_exponent` + bounded-`deriv ψ` Hölder.
-        sorry) -- ALLOW_SORRY: needs `1 ≤ p`; for `p < 1` this interval-integrability is FALSE in general (over-strength signature, see report).
+        sorry) -- ALLOW_SORRY: not provable / ill-defined without `1 ≤ p` (now in context as `hp`); discharge via `MemLp.mono_exponent` on finite measure + bounded compactly-supported `deriv ψ`.
       (fun ψ _ _ _ => by
         -- TODO(#13-A): interval-integrability of `t ↦ ψ t • u'H t` on `[0,T]`.
         -- Smallest interface gap: add a `1 ≤ q` hypothesis (lean-coder), then `MemLp.mono_exponent`
         -- + bounded-`ψ` Hölder. Same over-strength point as the `p`-obligation above.
-        sorry) -- ALLOW_SORRY: needs `1 ≤ q`; for `q < 1` this interval-integrability is FALSE in general (over-strength signature, see report).
+        sorry) -- ALLOW_SORRY: not provable / ill-defined without `1 ≤ q` (now in context as `hq`); discharge via `MemLp.mono_exponent` on finite measure + bounded compactly-supported `ψ`.
     -- Rewrite `L = hToVprimeCLM` back to `hToVprime` on both curves.
     simpa only [hL, GelfandTriple.hToVprimeCLM_apply] using hbase
   exact ⟨{ u' := fun t => GT.hToVprime (u'H t)
