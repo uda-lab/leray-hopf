@@ -54,8 +54,20 @@ Definitions (scaffold): `IsWeakTimeDeriv`, `GelfandTriple.ιCLM`, `GelfandTriple
 **Proved this cycle (sorry-free):** `hasDerivAt_isWeakTimeDeriv` (strong⇒weak time derivative
 via Bochner IBP), `aeStronglyMeasurable_of_spaceTimeL2` and `kineticEnergy_lsc_transfer` (both
 after a statement-gate fix adding the isolated `hg : AEStronglyMeasurable g μ` hypothesis — the
-prior hypothesis-free forms were FALSE; Vitali counterexamples kept in their docstrings).
-Must-prove (body deferred — `ALLOW_SORRY`): `isWeakTimeDeriv_unique`, `W1pTime.ofHValuedDeriv`.
+prior hypothesis-free forms were FALSE; Vitali counterexamples kept in their docstrings),
+`GelfandTriple.hToVprimeCLM` / `GelfandTriple.hToVprimeCLM_apply` (the embedding `H ↪ V'`
+bundled as a genuine `H →L[ℝ] V'`, equal to `hToVprime` pointwise), and
+`isWeakTimeDeriv_comp_clm` (transport of a weak time derivative through a CLM, given
+interval-integrability of the Bochner integrands).
+Must-prove (body deferred — `ALLOW_SORRY`): `isWeakTimeDeriv_unique`.
+`W1pTime.ofHValuedDeriv` is **sorry-free this cycle**: under the domain guards `1 ≤ p` /
+`1 ≤ q` (the Lions–Magenes space is only defined for exponents ≥ 1, so these are faithful
+preconditions, not proof-strengthening), the two interval-integrability obligations are
+discharged via `MemLp.integrable` on the finite measure combined with the private helper
+`intervalIntegrable_smul_of_integrableOn_Icc` (bounded continuous test factor + support in
+`Ioo 0 T`). The `1 ≤ p` / `1 ≤ q` signature guards (added commit c362d9b) are the minimal
+honest domain restriction; the previous over-strength-flagged form (without those guards) was
+corrected before the proof was attempted.
 Months-class residual (scaffold-only + `TODO`): `w1pTime_continuous_in_H`.
 -/
 
@@ -234,6 +246,96 @@ structure W1pTime (GT : GelfandTriple) (p q : ℝ≥0∞) (T : ℝ)
   weakDeriv : letI := GT.instNACG_V; letI := GT.instIPS_V;
     IsWeakTimeDeriv (X := GT.Vprime) T (fun t => GT.hToVprime (GT.ι (uV t))) u'
 
+/-- The canonical embedding `H ↪ V'` as a genuine `ContinuousLinearMap` (the bundled form
+of `GelfandTriple.hToVprime`). It is the precomposition `g ↦ g ∘ ιCLM` (the honest ℝ-linear
+`ContinuousLinearMap.compL … |>.flip ιCLM`) applied after the Riesz map `innerSL ℝ : H →L[ℝ]
+(H →L[ℝ] ℝ)`. Over `ℝ` the inner product is genuinely bilinear, so `innerSL ℝ` is an honest
+`H →L[ℝ] _` (its conjugate-linearity is trivial), and `hToVprimeCLM h = (innerSL ℝ h).comp
+ιCLM = (toDual ℝ H h).comp ιCLM = hToVprime h` pointwise (see `hToVprimeCLM_apply`). -/
+noncomputable def GelfandTriple.hToVprimeCLM (GT : GelfandTriple) :
+    letI := GT.instNACG_V; letI := GT.instIPS_V;
+    letI := GT.instNACG_H; letI := GT.instIPS_H; GT.H →L[ℝ] GT.Vprime :=
+  letI := GT.instNACG_V; letI := GT.instIPS_V
+  letI := GT.instNACG_H; letI := GT.instIPS_H; letI := GT.instCS_H
+  ((ContinuousLinearMap.compL ℝ GT.V GT.H ℝ).flip GT.ιCLM).comp
+    (innerSL ℝ : GT.H →L[ℝ] (GT.H →L[ℝ] ℝ))
+
+@[simp] theorem GelfandTriple.hToVprimeCLM_apply (GT : GelfandTriple) :
+    letI := GT.instNACG_H;
+    (h : GT.H) → GT.hToVprimeCLM h = GT.hToVprime h := by
+  letI := GT.instNACG_V; letI := GT.instIPS_V
+  letI := GT.instNACG_H; letI := GT.instIPS_H; letI := GT.instCS_H
+  intro h
+  -- Both sides equal `(v ↦ ⟪ι v, h⟫) ∈ V'`; reduce the bundled composition and compare on `V`.
+  ext v
+  simp only [GelfandTriple.hToVprimeCLM, GelfandTriple.hToVprime,
+    ContinuousLinearMap.comp_apply, ContinuousLinearMap.flip_apply,
+    ContinuousLinearMap.compL_apply, coe_innerSL_apply, InnerProductSpace.toDual_apply_apply]
+
+/-- **Transport of a weak time derivative through a continuous linear map.** If `v` is the
+weak time derivative of `u` (an `X`-valued curve) and `L : X →L[ℝ] Y` is continuous linear,
+then `L ∘ v` is the weak time derivative of `L ∘ u`, PROVIDED both Bochner integrands
+`t ↦ deriv ψ t • u t` and `t ↦ ψ t • v t` are interval-integrable on `[0,T]` for every
+admissible test function `ψ`. `L` commutes with the interval integral
+(`ContinuousLinearMap.intervalIntegral_comp_comm`, which needs that integrability) and with
+the scalar `smul` (`map_smul`), so it carries the defining IBP identity from `X` to `Y`. -/
+theorem isWeakTimeDeriv_comp_clm {X Y : Type*}
+    [NormedAddCommGroup X] [NormedSpace ℝ X] [CompleteSpace X]
+    [NormedAddCommGroup Y] [NormedSpace ℝ Y] [CompleteSpace Y]
+    {T : ℝ} {u v : ℝ → X} (L : X →L[ℝ] Y)
+    (hwd : IsWeakTimeDeriv (X := X) T u v)
+    (hu_int : ∀ ψ : ℝ → ℝ, HasCompactSupport ψ → tsupport ψ ⊆ Set.Ioo 0 T → ContDiff ℝ 1 ψ →
+      IntervalIntegrable (fun t => deriv ψ t • u t) volume 0 T)
+    (hv_int : ∀ ψ : ℝ → ℝ, HasCompactSupport ψ → tsupport ψ ⊆ Set.Ioo 0 T → ContDiff ℝ 1 ψ →
+      IntervalIntegrable (fun t => ψ t • v t) volume 0 T) :
+    IsWeakTimeDeriv (X := Y) T (fun t => L (u t)) (fun t => L (v t)) := by
+  intro ψ hψcs hψsupp hψC1
+  -- The defining identity in `X`: `∫ deriv ψ • u = - ∫ ψ • v`.
+  have hX := hwd ψ hψcs hψsupp hψC1
+  -- Push `L` through both interval integrals; `L` is linear so `L (a • x) = a • L x`.
+  have hLu : (∫ t in (0:ℝ)..T, deriv ψ t • L (u t))
+      = L (∫ t in (0:ℝ)..T, deriv ψ t • u t) := by
+    have := L.intervalIntegral_comp_comm (a := (0:ℝ)) (b := T) (μ := volume)
+      (f := fun t => deriv ψ t • u t) (hu_int ψ hψcs hψsupp hψC1)
+    simpa only [map_smul] using this
+  have hLv : (∫ t in (0:ℝ)..T, ψ t • L (v t))
+      = L (∫ t in (0:ℝ)..T, ψ t • v t) := by
+    have := L.intervalIntegral_comp_comm (a := (0:ℝ)) (b := T) (μ := volume)
+      (f := fun t => ψ t • v t) (hv_int ψ hψcs hψsupp hψC1)
+    simpa only [map_smul] using this
+  rw [hLu, hLv, hX, map_neg]
+
+/-- Helper for `W1pTime.ofHValuedDeriv`: a Bochner curve `g` integrable on `Icc 0 T`,
+scalar-multiplied by a continuous, compactly-supported test factor `φ` whose support sits
+inside `Ioo 0 T`, is interval-integrable on `0..T`. The test factor is bounded (continuous
+with compact support), so the `smul` stays in `L¹`; for `T < 0` the support constraint forces
+`φ = 0`. -/
+private theorem intervalIntegrable_smul_of_integrableOn_Icc
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {T : ℝ} {g : ℝ → E} {φ : ℝ → ℝ}
+    (hg : Integrable g (volume.restrict (Set.Icc 0 T)))
+    (hφc : Continuous φ) (hφcs : HasCompactSupport φ)
+    (hφsupp : tsupport φ ⊆ Set.Ioo 0 T) :
+    IntervalIntegrable (fun t => φ t • g t) volume 0 T := by
+  rcases le_or_gt 0 T with hT | hT
+  · -- `Ι 0 T = Ioc 0 T ⊆ Icc 0 T`; the `smul` is integrable on `Icc 0 T` by boundedness of `φ`.
+    obtain ⟨C, hC⟩ := hφc.bounded_above_of_compact_support hφcs
+    have hint : Integrable (fun t => φ t • g t) (volume.restrict (Set.Icc 0 T)) :=
+      hg.bdd_smul C hφc.aestronglyMeasurable (Filter.Eventually.of_forall hC)
+    rw [intervalIntegrable_iff]
+    have hsub : Set.uIoc 0 T ⊆ Set.Icc 0 T := by
+      rw [Set.uIoc_of_le hT]; exact Set.Ioc_subset_Icc_self
+    have hint' : IntegrableOn (fun t => φ t • g t) (Set.Icc 0 T) volume := hint
+    exact hint'.mono_set hsub
+  · -- `T < 0`: `Ioo 0 T = ∅`, so `tsupport φ = ∅` and `φ = 0`; the integrand vanishes.
+    have hIoo : Set.Ioo 0 T = (∅ : Set ℝ) := Set.Ioo_eq_empty (by exact not_lt.2 hT.le)
+    have hφ0 : φ = 0 := by
+      funext t
+      exact image_eq_zero_of_notMem_tsupport (fun ht => by
+        have := hφsupp ht; rw [hIoo] at this; exact this.elim)
+    subst hφ0
+    simp only [Pi.zero_apply, zero_smul]
+    exact IntervalIntegrable.zero (μ := volume) (a := (0:ℝ)) (b := T) (E := E)
+
 /-- **Stronger `H`-valued-derivative specialization.** If a curve admits a weak time
 derivative `u'H` valued in the pivot space `H` (a STRICTLY STRONGER condition than the
 Lions–Magenes `u' ∈ V'` requirement), and that `H`-valued derivative is `L^q(0,T;H)`, then
@@ -243,19 +345,69 @@ This is the H-valued ⇒ V' embedding direction kept SEPARATE from the primary `
 definition (per the Gelfand-triple discipline: the primary object lives in `V'`; the
 `H`-valued version is a stronger input, not the contract).
 
-**Must-prove (body deferred to lean-prover this cycle).** -/
+**Proved this cycle** (sorry-free). Route: post-compose with `hToVprimeCLM`; `MemLp` carried
+by `comp_memLp'`; weak-derivative identity transported by `isWeakTimeDeriv_comp_clm`;
+both interval-integrability obligations discharged by `intervalIntegrable_smul_of_integrableOn_Icc`
+using `MemLp.integrable` under the `1 ≤ p` / `1 ≤ q` guards. -/
+-- Domain-of-definition guard: `W^{1,p}(0,T;·)` requires `1 ≤ p`; the V′-valued IBP identity
+-- in `weakDeriv` is ill-defined without L¹ control (`MemLp _ p` on a finite measure only implies
+-- integrability when `1 ≤ p`). Same for `q`. These are NOT proof-strengthening hypotheses but
+-- honest domain restrictions stating where the Lions–Magenes space lives.
 theorem W1pTime.ofHValuedDeriv (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ}
     {uV : ℝ → GT.V}
     (u'H : letI := GT.instNACG_H; ℝ → GT.H)
     (mem_p : letI := GT.instNACG_V; MemLp uV p (volume.restrict (Set.Icc 0 T)))
     (mem_q : letI := GT.instNACG_H; MemLp u'H q (volume.restrict (Set.Icc 0 T)))
+    (hp : 1 ≤ p) (hq : 1 ≤ q)
     (weakDeriv : letI := GT.instNACG_H; letI := GT.instIPS_H;
       IsWeakTimeDeriv (X := GT.H) T (fun t => GT.ι (uV t)) u'H) :
     Nonempty (W1pTime GT p q T uV) := by
-  -- Post-compose everything with the continuous linear embedding `H ↪ V'`
-  -- (`hToVprime`): `MemLp` is preserved by a CLM, and `IsWeakTimeDeriv` commutes with a
-  -- continuous linear map (it preserves the IBP identity defining the weak derivative).
-  sorry -- ALLOW_SORRY: D1 H-valued ⇒ V'-valued specialization (lean-prover target). Push `MemLp` and `IsWeakTimeDeriv` forward along the CLM `hToVprime : H →L V'`; uses `MemLp.comp_continuousLinearMap` and linearity of the weak-derivative IBP identity.
+  letI := GT.instNACG_V; letI := GT.instIPS_V
+  letI := GT.instNACG_H; letI := GT.instIPS_H; letI := GT.instCS_H
+  letI := GT.instCS_V
+  -- Post-compose everything with the continuous linear embedding `H ↪ V'` bundled as the CLM
+  -- `hToVprimeCLM`. `MemLp` is preserved by a CLM (`comp_memLp'`); the weak-derivative IBP
+  -- identity is carried through by `isWeakTimeDeriv_comp_clm`.
+  set L : GT.H →L[ℝ] GT.Vprime := GT.hToVprimeCLM with hL
+  -- `mem_q` for the `V'`-valued derivative `t ↦ hToVprime (u'H t) = L (u'H t)`.
+  have hmem_q : MemLp (fun t => GT.hToVprime (u'H t)) q (volume.restrict (Set.Icc 0 T)) := by
+    have := L.comp_memLp' (f := u'H) mem_q
+    simpa only [Function.comp_def, hL, GelfandTriple.hToVprimeCLM_apply] using this
+  -- `weakDeriv` for the `V'`-valued curve: transport the `H`-identity through `L`.
+  have hwd : IsWeakTimeDeriv (X := GT.Vprime) T
+      (fun t => GT.hToVprime (GT.ι (uV t))) (fun t => GT.hToVprime (u'H t)) := by
+    have hbase := isWeakTimeDeriv_comp_clm (X := GT.H) (Y := GT.Vprime) (T := T)
+      (u := fun t => GT.ι (uV t)) (v := u'H) L weakDeriv
+      -- Interval-integrability of the two `H`-valued Bochner integrands. This is the GENUINE
+      -- remaining input: `MemLp _ p` over the finite measure `volume.restrict (Icc 0 T)` does NOT
+      -- imply `L¹`/interval-integrability for `p < 1`. The `1 ≤ p`/`1 ≤ q` domain guards (now
+      -- available as `hp`/`hq`) are what make these obligations provable:
+      -- `MemLp.mono_exponent` lowers to `MemLp 1` on the finite measure, and `deriv ψ` (resp. `ψ`),
+      -- continuous with compact support in `Ioo 0 T`, is bounded, so the `smul` stays in `L¹`.
+      (fun ψ hψcs hψsupp hψC1 => by
+        -- Interval-integrability of `t ↦ deriv ψ t • ι (uV t)` on `[0,T]`.
+        -- `MemLp uV p` (finite measure, `1 ≤ p`) ⇒ `Integrable (ι ∘ uV)`; `deriv ψ` is
+        -- continuous, compactly supported in `Ioo 0 T`, hence bounded, so the `smul` is `L¹`.
+        have hg : Integrable (fun t => GT.ι (uV t)) (volume.restrict (Set.Icc 0 T)) := by
+          have h := (GT.ιCLM.comp_memLp' mem_p).integrable hp
+          simpa only [Function.comp_def, GelfandTriple.ιCLM, IsLinearMap.mk'_apply,
+            ContinuousLinearMap.coe_mk', LinearMap.coe_mk, AddHom.coe_mk] using h
+        exact intervalIntegrable_smul_of_integrableOn_Icc hg
+          hψC1.continuous_deriv_one (HasCompactSupport.deriv hψcs)
+          (tsupport_deriv_subset.trans hψsupp))
+      (fun ψ hψcs hψsupp hψC1 => by
+        -- Interval-integrability of `t ↦ ψ t • u'H t` on `[0,T]`.
+        -- `MemLp u'H q` (finite measure, `1 ≤ q`) ⇒ `Integrable u'H`; `ψ` is continuous,
+        -- compactly supported in `Ioo 0 T`, hence bounded, so the `smul` is `L¹`.
+        have hg : Integrable u'H (volume.restrict (Set.Icc 0 T)) := mem_q.integrable hq
+        exact intervalIntegrable_smul_of_integrableOn_Icc hg
+          hψC1.continuous hψcs hψsupp)
+    -- Rewrite `L = hToVprimeCLM` back to `hToVprime` on both curves.
+    simpa only [hL, GelfandTriple.hToVprimeCLM_apply] using hbase
+  exact ⟨{ u' := fun t => GT.hToVprime (u'H t)
+           mem_p := mem_p
+           mem_q := hmem_q
+           weakDeriv := hwd }⟩
 
 /-- **Lions–Magenes good-representative embedding.** A `W^{1,p}(0,T;V) ∩ L^q(0,T;V')`
 element has a representative that is continuous into `H`: there is `ũ : ℝ → H`, continuous
