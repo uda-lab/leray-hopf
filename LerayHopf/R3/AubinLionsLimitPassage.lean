@@ -73,11 +73,13 @@ Target axioms this milestone partially substantiates (NOT removed):
 import LerayHopf.R3.AxiomaticClosure     -- AubinLionsPackage_R3, GalerkinSolutionData_R3, r3Evolution, R3NSForms
 import LerayHopf.R3.SpatialCompactness   -- localCompactness_R3_of_ballCompact, LocalRellichInput
 import LerayHopf.R3.TrilinearEstimate    -- b-bound analytic core (downstream of R3NSForms.b_bound)
+import LerayHopf.R3.FourierL2            -- 𝓕, L2C_R3, viscousFormSq_R3_eq_integral_normSq_fourier (F7 spectral exposure for the viscous/H¹ Steklov Jensen bound)
 import Mathlib.MeasureTheory.Integral.Bochner.Set   -- set/interval integrals over balls
 
 namespace LerayHopf
 
 open MeasureTheory Filter Topology Metric
+open scoped FourierTransform   -- `𝓕` notation for the viscous/H¹ Steklov spectral Jensen bound
 
 /-! ### Tier H — the isolated time-frontier hypothesis (for the still-open C2) -/
 
@@ -794,6 +796,47 @@ private theorem steklovAvg_normSq_le_average (𝔊 : R3GalerkinScheme) (F : R3NS
         congr 1
         field_simp
 
+/-- **Fourier component of a Steklov average — the L²-element commute (PROVED, no `sorry`).**
+For `0 < δ` and `0 ≤ t`, the `j`-th Fourier component of the Steklov average is the time-average
+of the curve's `j`-th Fourier components:
+
+  `𝓕 (proj_j (steklovAvg gs δ t)) = δ⁻¹ • ∫_{t}^{t+δ} 𝓕 (proj_j (gs.u s)) ds`   (in `L2C_R3`).
+
+This is the `Lp`-element identity underlying the spectral Jensen bound: the scalar `δ⁻¹` factors
+out of `𝓕 ∘ proj_j` (both `ℝ`-linear), and the continuous-linear maps `proj_j` and `𝓕` commute
+with the (interval) Bochner integral of the continuous curve via
+`ContinuousLinearMap.integral_comp_comm` / `LinearIsometryEquiv.integral_comp_comm`. It is
+`Lp`-frontier-free; the genuine missing pillar is only the subsequent *pointwise coeFn* interchange
+(see `viscousFormSq_steklovAvg_le_average`). -/
+private theorem fourier_proj_steklovAvg_eq (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) (j : Fin 3) :
+    (𝓕 (L2VF_projComponentC_R3 j (steklovAvg 𝔊 F ν u₀ n gs δ t)) : L2C_R3)
+      = δ⁻¹ • ∫ s in t..(t + δ),
+          (𝓕 (L2VF_projComponentC_R3 j (gs.u s)) : L2C_R3) := by
+  have hle : t ≤ t + δ := by linarith
+  -- The curve `s ↦ (gs.u s : L2VF_R3)` is continuous on `[t, t+δ] ⊆ Ici 0`, hence interval-integrable.
+  have hcont : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.uIcc t (t + δ)) := by
+    refine (galerkin_curve_continuous 𝔊 F ν u₀ n gs).mono ?_
+    rw [Set.uIcc_of_le hle]; intro s hs; exact le_trans ht hs.1
+  have hint : IntervalIntegrable (fun s => (gs.u s : L2VF_R3)) volume t (t + δ) :=
+    hcont.intervalIntegrable
+  -- Convert the interval integral to a set integral on `Ioc t (t+δ)` (since `t ≤ t+δ`).
+  have hInt_proj : IntegrableOn (fun s => (gs.u s : L2VF_R3)) (Set.Ioc t (t + δ)) volume :=
+    (intervalIntegrable_iff_integrableOn_Ioc_of_le hle).mp hint
+  -- `proj_j` (a CLM) commutes with the Bochner integral.
+  rw [steklovAvg, map_smul, intervalIntegral.integral_of_le hle, intervalIntegral.integral_of_le hle,
+    ← ContinuousLinearMap.integral_comp_comm _ hInt_proj]
+  -- Convert the real scalar `δ⁻¹` to the complex scalar `(δ⁻¹ : ℂ)` (both sides), so the
+  -- ℂ-homogeneity `fourier_smul` applies.
+  rw [RCLike.real_smul_eq_coe_smul (K := ℂ), RCLike.real_smul_eq_coe_smul (K := ℂ),
+    FourierTransform.fourier_smul]
+  congr 1
+  -- `𝓕 (∫ s, proj_j (gs.u s)) = ∫ s, 𝓕 (proj_j (gs.u s))` via the `ₗᵢ` commute lemma.
+  exact ((Lp.fourierTransformₗᵢ Domain3 ℂ).toLinearIsometry.integral_comp_comm
+    (μ := (volume : Measure ℝ).restrict (Set.Ioc t (t + δ)))
+    (fun s => (L2VF_projComponentC_R3 j (gs.u s) : L2C_R3))).symm
+
 /-- **Viscous (H¹) Jensen bound on the Steklov average — the C2 first-PR target.** For `0 < δ`
 and `0 ≤ t`, the viscous dissipation seminorm of the Steklov average is bounded by the time-average
 of the curve's viscous seminorm over the forward window:
@@ -806,31 +849,59 @@ averaged states an `n`-uniform *pointwise* H¹ bound, which the raw pointwise sa
 C2 route discussion), and which P3's `spatialInput_R3_of_localRellich` consumes.
 
 PROOF STRUCTURE (the analytic shape, isolating the one genuine gap): `viscousFormSq_R3 1 w` is the
-weighted-Fourier energy `∑_j ∫_ξ (2π)²‖ξ‖² ‖(𝓕 (proj_j w)) ξ‖² dξ` (`Regularity.viscousFormSq_R3`).
-Since `w ↦ 𝓕 (proj_j w)` is an `ℝ`-linear continuous map `L2VF_R3 →L[ℝ] L2C_R3`,
-`ContinuousLinearMap.integral_comp_comm` gives the L²-element identity
-`𝓕 (proj_j (δ⁻¹ • ∫_s u s)) = δ⁻¹ • ∫_s 𝓕 (proj_j (u s))`. The bound then follows, per frequency
-`ξ`, by Cauchy–Schwarz on the time-average (the scalar
-`norm_integral_sq_le_length_mul_integral_normSq` proved above, applied at each `ξ`), multiplied by
-the nonnegative weight `(2π)²‖ξ‖²` and Tonelli-swapped (absolutely convergent here: the window
-`[t,t+δ]` is compact, the curve continuous, and `∫_s viscousFormSq_R3 1 (u s)` finite).
+weighted-Fourier energy `∑_j ∫_ξ (2π)²‖ξ‖² ‖(𝓕 (proj_j w)) ξ‖² dξ`, exposed by F7
+(`FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier`, now applied to the LHS in the proof body).
+Since `w ↦ 𝓕 (proj_j w)` is built from the `ℝ`-linear continuous `proj_j : L2VF_R3 →L[ℝ] L2C_R3`
+and the `ℂ`-linear isometry equiv `𝓕`, the per-component **L²-element commute**
+`fourier_proj_steklovAvg_eq` is **PROVED here, sorry-free**:
+`𝓕 (proj_j (δ⁻¹ • ∫_s u s)) = δ⁻¹ • ∫_s 𝓕 (proj_j (u s))` (in `L2C_R3`), via
+`ContinuousLinearMap.integral_comp_comm` (proj_j) + `LinearIsometry.integral_comp_comm` (𝓕) +
+`fourier_smul`. The bound would then follow, per frequency `ξ`, by Cauchy–Schwarz on the
+time-average (the scalar `norm_integral_sq_le_length_mul_integral_normSq` proved above, applied at
+each `ξ`), multiplied by the nonnegative weight `(2π)²‖ξ‖²` and Tonelli-swapped (absolutely
+convergent here: the window `[t,t+δ]` is compact, the curve continuous, and
+`∫_s viscousFormSq_R3 1 (u s)` finite).
 
-The SINGLE genuine missing-mathlib pillar is the pointwise `Lp`-valued Bochner-integral coeFn
-interchange `(𝓕 (proj_j (δ⁻¹ • ∫_s u s))) ξ =ᵐ[ξ] δ⁻¹ ∫_s (𝓕 (proj_j (u s))) ξ ds` — exactly the
-gap already isolated in this repo as `convL2_coeFn_ae` (`FrechetKolmogorov.lean`). The L²-level
-Jensen template it instantiates IS proved sorry-free above
+The SINGLE genuine missing-mathlib pillar that remains is the POINTWISE `Lp`-valued Bochner-integral
+coeFn interchange `(δ⁻¹ • ∫_s 𝓕 (proj_j (u s))) ξ =ᵐ[ξ] δ⁻¹ ∫_s (𝓕 (proj_j (u s))) ξ ds`, together
+with the joint `(s,ξ)`-measurable representative the per-ξ Jensen + weighted Tonelli swap require —
+exactly the coeFn-of-`Lp`-valued-Bochner-integral gap already isolated in this repo as
+`convL2_coeFn_ae` (`FrechetKolmogorov.lean`), here against the *unbounded* weight `(2π)²‖ξ‖²`. The
+L²-level Jensen template it instantiates IS proved sorry-free above
 (`norm_integral_sq_le_length_mul_integral_normSq`, `steklovAvg_normSq_le_average`).
 
-NOTE: the spectral `∑_j ∫_ξ … 𝓕 …` rewriting requires the `R3.FourierL2` exposure lemma and the
-`𝓕` notation, which this module does not import (imports are `lean-coder`-owned, AGENTS.md Hard
-rule 10). The statement here is therefore kept at the `viscousFormSq_R3` level; the Fourier-side
-assembly + the isolated interchange land once the `FourierL2` import is added by `lean-coder`. -/
+FRONTIER STATUS (this PR, #15): the `R3.FourierL2` import is now added (single enabling import, see
+the import block), F7 is applied to the LHS, and the per-component L²-element commute is proved
+sorry-free (`fourier_proj_steklovAvg_eq`). The residual `sorry` is sharpened to the pointwise
+coeFn-interchange + weighted Tonelli step described above. -/
 private theorem viscousFormSq_steklovAvg_le_average (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
     (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) :
     viscousFormSq_R3 1 (steklovAvg 𝔊 F ν u₀ n gs δ t)
       ≤ δ⁻¹ * ∫ s in t..(t + δ), viscousFormSq_R3 1 ((gs.u s : L2VF_R3)) := by
-  sorry -- ALLOW_SORRY: viscous/H¹ Steklov Jensen bound. The L²-level Jensen template is PROVED sorry-free above (`norm_integral_sq_le_length_mul_integral_normSq`, `steklovAvg_normSq_le_average`). The SINGLE genuine missing-mathlib pillar is the pointwise `Lp`-valued Bochner-integral coeFn interchange `(𝓕 (proj_j (δ⁻¹•∫_s u s))) ξ =ᵐ δ⁻¹ ∫_s (𝓕 (proj_j (u s))) ξ ds` — the SAME gap isolated as `convL2_coeFn_ae` in FrechetKolmogorov.lean (mathlib has no coeFn-of-Lp-valued-integral lemma). Given that interchange, per-ξ Cauchy–Schwarz (the L²-template above) + Tonelli against the nonnegative weight `(2π)²‖ξ‖²` (absolutely convergent: compact window + continuous curve + finite `∫_s viscousFormSq_R3 1 (u s)`) yields the bound. Completing it here also needs the `R3.FourierL2` spectral exposure lemma + `𝓕` notation, i.e. a `lean-coder`-owned import (AGENTS.md Hard rule 10). NOT an axiom, NOT a false blocker.
+  -- Expose both sides spectrally (F7), reducing to a per-frequency Jensen bound on the
+  -- `j`-th Fourier component of the Steklov average.  The L²-element commute
+  -- `fourier_proj_steklovAvg_eq` (PROVED above, sorry-free) rewrites that component as the
+  -- time-average `δ⁻¹ • ∫_s 𝓕 (proj_j (u s))`.
+  rw [FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier]
+  -- ALLOW_SORRY: viscous/H¹ Steklov Jensen bound — FRONTIER SHRUNK (this PR, #15).
+  -- PROVED sorry-free here and consumed above: (a) the L²-level Bochner Jensen template
+  -- `norm_integral_sq_le_length_mul_integral_normSq` / `steklovAvg_normSq_le_average`; (b) the
+  -- spectral exposure `viscousFormSq_R3_eq_integral_normSq_fourier` (F7), now applied to the LHS;
+  -- (c) the per-component L²-ELEMENT commute `fourier_proj_steklovAvg_eq`
+  --   `𝓕 (proj_j (δ⁻¹ • ∫_s u s)) = δ⁻¹ • ∫_s 𝓕 (proj_j (u s))`  (in `L2C_R3`),
+  --   proved sorry-free from `ContinuousLinearMap.integral_comp_comm` (proj_j) +
+  --   `LinearIsometry.integral_comp_comm` (𝓕) + `fourier_smul`.
+  -- The SINGLE genuine missing-mathlib pillar that remains is the POINTWISE coeFn interchange of
+  -- the `Lp`-valued time integral against the unbounded spectral weight `(2π)²‖ξ‖²`:
+  --   `(δ⁻¹ • ∫_s 𝓕(proj_j(u s)))ξ =ᵐ[ξ] δ⁻¹ • ∫_s (𝓕(proj_j(u s)))ξ`
+  -- together with the joint `(s,ξ)`-measurable representative needed for the per-ξ scalar Jensen
+  -- and the Tonelli swap `∫_ξ weight·δ⁻¹∫_s‖·‖² = δ⁻¹∫_s ∫_ξ weight‖·‖²`.  This is the SAME
+  -- coeFn-of-`Lp`-valued-Bochner-integral obstruction isolated as `convL2_coeFn_ae` in
+  -- FrechetKolmogorov.lean (mathlib has no such lemma; the unbounded weight blocks the
+  -- L²-element route, and the raw `(s,ξ)` double integral lacks a global jointly-measurable coeFn
+  -- representative).  NOT an axiom, NOT a false blocker.
+  sorry -- ALLOW_SORRY: per-frequency coeFn-of-Lp-valued-time-integral interchange + weighted Tonelli (the `convL2_coeFn_ae`-class gap, weighted by `(2π)²‖ξ‖²`). Frontier shrunk this PR: F7 spectral exposure applied + per-component L²-element commute `fourier_proj_steklovAvg_eq` proved sorry-free above. NOT an axiom, NOT a false blocker.
 
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
