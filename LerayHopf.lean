@@ -49,6 +49,9 @@ import LerayHopf.EnergyEstimate
 import LerayHopf.TorusAxiomatic
 import LerayHopf.R3Axiomatic
 
+-- Concrete T³ convection form (issue #22: removes torus3_NSForms_exist axiom)
+import LerayHopf.TorusConvectionForm
+
 -- R3 files not covered by Core (sorry-carrying or axiom-dependent)
 import LerayHopf.R3.GalerkinScheme
 import LerayHopf.R3.SchwartzDivFreeBasis
