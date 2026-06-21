@@ -32,6 +32,13 @@ requires.
 
 namespace LerayHopf
 
+/-! The torus finite-dim Galerkin ODE solver lives in the nested `LerayHopf.Torus` namespace so its
+declaration names (`galerkinODE_vectorField`, `forwardGlobalSolution_exists`, …) do not collide with
+the ℝ³ sibling's identically-shaped names in `LerayHopf` (the ℝ³ versions carry a
+`SchwartzGalerkinBasis`/`R3NSForms` argument; the torus versions take `Torus3NSForms`).  The
+deliverable `Torus.galerkinSolutionData_torus` is consumed by the downstream capstone. -/
+namespace Torus
+
 open MeasureTheory Metric Set Filter Topology
 open scoped Topology InnerProductSpace NNReal
 
@@ -1277,5 +1284,7 @@ noncomputable def galerkinSolutionData_torus (F : Torus3NSForms) (ν : ℝ) (hν
   · -- Uniform regularity bound (E3 torus form).
     intro T hT
     exact galerkin_reg_bound_curve F ν hν n u₀ c hc0 hd hT
+
+end Torus
 
 end LerayHopf

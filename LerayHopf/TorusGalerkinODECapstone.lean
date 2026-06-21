@@ -45,7 +45,7 @@ This is the drop-in replacement for the `fun n => galerkin_ode_solution F ν hν
 inside `build_galerkin_package`: same type (`∀ n, GalerkinSolutionData F ν u₀ n`), no axiom. -/
 noncomputable def galSeq_of_torus (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma) :
     ∀ n, GalerkinSolutionData F ν u₀ n :=
-  fun n => galerkinSolutionData_torus F ν hν u₀ n
+  fun n => Torus.galerkinSolutionData_torus F ν hν u₀ n
 
 /-- **Full Galerkin compactness package (issue #24).**  Assembles the proof-carrying
 `GalerkinCompactnessPackageFull` by feeding the axiom-free `galSeq_of_torus` into the axiom-free
