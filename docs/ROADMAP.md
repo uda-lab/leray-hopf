@@ -6,9 +6,11 @@ debt**, never merged sibling files.
 
 ## Current capstone footprint
 
-`#print axioms exists_lerayHopf_r3` = 6 project axioms + 3 kernel. **Removed so far: 0.**
-Every milestone to date (R3-d, P5, P3, P2, ODE, D, E, B, FourierL2, forward-time fix, track 3)
-is proved *content* sitting beside the closure, conditional on isolated hypotheses — none wired in.
+`#print axioms exists_lerayHopf_r3_axiomatic` = 5 project axioms + 3 kernel.
+**Removed so far: 1** — `spatial_compactness_R3` (6→5, PR #35 / issue #2), wired in via the
+sorry-free Fréchet–Kolmogorov chain. The remaining milestones to date (R3-d, P5, P3, P2, ODE,
+D, E, FourierL2, forward-time fix, track 3) are proved *content* sitting beside the closure,
+conditional on isolated hypotheses — none yet wired in.
 
 ## Endpoint
 
@@ -20,7 +22,7 @@ requires discharging every pillar below — the full missing PDE sub-chapter of 
 | Axiom | Remaining pillar(s) to discharge | Proved-but-unwired chain |
 |---|---|---|
 | `r3GalerkinScheme_exists` | **P-α** `CurlSchwartzDense` (Helmholtz/curl density) | P5 `…_of_basis` + D `…_of_curlDense` |
-| `spatial_compactness_R3` | **P-β** Fréchet–Kolmogorov criterion + H¹⇒wtd-integrability | P3 reduction + B (T0b proved) |
+| ~~`spatial_compactness_R3`~~ **REMOVED (PR #35)** | **P-β** Fréchet–Kolmogorov criterion + H¹⇒wtd-integrability — DONE, now a theorem | P3 reduction + B (T0b proved), wired in |
 | `galerkin_ode_solution_R3` | concrete scheme (P-α) + concrete `F` (P-γ); ODE existence **DONE** (track 3) | ODE energy algebra + E Riesz + track 3 |
 | `r3_NSForms_exist` | **P-γ** `(u·∇)v` weak-derivative convection operator on Lp | R3-d Schwartz-level estimates |
 | `aubin_lions_R3` | **P-δ** Bochner–Sobolev-in-time / Aubin–Lions–Simon | P2 partial (spatial reuse + b-passage) |
@@ -70,7 +72,10 @@ only shared read-only base is `FourierL2`. **All four can run concurrently.** Th
   `GalerkinODESolve`, final gate, merge. (Removes no axiom yet, but pays the parked-kernel debt
   and makes the ODE solution unconditional over `schemeOfBasis B`.)
 - **C1: remove `r3GalerkinScheme_exists`** once Stream A lands → 6→5. (First real removal.)
-- **C2: remove `spatial_compactness_R3`** once Stream B lands → 5→4.
+- **C2: remove `spatial_compactness_R3`** — **DONE (PR #35 / issue #2)** → 6→5, via the
+  sorry-free Fréchet–Kolmogorov chain
+  (`localCompactness_R3_of_ballCompact ∘ localRellichInput_of_frechetKolmogorov ∘
+  frechetKolmogorov_holds`).
 - **C3: remove `r3_NSForms_exist`** once Stream C lands → 4→3; then, with C1+C3+track3 (concrete
   scheme + concrete F + ODE existence), **remove `galerkin_ode_solution_R3`** → 3→2.
 - **C4: remove `aubin_lions_R3` + `galerkin_limit_passage_R3`** once Stream D lands → 2→0.

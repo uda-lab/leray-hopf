@@ -13,19 +13,19 @@ open scoped FourierTransform
 
 **Milestone:** `rellich-balls`
 
-This file shrinks the analytic frontier carried by the `spatial_compactness_R3` axiom
-(via `LocalRellichInput.ballCompact`, `SpatialCompactness.lean:94-99`) WITHOUT removing
-the axiom.  It is an **HONEST PARTIAL milestone**: the full FK reduction and the
-gradient ⇒ modulus bridge are assembled here, but the assembly is reduced down to a
-*single* still-`sorry` Plancherel lemma (T0b), so the deliverable presently carries
-`sorryAx` through that one lemma.  Concretely it does two things:
+This file supplies the analytic frontier formerly carried by the `spatial_compactness_R3`
+axiom (via `LocalRellichInput.ballCompact`, `SpatialCompactness.lean:94-99`).  As of PR #35
+the FK chain is `sorry`-free, and `spatial_compactness_R3` is no longer an axiom — it is a
+proved `theorem` assembled from this file's deliverable (see `AxiomaticClosure.lean`).
+Concretely this file does two things:
 
 1. the Navier–Stokes-specific bridge "global spectral gradient bound ⇒ uniform
-   L²-translation modulus" — its PEELING/ASSEMBLY (T0c) is axiom-free, but it consumes
-   the Plancherel core T0b, which is still a marked `sorry` (see "Honest scope" below); and
+   L²-translation modulus" — its PEELING/ASSEMBLY (T0c) is axiom-free, and the Plancherel
+   core T0b it consumes is now fully proved; and
 2. the **reduction** of `LocalRellichInput` to the *standard, domain-agnostic*
    Fréchet–Kolmogorov (Riesz) L²-precompactness criterion `FrechetKolmogorovInput` —
-   fully assembled (T1b + T2), axiom-free except for what it inherits from T0b via T0c.
+   fully assembled (T1b + T2), `sorry`-free; only `FrechetKolmogorovInput` is assumed
+   (as an explicit hypothesis, not an axiom).
 
 `FrechetKolmogorovInput` is the **global-representative** precompactness criterion: each
 family member `f : L2ballR3 R` carries a global representative `rep f : L2VF_R3` with
@@ -39,68 +39,64 @@ Plancherel gradient ⇒ global-translation-modulus estimate), NOT in any bespoke
 plus a separate ball/global bridge lemma.  The deliverable feeds T0c's global modulus directly
 into the criterion (with `rep := the admissible global field` and `hrep` from `restrictToBall`).
 
-## Honest scope (no overclaim) — PARTIAL milestone
+## Honest scope (no overclaim) — `sorry`-free FK chain
 
-This file does **NOT** prove Rellich–Kondrachov and does **NOT** remove any axiom.  It
-substantiates the FK reduction and the gradient ⇒ modulus bridge DOWN TO a single
-Plancherel-modulation lemma.  The status of each piece, with no rounding up:
+This file does **NOT** prove Rellich–Kondrachov in the abstract (that is the assumed
+`FrechetKolmogorovInput`); it substantiates the FK reduction and the gradient ⇒ modulus
+bridge, `sorry`-free.  The status of each piece, with no rounding up:
 
 **PROVED (axiom-free; no `sorryAx` on their own statements):**
 - T0a `translate_L2VF` — L² translation `τ_h w (x) = w (x − h)` (pure Lp plumbing).
 - T0c `norm_translate_sub_le_of_viscousBound` — the gradient ⇒ uniform-modulus PEELING
-  step (square-root + sign bookkeeping).  Its *body* is axiom-free; it CONSUMES T0b's
-  statement, so its `#print axioms` inherits T0b's `sorryAx` until T0b is closed.
+  step (square-root + sign bookkeeping).  Its *body* is axiom-free; it consumes T0b's
+  statement, which is now fully proved.
 - T1b `admissible_family_uniform_bound` — the restricted family is uniformly `‖·‖ ≤ M`.
 
 **ASSEMBLED (deliverable, fully wired, axiom-free assembly):**
 - T2 `localRellichInput_of_frechetKolmogorov` — the conditional constructor.  Its
   assembly logic (build `rep`/`S`, feed T0c's modulus + T1b's bound into the FK
-  criterion) is complete and axiom-free; its ONLY gap is the T0b lemma it consumes
-  transitively through T0c, so it currently carries `sorryAx` via T0b alone.
+  criterion) is complete and `sorry`-free.
 
-**PROVED (now closed via the shared Fourier–L² foundation `FourierL2.lean`):**
+**PROVED (closed via the shared Fourier–L² foundation `FourierL2.lean`):**
 - T0b `normSq_translate_sub_le_viscousFormSq` — the Plancherel translation-modulation
   estimate `‖τ_h w − w‖² ≤ ‖h‖²·viscousFormSq_R3 1 w`.  The Lp-level Fourier modulation
-  identity that previously blocked it (`𝓕(τ_h f) = phase · 𝓕 f`) is now supplied by
+  identity that previously blocked it (`𝓕(τ_h f) = phase · 𝓕 f`) is supplied by
   `FourierL2` (F5), together with the Plancherel weight bookkeeping (F7), the Plancherel
   core (F8), and the pointwise phase estimate (F9).  The component decomposition (step (a))
   is `componentC_translate_ae` + the Euclidean norm decomposition.  The proof body is
-  axiom-free EXCEPT for the one residual analytic input below.
+  axiom-free, including the integrability input below.
 
-**OPEN frontier (the SOLE marked `sorry`):**
+**PROVED (the former frontier, now discharged):**
 - `integrable_viscous_integrand_of_memH1` — the H¹ ⇒ concrete weighted-L²
   integrability of the L²-Fourier transform.  `memH1VF_R3 w` (= `MemSobolev 1 2` on each
-  complex component) must imply `Integrable (fun ξ ↦ (2π)²‖ξ‖²‖(𝓕 cⱼ) ξ‖²)`.  This is a
-  separate frontier from the Fourier-modulation foundation: it needs an a.e.
-  characterization of `TemperedDistribution.smulLeftCLM` for the UNBOUNDED weight
-  `(1+‖ξ‖²)^(1/2)` on an `Lp`-coerced distribution (mathlib's
-  `Lp.toTemperedDistribution_smul_eq` only handles `MemLp`-bounded multipliers).  T0b
-  consumes ONLY this lemma; everything else of T0b is proved.
+  complex component) implies `Integrable (fun ξ ↦ (2π)²‖ξ‖²‖(𝓕 cⱼ) ξ‖²)`.  This is now
+  fully proved here (via the self-contained Bessel-weight machinery and
+  `memSobolev_iff_exists_smulLeftCLM_fourier`); it was previously the sole marked `sorry`
+  in the file and is no longer.
 
 **Isolated hypothesis (mathlib-absent, a hypothesis is not an axiom):**
 - `FrechetKolmogorovInput` — the standard Fréchet–Kolmogorov (Riesz) L²-precompactness
   criterion that mathlib still lacks, carried as an explicit hypothesis structure exactly
   as P3's `LocalRellichInput` and R3-d's `hdiv`.
 
-Net: this file substantiates the FK reduction + the gradient ⇒ modulus bridge down to the
-single Plancherel-modulation lemma T0b; everything else around T0b — translation plumbing,
-the modulus peeling, the uniform bound, and the assembly into a `LocalRellichInput` — is
-proved here.
+Net: this file substantiates the FK reduction + the gradient ⇒ modulus bridge `sorry`-free —
+translation plumbing, the Plancherel core T0b, the modulus peeling, the uniform bound, and
+the assembly into a `LocalRellichInput` are all proved here.
 
 The deliverable is the conditional constructor
 `localRellichInput_of_frechetKolmogorov : FrechetKolmogorovInput → LocalRellichInput`,
-whose conclusion reproduces `LocalRellichInput` verbatim.  Closing T0b (the unbuilt mathlib
-Fourier-modulation development), discharging `FrechetKolmogorovInput` itself (a future
-mathlib FK development), and rewriting `spatial_compactness_R3` from `axiom` to `theorem`
-are separate later capstones; this file touches NEITHER `AxiomaticClosure.lean` NOR the root
-`LerayHopf.lean` (deferred wiring).
+whose conclusion reproduces `LocalRellichInput` verbatim.  As of PR #35,
+`spatial_compactness_R3` has been rewritten from `axiom` to a proved `theorem` (in
+`AxiomaticClosure.lean`, assembled from this deliverable via the FK chain); the only
+remaining gap on this path is discharging `FrechetKolmogorovInput` itself (a future mathlib
+FK development), carried as an explicit hypothesis.
 
 ## Architecture (standalone sibling)
 
 This file imports `R3.SpatialCompactness` (reusing `LocalRellichInput`, `L2ballR3`,
 `restrictToBall`), but NOT `R3.AxiomaticClosure`.  Its `#print axioms` for the deliverable
-stays clean of the NS axioms; it does, however, currently report `sorryAx` (and only that)
-because of the single open lemma T0b — it carries NO `axiom`/`opaque`/`constant`.
+stays clean of the NS axioms and is `sorryAx`-free — it carries NO
+`sorry`/`axiom`/`opaque`/`constant`.
 
 DAG position:
 ```
@@ -113,26 +109,25 @@ R3/Regularity.lean   (L2VF_R3, L2Sigma_R3, memH1VF_R3, viscousFormSq_R3, Domain3
 
 - `translate_L2VF`                              : T0a — L² translation `τ_h w (x) = w (x − h)`
 - `FrechetKolmogorovInput`                      : isolated frontier (abstract FK precompactness)
-- `integrable_viscous_integrand_of_memH1`       : T0b integrability input [OPEN: sole marked `sorry`]
-- `normSq_translate_sub_le_viscousFormSq`       : T0b — Plancherel translation-modulus core [PROVED via FourierL2 F5/F7/F8/F9, modulo the integrability input]
+- `integrable_viscous_integrand_of_memH1`       : T0b integrability input [PROVED]
+- `normSq_translate_sub_le_viscousFormSq`       : T0b — Plancherel translation-modulus core [PROVED via FourierL2 F5/F7/F8/F9]
 - `norm_translate_sub_le_of_viscousBound`       : T0c — uniform modulus from the gradient bound
 - `admissible_family_uniform_bound`             : T1b — uniform L²-bound of the restricted family
 - `localRellichInput_of_frechetKolmogorov`      : T2 — DELIVERABLE (conditional `LocalRellichInput`)
 
 ## Assumptions
 
-Zero new `axiom`/`opaque`/`constant`.  Two distinct kinds of gap are carried, neither an
+Zero new `axiom`/`opaque`/`constant`, and zero `sorry`.  One gap is carried, which is not an
 axiom:
 
 1. **Hypothesis** `FrechetKolmogorovInput` — the mathlib-absent Fréchet–Kolmogorov
    precompactness criterion, carried as an explicit hypothesis structure exactly as
    P3's `LocalRellichInput` and R3-d's `hdiv`.  A hypothesis is not an axiom.
-2. **Marked `sorry`** on `integrable_viscous_integrand_of_memH1` — the H¹ ⇒ concrete
-   weighted-L² integrability of the L²-Fourier transform (a separate analytic frontier
-   needing an a.e. characterization of an UNBOUNDED `smulLeftCLM` multiplier, mathlib-absent).
-   T0b `normSq_translate_sub_le_viscousFormSq` is otherwise fully proved via the
-   `FourierL2` foundation (F5/F7/F8/F9) and consumes ONLY this lemma.  This is the SOLE
-   `sorry` in the file and the ONLY source of `sorryAx` in the deliverable.
+
+The former marked `sorry` on `integrable_viscous_integrand_of_memH1` (the H¹ ⇒ concrete
+weighted-L² integrability of the L²-Fourier transform) is now fully proved here via the
+self-contained Bessel-weight machinery and `memSobolev_iff_exists_smulLeftCLM_fourier`; the
+FK chain is `sorry`-free, so the deliverable carries no `sorryAx`.
 -/
 
 /-! ### Tier 0 — translation plumbing -/
@@ -169,7 +164,7 @@ it is the abstract compactness *criterion*, not the H¹↪↪L² embedding.
 
 The implication direction (modulus ⇒ precompact) is exactly the content mathlib lacks; the
 modulus *hypothesis* itself is supplied downstream from the gradient bound (T0c) — whose
-peeling is axiom-free but inherits T0b's open `sorry`.
+peeling is axiom-free and consumes the now-proved Plancherel core T0b.
 
 **Global mass bound `bddGlobal` (Codex Gate round 3 fix).**  Beyond the single-radius ball
 mass bound `∀ f ∈ S, ‖f‖ ≤ C` (= `‖restrictToBall R (rep f)‖`), the criterion ALSO demands a
@@ -600,11 +595,10 @@ criterion.**
 
 Constructs a `LocalRellichInput` (per-ball precompactness of the H¹-bounded div-free family)
 from `FrechetKolmogorovInput`.  The Navier–Stokes-specific content (gradient bound ⇒ uniform
-translation modulus, via Plancherel on `viscousFormSq_R3`) is ASSEMBLED axiom-free here, but
-its Plancherel core T0b is still a marked `sorry`, so this deliverable currently carries
-`sorryAx` through T0b alone; only the domain-agnostic FK precompactness criterion is assumed
-as a hypothesis.  The conclusion reproduces `LocalRellichInput` verbatim (no weakening;
-Hard rule 3). -/
+translation modulus, via Plancherel on `viscousFormSq_R3`) is ASSEMBLED axiom-free here, and
+its Plancherel core T0b is fully proved, so this deliverable is `sorry`-free; only the
+domain-agnostic FK precompactness criterion is assumed as a hypothesis.  The conclusion
+reproduces `LocalRellichInput` verbatim (no weakening; Hard rule 3). -/
 theorem localRellichInput_of_frechetKolmogorov (FK : FrechetKolmogorovInput) :
     LocalRellichInput := by
   classical

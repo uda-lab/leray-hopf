@@ -131,19 +131,25 @@ projection, `memH1VF_R3` via `TemperedDistribution.MemSobolev`, and `stokesTestP
 `viscousFormSq_R3` via the **L² Fourier isometry** `Lp.fourierTransformₗᵢ`, plus the genuine
 convection integral `convIntegralSchwartz`.
 
-**The 6 axioms.** Exactly the T³ four (`r3_NSForms_exist`, `galerkin_ode_solution_R3`,
-`aubin_lions_R3`, `galerkin_limit_passage_R3`) **plus the two pieces T³ proved but ℝ³ cannot**:
-`r3GalerkinScheme_exists` (the approximation projector — no finite-dim Fourier truncation on ℝ³) and
-`spatial_compactness_R3` (**local** Rellich `H¹(B_R)↪↪L²(B_R)` — global Rellich *fails* on the
-unbounded domain). That +2 is the honest cost of the whole space.
+**The 5 axioms** (was 6). Exactly the T³ four (`r3_NSForms_exist`, `galerkin_ode_solution_R3`,
+`aubin_lions_R3`, `galerkin_limit_passage_R3`) **plus the one piece T³ proved but ℝ³ cannot
+construct concretely**: `r3GalerkinScheme_exists` (the approximation projector — no finite-dim
+Fourier truncation on ℝ³). The former sixth, `spatial_compactness_R3` (**local** Rellich
+`H¹(B_R)↪↪L²(B_R)` — global Rellich *fails* on the unbounded domain), has now been **proved on ℝ³
+and removed** (PR #35 / issue #2): it is a `theorem`, discharged via the sorry-free
+Fréchet–Kolmogorov chain
+(`localCompactness_R3_of_ballCompact ∘ localRellichInput_of_frechetKolmogorov ∘
+frechetKolmogorov_holds`). That leaves a +1 honest cost of the whole space.
 
 **Integrity.** Codex `--effort xhigh` axiom audit → approve in **2 rounds** (the 8-round T³ lessons
 applied preemptively): it forced (i) a `range_schwartz` field to exclude the identity Galerkin scheme,
 and (ii) reformulating compactness from *global* (false without tightness) to *local-on-balls* (true).
-`#print axioms exists_lerayHopf_r3` = the 6 axioms + `propext`/`Choice`/`Quot` (no `sorryAx`).
+`#print axioms exists_lerayHopf_r3_axiomatic` = the 5 axioms + `propext`/`Choice`/`Quot`
+(no `sorryAx`).
 
-This is the project's headline result: **whole-space ℝ³ Leray–Hopf weak existence, closed modulo six
-true, minimal, literature-referenced, Codex-audited axioms**, on a framework whose abstract core is
+This is the project's headline result: **whole-space ℝ³ Leray–Hopf weak existence, closed modulo
+five true, minimal, literature-referenced, Codex-audited axioms** (down from six — the first axiom
+removal, `spatial_compactness_R3`, landed in PR #35), on a framework whose abstract core is
 shared with the T³ proof.
 
 ## Assessment vs forecast
