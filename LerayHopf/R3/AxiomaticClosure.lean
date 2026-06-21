@@ -1,5 +1,8 @@
 import LerayHopf.EvolutionTriple
 import LerayHopf.R3.Regularity
+import LerayHopf.R3.FrechetKolmogorov  -- frechetKolmogorov_holds : FrechetKolmogorovInput (sorry-free, kernel-axioms only)
+import LerayHopf.R3.RellichBall        -- localRellichInput_of_frechetKolmogorov : FrechetKolmogorovInput → LocalRellichInput
+import LerayHopf.R3.SpatialCompactness -- localCompactness_R3_of_ballCompact : LocalRellichInput → (spatial_compactness_R3 conclusion)
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 
 open MeasureTheory Filter Topology LineDeriv
@@ -15,15 +18,18 @@ The T³ 8-round audit lessons are baked in preemptively.
 
 ## Architecture
 
-Six axioms are added in this file.  Two extra (vs. T³) are exactly the two pieces
-T³ PROVED but ℝ³ cannot:
+Five axioms are added in this file.  AX-SC (`spatial_compactness_R3`) is NO LONGER assumed:
+it is now a THEOREM, discharged (issue #2) via the sorry-free Fréchet–Kolmogorov chain
+(`localCompactness_R3_of_ballCompact ∘ localRellichInput_of_frechetKolmogorov ∘
+frechetKolmogorov_holds`).  The remaining single extra (vs. T³) is the piece T³ PROVED
+but ℝ³ cannot supply concretely:
 
 - **AX-G `r3GalerkinScheme_exists`** — the approximation-projection family
   (replaces T³'s proved `velocityProjection_n`).
-- **AX-SC `spatial_compactness_R3`** — spatial compactness LOCAL form
-  (local Rellich H¹(B_R)↪↪L²(B_R); replaces T³'s proved `rellich_L2Sigma`;
-  Rellich FAILS globally on ℝ³ but LOCAL convergence on every ball is TRUE without
-  tightness).
+
+The former AX-SC `spatial_compactness_R3` (local Rellich H¹(B_R)↪↪L²(B_R); replaces T³'s
+proved `rellich_L2Sigma`; Rellich FAILS globally on ℝ³ but LOCAL convergence on every ball
+is TRUE without tightness) is now PROVED here, not assumed.
 
 The remaining four axioms mirror the T³ ones:
 
@@ -56,7 +62,7 @@ calibration constant, and does not vanish on all Schwartz triples.
 - `r3Evolution`                      : `DissipativeEvolution` built from `R3GalerkinScheme` + `R3NSForms`
 - `GalerkinSolutionData_R3`          : structure for the n-th Galerkin ODE solution on ℝ³
 - `galerkin_ode_solution_R3`         : axiom — Picard–Lindelöf on finite-dim approximation space
-- `spatial_compactness_R3`           : axiom — ℝ³ spatial compactness LOCAL (ball-restricted, no tightness)
+- `spatial_compactness_R3`           : THEOREM (issue #2) — ℝ³ spatial compactness LOCAL (ball-restricted, no tightness); proved via the FK chain, no axiom
 - `AubinLionsPackage_R3`             : structure carrying the compactness subsequence
 - `aubin_lions_R3`                   : axiom — Aubin–Lions with spatial half = `spatial_compactness_R3`
 - `galerkin_limit_passage_R3`        : axiom — limit passage to weak NS solution
@@ -68,7 +74,9 @@ calibration constant, and does not vanish on all Schwartz triples.
 
 ## Assumptions
 
-Six axioms are added in this file (names below with justifications):
+Five axioms are added in this file (names below with justifications).  AX-SC
+`spatial_compactness_R3` was the sixth and is now DISCHARGED (issue #2) — it is a theorem
+proved via the Fréchet–Kolmogorov chain, not an assumption (see item 4 below).
 
 1. `r3GalerkinScheme_exists` — existence of a Galerkin approximation-projection family
    on `L²_σ(ℝ³)` with smooth (Schwartz) range (e.g. frequency-ball truncation or smooth
@@ -96,10 +104,12 @@ Six axioms are added in this file (names below with justifications):
    subspace + uniform energy and regularity bounds. TRUE; blocked by missing Galerkin
    ODE solver and missing concrete `(u·∇)v`. Temam III.3, Theorem 3.1.
 
-4. `spatial_compactness_R3` — ℝ³ LOCAL spatial compactness = local Rellich
-   H¹(B_R)↪↪L²(B_R). Concludes convergence on every ball B_R (NOT global strong L²(ℝ³));
-   no tightness premise required. TRUE; blocked by local Rellich + ball-restricted
-   integrals not in mathlib. Leray 1934; Lemarié-Rieusset §6.
+4. `spatial_compactness_R3` — NO LONGER AN AXIOM (DISCHARGED, issue #2). ℝ³ LOCAL spatial
+   compactness = local Rellich H¹(B_R)↪↪L²(B_R). Concludes convergence on every ball B_R
+   (NOT global strong L²(ℝ³)); no tightness premise required. Now PROVED via
+   `localCompactness_R3_of_ballCompact ∘ localRellichInput_of_frechetKolmogorov ∘
+   frechetKolmogorov_holds` (the sorry-free Fréchet–Kolmogorov chain; `#print axioms`
+   shows kernel axioms only). Leray 1934; Lemarié-Rieusset §6.
 
 5. `aubin_lions_R3` — Aubin–Lions time compactness; spatial half supplied as the
    LOCAL `spatial_compactness_R3` hypothesis (ball-restricted convergence, no tightness).
@@ -378,9 +388,10 @@ axiom galerkin_ode_solution_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) --
     (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma_R3) (n : ℕ) :
     GalerkinSolutionData_R3 𝔊 F ν u₀ n
 
-/-! ### Axiom AX-SC: Spatial compactness on ℝ³ (LOCAL — no tightness) -/
+/-! ### AX-SC: Spatial compactness on ℝ³ (LOCAL — no tightness) — now a THEOREM -/
 
-/-- **Axiom AX-SC:** LOCAL spatial compactness on ℝ³ — the ℝ³ replacement for `rellich_L2Sigma`.
+/-- **AX-SC (now a theorem):** LOCAL spatial compactness on ℝ³ — the ℝ³ replacement for
+`rellich_L2Sigma`.
 
 Rellich's theorem FAILS globally on ℝ³, but the LOCAL version holds: given uniform L²
 and H¹ bounds, there is a subsequence `z (ψ n)` and a limit `g ∈ L²_σ(ℝ³)` such that
@@ -388,8 +399,15 @@ and H¹ bounds, there is a subsequence `z (ψ n)` and a limit `g ∈ L²_σ(ℝ�
 
 No tightness hypothesis is needed: local Rellich `H¹(B_R) ↪↪ L²(B_R)` (compact embedding)
 is unconditional; a diagonal argument over growing balls extracts the subsequence.
-This is the genuine Leray 1934 construction. -/
-axiom spatial_compactness_R3 : -- ALLOW_AXIOM: ℝ³ LOCAL spatial compactness = local Rellich H¹(B_R)↪↪L²(B_R); TRUE without tightness; replaces the proved T³ rellich_L2Sigma; Leray 1934; Lemarié-Rieusset §6
+This is the genuine Leray 1934 construction.
+
+**DISCHARGED (issue #2).** Formerly the `axiom spatial_compactness_R3`, this is now PROVED
+(no new axiom; kernel axioms only) by composing the sorry-free Fréchet–Kolmogorov chain:
+`localCompactness_R3_of_ballCompact (localRellichInput_of_frechetKolmogorov frechetKolmogorov_holds)`.
+The statement is byte-identical to the former axiom; consumers (`aubin_lions_R3` spatial
+slot, `build_galerkin_package_R3`) are unchanged.  Verified via `#print axioms`: the chain
+depends only on `propext`, `Classical.choice`, `Quot.sound` (no `sorryAx`). -/
+theorem spatial_compactness_R3 :
     ∀ (M : ℝ) (z : ℕ → L2VF_R3),
     (∀ n, z n ∈ L2Sigma_R3) →
     (∀ n, memH1VF_R3 (z n)) →
@@ -400,7 +418,9 @@ axiom spatial_compactness_R3 : -- ALLOW_AXIOM: ℝ³ LOCAL spatial compactness =
         (fun n => ∫ x in Metric.closedBall (0 : Domain3) R,
           ‖((z (ψ n)) x : EuclideanSpace ℝ (Fin 3)) - (g x : EuclideanSpace ℝ (Fin 3))‖ ^ 2
           ∂(volume : Measure Domain3))
-        Filter.atTop (nhds 0)
+        Filter.atTop (nhds 0) :=
+  localCompactness_R3_of_ballCompact
+    (localRellichInput_of_frechetKolmogorov frechetKolmogorov_holds)
 
 /-! ### AX-2: Aubin–Lions compactness package on ℝ³ -/
 
