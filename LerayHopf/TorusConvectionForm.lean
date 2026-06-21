@@ -9,48 +9,42 @@ open MeasureTheory Filter Topology Complex
 
 ## What this file does and does not do
 
-This file proves **all six trilinearity lemmas** for `galerkinConvection n` (finite sums
-over `fourierBox n`) and proves the key helper `coeff_zero_outside_box` (Fourier support
-of `Vₙ`-elements).
+This file proves the **trilinearity** (additivity + ℝ-homogeneity in each slot) and an
+explicit **bilinear L² bound** for `galerkinConvection n` (finite sums over `fourierBox n`),
+plus the helper `coeff_zero_outside_box` (Fourier support of `Vₙ`-elements).
 
 It does NOT build a total `b : L2Sigma → L2Sigma → L2Sigma → ℝ` extending
-`galerkinConvection` to all of `L²_σ`, because:
+`galerkinConvection` to all of `L²_σ`: a total trilinear form extending the box-truncated
+form is the genuine Mathlib-absent operator gap (weak `(u·∇)v` on Lp), out of scope here.
 
-1. A naive tsum extension `∑' k ∑' l ...` places the derivative weight `(2πi lₐ)` on the
-   raw-L² `v̂(l)` slot.  For general `v ∈ L²_σ`, the product `|lₐ| · |v̂(l)|` need not be
-   ℓ²-summable (that requires `v ∈ H¹`).  Young's inequality gives ℓ²∗ℓ²→ℓ^∞, NOT ℓ¹,
-   so the double series can diverge.  The `tsum` would return junk (0), and trilinearity
-   would not hold.
+## The genuine remaining gaps
 
-2. A "dif on IsGalerkinTest" definition breaks antisymmetry: `b_torus u v w` (test=w)
-   and `b_torus u w v` (test=v) have mismatched logic when only one of v,w is a test fn.
+- **Antisymmetry** `galerkinConvection n u v w = -galerkinConvection n u w v` is the standard
+  Galerkin convection antisymmetry — but it holds only when the **test slots `v, w` lie in
+  `Vₙ`** (finite Fourier support), not for arbitrary `v, w : L2VF`.  The box truncation
+  `box × box` is not invariant under the involution `(k,l) ↦ (k,-(k+l))` that the IBP
+  reindexing needs (`neg_mem_fourierBox` only covers `k ↦ -k`); finite support of `u` alone
+  does NOT rescue it.  See `galerkinConvection_antisymm` for the full analysis: as currently
+  stated (arbitrary `v, w`) it is FALSE, and discharging it needs a signature change
+  (add `velocityProjection_n n v = v`, `velocityProjection_n n w = w` — owner: lean-coder).
+- **Extension to all of L²_σ**: the total `(u·∇)v` operator on `Lp` (Mathlib-absent).
 
-## The genuine remaining gap
+Until antisymmetry (restated over `Vₙ`) is proved and the extension is built, the axiom
+`torus3_NSForms_exist` deliberately remains in `AxiomaticClosure.lean`.
 
-The full `Torus3NSForms` witness requires:
-- **Antisymmetry** `galerkinConvection n u v w = -galerkinConvection n u w v` for `u ∈ Vₙ`
-  (finite-sum torus IBP: index bijection `l ↦ -(k+l)` + `DivFreeL2 u` cancellation).
-  This is an honest algebraic finite-sum computation in Lean — no convergence needed.
-- **Extension to all of L²_σ**: a total trilinear form extending `galerkinConvection` is
-  needed for the remaining fields over arbitrary L²_σ arguments; this is the genuine
-  Mathlib-absent operator gap (weak `(u·∇)v` on Lp).
-
-Until `galerkinConvection n`'s antisymmetry is proved and the extension is built,
-the axiom `torus3_NSForms_exist` deliberately remains in `AxiomaticClosure.lean`.
-
-## Declarations added (all sorry-free except two)
+## Declarations added
 
 ### Sorry-free
 - `coeff_zero_outside_box` — Fourier coeff of `Vₙ` elements vanishes outside `fourierBox n`
-- `galerkinConvection_add_1/2/3` — additivity in each slot (Finset.sum_add_distrib)
-- `galerkinConvection_smul_1/2/3` — ℝ-homogeneity in each slot (Finset.mul_sum + cast)
+- `norm_mFourierCoeff3_le` — single Fourier coefficient ≤ L² norm (Bessel/`lp` bound)
+- `galerkinConvection_add_1/2/3` — additivity in each slot (`Finset.sum_add_distrib`)
+- `galerkinConvection_smul_1/2/3` — ℝ-homogeneity in each slot (`Finset.mul_sum` + cast)
+- `galerkinConvection_bound` — explicit bilinear L² bound (triangle inequality + Bessel +
+  operator-norm bound; no convergence, finite sums only)
 
-### Honest sorries (2)
-- `galerkinConvection_antisymm` — antisymmetry of `galerkinConvection n` for `u ∈ Vₙ`;
-  requires Finset.sum_bij with bijection `l ↦ -(k+l)` on `fourierBox n` + DivFreeL2;
-  no convergence needed, purely algebraic.
-- `galerkinConvection_bound` — Cauchy–Schwarz bound for fixed-`n` sum; needs Parseval
-  (available in this project as `L2C_norm_sq_eq_tsum_coeff_sq`) + finite CS inequality.
+### Honest sorry (1)
+- `galerkinConvection_antisymm` — FALSE as stated (arbitrary `v, w`); see its docstring.
+  Requires a signature change to `v, w ∈ Vₙ` before it can be proved.
 
 ## Axiom status
 
@@ -74,7 +68,20 @@ private lemma mFourierCoeff3_projComponentC_smul (j : Fin 3) (c : ℝ) (u : L2VF
     (k : Fin 3 → ℤ) :
     mFourierCoeff3 (L2VF_projComponentC j (c • u)) k =
       (c : ℂ) * mFourierCoeff3 (L2VF_projComponentC j u) k := by
-  simp [mFourierCoeff3, map_smul, smul_eq_mul]
+  rw [map_smul, mFourierCoeff3, mFourierCoeff3]
+  -- The ℝ-smul on `L2C` is the ℂ-smul by `(c : ℂ)` (scalar tower); then `repr` is
+  -- ℂ-linear so `map_smul` pulls it out; `lp.coeFn_smul` + `Pi.smul_apply` + `smul_eq_mul` finish.
+  rw [RCLike.real_smul_eq_coe_smul (K := ℂ), map_smul, lp.coeFn_smul, Pi.smul_apply,
+    smul_eq_mul]
+  rfl
+
+/-- A single Fourier coefficient is bounded by the `L²` norm (Bessel/`lp` bound):
+`‖û(k)‖ ≤ ‖f‖`. -/
+private lemma norm_mFourierCoeff3_le (f : L2C) (k : Fin 3 → ℤ) :
+    ‖mFourierCoeff3 f k‖ ≤ ‖f‖ := by
+  have h := lp.norm_apply_le_norm (by norm_num : (2 : ENNReal) ≠ 0)
+    (torus3_mFourierBasis.repr f) k
+  rwa [torus3_mFourierBasis.repr.norm_map f] at h
 
 /-! ### Galerkin support: coefficients vanish outside the box -/
 
@@ -90,7 +97,11 @@ lemma coeff_zero_outside_box (n : ℕ) (u : L2VF)
     mFourierCoeff3 (L2VF_projComponentC j u) k = 0 := by
   have hcomm := velocityProjection_n_component_comm n u j
   rw [hu] at hcomm
-  rw [← hcomm, fourierProjection_n_mFourierCoeff, if_neg hk]
+  -- Rewrite the coefficient's argument to the `restrictScalars`-wrapped projection (`conv` so
+  -- the forward rewrite fires exactly once on the argument inside `mFourierCoeff3`), unfold the
+  -- `restrictScalars` coe, then `fourierProjection_n_mFourierCoeff` + `if_neg`.
+  conv_lhs => rw [hcomm]
+  rw [ContinuousLinearMap.coe_restrictScalars', fourierProjection_n_mFourierCoeff, if_neg hk]
 
 /-! ### Trilinearity of `galerkinConvection n` — all sorry-free (finite Finset sums) -/
 
@@ -106,45 +117,17 @@ theorem galerkinConvection_add_2 (n : ℕ) (u v v' w : L2VF) :
     galerkinConvection n u (v + v') w =
       galerkinConvection n u v w + galerkinConvection n u v' w := by
   simp only [galerkinConvection, mFourierCoeff3_projComponentC_add]
-  -- After simp: summand has `(v̂_i(l) + v̂'_i(l)) * ŵ_i(-(k+l))` = `v̂*ŵ + v̂'*ŵ`.
-  conv_lhs =>
-    arg 1; ext i; arg 1; ext a; arg 2; ext k; arg 2; ext l
-    rw [show mFourierCoeff3 (L2VF_projComponentC a u) k *
-        ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-          ((mFourierCoeff3 (L2VF_projComponentC i v) l +
-            mFourierCoeff3 (L2VF_projComponentC i v') l) *
-           mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))) =
-        mFourierCoeff3 (L2VF_projComponentC a u) k *
-          ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-            (mFourierCoeff3 (L2VF_projComponentC i v) l *
-             mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))) +
-        mFourierCoeff3 (L2VF_projComponentC a u) k *
-          ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-            (mFourierCoeff3 (L2VF_projComponentC i v') l *
-             mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))) by ring]
-  simp only [Complex.add_re, Finset.sum_add_distrib]
+  -- Distribute `(v̂_i(l) + v̂'_i(l)) * ŵ_i(-(k+l))` and pull the `+` out through every sum
+  -- level, then split the real part of the complex sum.
+  simp only [add_mul, mul_add, Finset.sum_add_distrib, Complex.add_re]
 
 /-- `galerkinConvection n` is additive in the third slot. -/
 theorem galerkinConvection_add_3 (n : ℕ) (u v w w' : L2VF) :
     galerkinConvection n u v (w + w') =
       galerkinConvection n u v w + galerkinConvection n u v w' := by
   simp only [galerkinConvection, mFourierCoeff3_projComponentC_add]
-  conv_lhs =>
-    arg 1; ext i; arg 1; ext a; arg 2; ext k; arg 2; ext l
-    rw [show mFourierCoeff3 (L2VF_projComponentC a u) k *
-        ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-          (mFourierCoeff3 (L2VF_projComponentC i v) l *
-           (mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)) +
-            mFourierCoeff3 (L2VF_projComponentC i w') (-(k + l))))) =
-        mFourierCoeff3 (L2VF_projComponentC a u) k *
-          ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-            (mFourierCoeff3 (L2VF_projComponentC i v) l *
-             mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))) +
-        mFourierCoeff3 (L2VF_projComponentC a u) k *
-          ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-            (mFourierCoeff3 (L2VF_projComponentC i v) l *
-             mFourierCoeff3 (L2VF_projComponentC i w') (-(k + l)))) by ring]
-  simp only [Complex.add_re, Finset.sum_add_distrib]
+  -- Distribute `ŵ_i(-(k+l)) + ŵ'_i(-(k+l))` and pull the `+` out through every sum level.
+  simp only [mul_add, Finset.sum_add_distrib, Complex.add_re]
 
 /-- Key: `Re[(c : ℂ) * z] = c * Re[z]` for `c : ℝ`. -/
 private lemma re_ofReal_mul (c : ℝ) (z : ℂ) : ((c : ℂ) * z).re = c * z.re := by
@@ -159,126 +142,166 @@ entire product since it's the first factor), so `Re[(c : ℂ) * z] = c * Re[z]` 
 theorem galerkinConvection_smul_1 (n : ℕ) (c : ℝ) (u v w : L2VF) :
     galerkinConvection n (c • u) v w = c * galerkinConvection n u v w := by
   simp only [galerkinConvection, mFourierCoeff3_projComponentC_smul]
-  -- After simp: each summand is `Re[(c : ℂ) * û_a(k) * (...)]`
-  -- = `Re[(c : ℂ) * (û_a(k) * (...))]` = `c * Re[û_a(k) * (...)]`
-  conv_lhs =>
-    arg 1; ext i; arg 1; ext a; arg 2; ext k; arg 2; ext l
-    rw [show ((c : ℂ) * mFourierCoeff3 (L2VF_projComponentC a u) k) *
-        ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-          (mFourierCoeff3 (L2VF_projComponentC i v) l *
-           mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))) =
-        (c : ℂ) * (mFourierCoeff3 (L2VF_projComponentC a u) k *
+  -- Factor `(c : ℂ)` to the front of every summand (`Finset.sum_congr` + `ring`), pull it
+  -- out of all four sums (`← Finset.mul_sum`), then `Re[(c:ℂ)·z] = c·Re[z]`.
+  rw [show (∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n, ∑ l ∈ fourierBox n,
+        ((c : ℂ) * mFourierCoeff3 (L2VF_projComponentC a u) k) *
           ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-          (mFourierCoeff3 (L2VF_projComponentC i v) l *
-           mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l))))) by ring,
+            (mFourierCoeff3 (L2VF_projComponentC i v) l *
+             mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l))))) =
+        (c : ℂ) * ∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n, ∑ l ∈ fourierBox n,
+          mFourierCoeff3 (L2VF_projComponentC a u) k *
+            ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
+              (mFourierCoeff3 (L2VF_projComponentC i v) l *
+               mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))) from ?_,
       re_ofReal_mul]
   simp only [Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun a _ =>
+    Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => by ring
 
 /-- `galerkinConvection n` is ℝ-homogeneous in the second slot. -/
 theorem galerkinConvection_smul_2 (n : ℕ) (c : ℝ) (u v w : L2VF) :
     galerkinConvection n u (c • v) w = c * galerkinConvection n u v w := by
   simp only [galerkinConvection, mFourierCoeff3_projComponentC_smul]
-  conv_lhs =>
-    arg 1; ext i; arg 1; ext a; arg 2; ext k; arg 2; ext l
-    rw [show mFourierCoeff3 (L2VF_projComponentC a u) k *
-        ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-          ((c : ℂ) * mFourierCoeff3 (L2VF_projComponentC i v) l *
-           mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))) =
-        (c : ℂ) * (mFourierCoeff3 (L2VF_projComponentC a u) k *
+  rw [show (∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n, ∑ l ∈ fourierBox n,
+        mFourierCoeff3 (L2VF_projComponentC a u) k *
           ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-          (mFourierCoeff3 (L2VF_projComponentC i v) l *
-           mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l))))) by ring,
+            ((c : ℂ) * mFourierCoeff3 (L2VF_projComponentC i v) l *
+             mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l))))) =
+        (c : ℂ) * ∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n, ∑ l ∈ fourierBox n,
+          mFourierCoeff3 (L2VF_projComponentC a u) k *
+            ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
+              (mFourierCoeff3 (L2VF_projComponentC i v) l *
+               mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))) from ?_,
       re_ofReal_mul]
   simp only [Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun a _ =>
+    Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => by ring
 
 /-- `galerkinConvection n` is ℝ-homogeneous in the third slot. -/
 theorem galerkinConvection_smul_3 (n : ℕ) (c : ℝ) (u v w : L2VF) :
     galerkinConvection n u v (c • w) = c * galerkinConvection n u v w := by
   simp only [galerkinConvection, mFourierCoeff3_projComponentC_smul]
-  conv_lhs =>
-    arg 1; ext i; arg 1; ext a; arg 2; ext k; arg 2; ext l
-    rw [show mFourierCoeff3 (L2VF_projComponentC a u) k *
-        ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-          (mFourierCoeff3 (L2VF_projComponentC i v) l *
-           ((c : ℂ) * mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l))))) =
-        (c : ℂ) * (mFourierCoeff3 (L2VF_projComponentC a u) k *
+  rw [show (∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n, ∑ l ∈ fourierBox n,
+        mFourierCoeff3 (L2VF_projComponentC a u) k *
           ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
-          (mFourierCoeff3 (L2VF_projComponentC i v) l *
-           mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l))))) by ring,
+            (mFourierCoeff3 (L2VF_projComponentC i v) l *
+             ((c : ℂ) * mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))))) =
+        (c : ℂ) * ∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n, ∑ l ∈ fourierBox n,
+          mFourierCoeff3 (L2VF_projComponentC a u) k *
+            ((2 * (↑Real.pi : ℂ) * I * ↑(l a)) *
+              (mFourierCoeff3 (L2VF_projComponentC i v) l *
+               mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))) from ?_,
       re_ofReal_mul]
   simp only [Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun a _ =>
+    Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => by ring
 
 /-! ### Antisymmetry of `galerkinConvection n` — the remaining honest sorry -/
 
-/-- **Antisymmetry:** `galerkinConvection n u v w = -galerkinConvection n u w v`
-when `u ∈ Vₙ` (divergence-free, finite Fourier support).
+/-- **Antisymmetry (NOT provable as currently stated — needs `v, w ∈ Vₙ`):**
+`galerkinConvection n u v w = -galerkinConvection n u w v` for div-free `u`.
 
-This is a finite-sum torus integration-by-parts identity:
+**Why the prior route is invalid AND the statement itself is too strong.**
+Write the antisymmetry target as
   `galerkinConvection n u v w + galerkinConvection n u w v`
-  `= ∑ i,a ∑_{k,l ∈ fourierBox n} Re[ û_a(k) · (2πi lₐ) · (v̂_i(l)·ŵ_i(-(k+l)) + ŵ_i(l)·v̂_i(-(k+l))) ]`
+  `= (∑ i,a ∑_{k,l ∈ box} û_a(k) · (2πi lₐ) · (v̂_i(l)·ŵ_i(-(k+l)) + ŵ_i(l)·v̂_i(-(k+l)))).re`.
 
-After the index substitution `l ↦ -(k+l)` in the second sum (valid since `neg_mem_fourierBox`
-ensures the image is still in `fourierBox n`), the sum collapses to a combination
-involving `∑_a (k+l)_a · û_a(k+l) = 0` by `DivFreeL2 u` (`u.2 : u ∈ L2Sigma`).
+The full-lattice convection form `∑_{k+l+m=0} û_a(k)·(2πi lₐ)·v̂_i(l)·ŵ_i(m)` is antisymmetric
+because the constraint set `{k+l+m=0}` is symmetric under the swap `l ↔ m`, and the relabel
+turns `lₐ` into `lₐ+mₐ = -kₐ`, which `∑_a kₐ û_a(k) = 0` (`DivFreeL2 u`) kills.
 
-**Exact Lean gap:** Apply `Finset.sum_bij` with bijection `l ↦ -(k+l)` on `fourierBox n`
-(bijective by `neg_mem_fourierBox` + injectivity), then collect the `∑_a` term and apply
-`mem_L2Sigma_iff.mp u.2` at `k = k + l` to get `∑_a (k+l)_a * û_a(k+l) = 0`.
-This is purely algebraic — no convergence or summability needed.
+The box-truncated form replaces `m` by `-(k+l)` with `k,l ∈ box` but leaves `m = -(k+l)`
+**unrestricted** (it ranges over `[-2n,2n]³`).  The truncation index set `box × box` is
+therefore **NOT invariant** under the involution `(k,l) ↦ (k, -(k+l))` that antisymmetry
+requires: `neg_mem_fourierBox` only proves `-k ∈ box ↔ k ∈ box`, not `-(k+l) ∈ box`, and in
+general `-(k+l) ∉ box` for `k,l ∈ box` (e.g. `k=(1,0,0), l=(1,1,0) ⇒ -(k+l)=(-2,-1,0) ∉ box`
+for `n=1`).  Hence the `l ↔ m` reindexing that drives the IBP cancellation is invalid here,
+and finite Fourier support of `u` does NOT rescue it (it only extends the `k`-sum to ℤ³; the
+`l`-sum stays truncated to `box`, so the form remains asymmetric in `(l, m)`).
 
-Note: the hypothesis `hu` is NOT needed for well-formedness (the formula makes sense
-for all `u : L2Sigma`); it is needed to guarantee `û_a(k) = 0` for `k ∉ fourierBox n`
-when establishing the identity via the finite-sum IBP at box level `n`. For the
-ACTUAL antisymmetry proof (valid for all `u : L2Sigma`, not just `u ∈ Vₙ`), the
-argument uses only `DivFreeL2 u` (available as `u.2` via `mem_L2Sigma_iff`), not `hu`. -/
+The identity becomes true once `v, w ∈ Vₙ` (`velocityProjection_n n v = v`, likewise `w`):
+then `v̂_i, ŵ_i` vanish outside `box`, the `l`-sum and the `m = -(k+l)` argument both become
+effectively full-lattice, and the `l ↔ m` reindex closes (cf. Temam II.§1, RRS §3.2 — the
+standard Galerkin antisymmetry is over test functions in `Vₙ`).
+
+**Blocker (signature, owner = lean-coder):** the conclusion needs the two added hypotheses
+`velocityProjection_n n v = v` and `velocityProjection_n n w = w`.  With those, the proof is
+the full-lattice IBP reindex + `DivFreeL2 u`.  As written (arbitrary `v w : L2VF`) the
+statement is false, so no honest proof exists at this signature. -/
 theorem galerkinConvection_antisymm (n : ℕ) (u : L2Sigma) (v w : L2VF) :
     galerkinConvection n (u : L2VF) v w = -galerkinConvection n (u : L2VF) w v := by
-  -- TODO: apply Finset.sum_bij with bijection (k, l) ↦ (k, -(k+l)) on fourierBox n × fourierBox n.
-  -- The bijection is well-defined because neg_mem_fourierBox shows -(k+l) ∈ fourierBox n when k,l ∈ fourierBox n.
-  -- After substitution, the `lₐ` factor in the second sum becomes `-(k+l)_a = -(k_a + l_a)`.
-  -- The sum becomes ∑ l [û_a(k) * (2πi l_a) * v̂_i(l) * ŵ_i(-(k+l))
-  --                      + û_a(k) * 2πi*(-(k+l)_a) * ŵ_i(-(k+l)) * v̂_i(l)]
-  --   = ∑ l û_a(k) * (2πi) * (l_a - (k_a + l_a)) * v̂_i(l) * ŵ_i(-(k+l))
-  --   = ∑ l û_a(k) * (-2πi k_a) * v̂_i(l) * ŵ_i(-(k+l))
-  -- Then summing over a: ∑_a (-2πi k_a) * û_a(k) * [∑_l v̂_i(l) * ŵ_i(-(k+l))]
-  -- = (-2πi) * [∑_a k_a * û_a(k)] * [∑_l v̂_i(l) * ŵ_i(-(k+l))]
-  -- = 0 by DivFreeL2 u (∑_a k_a * û_a(k) = 0 for all k, from u.2 via mem_L2Sigma_iff).
-  -- (Actually the sum is over k, and for each k the inner ∑_a k_a û_a(k) = 0.)
-  sorry -- ALLOW_SORRY: galerkinConvection antisymmetry; finite-sum torus IBP; exact gap: Finset.sum_bij with l ↦ -(k+l) on fourierBox n (valid by neg_mem_fourierBox) + DivFreeL2 u from u.2 (mem_L2Sigma_iff); purely algebraic, no convergence; lean-prover target
+  sorry -- ALLOW_SORRY: FALSE AS STATED — box-truncated convection form is NOT antisymmetric for arbitrary v,w; box×box is not invariant under (k,l)↦(k,-(k+l)) (neg_mem_fourierBox covers only k↦-k); finite support of u does not rescue (l-sum stays truncated). Provable only after lean-coder adds hypotheses `velocityProjection_n n v = v` and `velocityProjection_n n w = w`; then full-lattice l↔m IBP reindex + DivFreeL2 u closes. Not a false-blocker: statement genuinely needs v,w∈Vₙ.
 
-/-! ### L² bound for `galerkinConvection n` at fixed `n` — honest sorry -/
+/-! ### L² bound for `galerkinConvection n` at fixed `n` -/
 
 /-- **Bilinear L² bound** for the finite Galerkin convection form.
 
-For fixed `n` and `w : L2VF` with `velocityProjection_n n w = w`, the map
-`(u, v) ↦ galerkinConvection n u v w` is a bilinear form in `(u, v)` with
-an explicit L² bound `|galerkinConvection n u v w| ≤ C(n,w) · ‖u‖_{L²} · ‖v‖_{L²}`.
+For fixed `n` and `w : L2VF`, the map `(u, v) ↦ galerkinConvection n u v w` is a bilinear
+form in `(u, v)` with an explicit L² bound
+`|galerkinConvection n u v w| ≤ C · ‖u‖_{L²} · ‖v‖_{L²}`.
 
-**Proof sketch (no convergence needed):**
+**Proof (no convergence needed — everything is a finite Finset sum):**
 
-`galerkinConvection n u v w = ∑ i ∑ a ∑_{k ∈ fourierBox n} ∑_{l ∈ fourierBox n}
-   Re [ û_a(k) · (2πi lₐ) · v̂_i(l) · ŵ_i(-(k+l)) ]`
+`galerkinConvection n u v w = (∑ i ∑ a ∑_{k ∈ box} ∑_{l ∈ box}
+   û_a(k) · (2πi lₐ) · v̂_i(l) · ŵ_i(-(k+l))).re`.
 
-Fix i, a, and consider the bilinear form `(u, v) ↦ ∑_{k,l} û_a(k) · A(l,w) · v̂_i(l)`
-where `A(l, w) = Re[(2πi lₐ) · ŵ_i(-(k+l))]`.  This is a finite sum of terms each of
-which is bounded by `|û_a(k)| · C(k,l,n,w) · |v̂_i(l)|` where `C` is finite.
-By Parseval (`L2C_norm_sq_eq_tsum_coeff_sq` from `RellichEmbedding.lean`) and
-Cauchy–Schwarz on ℓ²(fourierBox n):
-
-  `|∑_{k,l ∈ fourierBox n} û_a(k) * A(k,l,w) * v̂_i(l)|
-   ≤ (∑_{k,l} |A(k,l,w)|²)^{1/2} * ‖(û_a(k))_{k ∈ fourierBox n}‖_ℓ² * ‖(v̂_i(l))_{l ∈ fourierBox n}‖_ℓ²
-   ≤ C(n,w) · ‖u‖_{L²} · ‖v‖_{L²}`
-
-where `C(n,w) = (card fourierBox n)^{1/2} * ∑_{l ∈ fourierBox n} ∑_a (2π |lₐ|) * |ŵ_a(l)|` is finite.
-
-**Exact Lean gap:** Apply `Finset.inner_mul_le_norm_mul_iff` (Cauchy–Schwarz on `Finset`)
-and then bound via `L2C_norm_sq_eq_tsum_coeff_sq`.  The key inequality
-`∑_{k ∈ fourierBox n} |û_a(k)|² ≤ ∑' k |û_a(k)|² = ‖L2VF_projComponentC a u‖²`
-is Parseval (available via `L2C_norm_sq_eq_tsum_coeff_sq` from `RellichEmbedding.lean`).
-No convergence hypothesis; everything is finite. -/
+Since `|z.re| ≤ ‖z‖` (`abs_re_le_norm`) and the norm of a finite sum is bounded by the sum
+of norms (`norm_sum_le`), it suffices to bound each summand norm:
+`‖û_a(k)·(2πi lₐ)·v̂_i(l)·ŵ_i(-(k+l))‖
+   ≤ (‖projₐ‖·‖u‖)·‖2πi lₐ‖·(‖projᵢ‖·‖v‖)·‖ŵ_i(-(k+l))‖`,
+using `norm_mFourierCoeff3_le` (single coefficient ≤ L² norm) and `‖proj_j x‖ ≤ ‖proj_j‖·‖x‖`
+(`ContinuousLinearMap.le_opNorm`).  Summing the `‖u‖·‖v‖`-free factors over the finite box
+gives the constant `C`.  The hypothesis `hw` (finite support of `w`) is not needed for the
+bound — the constant uses the actual coefficients `‖ŵ_i(-(k+l))‖` directly. -/
 theorem galerkinConvection_bound (n : ℕ) (w : L2VF)
     (hw : velocityProjection_n n w = w) :
     ∃ C : ℝ, ∀ (u v : L2VF), |galerkinConvection n u v w| ≤ C * ‖u‖ * ‖v‖ := by
-  sorry -- ALLOW_SORRY: bilinear L² bound for galerkinConvection n; Cauchy–Schwarz on Finset + Parseval (L2C_norm_sq_eq_tsum_coeff_sq from RellichEmbedding.lean); no convergence needed; lean-prover target
+  -- The `‖u‖·‖v‖`-free per-summand factor.
+  classical
+  set D : Fin 3 → Fin 3 → (Fin 3 → ℤ) → (Fin 3 → ℤ) → ℝ :=
+    fun i a k l => ‖L2VF_projComponentC a‖ * ‖(2 * (Real.pi : ℂ) * Complex.I * (l a : ℂ))‖ *
+      ‖L2VF_projComponentC i‖ * ‖mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l))‖ with hD
+  refine ⟨∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n, ∑ l ∈ fourierBox n, D i a k l,
+    fun u v => ?_⟩
+  rw [galerkinConvection]
+  -- `|Re(Σ)| ≤ ‖Σ‖ ≤ ∑ ‖summand‖`.
+  refine (abs_re_le_norm _).trans ?_
+  refine (norm_sum_le _ _).trans ?_
+  rw [Finset.sum_mul, Finset.sum_mul]
+  refine Finset.sum_le_sum fun i _ => ?_
+  refine (norm_sum_le _ _).trans ?_
+  rw [Finset.sum_mul, Finset.sum_mul]
+  refine Finset.sum_le_sum fun a _ => ?_
+  refine (norm_sum_le _ _).trans ?_
+  rw [Finset.sum_mul, Finset.sum_mul]
+  refine Finset.sum_le_sum fun k _ => ?_
+  refine (norm_sum_le _ _).trans ?_
+  rw [Finset.sum_mul, Finset.sum_mul]
+  refine Finset.sum_le_sum fun l _ => ?_
+  -- Bound one summand norm by `D i a k l * ‖u‖ * ‖v‖`.
+  rw [hD]
+  -- Split the summand norm into the four factors, keeping the `‖2πIlₐ‖` block intact: two
+  -- generic splits peel off `‖ûₐ(k)‖` and `‖2πIlₐ‖`, then a targeted split on `v̂ᵢ(l)·ŵᵢ`.
+  rw [norm_mul, norm_mul,
+    norm_mul (mFourierCoeff3 (L2VF_projComponentC i v) l)
+      (mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l)))]
+  have hu : ‖mFourierCoeff3 (L2VF_projComponentC a u) k‖ ≤ ‖L2VF_projComponentC a‖ * ‖u‖ :=
+    le_trans (norm_mFourierCoeff3_le (L2VF_projComponentC a u) k)
+      ((L2VF_projComponentC a).le_opNorm u)
+  have hv : ‖mFourierCoeff3 (L2VF_projComponentC i v) l‖ ≤ ‖L2VF_projComponentC i‖ * ‖v‖ :=
+    le_trans (norm_mFourierCoeff3_le (L2VF_projComponentC i v) l)
+      ((L2VF_projComponentC i).le_opNorm v)
+  have huv : ‖mFourierCoeff3 (L2VF_projComponentC a u) k‖ *
+      (‖2 * (Real.pi : ℂ) * Complex.I * (l a : ℂ)‖ *
+        (‖mFourierCoeff3 (L2VF_projComponentC i v) l‖ *
+          ‖mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l))‖))
+      ≤ (‖L2VF_projComponentC a‖ * ‖u‖) *
+        (‖2 * (Real.pi : ℂ) * Complex.I * (l a : ℂ)‖ *
+          ((‖L2VF_projComponentC i‖ * ‖v‖) *
+            ‖mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l))‖)) := by
+    gcongr
+  refine huv.trans (le_of_eq ?_)
+  ring
 
 end LerayHopf
