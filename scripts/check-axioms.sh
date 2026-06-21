@@ -76,6 +76,7 @@ done
 AXIOMATIC_FILES=(
   "LerayHopf/AxiomaticClosure.lean"
   "LerayHopf/R3/AxiomaticClosure.lean"
+  "LerayHopf/TorusConvectionForm.lean"
 )
 
 pattern='^[[:space:]]*(@\[[^]]*\][[:space:]]*)*((private|protected|noncomputable|scoped|local)[[:space:]]+)*(axiom|constant|opaque|unsafe)[[:space:]]'
