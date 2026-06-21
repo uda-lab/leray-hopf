@@ -52,6 +52,11 @@ import LerayHopf.R3Axiomatic
 -- Concrete T³ convection form (issue #22: removes torus3_NSForms_exist axiom)
 import LerayHopf.TorusConvectionForm
 
+-- T³ Galerkin ODE solver + capstone wiring (issue #24: removes galerkin_ode_solution axiom)
+import LerayHopf.TorusGalerkinScheme
+import LerayHopf.TorusGalerkinODESolve
+import LerayHopf.TorusGalerkinODECapstone
+
 -- R3 files not covered by Core (sorry-carrying or axiom-dependent)
 import LerayHopf.R3.GalerkinScheme
 import LerayHopf.R3.SchwartzDivFreeBasis
