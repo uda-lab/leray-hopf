@@ -50,9 +50,10 @@ former fat `r3GalerkinScheme_exists` axiom (a 6-field structure existential, pre
 `AxiomaticClosure.lean`) — now a proved `theorem` here.  Net R3 project-axiom count is
 UNCHANGED at 5; the frontier is strictly thinner (one `Submodule` density inequality vs. a
 6-field structure).  Because the discharge needs P5 (`nonempty_r3GalerkinScheme_of_basis`,
-downstream of `AxiomaticClosure`), both `r3GalerkinScheme_exists` and the capstone
-`exists_lerayHopf_r3_axiomatic` are relocated to THIS file (the shallowest acyclic point that
-sees both the `R3GalerkinScheme` structure and its witness).
+downstream of `AxiomaticClosure`), `r3GalerkinScheme_exists` is relocated to THIS file (the
+shallowest acyclic point that sees both the `R3GalerkinScheme` structure and its witness).
+The capstone `exists_lerayHopf_r3_axiomatic` was relocated FURTHER downstream to
+`GalerkinODECapstone.lean` (issue #10), below the axiom-free ODE chain it now routes through.
 
 ## DAG position
 ```
@@ -78,7 +79,7 @@ DivergenceFree.lean   (L2VF_R3, L2Sigma_R3, L2VF_projComponent_R3, divTestFuncti
 - `curlSchwartzDense_holds`           : the single marked density axiom (issue #21)
 - `nonempty_schwartzGalerkinBasis`    : C2 — C1 applied to `curlSchwartzDense_holds`
 - `r3GalerkinScheme_exists`           : THEOREM — discharged former AX-G (relocated from `AxiomaticClosure`)
-- `exists_lerayHopf_r3_axiomatic`     : main existence theorem (relocated from `AxiomaticClosure`)
+  (the capstone `exists_lerayHopf_r3_axiomatic` is now in `GalerkinODECapstone.lean`, issue #10)
 
 ## Assumptions
 
@@ -92,8 +93,9 @@ ONE new `axiom` in this file (issue #21, owner-approved 2026-06-21):
   witnesses remain PROVED here (A3/A4); the axiom carries only the bare density.
 
 No other `axiom`, `opaque`, `constant`, or `unsafe`.  C1 stays axiom-free modulo its
-hypothesis; C2, `r3GalerkinScheme_exists`, and `exists_lerayHopf_r3_axiomatic` are theorems
-that route through `curlSchwartzDense_holds`.
+hypothesis; C2 and `r3GalerkinScheme_exists` are theorems that route through
+`curlSchwartzDense_holds` (the capstone `exists_lerayHopf_r3_axiomatic` now lives downstream in
+`GalerkinODECapstone.lean`, issue #10).
 -/
 
 /-! ### H1 — assembling `L2VF_R3` from three scalar components -/
@@ -495,26 +497,14 @@ unchanged. -/
 theorem r3GalerkinScheme_exists : Nonempty R3GalerkinScheme :=
   (nonempty_schwartzGalerkinBasis).elim fun B => nonempty_r3GalerkinScheme_of_basis B
 
-/-- **Main existence theorem on ℝ³ (axiomatic).**  Relocated from `AxiomaticClosure.lean`
-so that `r3GalerkinScheme_exists` (above) is a discharged theorem rather than an axiom.
+/-! **Main existence theorem on ℝ³ (axiomatic) — RELOCATED (issue #10).**
 
-For any `u₀ ∈ L²_σ(ℝ³)`, `ν > 0`, `T > 0`, there exist a Galerkin scheme `𝔊`, an NS-forms
-bundle `F`, and a Leray–Hopf solution `u` on `[0, T]`.
-
-The name `_axiomatic` advertises that this result depends on the five project axioms
-(`curlSchwartzDense_holds`, `r3_NSForms_exist`, `galerkin_ode_solution_R3`, `aubin_lions_R3`,
-`galerkin_limit_passage_R3`).  `r3GalerkinScheme_exists` is NO LONGER among them — it is now
-a proved `theorem` discharged through `curlSchwartzDense_holds` (issue #21, the swap that
-replaced the 6-field `r3GalerkinScheme_exists` structure axiom with the thin density axiom).
-`spatial_compactness_R3` was the former sixth project axiom and is also a proved `theorem`
-(FK chain, PR #35 / issue #2). -/
-theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
-    (T : ℝ) (hT : 0 < T) :
-    ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),
-    Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀) := by
-  obtain ⟨𝔊⟩ := r3GalerkinScheme_exists
-  obtain ⟨F⟩ := r3_NSForms_exist 𝔊
-  exact ⟨𝔊, F, exists_lerayHopf_from_package_full_R3 𝔊 F ν T u₀
-    (build_galerkin_package_R3 𝔊 F ν hν T hT u₀)⟩
+`exists_lerayHopf_r3_axiomatic` now lives in `LerayHopf/R3/GalerkinODECapstone.lean`, one
+level further downstream.  The relocation is forced by the issue-#10 discharge of
+`galerkin_ode_solution_R3`: the capstone now routes its per-`n` Galerkin sequence through the
+axiom-free `galerkinSolutionData_unconditional` (`GalerkinODESolve.lean`) over the concrete
+scheme `schemeOfBasis B`, so it must sit below `GalerkinODESolve` in the DAG to stay acyclic.
+`r3GalerkinScheme_exists` (above) stays here; the relocated capstone imports this file and
+`GalerkinODESolve` and is re-exported by `LerayHopf/R3Axiomatic.lean`. -/
 
 end LerayHopf

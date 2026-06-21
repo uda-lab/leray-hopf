@@ -18,11 +18,13 @@
 --   exists_lerayHopf_r3_axiomatic — EXACTLY:
 --     propext  Classical.choice  Quot.sound
 --     LerayHopf.aubin_lions_R3  LerayHopf.galerkin_limit_passage_R3
---     LerayHopf.galerkin_ode_solution_R3  LerayHopf.curlSchwartzDense_holds
+--     LerayHopf.curlSchwartzDense_holds
 --     LerayHopf.r3_NSForms_exist
 --     (spatial_compactness_R3 REMOVED — issue #2 — now a theorem via the FK chain)
 --     (r3GalerkinScheme_exists REMOVED — issue #21 — now a theorem, SWAPPED for the
---      thinner curlSchwartzDense_holds density axiom; net R3 project axioms still 5)
+--      thinner curlSchwartzDense_holds density axiom)
+--     (galerkin_ode_solution_R3 REMOVED — issue #10 — discharged via the axiom-free
+--      galerkinSolutionData_unconditional over schemeOfBasis B; net R3 project axioms now 4)
 --
 --   lower_bound_from_inverse_square_lifespan (Core representative) — EXACTLY:
 --     propext  Classical.choice  Quot.sound  (no project axioms)
