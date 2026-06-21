@@ -408,13 +408,14 @@ restricts to `fourierBox m` because the leading factor `û_a(k)` vanishes for `k
 `v̂_i(l)` vanishes for `l ∉ fourierBox m` (`coeff_zero_outside_box m v hv`).  The remaining
 `fourierBox m × fourierBox m` sum is exactly `galerkinConvection m u v w`; the `w`-coefficient is
 unchanged. -/
+set_option maxHeartbeats 1000000 in
 theorem galerkinConvection_level_step (m n : ℕ) (hmn : m ≤ n) (u v w : L2VF)
     (hu : velocityProjection_n m u = u) (hv : velocityProjection_n m v = v) :
     galerkinConvection n u v w = galerkinConvection m u v w := by
   classical
   have hsub : fourierBox m ⊆ fourierBox n := fourierBox_monotone hmn
   rw [galerkinConvection, galerkinConvection]
-  congr 1
+  refine congrArg Complex.re ?_
   refine Finset.sum_congr rfl fun i _ => ?_
   refine Finset.sum_congr rfl fun a _ => ?_
   -- Restrict the outer `k`-sum from `fourierBox n` down to `fourierBox m`: the leading factor
