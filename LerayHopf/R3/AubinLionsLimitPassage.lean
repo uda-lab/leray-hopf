@@ -26,20 +26,17 @@ the deliverables are proved axiom-free, two are still open (`sorry` with truthfu
   `galerkin_curve_continuous`, `steklovAvg` (def), `steklovAvg_norm_le_u0` (uniform L² bound),
   `steklovAvg_approx` (time-modulus average↔curve estimate), and `galerkin_norm_le_u0`.
 
-**OPEN / PARTIAL (currently `sorry` with truthful TODO — NOT impossible, NOT unsound):**
-
-* `kineticEnergy_lsc_bound` (E1, ~line 435) — #14-P discharge. The full norm-lsc-transfer +
-  ball-exhaustion proof is now built (`kineticEnergyLscTransfer`, `continuous_restrictToBall`,
+* `kineticEnergy_lsc_bound` (E1) — #14-P discharge, now `sorry`-FREE (issue #31). The full
+  norm-lsc-transfer + ball-exhaustion proof (`kineticEnergyLscTransfer`, `continuous_restrictToBall`,
   `norm_restrictToBall_le'`, `normSq_restrictToBall_eq_setIntegral`,
   `tendsto_normSq_restrictToBall`, `eLpNorm_two_eq_ofReal_sqrt`), wired through the #14-C
-  `u_aestronglyMeasurable` field and `galerkin_norm_le_u0`. Exactly ONE residual `sorry` remains
-  (line ~514): `MemLp (fun t => restrictToBall k (u t)) 2 (volume.restrict (Icc 0 T))`, i.e.
-  time-integrability of the `strong_convergence` integrand. This is NOT derivable from the present
-  `AubinLionsPackage_R3` fields — `strong_convergence` is stated as a `Bochner` interval integral
-  (defined as `0` for non-integrable integrands), so it is vacuously satisfiable without
-  integrability and cannot drive the `eLpNorm` convergence by itself. FIX is field-level
-  (`lean-coder`): strengthen `strong_convergence` to its faithful `eLpNorm`-form. See the in-body
-  ALLOW_SORRY for the precise statement.
+  `u_aestronglyMeasurable` field and `galerkin_norm_le_u0`. The former residual `MemLp`-gap `sorry`
+  (time-integrability of a Bochner-form integrand) is DISCHARGED by the issue #31 strengthening of
+  `AubinLionsPackage_R3.strong_convergence` to its faithful `eLpNorm`-form: the field now supplies
+  the time-`L²` convergence directly, so `hconv` is exactly `strong_convergence R`.
+
+**OPEN / PARTIAL (currently `sorry` with truthful TODO — NOT impossible, NOT unsound):**
+
 * `aubinLionsPackage_R3_of_timeCompactness` (C2, ~line 417) — the centerpiece Aubin–Lions
   assembly via the viable Steklov interval-averaging route. The building blocks above are proved;
   the REMAINING work is an OPEN ENGINEERING target: δ-mesh diagonalization + H¹/Jensen bound on
@@ -500,66 +497,15 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
             ≤ ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ :=
               norm_restrictToBall_le' R ((galSeq (alPkg.φ n)).u t)
           _ ≤ ‖(u₀ : L2VF_R3)‖ := hgal (alPkg.φ n) ht
-      -- (4) the L²-in-time convergence `eLpNorm (f n - g) 2 μ → 0`, from `strong_convergence`.
+      -- (4) the L²-in-time convergence `eLpNorm (f n - g) 2 μ → 0`. With `strong_convergence` now
+      -- in its faithful `eLpNorm`-form (issue #31), this is EXACTLY the package field at radius
+      -- `R = k`: `f n t = restrictToBall R ((galSeq (alPkg.φ n)).u t)` and
+      -- `g t = restrictToBall R (alPkg.u t)`, and `μ = volume.restrict (Icc 0 T)`, so the field's
+      -- conclusion is definitionally `hconv`.  This DISCHARGES the former `MemLp g`-gap `sorry`
+      -- (the Bochner-form residual): the faithful field supplies the time-`L²` convergence directly,
+      -- no time-integrability of a junk-`0`-collapsible integrand is needed.
       have hconv : Tendsto (fun n => eLpNorm (fun t => f n t - g t) 2 μ) atTop (𝓝 0) := by
-        -- The pointwise squared norm equals the ball set-integral (bridge): `‖f n t - g t‖²` is
-        -- exactly the inner integral of the `strong_convergence` integrand.
-        have hptSq : ∀ n t, ‖f n t - g t‖ ^ 2
-            = ∫ x in Metric.closedBall (0 : Domain3) R,
-                ‖(((galSeq (alPkg.φ n)).u t : L2VF_R3) x : EuclideanSpace ℝ (Fin 3)) -
-                 ((alPkg.u t : L2VF_R3) x : EuclideanSpace ℝ (Fin 3))‖ ^ 2
-                ∂(volume : Measure Domain3) := by
-          intro n t
-          simp only [hf, hg]
-          rw [setIntegral_normSq_eq_dist_sq_restrictToBall, dist_eq_norm]
-        -- ── The SINGLE genuinely-missing input: `MemLp g 2 μ`, i.e. the limit curve's ball
-        -- restriction is space-time L². Equivalently, the `strong_convergence` integrand is
-        -- integrable in time. `AubinLionsPackage_R3` carries NO bound / `MemLp` field for its limit
-        -- `u` (`AxiomaticClosure.lean:420–455`: only `φ, u, u_aestronglyMeasurable,
-        -- strong_convergence`); the `intervalIntegral` encoding of `strong_convergence` is faithful
-        -- to its `eLpNorm`-form intent ONLY when the integrand is integrable, which is exactly this
-        -- `MemLp g`. It is therefore NOT derivable from the present fields and must be supplied by
-        -- strengthening `strong_convergence` to its `eLpNorm`-form (lean-coder, #14-C field shape).
-        have hg_memLp : MemLp g 2 μ := by
-          sorry -- ALLOW_SORRY: #14-P E1 residual = `MemLp (fun t => restrictToBall k (alPkg.u t)) 2 (volume.restrict (Icc 0 T))`, equivalently time-integrability of the `strong_convergence` integrand. NOT derivable from current `AubinLionsPackage_R3` fields (no bound/MemLp on the limit `u`; only φ/u/u_aestronglyMeasurable/strong_convergence). FIX (lean-coder): strengthen `strong_convergence` to its faithful `eLpNorm`-form `eLpNorm (uₙ−u) 2 (volume.restrict (Icc 0 T)) → 0` (ball-restricted), which directly supplies this. The remainder of this proof (norm-lsc transfer + ball-exhaustion) is then complete and sorry-free.
-        -- `MemLp (f n) 2 μ`: each `f n` is bounded by `‖u₀‖` (finite measure).
-        have hf_memLp : ∀ n, MemLp (f n) 2 μ :=
-          fun n => MemLp.of_bound (hf_meas n) ‖(u₀ : L2VF_R3)‖ (hf_bound n)
-        -- Hence the difference is `MemLp`, and `‖f n − g‖²` is integrable in time.
-        have hfg_int : ∀ n, Integrable (fun t => ‖f n t - g t‖ ^ 2) μ := by
-          intro n
-          have hmem : MemLp (fun t => f n t - g t) 2 μ := (hf_memLp n).sub hg_memLp
-          have hr := hmem.integrable_norm_rpow (by norm_num) (by norm_num)
-          refine hr.congr ?_
-          filter_upwards with t
-          simp only [show (2 : ENNReal).toReal = (2 : ℝ) by norm_num, Real.rpow_two]
-        -- `eLpNorm (f n − g) 2 μ = ofReal √(∫ ‖f n − g‖² dμ)`.
-        have heLp : ∀ n, eLpNorm (fun t => f n t - g t) 2 μ
-            = ENNReal.ofReal (Real.sqrt (∫ t, ‖f n t - g t‖ ^ 2 ∂μ)) :=
-          fun n => eLpNorm_two_eq_ofReal_sqrt _ (hfg_int n)
-        -- The time integral equals the `strong_convergence` integrand (`∫ over restrict = ∫₀ᵀ`).
-        have hI : ∀ n, (∫ t, ‖f n t - g t‖ ^ 2 ∂μ)
-            = ∫ t in (0 : ℝ)..T,
-                ∫ x in Metric.closedBall (0 : Domain3) R,
-                  ‖(((galSeq (alPkg.φ n)).u t : L2VF_R3) x : EuclideanSpace ℝ (Fin 3)) -
-                   ((alPkg.u t : L2VF_R3) x : EuclideanSpace ℝ (Fin 3))‖ ^ 2
-                  ∂(volume : Measure Domain3) := by
-          intro n
-          rw [hμ, intervalIntegral.integral_of_le hT, ← integral_Icc_eq_integral_Ioc]
-          simp only [hptSq n]
-        -- The `strong_convergence` integrand → 0 (at radius `R = k`).
-        have hsc := alPkg.strong_convergence R
-        -- So `∫ t, ‖f n t − g t‖² ∂μ → 0`, hence `√(·) → 0`, hence `ofReal √(·) → 0`.
-        have hItends : Tendsto (fun n => ∫ t, ‖f n t - g t‖ ^ 2 ∂μ) atTop (𝓝 0) := by
-          simpa only [hI] using hsc
-        have hsqrt : Tendsto (fun n => Real.sqrt (∫ t, ‖f n t - g t‖ ^ 2 ∂μ)) atTop (𝓝 0) := by
-          have := (Real.continuous_sqrt.tendsto 0).comp hItends
-          simpa [Function.comp_def] using this
-        have : Tendsto (fun n => ENNReal.ofReal (Real.sqrt (∫ t, ‖f n t - g t‖ ^ 2 ∂μ)))
-            atTop (𝓝 0) := by
-          have := (ENNReal.continuous_ofReal.tendsto 0).comp hsqrt
-          simpa [Function.comp_def] using this
-        simpa only [heLp] using this
+        simpa only [hf, hg, hμ, hR] using alPkg.strong_convergence R
       -- (5) assemble: `kineticEnergyLscTransfer` gives the a.e. ball-restricted bound.
       exact kineticEnergyLscTransfer hf_meas hg_meas hconv hf_bound
     -- ════ Combine over all radii `k`, then exhaust `R → ∞` to recover the full L²(ℝ³) bound. ════
@@ -977,8 +923,9 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
   --   3. Apply P3 (`spatialInput_R3_of_localRellich B`) to the averaged states at the (finitely
   --      many, per δ-mesh) window base-points to extract a common ball-restricted spatial limit.
   --   4. Diagonalize over a refining δ-mesh (δ → 0): step 1 makes the average→raw error vanish,
-  --      step 3 gives spatial convergence of the averages, and the outer interval-integral
-  --      `∫₀ᵀ ∫_{B_R} ‖uₙ − u‖² → 0` follows by the ε/3 split (raw↔avg, avg-spatial, mesh).
+  --      step 3 gives spatial convergence of the averages, and the time-`eLpNorm` (issue #31
+  --      faithful form) `eLpNorm (fun t => restrictToBall R (uₙ t) − restrictToBall R (u t)) 2
+  --      (volume.restrict (Icc 0 T)) → 0` follows by the ε/3 split (raw↔avg, avg-spatial, mesh).
   --
   -- STATUS: the reusable building blocks of this route are PROVED above and axiom-free —
   -- `galerkin_curve_continuous`, `steklovAvg` (def), `steklovAvg_norm_le_u0` (uniform L² bound),
