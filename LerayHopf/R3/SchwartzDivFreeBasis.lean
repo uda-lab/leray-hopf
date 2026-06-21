@@ -36,24 +36,23 @@ PROVED here, axiom-free and (once `lean-prover` fills the bodies) sorry-free:
 * the conditional deliverable `schwartzGalerkinBasis_of_curlDense` (C1):
   `CurlSchwartzDense → Nonempty SchwartzGalerkinBasis`.
 
-NOT done here (the single remaining frontier): the density itself,
-`CurlSchwartzDense` — that the L²-closure of the span of curls of Schwartz vector
-potentials contains the whole weakly-divergence-free subspace `L2Sigma_R3`. This is
-the Helmholtz/Weyl density fact, which is **not in mathlib** (no Helmholtz/Leray
-decomposition, no curl operator, no `closure(span Schwartz div-free) = L²_σ`). It is
-carried as the hypothesis of C1 and exposed (unconditionally) only by C2
-`nonempty_schwartzGalerkinBasis`, which is the scaffold-only frontier-exposing
-statement this milestone leaves open (see the assumptions section).
+The single remaining frontier — the density itself, `CurlSchwartzDense` (that the
+L²-closure of the span of curls of Schwartz vector potentials contains the whole
+weakly-divergence-free subspace `L2Sigma_R3`, the Helmholtz/Weyl density fact, **not in
+mathlib**) — is carried as the one marked `axiom curlSchwartzDense_holds` (issue #21,
+owner-approved 2026-06-21).  C1 (`schwartzGalerkinBasis_of_curlDense`) remains the genuine
+axiom-free-modulo-hypothesis deliverable; C2 (`nonempty_schwartzGalerkinBasis`) applies C1 to
+that axiom.
 
-This file **does NOT remove any axiom**: it isolates the frontier to a single thin
-scalar density `Prop`, strictly thinner than P5's bundled `dense_span` hypothesis
-(the Schwartz and divergence-free witnesses are PROVED here, A3/A4, not assumed). The
-capstone — wiring `r3GalerkinScheme_exists` through C1 + P5's
-`nonempty_r3GalerkinScheme_of_basis` — is a deferred sequential PR and is OUT OF SCOPE.
-
-`AxiomaticClosure.lean` is untouched; this file is a NEW sibling, imported by nothing
-yet. The dependency edge goes through `GalerkinScheme` (which re-exports the structure),
-NOT directly through `AxiomaticClosure`, keeping the capstone separable.
+**Axiom SWAP, not increase (issue #21).**  This file ADDS the thin density axiom
+`curlSchwartzDense_holds : CurlSchwartzDense` and, through the witness chain, DISCHARGES the
+former fat `r3GalerkinScheme_exists` axiom (a 6-field structure existential, previously in
+`AxiomaticClosure.lean`) — now a proved `theorem` here.  Net R3 project-axiom count is
+UNCHANGED at 5; the frontier is strictly thinner (one `Submodule` density inequality vs. a
+6-field structure).  Because the discharge needs P5 (`nonempty_r3GalerkinScheme_of_basis`,
+downstream of `AxiomaticClosure`), both `r3GalerkinScheme_exists` and the capstone
+`exists_lerayHopf_r3_axiomatic` are relocated to THIS file (the shallowest acyclic point that
+sees both the `R3GalerkinScheme` structure and its witness).
 
 ## DAG position
 ```
@@ -76,16 +75,25 @@ DivergenceFree.lean   (L2VF_R3, L2Sigma_R3, L2VF_projComponent_R3, divTestFuncti
 - `instSeparableSpace_L2VF_R3`        : B1 — `SeparableSpace L2VF_R3`
 - `exists_denseSeq_curlSchwartz`      : B2 — ℕ-enumeration with dense prefix spans (from frontier)
 - `schwartzGalerkinBasis_of_curlDense`: C1 — DELIVERABLE: density → `Nonempty SchwartzGalerkinBasis`
-- `nonempty_schwartzGalerkinBasis`    : C2 — scaffold-only frontier exposure (carries the gap)
+- `curlSchwartzDense_holds`           : the single marked density axiom (issue #21)
+- `nonempty_schwartzGalerkinBasis`    : C2 — C1 applied to `curlSchwartzDense_holds`
+- `r3GalerkinScheme_exists`           : THEOREM — discharged former AX-G (relocated from `AxiomaticClosure`)
+- `exists_lerayHopf_r3_axiomatic`     : main existence theorem (relocated from `AxiomaticClosure`)
 
 ## Assumptions
 
-NO new `axiom`, `opaque`, `constant`, or `unsafe` in this scaffold.  The single
-classical input is carried as the **hypothesis** `CurlSchwartzDense` of the genuine
-deliverable C1; it is a `def : Prop` (an interface, no proof obligation), not an
-environment axiom.  C2 (`nonempty_schwartzGalerkinBasis`) currently carries one marked
-`sorry` exposing exactly that frontier; the orchestrator decides at the gate whether to
-keep the `sorry` or replace it with a single marked `axiom curlSchwartzDense_holds`.
+ONE new `axiom` in this file (issue #21, owner-approved 2026-06-21):
+
+- `curlSchwartzDense_holds : CurlSchwartzDense` — the Helmholtz/Weyl curl-density fact
+  (L²-closure of span of curls of Schwartz vector potentials ⊇ L²_σ(ℝ³)); not in mathlib.
+  It is STRICTLY THINNER than the `r3GalerkinScheme_exists` axiom it replaces (a single
+  `Submodule` density inequality vs. a 6-field structure existential).  This is an axiom
+  SWAP, not an increase: the net R3 project-axiom count stays 5.  All Schwartz / div-free
+  witnesses remain PROVED here (A3/A4); the axiom carries only the bare density.
+
+No other `axiom`, `opaque`, `constant`, or `unsafe`.  C1 stays axiom-free modulo its
+hypothesis; C2, `r3GalerkinScheme_exists`, and `exists_lerayHopf_r3_axiomatic` are theorems
+that route through `curlSchwartzDense_holds`.
 -/
 
 /-! ### H1 — assembling `L2VF_R3` from three scalar components -/
@@ -443,22 +451,70 @@ theorem schwartzGalerkinBasis_of_curlDense (h : CurlSchwartzDense) :
       rw [hψ]; exact curlSchwartzL2_mem_sigma ψ
     dense_span := he_dense }⟩
 
-/-- **C2 (scaffold-only — frontier exposure).**  Unconditional inhabitation of the
+/-- **The single classical input, as a marked axiom** (Helmholtz/Weyl density).
+
+The L²-closure of the span of curls of Schwartz vector potentials contains the whole
+weakly-divergence-free subspace `L2Sigma_R3 = L²_σ(ℝ³)`.  This is the one irreducible
+analytic frontier of the ℝ³ Galerkin construction; it is NOT in mathlib (no Helmholtz /
+Leray decomposition, no curl-density theorem).
+
+It is STRICTLY THINNER than the former `r3GalerkinScheme_exists` axiom it replaces: a
+single `Submodule` density inequality (`CurlSchwartzDense`) versus a 6-field structure
+existential (`Nonempty R3GalerkinScheme`).  All other content of that structure — the
+projections, non-expansiveness, idempotence, Σ-preservation, Σ-restricted strong
+convergence, and Schwartz range — is now PROVED downstream of this density (the `galerkinP`
+machinery in `GalerkinScheme.lean` and the curl construction A1–A4 in this file). -/
+axiom curlSchwartzDense_holds : CurlSchwartzDense -- ALLOW_AXIOM: Helmholtz/Weyl density — L²-closure of span of curls of Schwartz vector potentials = L²_σ(ℝ³); not in mathlib; strictly THINNER than the former r3GalerkinScheme_exists (a single density Prop vs a 6-field structure existential); owner-approved 2026-06-21 (issue #21)
+
+/-- **C2 (now discharged via the marked axiom).**  Unconditional inhabitation of the
 Schwartz divergence-free basis.
 
-This is the only statement in the file left open: it would follow from C1 applied to a
-proof of `CurlSchwartzDense`, but that density (the Helmholtz/Weyl curl-density fact) is
-NOT in mathlib and is the single irreducible frontier of this milestone (Codex point
-C-E).  It is therefore carried as a marked `sorry`.
+Formerly a scaffold `sorry` exposing the `CurlSchwartzDense` frontier, this is now C1
+(`schwartzGalerkinBasis_of_curlDense`) applied to the marked axiom `curlSchwartzDense_holds`.
+The genuine must-prove content is C1 (axiom-free modulo its hypothesis); C2 supplies the
+one irreducible density input through the auditable `#print axioms` route. -/
+theorem nonempty_schwartzGalerkinBasis : Nonempty SchwartzGalerkinBasis :=
+  schwartzGalerkinBasis_of_curlDense curlSchwartzDense_holds
 
-The orchestrator decides at the gate whether to keep this `sorry` or replace it with a
-single marked `axiom curlSchwartzDense_holds : CurlSchwartzDense` feeding C1 (the axiom
-route is auditable by `#print axioms` and matches the project's axiom-frontier
-discipline).  Either way the genuine must-prove deliverable is C1; C2 only exposes the
-frontier honestly and does NOT claim an axiom-free unconditional result. -/
-theorem nonempty_schwartzGalerkinBasis : Nonempty SchwartzGalerkinBasis := by
-  sorry -- ALLOW_SORRY: depends on CurlSchwartzDense (Helmholtz/Weyl density frontier,
-  -- not in mathlib; see helmholtz-density.md §4).  Orchestrator decides axiom-vs-sorry
-  -- at the gate; would be `schwartzGalerkinBasis_of_curlDense curlSchwartzDense_holds`.
+/-! ### Capstone wiring — discharge `r3GalerkinScheme_exists`
+
+These two declarations are relocated here from `AxiomaticClosure.lean`: this is the
+shallowest point in the import DAG where BOTH the `R3GalerkinScheme` structure (defined
+upstream in `AxiomaticClosure.lean`) AND its constructive witness P5
+(`nonempty_r3GalerkinScheme_of_basis`, in `GalerkinScheme.lean`) are simultaneously
+visible.  Defining the discharged `r3GalerkinScheme_exists` in `AxiomaticClosure.lean`
+would be a cyclic import (that file is upstream of the witness chain), so the name is
+preserved but its home moves one level downstream. -/
+
+/-- **Discharged former axiom AX-G.**  A Galerkin approximation-projection family on
+`L²_σ(ℝ³)` exists.  No longer an axiom: assembled from the constructive witness P5
+(`nonempty_r3GalerkinScheme_of_basis`) applied to the Schwartz divergence-free basis
+(`nonempty_schwartzGalerkinBasis`), which rests on the single marked density axiom
+`curlSchwartzDense_holds`.  The name is preserved so every downstream consumer is
+unchanged. -/
+theorem r3GalerkinScheme_exists : Nonempty R3GalerkinScheme :=
+  (nonempty_schwartzGalerkinBasis).elim fun B => nonempty_r3GalerkinScheme_of_basis B
+
+/-- **Main existence theorem on ℝ³ (axiomatic).**  Relocated from `AxiomaticClosure.lean`
+so that `r3GalerkinScheme_exists` (above) is a discharged theorem rather than an axiom.
+
+For any `u₀ ∈ L²_σ(ℝ³)`, `ν > 0`, `T > 0`, there exist a Galerkin scheme `𝔊`, an NS-forms
+bundle `F`, and a Leray–Hopf solution `u` on `[0, T]`.
+
+The name `_axiomatic` advertises that this result depends on the five project axioms
+(`curlSchwartzDense_holds`, `r3_NSForms_exist`, `galerkin_ode_solution_R3`, `aubin_lions_R3`,
+`galerkin_limit_passage_R3`).  `r3GalerkinScheme_exists` is NO LONGER among them — it is now
+a proved `theorem` discharged through `curlSchwartzDense_holds` (issue #21, the swap that
+replaced the 6-field `r3GalerkinScheme_exists` structure axiom with the thin density axiom).
+`spatial_compactness_R3` was the former sixth project axiom and is also a proved `theorem`
+(FK chain, PR #35 / issue #2). -/
+theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
+    (T : ℝ) (hT : 0 < T) :
+    ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),
+    Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀) := by
+  obtain ⟨𝔊⟩ := r3GalerkinScheme_exists
+  obtain ⟨F⟩ := r3_NSForms_exist 𝔊
+  exact ⟨𝔊, F, exists_lerayHopf_from_package_full_R3 𝔊 F ν T u₀
+    (build_galerkin_package_R3 𝔊 F ν hν T hT u₀)⟩
 
 end LerayHopf

@@ -24,7 +24,7 @@ Side branches (independent of the existence spine):
 The import surface is now split:
 - `import LerayHopf.Core`            — axiom-free, sorryAx-free spatial/regularity layer
 - `import LerayHopf.TorusAxiomatic`  — T³ axiomatic closure (4 project axioms)
-- `import LerayHopf.R3Axiomatic`     — ℝ³ axiomatic closure (6 project axioms)
+- `import LerayHopf.R3Axiomatic`     — ℝ³ axiomatic closure (5 project axioms; `r3GalerkinScheme_exists` swapped for `curlSchwartzDense_holds`, issue #21)
 - `import LerayHopf`                 — (this file) re-exports all three layers
 
 Core work that does not require the axiomatic closures should use
