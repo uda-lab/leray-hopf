@@ -246,11 +246,26 @@ structure GalerkinSolutionData (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma) (
     velocityProjection_n_preserves_L2Sigma n (u₀ : L2VF) u₀.2⟩
   /-- Range in `Vₙ`: the solution stays in the Galerkin subspace. -/
   u_inVn : ∀ t, (u t : L2VF) = velocityProjection_n n (u t : L2VF)
-  /-- The curve `t ↦ (u t : L2VF)` is differentiable at every `t`. -/
-  u_hasDeriv : ∀ t, HasDerivAt (fun s => (u s : L2VF)) (deriv (fun s => (u s : L2VF)) t) t
-  /-- The projected Galerkin ODE: for all `w ∈ Vₙ`,
-  `⟪u'(t), w⟫ + ν · stokesTestPairing(u(t), w) + b(u(t), u(t), w) = 0`. -/
-  u_ode : ∀ t, ∀ w : L2Sigma, (w : L2VF) = velocityProjection_n n (w : L2VF) →
+  /-- The curve `t ↦ (u t : L2VF)` is differentiable at every **forward** time `t ≥ 0`.
+
+  SOUNDNESS (forward-only, issue #24): physical Galerkin solutions are confined by the forward
+  energy bound `½‖u(t)‖² ≤ ½‖Pₙu₀‖²`, which controls the solution only for `t ≥ 0`.  This
+  quadratic-in-`u` ODE field can blow up in finite *backward* time, so asserting the derivative
+  for all `t : ℝ` was a latent over-strength claim (an un-physical guarantee that the global
+  solver cannot honor — it would assert inhabitation of a generically-empty type).  Restricted to
+  `0 ≤ t`, matching the merged ℝ³ sibling `GalerkinSolutionData_R3.u_hasDeriv`
+  (`LerayHopf/R3/AxiomaticClosure.lean`). -/
+  u_hasDeriv : ∀ t, 0 ≤ t → HasDerivAt (fun s => (u s : L2VF))
+    (deriv (fun s => (u s : L2VF)) t) t
+  /-- The projected Galerkin ODE at **forward** times `t ≥ 0`: for all `w ∈ Vₙ`,
+  `⟪u'(t), w⟫ + ν · stokesTestPairing(u(t), w) + b(u(t), u(t), w) = 0`.
+
+  SOUNDNESS (forward-only, issue #24): same rationale as `u_hasDeriv` — the ODE identity is only
+  guaranteed on the forward time interval where the energy estimate confines the solution; the
+  quadratic field blows up in finite backward time, so the all-`t` form was a latent over-strength
+  claim.  Restricted to `0 ≤ t`, matching the merged ℝ³ sibling `GalerkinSolutionData_R3.u_ode`
+  (`LerayHopf/R3/AxiomaticClosure.lean`). -/
+  u_ode : ∀ t, 0 ≤ t → ∀ w : L2Sigma, (w : L2VF) = velocityProjection_n n (w : L2VF) →
     inner (𝕜 := ℝ) (deriv (fun s => (u s : L2VF)) t) (w : L2VF) +
     ν * stokesTestPairing (u t : L2VF) (w : L2VF) + F.b (u t) (u t) w = 0
   /-- H¹ regularity: the solution stays in H¹ (required for `rellich_L2Sigma` summability). -/

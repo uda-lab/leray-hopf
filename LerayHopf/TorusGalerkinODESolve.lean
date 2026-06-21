@@ -1180,13 +1180,12 @@ private theorem galerkin_reg_bound_curve (F : Torus3NSForms) (ν : ℝ) (hν : 0
 
 /-! ### D — `galerkinSolutionData_torus` (the deliverable)
 
-NOTE (soundness blocker, see PR/handoff): the torus `GalerkinSolutionData` (`AxiomaticClosure.lean`)
-quantifies `u_hasDeriv`/`u_ode` over ALL `t : ℝ`, whereas the genuine forward-global Galerkin
-solution (G1) is differentiable / solves the ODE only for `t ≥ 0` (the quadratic field blows up in
-finite backward time; the energy bound confines only forward).  This is exactly the over-strength
-claim the merged ℝ³ structure `GalerkinSolutionData_R3` already CORRECTED to `∀ t, 0 ≤ t →` (see its
-SOUNDNESS comments).  The forward-only fields below are all proved; the all-`t` wrapper is the one
-obstruction — it needs the same soundness correction on the torus structure. -/
+The torus `GalerkinSolutionData` (`AxiomaticClosure.lean`) now quantifies `u_hasDeriv`/`u_ode` over
+forward time `∀ t, 0 ≤ t →` (issue #24 soundness correction, matching the merged ℝ³ sibling
+`GalerkinSolutionData_R3`).  This is exactly what the forward-global Galerkin solver (G1) supplies:
+the quadratic field blows up in finite *backward* time, so the previous all-`t` form was an
+un-physical over-claim the global solver could not honor.  All 8 fields are assembled below
+sorry-free / axiom-free. -/
 
 /-- Forward-time differentiability of the assembled curve (proved; `t ≥ 0`). -/
 private theorem solutionCurve_hasDeriv_forward (F : Torus3NSForms) (ν : ℝ) (n : ℕ)
@@ -1200,5 +1199,83 @@ private theorem solutionCurve_hasDeriv_forward (F : Torus3NSForms) (ν : ℝ) (n
     funext s; rw [velocitySpanToSigma_coe]
   rw [heq]
   exact (hd t ht).differentiableAt.hasDerivAt
+
+/-- The ambient derivative of the assembled curve equals the field, at forward times. -/
+private theorem solutionCurve_deriv_eq (F : Torus3NSForms) (ν : ℝ) (n : ℕ)
+    (c : ℝ → velocitySpan n)
+    (hd : ∀ s, 0 ≤ s → HasDerivAt (fun r => (c r : L2VF))
+      (galerkinODE_vectorField F ν n (c s) : L2VF) s)
+    (t : ℝ) (ht : 0 ≤ t) :
+    deriv (fun s => (velocitySpanToSigma n (c s) : L2VF)) t
+      = (galerkinODE_vectorField F ν n (c t) : L2VF) := by
+  have heq : (fun s => (velocitySpanToSigma n (c s) : L2VF)) = fun s => (c s : L2VF) := by
+    funext s; rw [velocitySpanToSigma_coe]
+  rw [heq]
+  exact (hd t ht).deriv
+
+/-- **D — the per-`n` Galerkin solver (the deliverable).**  Assemble all 8 fields of the torus
+`GalerkinSolutionData` from the forward-global curve `forwardGlobalSolution_exists` (G1) + the
+Riesz characterization R2, the dissipation bounds, and the H¹ regularity — sorry-free, axiom-free.
+
+The weak Galerkin ODE field `u_ode` is DERIVED from the autonomous field equation `c' = G_n(c)`
+via R2 (`galerkinODE_vectorField_spec`): an arbitrary test `w : L2Sigma` fixed by `Pₙ` is viewed in
+`Vₙ` (`mem_velocitySpan_of_fixed`, using `w ∈ L2Sigma`), then the spec converts the curve derivative
+into the `-ν·stokes - b` weak form.  Forward-time (`0 ≤ t`) per the corrected structure. -/
+noncomputable def galerkinSolutionData_torus (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
+    (u₀ : L2Sigma) (n : ℕ) :
+    GalerkinSolutionData F ν u₀ n := by
+  -- `GalerkinSolutionData` lives in `Type`, so extract the curve via `Exists.choose`
+  -- (cannot `obtain` an `Exists` into `Type`).
+  have hex := forwardGlobalSolution_exists F ν hν u₀ n
+  set c : ℝ → velocitySpan n := hex.choose with hc
+  have hc0 : (c 0 : L2VF) = velocityProjection_n n (u₀ : L2VF) := hex.choose_spec.1
+  have hd : ∀ s, 0 ≤ s → HasDerivAt (fun r => (c r : L2VF))
+      (galerkinODE_vectorField F ν n (c s) : L2VF) s := hex.choose_spec.2
+  refine
+    { u := fun t => velocitySpanToSigma n (c t)
+      u_initial := ?_
+      u_inVn := ?_
+      u_hasDeriv := ?_
+      u_ode := ?_
+      reg_mem := ?_
+      energy_bound := ?_
+      reg_bound := ?_ }
+  · -- `u 0 = ⟨Pₙ u₀, …⟩`.  Equate underlying `L2VF` vectors via `hc0`.
+    apply Subtype.ext
+    show (c 0 : L2VF) = velocityProjection_n n (u₀ : L2VF)
+    exact hc0
+  · -- The curve stays in `Vₙ`: `(u t : L2VF) = c t` is fixed by `Pₙ`.
+    intro t
+    show (c t : L2VF) = velocityProjection_n n (c t : L2VF)
+    exact (velocityP_fixes_span n (c t)).symm
+  · -- Forward differentiability of the ambient curve.
+    intro t ht
+    exact solutionCurve_hasDeriv_forward F ν n c hd t ht
+  · -- Derive the weak Galerkin ODE from `c' = G_n(c)` + R2 (forward time).
+    intro t ht w hw
+    -- View `w` as an element of `Vₙ` (fixed by `Pₙ`, and divergence-free).
+    have hwmem : (w : L2VF) ∈ velocitySpan n :=
+      mem_velocitySpan_of_fixed n (w : L2VF) w.2 hw.symm
+    set wV : velocitySpan n := ⟨(w : L2VF), hwmem⟩ with hwV
+    have hbw : velocitySpanToSigma n wV = w := by apply Subtype.ext; rfl
+    -- Rewrite the ambient derivative via the field equation, then R2.
+    rw [solutionCurve_deriv_eq F ν n c hd t ht]
+    have hspec := galerkinODE_vectorField_spec F ν n (c t) wV
+    show inner (𝕜 := ℝ) (galerkinODE_vectorField F ν n (c t) : L2VF) (w : L2VF)
+        + ν * stokesTestPairing (velocitySpanToSigma n (c t) : L2VF) (w : L2VF)
+        + F.b (velocitySpanToSigma n (c t)) (velocitySpanToSigma n (c t)) w = 0
+    rw [show (w : L2VF) = (wV : L2VF) from rfl, hspec, ← hbw]
+    simp only [velocitySpanToSigma_coe]
+    ring
+  · -- H¹ regularity: each `Vₙ`-curve point is in H¹ (finite Fourier support).
+    intro t
+    exact galerkinCurve_reg_mem n (velocitySpanToSigma n (c t) : L2VF)
+      (velocityP_fixes_span n (c t))
+  · -- Uniform energy bound (E2).
+    intro t ht
+    exact galerkin_energy_bound_curve F ν hν n u₀ c hc0 hd t ht
+  · -- Uniform regularity bound (E3 torus form).
+    intro T hT
+    exact galerkin_reg_bound_curve F ν hν n u₀ c hc0 hd hT
 
 end LerayHopf
