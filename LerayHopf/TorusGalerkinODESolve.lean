@@ -1086,4 +1086,96 @@ private theorem galerkin_viscous_bound (F : Torus3NSForms) (ν : ℝ) (hν : 0 <
     have : 0 ≤ (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2 := by positivity
     linarith
 
+/-- `t ↦ ‖c t‖²` is continuous (the ambient curve is differentiable, hence continuous). -/
+private theorem normSq_curve_continuous (F : Torus3NSForms) (ν : ℝ) (n : ℕ)
+    (c : ℝ → velocitySpan n)
+    (hd : ∀ s, 0 ≤ s → HasDerivAt (fun r => (c r : L2VF))
+      (galerkinODE_vectorField F ν n (c s) : L2VF) s)
+    {T : ℝ} :
+    ContinuousOn (fun t => ‖(c t : L2VF)‖ ^ 2) (Set.Icc (0 : ℝ) T) := by
+  refine ContinuousOn.pow (fun x hx => ?_) 2
+  exact (hd x hx.1).continuousAt.norm.continuousWithinAt
+
+/-- **reg_bound (E3 torus form, planner risk #3).**
+`∫₀ᵀ h1EnergySq (c t) ≤ T‖u₀‖² + ‖u₀‖²/(2ν)`.
+
+Split `h1EnergySq = ‖·‖² + (2π)²⁻¹·viscousFormSq 1`; the L²-part integrates to `≤ T‖u₀‖²`
+(pointwise `‖c t‖² ≤ ‖u₀‖²` from A3 + nonexpansive `Pₙ`), and the gradient part is
+`≤ (2π)²⁻¹·‖u₀‖²/(2ν) ≤ ‖u₀‖²/(2ν)` (since `(2π)²⁻¹ ≤ 1`) via `galerkin_viscous_bound`. -/
+private theorem galerkin_reg_bound_curve (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (n : ℕ)
+    (u₀ : L2Sigma) (c : ℝ → velocitySpan n)
+    (hc0 : (c 0 : L2VF) = velocityProjection_n n (u₀ : L2VF))
+    (hd : ∀ s, 0 ≤ s → HasDerivAt (fun r => (c r : L2VF))
+      (galerkinODE_vectorField F ν n (c s) : L2VF) s)
+    {T : ℝ} (hT : 0 < T) :
+    ∫ t in (0 : ℝ)..T, h1EnergySq (c t : L2VF) ≤
+      T * ‖(u₀ : L2VF)‖ ^ 2 + ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν) := by
+  -- Pointwise split of the integrand on `Vₙ`.
+  have hsplitfun : ∀ t, h1EnergySq (c t : L2VF)
+      = ‖(c t : L2VF)‖ ^ 2 + ((2 * Real.pi) ^ 2)⁻¹ * viscousFormSq 1 (c t : L2VF) :=
+    fun t => h1EnergySq_eq_L2_add_viscous n (c t : L2VF) (velocityP_fixes_span n (c t))
+  -- L²-part: `∫ ‖c t‖² ≤ T‖u₀‖²`.
+  have hL2cont : ContinuousOn (fun t => ‖(c t : L2VF)‖ ^ 2) (Set.Icc (0 : ℝ) T) :=
+    normSq_curve_continuous F ν n c hd
+  have hL2int : IntervalIntegrable (fun t => ‖(c t : L2VF)‖ ^ 2) MeasureTheory.volume 0 T :=
+    (hL2cont.intervalIntegrable_of_Icc hT.le)
+  have hpt : ∀ t ∈ Set.Icc (0 : ℝ) T, ‖(c t : L2VF)‖ ^ 2 ≤ ‖(u₀ : L2VF)‖ ^ 2 := by
+    intro t ht
+    have hnorm : ‖(c t : L2VF)‖ ≤ ‖(c 0 : L2VF)‖ :=
+      norm_le_of_forwardSolution F ν n hν c hT.le (fun s hs => hd s hs.1) t ht
+    rw [hc0] at hnorm
+    have hle : ‖(c t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖ :=
+      hnorm.trans (velocityProjection_n_norm_le n (u₀ : L2VF))
+    exact pow_le_pow_left₀ (norm_nonneg _) hle 2
+  have hL2bound : ∫ t in (0 : ℝ)..T, ‖(c t : L2VF)‖ ^ 2 ≤ T * ‖(u₀ : L2VF)‖ ^ 2 := by
+    calc ∫ t in (0 : ℝ)..T, ‖(c t : L2VF)‖ ^ 2
+        ≤ ∫ _t in (0 : ℝ)..T, ‖(u₀ : L2VF)‖ ^ 2 := by
+          apply intervalIntegral.integral_mono_on hT.le hL2int (intervalIntegrable_const) hpt
+      _ = T * ‖(u₀ : L2VF)‖ ^ 2 := by
+          rw [intervalIntegral.integral_const, smul_eq_mul, sub_zero]
+  -- gradient part: `(2π)²⁻¹ ∫ viscousFormSq 1 ≤ (2π)²⁻¹ · ‖u₀‖²/(2ν) ≤ ‖u₀‖²/(2ν)`.
+  have hvisc := galerkin_viscous_bound F ν hν n u₀ c hc0 hd hT
+  have hvnn : 0 ≤ ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν) := by positivity
+  have hpiinv : ((2 * Real.pi) ^ 2)⁻¹ ≤ 1 := by
+    rw [inv_le_one₀ (by positivity)]
+    nlinarith [Real.two_le_pi]
+  -- integrability bookkeeping: viscous integrable iff h1 integrable; use case-split.
+  by_cases hint : IntervalIntegrable
+      (fun t => viscousFormSq 1 (c t : L2VF)) MeasureTheory.volume (0 : ℝ) T
+  · -- both parts integrable: split the integral.
+    have hsum : (fun t => h1EnergySq (c t : L2VF))
+        = fun t => ‖(c t : L2VF)‖ ^ 2 + ((2 * Real.pi) ^ 2)⁻¹ * viscousFormSq 1 (c t : L2VF) :=
+      funext hsplitfun
+    rw [hsum, intervalIntegral.integral_add hL2int (hint.const_mul _),
+      intervalIntegral.integral_const_mul]
+    have hgrad : ((2 * Real.pi) ^ 2)⁻¹ * ∫ t in (0:ℝ)..T, viscousFormSq 1 (c t : L2VF)
+        ≤ ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν) := by
+      have hge : 0 ≤ ∫ t in (0:ℝ)..T, viscousFormSq 1 (c t : L2VF) := by
+        apply intervalIntegral.integral_nonneg hT.le
+        intro t _; exact viscousFormSq_nonneg zero_le_one _
+      calc ((2 * Real.pi) ^ 2)⁻¹ * ∫ t in (0:ℝ)..T, viscousFormSq 1 (c t : L2VF)
+          ≤ 1 * ∫ t in (0:ℝ)..T, viscousFormSq 1 (c t : L2VF) :=
+            mul_le_mul_of_nonneg_right hpiinv hge
+        _ = ∫ t in (0:ℝ)..T, viscousFormSq 1 (c t : L2VF) := one_mul _
+        _ ≤ ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν) := hvisc
+    linarith
+  · -- viscous non-integrable ⟹ h1 non-integrable (they differ by a continuous term); integral 0.
+    have hh1int : ¬ IntervalIntegrable (fun t => h1EnergySq (c t : L2VF))
+        MeasureTheory.volume (0 : ℝ) T := by
+      intro hh1
+      apply hint
+      have heq : (fun t => viscousFormSq 1 (c t : L2VF))
+          = fun t => ((2 * Real.pi) ^ 2) *
+              (h1EnergySq (c t : L2VF) - ‖(c t : L2VF)‖ ^ 2) := by
+        funext t
+        rw [hsplitfun t]
+        have hne : ((2 * Real.pi) ^ 2) ≠ 0 := by positivity
+        field_simp
+        ring
+      rw [heq]
+      exact ((hh1.sub hL2int).const_mul _)
+    rw [intervalIntegral.integral_undef hh1int]
+    have : 0 ≤ T * ‖(u₀ : L2VF)‖ ^ 2 := by positivity
+    linarith
+
 end LerayHopf
