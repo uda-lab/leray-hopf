@@ -996,4 +996,94 @@ private theorem galerkin_energy_bound_curve (F : Torus3NSForms) (ν : ℝ) (hν 
     pow_le_pow_left₀ (norm_nonneg _) hnorm 2
   linarith
 
+/-- The squared Fourier coefficients of any `f : L2C` are summable (from `lp` membership). -/
+theorem summable_norm_mFourierCoeff3_sq (f : L2C) :
+    Summable (fun k : Fin 3 → ℤ => ‖mFourierCoeff3 f k‖ ^ 2) := by
+  have hmem : Memℓp (torus3_mFourierBasis.repr f) 2 := (torus3_mFourierBasis.repr f).2
+  have hp : (0 : ℝ) < (2 : ENNReal).toReal := by norm_num
+  have := (memℓp_gen_iff hp).mp hmem
+  refine this.congr (fun k => ?_)
+  rw [show ((2 : ENNReal).toReal) = (2 : ℝ) by norm_num, Real.rpow_two]
+  rfl
+
+/-- The Galerkin projection is L²-nonexpansive: `‖Pₙ u‖ ≤ ‖u‖`.
+
+By Pythagoras + per-component Parseval, `‖Pₙ u‖² = ∑ⱼ∑_{k∈box}‖ûⱼ(k)‖² ≤ ∑ⱼ∑'ₖ‖ûⱼ(k)‖² = ‖u‖²`
+(the cutoff `Pₙ` only drops Fourier modes). -/
+theorem velocityProjection_n_norm_le (n : ℕ) (u : L2VF) :
+    ‖velocityProjection_n n u‖ ≤ ‖u‖ := by
+  have hsq : ‖velocityProjection_n n u‖ ^ 2 ≤ ‖u‖ ^ 2 := by
+    rw [L2VF_norm_sq_eq_sum_componentC, L2VF_norm_sq_eq_sum_componentC]
+    refine Finset.sum_le_sum (fun j _ => ?_)
+    rw [L2C_norm_sq_eq_tsum_coeff_sq, L2C_norm_sq_eq_tsum_coeff_sq]
+    -- Per-coefficient: `‖(Pₙu)^ⱼ(k)‖² ≤ ‖ûⱼ(k)‖²` (equal in-box, `0 ≤ ‖·‖²` out-of-box).
+    have hcoe : ∀ k : Fin 3 → ℤ,
+        ‖mFourierCoeff3 (L2VF_projComponentC j (velocityProjection_n n u)) k‖ ^ 2
+        ≤ ‖mFourierCoeff3 (L2VF_projComponentC j u) k‖ ^ 2 := by
+      intro k
+      rw [velocityProjection_n_component_comm, ContinuousLinearMap.coe_restrictScalars',
+        fourierProjection_n_mFourierCoeff]
+      by_cases hk : k ∈ fourierBox n
+      · rw [if_pos hk]
+      · rw [if_neg hk]; simp
+    exact Summable.tsum_le_tsum hcoe
+      (summable_norm_mFourierCoeff3_sq (L2VF_projComponentC j (velocityProjection_n n u)))
+      (summable_norm_mFourierCoeff3_sq (L2VF_projComponentC j u))
+  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) (by norm_num)).mp hsq
+
+/-- **E3-analog — viscous dissipation bound.** `∫₀ᵀ viscousFormSq 1 (c t) dt ≤ ‖u₀‖²/(2ν)`.
+
+From the energy identity `d/dt ½‖c t‖² = -ν·viscousFormSq 1 (c t)`, integrating the negation
+`-½‖c t‖²` (whose forward derivative is `ν·viscousFormSq 1 (c t) ≥ 0`) over `[0,T]` gives
+`ν∫ viscousFormSq 1 (c t) ≤ ½‖c 0‖² - ½‖c T‖² ≤ ½‖c 0‖² ≤ ½‖u₀‖²`.  Case-splits on integrability
+of the viscous integrand (mirrors R3's E3); when non-integrable the integral is `0` and the bound
+is vacuous (RHS `≥ 0`). -/
+private theorem galerkin_viscous_bound (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (n : ℕ)
+    (u₀ : L2Sigma) (c : ℝ → velocitySpan n)
+    (hc0 : (c 0 : L2VF) = velocityProjection_n n (u₀ : L2VF))
+    (hd : ∀ s, 0 ≤ s → HasDerivAt (fun r => (c r : L2VF))
+      (galerkinODE_vectorField F ν n (c s) : L2VF) s)
+    {T : ℝ} (hT : 0 < T) :
+    ∫ t in (0 : ℝ)..T, viscousFormSq 1 (c t : L2VF) ≤ ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν) := by
+  set E : ℝ → ℝ := fun s => (1 / 2 : ℝ) * ‖(c s : L2VF)‖ ^ 2 with hE
+  -- `E 0 = ½‖Pₙu₀‖² ≤ ½‖u₀‖²`.
+  have hE0 : E 0 ≤ (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2 := by
+    rw [hE]; simp only; rw [hc0]
+    have hle : ‖velocityProjection_n n (u₀ : L2VF)‖ ≤ ‖(u₀ : L2VF)‖ :=
+      velocityProjection_n_norm_le n (u₀ : L2VF)
+    have : ‖velocityProjection_n n (u₀ : L2VF)‖ ^ 2 ≤ ‖(u₀ : L2VF)‖ ^ 2 :=
+      pow_le_pow_left₀ (norm_nonneg _) hle 2
+    linarith
+  have hET : 0 ≤ E T := by rw [hE]; positivity
+  -- It suffices to bound `∫ ν·viscousFormSq 1 ≤ ½‖u₀‖²`, then divide by `ν`.
+  rw [show ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν)
+      = ((1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2) / ν from by rw [mul_comm 2 ν]; field_simp,
+    le_div_iff₀ hν, mul_comm, ← intervalIntegral.integral_const_mul]
+  by_cases hint : IntervalIntegrable
+      (fun t => ν * viscousFormSq 1 (c t : L2VF)) MeasureTheory.volume (0 : ℝ) T
+  · -- FTC: `∫ (-E)' = -E T - (-E 0) = E 0 - E T`, with `(-E)' = ν·viscousFormSq 1`.
+    have hcont : ContinuousOn (fun s => - E s) (Set.Icc (0 : ℝ) T) := by
+      refine ContinuousOn.neg (fun x hx => ?_)
+      exact (energy_hasDerivAt_of_localSolution F ν n c x
+        (hd x hx.1)).continuousAt.continuousWithinAt
+    have hderiv : ∀ x ∈ Set.Ioo (0 : ℝ) T,
+        HasDerivWithinAt (fun s => - E s) (ν * viscousFormSq 1 (c x : L2VF)) (Set.Ioi x) x := by
+      intro x hx
+      have hd' : HasDerivAt E (- ν * viscousFormSq 1 (c x : L2VF)) x :=
+        energy_hasDerivAt_of_localSolution F ν n c x (hd x (le_of_lt hx.1))
+      have := hd'.neg
+      rw [neg_mul, neg_neg] at this
+      exact this.hasDerivWithinAt
+    have hφint : MeasureTheory.IntegrableOn
+        (fun t => ν * viscousFormSq 1 (c t : L2VF)) (Set.Icc (0 : ℝ) T) MeasureTheory.volume :=
+      (intervalIntegrable_iff_integrableOn_Icc_of_le hT.le).1 hint
+    have hle := intervalIntegral.integral_le_sub_of_hasDeriv_right_of_le hT.le hcont hderiv hφint
+      (fun x _ => le_rfl)
+    have heq : (fun s => - E s) T - (fun s => - E s) 0 = E 0 - E T := by simp; ring
+    rw [heq] at hle
+    linarith
+  · rw [intervalIntegral.integral_undef hint]
+    have : 0 ≤ (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2 := by positivity
+    linarith
+
 end LerayHopf
