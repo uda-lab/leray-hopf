@@ -542,8 +542,7 @@ theorem exists_lerayHopf_from_package_full (F : Torus3NSForms) (ν T : ℝ) (u�
        initial_trace := pkg.initial_trace_limit
        energy_class := pkg.energy_class_limit }⟩
 
-/-- **Main existence theorem (axiomatic):** relocated to `LerayHopf/TorusConvectionForm.lean`
-(issue #22).
+/-! ### Main existence theorem (axiomatic) — relocated (issue #22)
 
 The capstone `exists_lerayHopf_torus3_axiomatic` now lives downstream in
 `LerayHopf/TorusConvectionForm.lean`, where it is rerouted through the thin gap axiom
