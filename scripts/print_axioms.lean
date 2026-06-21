@@ -13,10 +13,12 @@
 --   exists_lerayHopf_torus3_axiomatic — EXACTLY:
 --     propext  Classical.choice  Quot.sound
 --     LerayHopf.aubin_lions  LerayHopf.galerkin_limit_passage
---     LerayHopf.galerkin_ode_solution  LerayHopf.torusConvectionGap_exists
+--     LerayHopf.torusConvectionGap_exists
 --     (torus3_NSForms_exist REMOVED — issue #22 — Nonempty Torus3NSForms is now the theorem
 --      torus3_NSForms_exists, SWAPPED for the thinner torusConvectionGap_exists gap axiom via
---      the proved Torus3NSForms_of_gap; net torus project axioms still 4)
+--      the proved Torus3NSForms_of_gap)
+--     (galerkin_ode_solution REMOVED — issue #24 — discharged via the axiom-free
+--      galerkinSolutionData_torus over the finite-dim velocitySpan n; net torus project axioms now 3)
 --
 --   exists_lerayHopf_r3_axiomatic — EXACTLY:
 --     propext  Classical.choice  Quot.sound
