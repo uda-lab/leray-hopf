@@ -18,10 +18,12 @@ The T³ 8-round audit lessons are baked in preemptively.
 
 ## Architecture
 
-Four axioms are added in THIS file.  Two former axioms are NO LONGER assumed here:
-AX-SC (`spatial_compactness_R3`, now a THEOREM via the Fréchet–Kolmogorov chain, issue #2)
-and AX-G (`r3GalerkinScheme_exists`, now a discharged THEOREM, issue #21).  The single extra
-(vs. T³) that T³ PROVED but ℝ³ cannot supply concretely is now isolated to the thin
+Three axioms are added in THIS file.  Three former axioms are NO LONGER assumed here:
+AX-SC (`spatial_compactness_R3`, now a THEOREM via the Fréchet–Kolmogorov chain, issue #2),
+AX-G (`r3GalerkinScheme_exists`, now a discharged THEOREM, issue #21), and AX-1
+(`galerkin_ode_solution_R3`, discharged via the axiom-free `galerkinSolutionData_unconditional`
+over `schemeOfBasis B`, issue #10 — see `LerayHopf/R3/GalerkinODECapstone.lean`).  The single
+extra (vs. T³) that T³ PROVED but ℝ³ cannot supply concretely is now isolated to the thin
 density `curlSchwartzDense_holds` (an axiom in `SchwartzDivFreeBasis.lean`, downstream):
 
 - **AX-G `r3GalerkinScheme_exists`** — the approximation-projection family
@@ -33,10 +35,11 @@ The former AX-SC `spatial_compactness_R3` (local Rellich H¹(B_R)↪↪L²(B_R);
 proved `rellich_L2Sigma`; Rellich FAILS globally on ℝ³ but LOCAL convergence on every ball
 is TRUE without tightness) is now PROVED here, not assumed.
 
-The remaining four axioms mirror the T³ ones:
+The remaining three axioms mirror the T³ ones (AX-1 below is discharged, issue #10):
 
 - **AX-4 `r3_NSForms_exist`** — the ℝ³ convection form.
-- **AX-1 `galerkin_ode_solution_R3`** — Galerkin ODE global solution.
+- **AX-1 `galerkin_ode_solution_R3`** — Galerkin ODE global solution; DISCHARGED (issue #10),
+  no longer an axiom — see `LerayHopf/R3/GalerkinODECapstone.lean`.
 - **AX-2 `aubin_lions_R3`** — Aubin–Lions time compactness.
 - **AX-3 `galerkin_limit_passage_R3`** — limit passage to weak NS solution.
 
@@ -63,24 +66,26 @@ calibration constant, and does not vanish on all Schwartz triples.
 - `R3NSForms.b_self_zero`            : proved lemma — `b u u u = 0` from antisymmetry
 - `r3Evolution`                      : `DissipativeEvolution` built from `R3GalerkinScheme` + `R3NSForms`
 - `GalerkinSolutionData_R3`          : structure for the n-th Galerkin ODE solution on ℝ³
-- `galerkin_ode_solution_R3`         : axiom — Picard–Lindelöf on finite-dim approximation space
+- `galerkin_ode_solution_R3`         : DISCHARGED (issue #10) — was the AX-1 ODE-existence axiom; now removed, replaced by the axiom-free `galerkinSolutionData_unconditional` over `schemeOfBasis B` (`GalerkinODECapstone.lean`)
 - `spatial_compactness_R3`           : THEOREM (issue #2) — ℝ³ spatial compactness LOCAL (ball-restricted, no tightness); proved via the FK chain, no axiom
 - `AubinLionsPackage_R3`             : structure carrying the compactness subsequence
 - `aubin_lions_R3`                   : axiom — Aubin–Lions with spatial half = `spatial_compactness_R3`
 - `galerkin_limit_passage_R3`        : axiom — limit passage to weak NS solution
 - `LerayHopfSolutionFull_R3`         : proof-carrying Leray–Hopf solution structure
 - `GalerkinCompactnessPackageFull_R3`: proof-carrying Galerkin compactness package
-- `build_galerkin_package_R3`        : assembly — chains A1 → A2 (spatial_compactness_R3) → A3
+- `build_galerkin_package_R3_of_galSeq` : assembly (axiom-free core) — chains AX-2 (spatial_compactness_R3) → AX-3 from an explicit Galerkin sequence
 - `exists_lerayHopf_from_package_full_R3` : lifts a package to `Nonempty (LerayHopfSolutionFull_R3 …)`
-- `exists_lerayHopf_r3_axiomatic`    : main existence theorem — RELOCATED (issue #21) to `SchwartzDivFreeBasis.lean`
+- `exists_lerayHopf_r3_axiomatic`    : main existence theorem — RELOCATED (issue #10) to `GalerkinODECapstone.lean`
 
 ## Assumptions
 
-Four axioms are added in THIS file (names below with justifications).  TWO former axioms are
+Three axioms are added in THIS file (names below with justifications).  THREE former axioms are
 now DISCHARGED and are NOT assumptions here: AX-SC `spatial_compactness_R3` (issue #2, FK
-chain — item 4 below) and AX-G `r3GalerkinScheme_exists` (issue #21 — item 1 below).  The
-fifth project axiom is now `curlSchwartzDense_holds` (in `SchwartzDivFreeBasis.lean`), the
-thin density that AX-G was swapped for.
+chain — item 4 below), AX-G `r3GalerkinScheme_exists` (issue #21 — item 1 below), and AX-1
+`galerkin_ode_solution_R3` (issue #10 — item 3 below; discharged downstream in
+`GalerkinODECapstone.lean`).  The fourth project axiom counted in place of AX-G is
+`curlSchwartzDense_holds` (in `SchwartzDivFreeBasis.lean`), the thin density that AX-G was
+swapped for.
 
 1. `r3GalerkinScheme_exists` — NO LONGER AN AXIOM (DISCHARGED, issue #21). Existence of a
    Galerkin approximation-projection family on `L²_σ(ℝ³)` with smooth (Schwartz) range.  The
@@ -102,9 +107,12 @@ thin density that AX-G was swapped for.
    Blocked by missing `(u·∇)v` operator on L²(ℝ³) and integration by parts on ℝ³.
    Temam II.§1; Lemarié-Rieusset §5.
 
-3. `galerkin_ode_solution_R3` — Picard–Lindelöf on the finite-dimensional approximation
-   subspace + uniform energy and regularity bounds. TRUE; blocked by missing Galerkin
-   ODE solver and missing concrete `(u·∇)v`. Temam III.3, Theorem 3.1.
+3. `galerkin_ode_solution_R3` — NO LONGER AN AXIOM (DISCHARGED, issue #10).  Picard–Lindelöf
+   on the finite-dimensional approximation subspace + uniform energy and regularity bounds.
+   Now PROVED unconditionally over the concrete scheme `schemeOfBasis B` via
+   `galerkinSolutionData_unconditional` (`LerayHopf/R3/GalerkinODESolve.lean`), which rests on
+   the proved finite-dim ODE solver `finDimGlobalODE_exists`; the capstone is rerouted through
+   that data in `LerayHopf/R3/GalerkinODECapstone.lean`.  Temam III.3, Theorem 3.1.
 
 4. `spatial_compactness_R3` — NO LONGER AN AXIOM (DISCHARGED, issue #2). ℝ³ LOCAL spatial
    compactness = local Rellich H¹(B_R)↪↪L²(B_R). Concludes convergence on every ball B_R
@@ -185,7 +193,8 @@ constructive witness P5 (`nonempty_r3GalerkinScheme_of_basis`) and the single ma
 input `curlSchwartzDense_holds`.  The proof lives downstream (it needs the witness chain,
 which imports this file), so the structure `R3GalerkinScheme` stays here while its
 inhabitation moves one level down the import DAG.  The capstone `exists_lerayHopf_r3_axiomatic`
-is relocated to the same downstream file for the same reason. -/
+is relocated further downstream to `LerayHopf/R3/GalerkinODECapstone.lean` (issue #10), below
+both `SchwartzDivFreeBasis` and the axiom-free ODE chain it now routes through. -/
 
 /-! ### Galerkin test predicate for ℝ³ -/
 
@@ -382,19 +391,16 @@ structure GalerkinSolutionData_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     ∫ t in (0 : ℝ)..T, viscousFormSq_R3 ν (u t : L2VF_R3) ≤
     (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2
 
-/-! ### Axiom AX-1: Galerkin ODE existence on ℝ³ -/
+/-! ### AX-1 (DISCHARGED, issue #10): Galerkin ODE existence on ℝ³ — now a THEOREM
 
-/-- **Axiom AX-1:** The `n`-th Galerkin ODE on ℝ³ has a global solution with uniform bounds.
-
-Picard–Lindelöf applies on the finite-dimensional approximation subspace (the RHS is
-polynomial hence locally Lipschitz); global existence follows from the energy estimate
-`‖uₙ(t)‖ ≤ ‖𝔊.P n u₀‖ ≤ ‖u₀‖` (using `b_antisymm` → `b_self_zero`).
-
-Blocked in Lean by: missing concrete `(u·∇)v` operator on ℝ³ and missing Picard–Lindelöf
-for the ℝ³ Galerkin ODE in mathlib.  Temam III.3, Theorem 3.1. -/
-axiom galerkin_ode_solution_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) -- ALLOW_AXIOM: Picard–Lindelöf on finite-dim approximation subspace + energy identity → global bounds; TRUE and MINIMAL; blocked by missing (u·∇)v on ℝ³ and Galerkin ODE solver; Temam III.3
-    (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma_R3) (n : ℕ) :
-    GalerkinSolutionData_R3 𝔊 F ν u₀ n
+The former `axiom galerkin_ode_solution_R3` is REMOVED.  The `n`-th finite-dimensional
+Galerkin ODE has a global solution unconditionally over the concrete scheme `schemeOfBasis B`
+via `galerkinSolutionData_unconditional` (`LerayHopf/R3/GalerkinODESolve.lean`), which rests on
+the proved finite-dim ODE solver `finDimGlobalODE_exists` (Picard–Lindelöf on the
+finite-dimensional approximation subspace + the energy estimate
+`‖uₙ(t)‖ ≤ ‖𝔊.P n u₀‖ ≤ ‖u₀‖`).  The capstone `exists_lerayHopf_r3_axiomatic` is rerouted
+through that concrete data in `LerayHopf/R3/GalerkinODECapstone.lean`, so it no longer depends
+on any per-scheme ODE axiom.  Temam III.3, Theorem 3.1. -/
 
 /-! ### AX-SC: Spatial compactness on ℝ³ (LOCAL — no tightness) — now a THEOREM -/
 
@@ -413,7 +419,7 @@ This is the genuine Leray 1934 construction.
 (no new axiom; kernel axioms only) by composing the sorry-free Fréchet–Kolmogorov chain:
 `localCompactness_R3_of_ballCompact (localRellichInput_of_frechetKolmogorov frechetKolmogorov_holds)`.
 The statement is byte-identical to the former axiom; consumers (`aubin_lions_R3` spatial
-slot, `build_galerkin_package_R3`) are unchanged.  Verified via `#print axioms`: the chain
+slot, `build_galerkin_package_R3_of_galSeq`) are unchanged.  Verified via `#print axioms`: the chain
 depends only on `propext`, `Classical.choice`, `Quot.sound` (no `sorryAx`). -/
 theorem spatial_compactness_R3 :
     ∀ (M : ℝ) (z : ℕ → L2VF_R3),
@@ -600,7 +606,9 @@ structure LerayHopfSolutionFull_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊
 
 /-- The **full Galerkin compactness package** on ℝ³, carrying genuine proof fields.
 
-Produced by `build_galerkin_package_R3` (AX-1 → AX-2 with `spatial_compactness_R3` → AX-3).
+Produced by `build_galerkin_package_R3_of_galSeq` (AX-2 with `spatial_compactness_R3` → AX-3,
+from an explicit Galerkin sequence; the capstone supplies that sequence axiom-free over
+`schemeOfBasis B` in `GalerkinODECapstone.lean`).
 
 `energy_class_limit` proof-carries that the limit curve lies in the Leray–Hopf energy
 class: a.e. `memH1VF_R3` + integrable viscous dissipation (non-vacuity of the
@@ -630,32 +638,36 @@ structure GalerkinCompactnessPackageFull_R3 (𝔊 : R3GalerkinScheme) (F : R3NSF
 
 /-! ### Assembly theorems -/
 
-/-- **Assembly:** Build a `GalerkinCompactnessPackageFull_R3` by chaining
-AX-1 → AX-2 (with LOCAL `spatial_compactness_R3`) → AX-3.
+/-- **Assembly (axiom-free core).**  Build a `GalerkinCompactnessPackageFull_R3` from an
+EXPLICIT Galerkin sequence `galSeq`, chaining AX-2 (with LOCAL `spatial_compactness_R3`) → AX-3.
 
-The prover fills the body; the key steps are:
-1. Apply `galerkin_ode_solution_R3` (AX-1) for each `n`.
-2. Apply `aubin_lions_R3` (AX-2) with `spatial := spatial_compactness_R3` (LOCAL form,
+This is the body of `build_galerkin_package_R3` factored from Step 1 onward (issue #10): it
+takes `galSeq` as a parameter instead of producing it via the `galerkin_ode_solution_R3` axiom,
+so it carries NO dependency on AX-1.  Every downstream consumer (`aubin_lions_R3`,
+`galerkin_limit_passage_R3`, the whole packing) is scheme-polymorphic and unchanged; only the
+source of `galSeq` is lifted out.  Routing the capstone through this builder with a concrete,
+axiom-free `galSeq` (over `schemeOfBasis B`) is what discharges `galerkin_ode_solution_R3`.
+
+The steps are:
+1. Apply `aubin_lions_R3` (AX-2) with `spatial := spatial_compactness_R3` (LOCAL form,
    no tightness).
-3. Apply `galerkin_limit_passage_R3` (AX-3) to obtain the weak equation + energy + trace.
-4. Pack into `GalerkinCompactnessPackageFull_R3`. -/
-noncomputable def build_galerkin_package_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3) :
+2. Apply `galerkin_limit_passage_R3` (AX-3) to obtain the weak equation + energy + trace.
+3. Pack into `GalerkinCompactnessPackageFull_R3`. -/
+noncomputable def build_galerkin_package_R3_of_galSeq (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
     GalerkinCompactnessPackageFull_R3 𝔊 F ν T u₀ := by
-  -- Step 1 (AX-1): the Galerkin ODE solutions, one per `n`.
-  have galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n :=
-    fun n => galerkin_ode_solution_R3 𝔊 F ν hν u₀ n
-  -- Step 2 (AX-2): Aubin–Lions, with the spatial half discharged by the LOCAL
+  -- Step 1 (AX-2): Aubin–Lions, with the spatial half discharged by the LOCAL
   -- `spatial_compactness_R3` (whose type matches the `spatial` parameter exactly).
   have alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq :=
     aubin_lions_R3 𝔊 F ν hν T hT u₀ galSeq spatial_compactness_R3
-  -- Step 3 (AX-3): limit passage to the good representative.  The goal is a `Type`
+  -- Step 2 (AX-3): limit passage to the good representative.  The goal is a `Type`
   -- (a structure), so the existential is unpacked with `Exists.choose` rather than
   -- `obtain` (which only eliminates into `Prop`).  The a.e.-link conjunct
   -- (`hspec.1`) is intentionally discarded.
   have hex := galerkin_limit_passage_R3 𝔊 F ν hν T hT u₀ galSeq alPkg
   have hspec := hex.choose_spec
-  -- Step 4: pack into the proof-carrying structure.
+  -- Step 3: pack into the proof-carrying structure.
   exact
     { limit := hex.choose
       weak_eq_limit := hspec.2.1
@@ -676,16 +688,17 @@ theorem exists_lerayHopf_from_package_full_R3 (𝔊 : R3GalerkinScheme) (F : R3N
        initial_trace := pkg.initial_trace_limit
        energy_class := pkg.energy_class_limit }⟩
 
-/-! **Main existence theorem on ℝ³ (axiomatic) — RELOCATED (issue #21).**
+/-! **Main existence theorem on ℝ³ (axiomatic) — RELOCATED (issue #10).**
 
-`exists_lerayHopf_r3_axiomatic` now lives in `LerayHopf/R3/SchwartzDivFreeBasis.lean`,
-downstream of this file.  The relocation is forced by the issue-#21 swap: the capstone
-obtains its Galerkin scheme from `r3GalerkinScheme_exists`, which became a discharged
-`theorem` resting on the constructive witness chain (`nonempty_r3GalerkinScheme_of_basis` in
-`GalerkinScheme.lean`).  That chain imports this file, so the capstone must sit below it in
-the DAG to stay acyclic.  All the building blocks it uses (`r3_NSForms_exist`,
-`build_galerkin_package_R3`, `exists_lerayHopf_from_package_full_R3`) remain defined here and
-are visible downstream through the import.  See `LerayHopf/Core.lean` for the axiom-free
-layer; `LerayHopf/R3Axiomatic.lean` re-exports the relocated capstone. -/
+`exists_lerayHopf_r3_axiomatic` now lives in `LerayHopf/R3/GalerkinODECapstone.lean`,
+downstream of this file.  The relocation is forced by the issue-#10 discharge of
+`galerkin_ode_solution_R3`: the capstone sources its per-`n` Galerkin sequence from the
+axiom-free `galerkinSolutionData_unconditional` (`GalerkinODESolve.lean`) over the concrete
+scheme `schemeOfBasis B` (with `B` from `nonempty_schwartzGalerkinBasis`).  That ODE chain
+imports this file, so the capstone must sit below it in the DAG to stay acyclic.  The building
+blocks it uses (`r3_NSForms_exist`, `build_galerkin_package_R3_of_galSeq`,
+`exists_lerayHopf_from_package_full_R3`) remain defined here and are visible downstream through
+the import.  See `LerayHopf/Core.lean` for the axiom-free layer; `LerayHopf/R3Axiomatic.lean`
+re-exports the relocated capstone. -/
 
 end LerayHopf

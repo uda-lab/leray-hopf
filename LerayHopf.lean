@@ -58,6 +58,7 @@ import LerayHopf.R3.SchwartzDivFreeBasis
 import LerayHopf.R3.GalerkinODE
 import LerayHopf.R3.GalerkinODEExistence
 import LerayHopf.R3.GalerkinODESolve
+import LerayHopf.R3.GalerkinODECapstone
 import LerayHopf.R3.AubinLionsLimitPassage
 import LerayHopf.R3.CurlDensity
 import LerayHopf.R3.FrechetKolmogorov
