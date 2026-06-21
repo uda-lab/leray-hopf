@@ -867,4 +867,75 @@ theorem forwardGlobalSolution_exists (F : Torus3NSForms) (ν : ℝ) (hν : 0 < �
       exact hsol_amb
     exact (hev.hasDerivAt_iff).mpr hgoal
 
+/-! ## B.6 — D: assemble `GalerkinSolutionData`
+
+Build the per-`n` solver `galerkinSolutionData_torus`, deriving all 8 fields directly from G1 +
+R2 (no `GalerkinODEInput` intermediate, per the phase plan).  The energy/regularity payoff
+(`reg_mem`/`energy_bound`/`reg_bound`) is derived axiom-free from the dissipation identity. -/
+
+/-- H¹ regularity of any `Vₙ`-curve point: a finite-Fourier-support field is in `memH1VF`. -/
+theorem galerkinCurve_reg_mem (n : ℕ) (v : L2VF)
+    (hv : velocityProjection_n n v = v) : memH1VF v := by
+  intro j
+  -- `memH1Torus (componentC j v)` = summability of the H¹-weight sum; finite support ⟹ summable.
+  apply summable_of_ne_finset_zero (s := fourierBox n)
+  intro k hk
+  rw [coeff_zero_outside_box n v hv j k hk]
+  simp
+
+/-- **Pythagorean L²-norm decomposition.** `‖u‖²_{L2VF} = ∑ⱼ ‖componentC j u‖²_{L2C}`.
+
+The L²-inner product is the integral of the pointwise Euclidean inner product; the Euclidean
+norm² of a `Fin 3`-vector is the sum of its component squares; and `‖componentC j u‖` (complex
+embedding) equals `‖projComponent j u‖` (real component). -/
+theorem L2VF_norm_sq_eq_sum_componentC (u : L2VF) :
+    ‖u‖ ^ 2 = ∑ j : Fin 3, ‖L2VF_projComponentC j u‖ ^ 2 := by
+  -- a.e. description of the complex `j`-th component as `x ↦ (u x j : ℂ)`.
+  have hcompCx : ∀ j : Fin 3, ⇑(L2VF_projComponentC j u) =ᵐ[haarTorus3]
+      fun x => ((u x j : ℝ) : ℂ) := by
+    intro j
+    have h1 := ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
+      (RCLike.ofRealCLM (K := ℂ)) (L2VF_projComponent j u)
+    have h2 := ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
+      (EuclideanSpace.proj j (𝕜 := ℝ)) u
+    filter_upwards [h1, h2] with x hx1 hx2
+    show (RCLike.ofRealCLM (K := ℂ)).compLpL 2 haarTorus3 (L2VF_projComponent j u) x = _
+    rw [hx1, show (L2VF_projComponent j u) x = u x j from hx2]; rfl
+  -- Each complex component norm² is the integral of its pointwise square `∫ (u x j)²`.
+  have hpc : ∀ j : Fin 3, ‖L2VF_projComponentC j u‖ ^ 2 = ∫ x, ‖u x j‖ ^ 2 ∂haarTorus3 := by
+    intro j
+    rw [← real_inner_self_eq_norm_sq, MeasureTheory.L2.inner_def]
+    refine integral_congr_ae ?_
+    filter_upwards [hcompCx j] with x hx
+    show RCLike.re (inner (𝕜 := ℂ) (L2VF_projComponentC j u x) (L2VF_projComponentC j u x)) = _
+    rw [hx, inner_self_eq_norm_sq, Complex.norm_real, Real.norm_eq_abs, sq_abs]
+  simp_rw [hpc]
+  -- Integrability of each `x ↦ ‖u x j‖²` (from `Lp.memLp` of the complex component).
+  have hint : ∀ j : Fin 3, MeasureTheory.Integrable (fun x => ‖u x j‖ ^ 2) haarTorus3 := by
+    intro j
+    have hL2 := (Lp.memLp (L2VF_projComponentC j u)).integrable_norm_rpow
+      (by norm_num) (by norm_num)
+    refine (hL2.congr ?_)
+    filter_upwards [hcompCx j] with x hx
+    rw [hx, Complex.norm_real, show ((2 : ENNReal).toReal) = (2 : ℝ) by norm_num, Real.rpow_two,
+      Real.norm_eq_abs, ← sq_abs]
+  -- `‖u‖² = ∫ ⟪u x, u x⟫ = ∫ ∑ⱼ ‖u x j‖² = ∑ⱼ ∫ ‖u x j‖²`.
+  rw [← real_inner_self_eq_norm_sq u, MeasureTheory.L2.inner_def,
+    show (fun x => inner (𝕜 := ℝ) (u x) (u x))
+      = fun x => ∑ j : Fin 3, ‖u x j‖ ^ 2 from ?_,
+    integral_finsetSum _ (fun j _ => hint j)]
+  funext x
+  rw [real_inner_self_eq_norm_sq, EuclideanSpace.norm_eq, Real.sq_sqrt (by positivity)]
+
+/-- The energy identity along the field flow (forward time), mirroring `galerkin_energy_identity`:
+`d/dt ½‖c t‖² = -ν·viscousFormSq 1 (c t)`.  Here `c : ℝ → velocitySpan n` is the G1 curve and the
+ambient derivative is the field. -/
+private theorem galerkin_energy_identity_curve (F : Torus3NSForms) (ν : ℝ) (n : ℕ)
+    (c : ℝ → velocitySpan n) (t : ℝ) (ht : 0 ≤ t)
+    (hd : ∀ s, 0 ≤ s → HasDerivAt (fun r => (c r : L2VF))
+      (galerkinODE_vectorField F ν n (c s) : L2VF) s) :
+    HasDerivAt (fun s => (1 / 2 : ℝ) * ‖(c s : L2VF)‖ ^ 2)
+      (- ν * viscousFormSq 1 (c t : L2VF)) t :=
+  energy_hasDerivAt_of_localSolution F ν n c t (hd t ht)
+
 end LerayHopf
