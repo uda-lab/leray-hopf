@@ -336,7 +336,29 @@ half is discharged by the proved `rellich_L2Sigma`, NOT axiomatized.
 
 **The `spatial` hypothesis type is byte-identical to `rellich_L2Sigma`'s conclusion shape.**
 
-Blocked in Lean by: missing Bochner-Sobolev time-derivative bounds.  Temam III.2.1. -/
+**Precise remaining frontier (issue #23 audit, 2026-06-21).** The conclusion this axiom
+must produce is the `AubinLionsPackage.strong_convergence` field, i.e. strong
+`L²(0,T;L²_σ)` convergence of a subsequence:
+`∫₀ᵀ ‖(galSeq (φ n)).u t − u t‖²_{L²_σ} dt → 0`.  This is the classical Lions–Aubin
+time-compactness extraction and is NOT derivable from the currently-available lemmas:
+* the proved `rellich_L2Sigma` gives the SPATIAL embedding only (compactness in space,
+  pointwise in time);
+* the Stream-D sublibrary (`aeStronglyMeasurable_of_spaceTimeL2`,
+  `kineticEnergy_lsc_transfer`, `isWeakTimeDeriv_unique`, `W1pTime.ofHValuedDeriv`,
+  `GelfandTriple.*`) supplies measurable-representative extraction and norm-lsc transfer
+  *given* an already-`L²`-convergent sequence — it does NOT produce the relative
+  compactness (the strongly-`L²(0,T;L²_σ)`-convergent subsequence) from the uniform
+  `L²(0,T;H¹)` + time-derivative bounds.
+The genuinely-missing pillar is the time-equicontinuity/Steklov interval-averaging
+assembly: from the integrated `reg_bound` (NOT a pointwise H¹ bound), build the uniform
+time modulus, Jensen-bound the Steklov averages' H¹ seminorm, feed `rellich_L2Sigma` at
+the δ-mesh base-points, and diagonalize over δ→0 with a boundary-strip estimate.  The
+strictly-more-built ℝ³ sibling `aubinLionsPackage_R3_of_timeCompactness`
+(`R3/AubinLionsLimitPassage.lean`) — which is GIVEN a `TimeCompactnessInput` and has the
+Steklov helpers proved axiom-free — STILL carries an open `sorry` for exactly this
+`strong_convergence` centerpiece (its C2), so the torus side (which lacks even the
+`TimeCompactnessInput` scaffolding) is not closer.  Axiom KEPT this cycle per the
+no-fake-removal floor.  Temam III.2.1. -/
 axiom aubin_lions -- ALLOW_AXIOM: Aubin–Lions time compactness; spatial half discharged by rellich_L2Sigma (proved); axiom adds only Bochner-time half; TRUE and MINIMAL; Temam III.2.1
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma)

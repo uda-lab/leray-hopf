@@ -59,7 +59,10 @@ prior hypothesis-free forms were FALSE; Vitali counterexamples kept in their doc
 bundled as a genuine `H →L[ℝ] V'`, equal to `hToVprime` pointwise), and
 `isWeakTimeDeriv_comp_clm` (transport of a weak time derivative through a CLM, given
 interval-integrability of the Bochner integrands).
-Must-prove (body deferred — `ALLOW_SORRY`): `isWeakTimeDeriv_unique`.
+**Proved this cycle (sorry-free, issue #13-B):** `isWeakTimeDeriv_unique` — after adding the
+  faithful `[CompleteSpace X]` guard (domain fix: without it `integral_of_not_completeSpace`
+  collapses both `h₁`/`h₂` to `0 = -0`, admitting arbitrary `v₁,v₂`; identical to D2 precedent)
+  and importing `Mathlib.Analysis.Distribution.AEEqOfIntegralContDiff` (vector-valued du Bois-Reymond).
 `W1pTime.ofHValuedDeriv` is **sorry-free this cycle**: under the domain guards `1 ≤ p` /
 `1 ≤ q` (the Lions–Magenes space is only defined for exponents ≥ 1, so these are faithful
 preconditions, not proof-strengthening), the two interval-integrability obligations are
@@ -72,6 +75,7 @@ Months-class residual (scaffold-only + `TODO`): `w1pTime_continuous_in_H`.
 -/
 
 import LerayHopf.Bochner.GelfandTriple
+import Mathlib.Analysis.Distribution.AEEqOfIntegralContDiff -- du Bois-Reymond for Bochner integrals (IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero); needed by isWeakTimeDeriv_unique
 import Mathlib.Analysis.InnerProductSpace.Dual          -- Riesz `toDual` for `H ↪ V'`
 import Mathlib.MeasureTheory.Function.ConvergenceInMeasure
 import Mathlib.MeasureTheory.Function.LpSpace.Basic   -- MemLp / Lp (namesake of `W1pTime`)
@@ -109,14 +113,55 @@ derivatives of the same curve `u` on `(0, T)`, then they agree a.e. on `[0, T]`.
 
 (Fundamental lemma of the calculus of variations / du Bois-Reymond for Bochner integrals.)
 
-**Scaffold this cycle:** body deferred to lean-prover. -/
-theorem isWeakTimeDeriv_unique {T : ℝ} (hT : 0 < T) {u v₁ v₂ : ℝ → X}
+**Proved this cycle** (sorry-free, issue #13-B): `[CompleteSpace X]` is the faithful domain fix
+(see body comment); proof via `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`. -/
+theorem isWeakTimeDeriv_unique [CompleteSpace X] {T : ℝ} (hT : 0 < T) {u v₁ v₂ : ℝ → X}
     (h₁ : IsWeakTimeDeriv T u v₁) (h₂ : IsWeakTimeDeriv T u v₂)
     (hv₁ : IntervalIntegrable v₁ volume 0 T) (hv₂ : IntervalIntegrable v₂ volume 0 T) :
     v₁ =ᵐ[volume.restrict (Set.Ioo 0 T)] v₂ := by
-  -- From `h₁`, `h₂`: `∫ ψ • v₁ = ∫ ψ • v₂` for all admissible `ψ`, i.e. `∫ ψ • (v₁ - v₂) = 0`;
-  -- du Bois-Reymond gives `v₁ = v₂` a.e. on `Ioo 0 T`.
-  sorry -- ALLOW_SORRY: D1 weak-derivative a.e. uniqueness (lean-prover target). Fundamental lemma of calc. of variations for Bochner integrals; reachable from mathlib's Bochner machinery + density of `C¹_c(Ioo 0 T)`.
+  -- [CompleteSpace X] is a faithful domain-of-definition fix (not proof-strengthening): without
+  -- it Bochner integrals collapse to 0 (`integral_of_not_completeSpace`), making `h₁`/`h₂`
+  -- trivial for arbitrary `v₁`,`v₂` — identical to the D2 `AEStronglyMeasurable` precedent.
+  set w : ℝ → X := fun t => v₁ t - v₂ t with hw
+  have hIoo : (0:ℝ) ≤ T := hT.le
+  have hv₁Ioo : IntegrableOn v₁ (Set.Ioo 0 T) volume :=
+    (intervalIntegrable_iff_integrableOn_Ioo_of_le hIoo).mp hv₁
+  have hv₂Ioo : IntegrableOn v₂ (Set.Ioo 0 T) volume :=
+    (intervalIntegrable_iff_integrableOn_Ioo_of_le hIoo).mp hv₂
+  have hwIoo : IntegrableOn w (Set.Ioo 0 T) volume := by
+    have h := hv₁Ioo.sub hv₂Ioo; rw [hw]; exact h
+  have hwLoc : LocallyIntegrableOn w (Set.Ioo 0 T) volume := hwIoo.locallyIntegrableOn
+  have key : ∀ g : ℝ → ℝ, ContDiff ℝ (⊤ : ℕ∞) g → HasCompactSupport g →
+      tsupport g ⊆ Set.Ioo 0 T → ∫ x, g x • w x ∂volume = 0 := by
+    intro g hgsmooth hgcs hgsupp
+    have hgC1 : ContDiff ℝ 1 g := hgsmooth.of_le (by norm_num)
+    have hcompl : ∀ x, x ∉ Set.Ioo 0 T → g x • w x = 0 := by
+      intro x hx
+      have : g x = 0 := by
+        by_contra hgx; exact hx (hgsupp (subset_tsupport g (by simpa using hgx)))
+      simp [this]
+    have hfull : ∫ x, g x • w x ∂volume = ∫ x in Set.Ioo 0 T, g x • w x ∂volume :=
+      (setIntegral_eq_integral_of_forall_compl_eq_zero hcompl).symm
+    have hInterval : ∫ x in Set.Ioo 0 T, g x • w x ∂volume = ∫ t in (0:ℝ)..T, g t • w t := by
+      rw [intervalIntegral.integral_of_le hIoo, integral_Ioc_eq_integral_Ioo]
+    have e1 := h₁ g hgcs hgsupp hgC1
+    have e2 := h₂ g hgcs hgsupp hgC1
+    have heq : (∫ t in (0:ℝ)..T, g t • v₁ t) = ∫ t in (0:ℝ)..T, g t • v₂ t := by
+      have : -(∫ t in (0:ℝ)..T, g t • v₁ t) = -∫ t in (0:ℝ)..T, g t • v₂ t := by
+        rw [← e1, ← e2]
+      simpa using this
+    have hgcont : ContinuousOn g (Set.uIcc (0:ℝ) T) := hgC1.continuous.continuousOn
+    have hi1 : IntervalIntegrable (fun t => g t • v₁ t) volume 0 T := hv₁.continuousOn_smul hgcont
+    have hi2 : IntervalIntegrable (fun t => g t • v₂ t) volume 0 T := hv₂.continuousOn_smul hgcont
+    have hwsplit : ∫ t in (0:ℝ)..T, g t • w t
+        = (∫ t in (0:ℝ)..T, g t • v₁ t) - ∫ t in (0:ℝ)..T, g t • v₂ t := by
+      rw [← intervalIntegral.integral_sub hi1 hi2]; congr 1; funext t; simp only [hw, smul_sub]
+    rw [hfull, hInterval, hwsplit, heq, sub_self]
+  have main : ∀ᵐ x ∂volume, x ∈ Set.Ioo 0 T → w x = 0 :=
+    isOpen_Ioo.ae_eq_zero_of_integral_contDiff_smul_eq_zero hwLoc key
+  rw [Filter.EventuallyEq, ae_restrict_iff' measurableSet_Ioo]
+  filter_upwards [main] with t ht hmem
+  simpa [hw, sub_eq_zero] using ht hmem
 
 /-- **A classical (strong) derivative is a weak time derivative.** If `u` has strong
 derivative `v` at every interior time `t ∈ Ioo 0 T` and both `u`, `v` are interval-integrable,

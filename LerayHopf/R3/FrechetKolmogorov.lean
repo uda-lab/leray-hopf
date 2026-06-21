@@ -83,15 +83,18 @@ body without editing any RellichBall *statement*.
 
 ## Honest scope (no overclaim) — ONE isolated frontier remains
 
-This file is **proved down to a single isolated frontier**.  Both named analytic cores
+This file is **fully proved (no `sorry`)**.  Both named analytic cores
 (`young_convolution_memLp_L2`, `convolution_sub_L2_le_translation_modulus`), all assembly
-plumbing, and the deliverable `frechetKolmogorov_holds` are proved; the SOLE remaining marked
-`sorry` is `convL2_coeFn_ae` — the `Lp`-valued Bochner-integral coeFn identity
-`coeFn(∫ h, K.η h • τ_h g) =ᵐ mollifyRep K g` (mathlib-absent; the raw `ℝ³×ℝ³` double integral
-is not absolutely convergent, so a naive scalar Fubini is unavailable — see its docstring for the
-honest finite-set inner-product-duality route).  No `axiom`/`opaque`/`constant` is introduced.
-`frechetKolmogorov_holds` is a genuine DISCHARGE of the existing `FrechetKolmogorovInput` type
-(not a new isolated hypothesis); it carries `sorryAx` only via `convL2_coeFn_ae`.
+plumbing, and the deliverable `frechetKolmogorov_holds` are proved.  The previously-isolated
+`Lp`-valued Bochner-integral coeFn identity `convL2_coeFn_ae`
+(`coeFn(∫ h, K.η h • τ_h g) =ᵐ mollifyRep K g`) is now DISCHARGED by the finite-set
+inner-product-duality / shear-Fubini route (`convL2_setIntegral_inner`,
+`mollifyRep_setIntegral_inner`, `fubini_integrand_integrable`, then
+`ae_eq_of_forall_setIntegral_eq_of_sigmaFinite`) — mathlib lacks the coeFn lemma directly and the
+raw `ℝ³×ℝ³` double integral is not absolutely convergent, so the proof restricts Fubini to
+finite-measure sets where absolute convergence holds.  No `axiom`/`opaque`/`constant` is introduced
+and no `sorry` remains.  `frechetKolmogorov_holds` is a genuine DISCHARGE of the existing
+`FrechetKolmogorovInput` type (not a new isolated hypothesis).
 
 **Codex Gate round 3 (high) — local helper bounds vs. the deliverable, RESOLVED upstream.**
 The mollifier-family helper bounds (steps 1–3) are TRUE only with an ENLARGED-BALL mass bound on
@@ -137,8 +140,8 @@ R3/SpatialCompactness.lean   (L2ballR3, restrictToBall, LocalRellichInput)
 
 ## Assumptions
 
-Zero new `axiom`/`opaque`/`constant`.  Exactly ONE marked `-- ALLOW_SORRY:` proof body remains
-(`convL2_coeFn_ae`, the `Lp`-valued Bochner-integral coeFn identity); everything else is proved.
+Zero new `axiom`/`opaque`/`constant` and zero `sorry`.  The `Lp`-valued Bochner-integral coeFn
+identity `convL2_coeFn_ae` is now fully proved (finite-set inner-product-duality / shear-Fubini).
 `frechetKolmogorov_holds` is a real discharge of an existing hypothesis type, not a new
 hypothesis.
 -/
@@ -847,31 +850,375 @@ private theorem convL2_norm_le (K : MollifierKernel) (g : L2VF_R3) :
   rw [hcongr, integral_mul_const, K.mass_one, one_mul] at hle
   exact hle
 
-/-- **The genuine missing-mathlib frontier (isolated coeFn identity).**
+/-! ### Discharging the coeFn identity `convL2_coeFn_ae` — finite-set inner-product duality
+
+The coeFn identity `⇑(convL2 K g) =ᵐ mollifyRep K g` is the last genuine frontier.  We prove it
+by the route advertised in its docstring, broken into reusable pieces:
+
+* `mollifyRep_apply_bound` / `continuous_mollifyRep` / `integrableOn_mollifyRep` — the pointwise
+  convolution `mollifyRep K g` is globally bounded (Cauchy–Schwarz, `‖kernelL2R K‖·‖g‖`),
+  continuous, hence integrable on every finite-measure set;
+* `convL2_setIntegral_inner` — pairing the `Lp`-valued integral `convL2 K g` with a constant `c`
+  over a finite set `s`, commuting the inner product through the Bochner integral
+  (`integral_inner` / `ContinuousLinearMap.integral_comp_comm`) and `inner_indicatorConstLp_*`;
+* `mollifyRep_setIntegral_inner` — the matching scalar double integral for `mollifyRep`, with the
+  finite-set Fubini (`integral_integral_swap`) and shear (`measurePreserving_prod_add`) made
+  legitimate by absolute convergence on the FINITE set `s`;
+* the two agree (via `K.even`), so `ae_eq_of_forall_setIntegral_eq_of_sigmaFinite` closes it. -/
+
+/-- Global Cauchy–Schwarz / Young sup bound for the pointwise convolution, valid at EVERY `x`
+(no ball localization): `‖mollifyRep K g x‖ ≤ ‖kernelL2R K‖ · ‖g‖`.  Same Cauchy–Schwarz as
+`mollifyRep_sup_le` but with the trivial enlarged ball `B = univ`. -/
+private theorem mollifyRep_apply_bound (K : MollifierKernel) (g : L2VF_R3) (x : Domain3) :
+    ‖mollifyRep K g x‖ ≤ ‖kernelL2R K‖ * ‖g‖ := by
+  classical
+  have hηmem : MemLp K.η 2 (volume : Measure Domain3) :=
+    K.smooth.continuous.memLp_of_hasCompactSupport (p := 2) (μ := volume) K.hasCompactSupport
+  have hηaesm : AEStronglyMeasurable K.η (volume : Measure Domain3) := hηmem.aestronglyMeasurable
+  have hmp := Measure.measurePreserving_sub_left (volume : Measure Domain3) x
+  have ha : MemLp (fun y : Domain3 => |K.η (x - y)|) 2 (volume : Measure Domain3) :=
+    (hηmem.comp_measurePreserving hmp).abs
+  have hb : MemLp (fun y : Domain3 => ‖(g y : EuclideanSpace ℝ (Fin 3))‖) 2
+      (volume : Measure Domain3) := (Lp.memLp g).norm
+  have hstep1 : ‖mollifyRep K g x‖
+      ≤ ∫ y : Domain3, |K.η (x - y)| * ‖(g y : EuclideanSpace ℝ (Fin 3))‖
+          ∂(volume : Measure Domain3) := by
+    rw [mollifyRep]
+    refine le_trans (norm_integral_le_integral_norm _) (le_of_eq (integral_congr_ae ?_))
+    filter_upwards with y
+    rw [norm_smul, Real.norm_eq_abs]
+  have hcs := real_inner_le_norm (ha.toLp _) (hb.toLp _)
+  rw [L2.inner_def] at hcs
+  have heq : (∫ y : Domain3, |K.η (x - y)| * ‖(g y : EuclideanSpace ℝ (Fin 3))‖
+        ∂(volume : Measure Domain3))
+      = ∫ y : Domain3, (inner ℝ ((ha.toLp _ : Domain3 → ℝ) y) ((hb.toLp _ : Domain3 → ℝ) y))
+          ∂(volume : Measure Domain3) := by
+    refine integral_congr_ae ?_
+    filter_upwards [ha.coeFn_toLp, hb.coeFn_toLp] with y hay hby
+    simp only [RCLike.inner_apply, conj_trivial]
+    rw [hay, hby, mul_comm]
+  have hna : ‖ha.toLp _‖ = ‖kernelL2R K‖ := by
+    rw [kernelL2R, Lp.norm_toLp, Lp.norm_toLp]
+    congr 1
+    have habs : AEStronglyMeasurable (fun y : Domain3 => |K.η y|) (volume : Measure Domain3) :=
+      hηaesm.norm.congr (by filter_upwards with y using (Real.norm_eq_abs _))
+    rw [show (fun y : Domain3 => |K.η (x - y)|) = (fun y : Domain3 => |K.η y|) ∘ (fun y => x - y)
+        from rfl, eLpNorm_comp_measurePreserving habs hmp]
+    rw [show (fun y : Domain3 => |K.η y|) = (fun y : Domain3 => ‖K.η y‖) from
+        funext fun y => (Real.norm_eq_abs _).symm, eLpNorm_norm]
+  have hnb : ‖hb.toLp _‖ = ‖g‖ := by
+    rw [Lp.norm_toLp, Lp.norm_def, ← eLpNorm_norm (g : Domain3 → EuclideanSpace ℝ (Fin 3))]
+  calc ‖mollifyRep K g x‖
+      ≤ ∫ y : Domain3, |K.η (x - y)| * ‖(g y : EuclideanSpace ℝ (Fin 3))‖
+          ∂(volume : Measure Domain3) := hstep1
+    _ = ∫ y : Domain3, (inner ℝ ((ha.toLp _ : Domain3 → ℝ) y) ((hb.toLp _ : Domain3 → ℝ) y))
+          ∂(volume : Measure Domain3) := heq
+    _ ≤ ‖ha.toLp _‖ * ‖hb.toLp _‖ := hcs
+    _ = ‖kernelL2R K‖ * ‖g‖ := by rw [hna, hnb]
+
+/-- `mollifyRep K g` is the `lsmul`-convolution `K.η ⋆ ⇑g`, so it is **continuous**: the kernel is
+continuous with compact support and `⇑g ∈ L²` is locally integrable. -/
+private theorem continuous_mollifyRep (K : MollifierKernel) (g : L2VF_R3) :
+    Continuous (mollifyRep K g) := by
+  have hconv : mollifyRep K g
+      = MeasureTheory.convolution K.η (g : Domain3 → EuclideanSpace ℝ (Fin 3))
+          (ContinuousLinearMap.lsmul ℝ ℝ) (volume : Measure Domain3) := by
+    funext x
+    rw [mollifyRep, convolution_lsmul_swap]
+  rw [hconv]
+  exact K.hasCompactSupport.continuous_convolution_left _ K.smooth.continuous
+    ((Lp.memLp g).locallyIntegrable (by norm_num))
+
+/-- `mollifyRep K g` is **integrable on every finite-measure set** (continuous and globally
+bounded by `‖kernelL2R K‖·‖g‖`). -/
+private theorem integrableOn_mollifyRep (K : MollifierKernel) (g : L2VF_R3)
+    {s : Set Domain3} (hμs : (volume : Measure Domain3) s ≠ ∞) :
+    IntegrableOn (mollifyRep K g) s (volume : Measure Domain3) :=
+  Measure.integrableOn_of_bounded hμs (continuous_mollifyRep K g).aestronglyMeasurable
+    (ae_of_all _ fun x => mollifyRep_apply_bound K g x)
+
+/-- Coeff of the translate `τ_h g = compMeasurePreserving (·+h) g` is `g (x + h)` a.e.:
+`(translate_L2VF h g) x = g (x + h)` for a.e. `x`. -/
+private theorem coeFn_translate_L2VF (h : Domain3) (g : L2VF_R3) :
+    (translate_L2VF h g : Domain3 → EuclideanSpace ℝ (Fin 3))
+      =ᵐ[volume] fun x => (g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h) := by
+  rw [translate_L2VF]
+  exact Lp.coeFn_compMeasurePreserving g (measurePreserving_add_right _ h)
+
+/-- The inner integrand `y ↦ K.η (x − y) • g y` of `mollifyRep K g x` is Bochner integrable:
+its norm `|K.η (x − y)| · ‖g y‖` is the product of two `L²` functions (Hölder, `p = q = 2`),
+hence `L¹`. -/
+private theorem integrable_kernel_translate_smul (K : MollifierKernel) (g : L2VF_R3) (x : Domain3) :
+    Integrable (fun y : Domain3 => K.η (x - y) • (g : Domain3 → EuclideanSpace ℝ (Fin 3)) y)
+      (volume : Measure Domain3) := by
+  classical
+  have hηmem : MemLp K.η 2 (volume : Measure Domain3) :=
+    K.smooth.continuous.memLp_of_hasCompactSupport (p := 2) (μ := volume) K.hasCompactSupport
+  have hmp := Measure.measurePreserving_sub_left (volume : Measure Domain3) x
+  have hηx : MemLp (fun y : Domain3 => K.η (x - y)) 2 (volume : Measure Domain3) :=
+    hηmem.comp_measurePreserving hmp
+  have hgaesm : AEStronglyMeasurable (g : Domain3 → EuclideanSpace ℝ (Fin 3))
+      (volume : Measure Domain3) := (Lp.memLp g).aestronglyMeasurable
+  have haesm : AEStronglyMeasurable
+      (fun y : Domain3 => K.η (x - y) • (g : Domain3 → EuclideanSpace ℝ (Fin 3)) y)
+      (volume : Measure Domain3) := hηx.aestronglyMeasurable.smul hgaesm
+  haveI : ENNReal.HolderTriple (2 : ℝ≥0∞) 2 1 := ⟨by rw [inv_one]; exact ENNReal.inv_two_add_inv_two⟩
+  have hnormint : Integrable (fun y : Domain3 => |K.η (x - y)|
+      * ‖(g : Domain3 → EuclideanSpace ℝ (Fin 3)) y‖) (volume : Measure Domain3) :=
+    MemLp.integrable_mul (q := 2) hηx.abs ((Lp.memLp g).norm)
+  refine ⟨haesm, ?_⟩
+  refine hnormint.hasFiniteIntegral.congr' ?_
+  filter_upwards with y
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity), norm_smul, Real.norm_eq_abs]
+
+/-- Joint a.e.-strong measurability of the sheared field `(x, h) ↦ g (x + h)` over the product
+measure `(volume.restrict s).prod volume`: pull `g ∘ snd` back along the measure-preserving shear
+`(x, h) ↦ (x, x + h)`, then transfer to the restricted product (absolutely continuous). -/
+private theorem aesm_g_add (g : L2VF_R3) (s : Set Domain3) :
+    AEStronglyMeasurable
+      (fun z : Domain3 × Domain3 => (g : Domain3 → EuclideanSpace ℝ (Fin 3)) (z.1 + z.2))
+      (((volume : Measure Domain3).restrict s).prod (volume : Measure Domain3)) := by
+  have hgaesm : AEStronglyMeasurable (g : Domain3 → EuclideanSpace ℝ (Fin 3))
+      (volume : Measure Domain3) := (Lp.memLp g).aestronglyMeasurable
+  have hsnd : AEStronglyMeasurable
+      (fun z : Domain3 × Domain3 => (g : Domain3 → EuclideanSpace ℝ (Fin 3)) z.2)
+      ((volume : Measure Domain3).prod (volume : Measure Domain3)) := hgaesm.comp_snd
+  have hshear := (measurePreserving_prod_add
+    (volume : Measure Domain3) (volume : Measure Domain3)).quasiMeasurePreserving
+  have hcomp : AEStronglyMeasurable
+      (fun z : Domain3 × Domain3 => (g : Domain3 → EuclideanSpace ℝ (Fin 3)) (z.1 + z.2))
+      ((volume : Measure Domain3).prod (volume : Measure Domain3)) :=
+    hsnd.comp_quasiMeasurePreserving hshear
+  exact hcomp.mono_ac
+    ((Measure.absolutelyContinuous_of_le Measure.restrict_le_self).prod
+      (Measure.AbsolutelyContinuous.refl _))
+
+/-- **Joint integrability for the finite-set Fubini swap (PROVED).**  On a finite-measure
+measurable set `s`, the integrand `F (x, h) = K.η h · ⟪c, g (x + h)⟫` is integrable for the
+product measure `(volume.restrict s).prod volume`: each `h`-slice is integrable (kernel `× L²`,
+Hölder) and `x ↦ ∫ h, ‖F (x, h)‖` is bounded by the constant `‖kernelL2R K‖ · ‖c‖ · ‖g‖`,
+integrable on the finite set `s`.  This absolute convergence is exactly what makes Fubini
+legitimate on `s` even though the raw `ℝ³ × ℝ³` double integral is not. -/
+private theorem fubini_integrand_integrable (K : MollifierKernel) (g : L2VF_R3)
+    {s : Set Domain3} (_hs : MeasurableSet s) (hμs : (volume : Measure Domain3) s ≠ ∞)
+    (c : EuclideanSpace ℝ (Fin 3)) :
+    Integrable
+      (Function.uncurry fun x h : Domain3 => K.η h
+        * inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h)))
+      (((volume : Measure Domain3).restrict s).prod (volume : Measure Domain3)) := by
+  classical
+  haveI : ENNReal.HolderTriple (2 : ℝ≥0∞) 2 1 := ⟨by rw [inv_one]; exact ENNReal.inv_two_add_inv_two⟩
+  have hKaesm : AEStronglyMeasurable (fun z : Domain3 × Domain3 => K.η z.2)
+      (((volume : Measure Domain3).restrict s).prod (volume : Measure Domain3)) :=
+    (K.smooth.continuous.aestronglyMeasurable).comp_snd
+  have hinner : AEStronglyMeasurable
+      (fun z : Domain3 × Domain3 =>
+        inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (z.1 + z.2)))
+      (((volume : Measure Domain3).restrict s).prod (volume : Measure Domain3)) :=
+    (continuous_const.inner continuous_id).comp_aestronglyMeasurable (aesm_g_add g s)
+  have hF : AEStronglyMeasurable
+      (Function.uncurry fun x h : Domain3 => K.η h
+        * inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h)))
+      (((volume : Measure Domain3).restrict s).prod (volume : Measure Domain3)) := by
+    have heq : (Function.uncurry fun x h : Domain3 => K.η h
+        * inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h)))
+        = fun z : Domain3 × Domain3 => K.η z.2
+            * inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (z.1 + z.2)) := by
+      funext z; rfl
+    rw [heq]; exact hKaesm.mul hinner
+  have hsliceMemLp : ∀ x : Domain3,
+      MemLp (fun h : Domain3 => |K.η h|) 2 (volume : Measure Domain3) ∧
+      MemLp (fun h : Domain3 => ‖(g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h)‖) 2
+        (volume : Measure Domain3) := by
+    intro x
+    have hηmem : MemLp K.η 2 (volume : Measure Domain3) :=
+      K.smooth.continuous.memLp_of_hasCompactSupport (p := 2) (μ := volume) K.hasCompactSupport
+    have hmp := measurePreserving_add_left (volume : Measure Domain3) x
+    exact ⟨hηmem.abs, ((Lp.memLp g).comp_measurePreserving hmp).norm⟩
+  rw [integrable_prod_iff hF]
+  refine ⟨Filter.Eventually.of_forall fun x => ?_, ?_⟩
+  · obtain ⟨ha, hb⟩ := hsliceMemLp x
+    have hηmem : MemLp K.η 2 (volume : Measure Domain3) :=
+      K.smooth.continuous.memLp_of_hasCompactSupport (p := 2) (μ := volume) K.hasCompactSupport
+    have hmp := measurePreserving_add_left (volume : Measure Domain3) x
+    have hgx : MemLp (fun h : Domain3 =>
+        inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h))) 2
+        (volume : Measure Domain3) :=
+      ((Lp.memLp g).comp_measurePreserving hmp).const_inner c
+    have hint := MemLp.integrable_mul (q := 2) hηmem hgx
+    rw [show (K.η * fun h : Domain3 => inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h)))
+        = (fun y : Domain3 => K.η y
+            * inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + y))) from rfl] at hint
+    simpa only [Function.uncurry] using hint
+  · set Φ : Domain3 → ℝ := fun x => ∫ h : Domain3,
+      ‖Function.uncurry (fun x h : Domain3 => K.η h
+        * inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h))) (x, h)‖
+        ∂(volume : Measure Domain3) with hΦ
+    have hΦaesm : AEStronglyMeasurable Φ ((volume : Measure Domain3).restrict s) :=
+      hF.norm.integral_prod_right'
+    have hΦbound : ∀ x : Domain3, ‖Φ x‖ ≤ ‖kernelL2R K‖ * ‖c‖ * ‖g‖ := by
+      intro x
+      obtain ⟨ha, hb⟩ := hsliceMemLp x
+      have hmp := measurePreserving_add_left (volume : Measure Domain3) x
+      have hcs := real_inner_le_norm (ha.toLp _) (hb.toLp _)
+      rw [L2.inner_def] at hcs
+      have hΦnn : 0 ≤ Φ x := integral_nonneg fun h => norm_nonneg _
+      rw [Real.norm_eq_abs, abs_of_nonneg hΦnn, hΦ]
+      have hpt : ∀ h : Domain3,
+          ‖Function.uncurry (fun x h : Domain3 => K.η h
+            * inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h))) (x, h)‖
+            ≤ |K.η h| * ‖(g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h)‖ * ‖c‖ := by
+        intro h
+        simp only [Function.uncurry, Real.norm_eq_abs, abs_mul]
+        rw [mul_assoc]
+        gcongr
+        exact (abs_real_inner_le_norm c _).trans (by rw [mul_comm])
+      have hintRHS : Integrable (fun h : Domain3 =>
+          |K.η h| * ‖(g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h)‖ * ‖c‖)
+          (volume : Measure Domain3) :=
+        ((MemLp.integrable_mul (q := 2) ha hb).mul_const ‖c‖)
+      have hintLHS : Integrable (fun h : Domain3 =>
+          ‖Function.uncurry (fun x h : Domain3 => K.η h
+            * inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h))) (x, h)‖)
+          (volume : Measure Domain3) := by
+        have hηmem : MemLp K.η 2 (volume : Measure Domain3) :=
+          K.smooth.continuous.memLp_of_hasCompactSupport (p := 2) (μ := volume) K.hasCompactSupport
+        have hgx : MemLp (fun h : Domain3 =>
+            inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h))) 2
+            (volume : Measure Domain3) :=
+          ((Lp.memLp g).comp_measurePreserving hmp).const_inner c
+        exact ((MemLp.integrable_mul (q := 2) hηmem hgx).norm).congr
+          (by filter_upwards with h using rfl)
+      calc Φ x ≤ ∫ h : Domain3,
+            |K.η h| * ‖(g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h)‖ * ‖c‖
+              ∂(volume : Measure Domain3) :=
+            integral_mono_ae hintLHS hintRHS (Filter.Eventually.of_forall hpt)
+        _ = (∫ h : Domain3, |K.η h| * ‖(g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h)‖
+              ∂(volume : Measure Domain3)) * ‖c‖ := by rw [integral_mul_const]
+        _ = (∫ h : Domain3, (inner ℝ ((ha.toLp _ : Domain3 → ℝ) h)
+              ((hb.toLp _ : Domain3 → ℝ) h)) ∂(volume : Measure Domain3)) * ‖c‖ := by
+            congr 1
+            refine integral_congr_ae ?_
+            filter_upwards [ha.coeFn_toLp, hb.coeFn_toLp] with h hah hbh
+            simp only [RCLike.inner_apply, conj_trivial, hah, hbh]
+            ring
+        _ ≤ (‖ha.toLp _‖ * ‖hb.toLp _‖) * ‖c‖ := by
+            gcongr
+        _ = ‖kernelL2R K‖ * ‖c‖ * ‖g‖ := by
+            have hna : ‖ha.toLp _‖ = ‖kernelL2R K‖ := by
+              rw [kernelL2R, Lp.norm_toLp, Lp.norm_toLp]
+              congr 1
+              rw [show (fun h : Domain3 => |K.η h|) = (fun h : Domain3 => ‖K.η h‖) from
+                  funext fun h => (Real.norm_eq_abs _).symm, eLpNorm_norm]
+            have hnb : ‖hb.toLp _‖ = ‖g‖ := by
+              rw [Lp.norm_toLp, Lp.norm_def, ← eLpNorm_norm
+                (g : Domain3 → EuclideanSpace ℝ (Fin 3))]
+              congr 1
+              rw [show (fun h : Domain3 =>
+                  ‖(g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h)‖)
+                  = (fun y : Domain3 => ‖(g : Domain3 → EuclideanSpace ℝ (Fin 3)) y‖)
+                      ∘ (fun h : Domain3 => x + h) from rfl,
+                eLpNorm_comp_measurePreserving
+                  ((Lp.memLp g).aestronglyMeasurable.norm)
+                  (measurePreserving_add_left (volume : Measure Domain3) x)]
+            rw [hna, hnb]; ring
+    exact ⟨hΦaesm, HasFiniteIntegral.restrict_of_bounded (‖kernelL2R K‖ * ‖c‖ * ‖g‖)
+      hμs.lt_top (ae_of_all _ fun x => hΦbound x)⟩
+
+/-- **LHS scalar reduction (PROVED).**  For any constant `c` and finite-measure measurable `s`,
+the inner product of `c` with the set-integral of the `Lp`-valued Bochner integral `convL2 K g`
+over `s` equals the iterated scalar integral
+`∫ h, K.η h · (∫ x in s, ⟪c, g (x + h)⟫)`.  Commutes the inner product through the Bochner
+integral via `integral_inner` and `inner_indicatorConstLp_eq_inner_setIntegral`. -/
+private theorem convL2_setIntegral_inner (K : MollifierKernel) (g : L2VF_R3)
+    {s : Set Domain3} (hs : MeasurableSet s) (hμs : (volume : Measure Domain3) s ≠ ∞)
+    (c : EuclideanSpace ℝ (Fin 3)) :
+    (inner ℝ c (∫ x in s, (convL2 K g : Domain3 → EuclideanSpace ℝ (Fin 3)) x
+        ∂(volume : Measure Domain3)))
+      = ∫ h : Domain3, K.η h
+          * (∫ x in s, inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h))
+              ∂(volume : Measure Domain3)) ∂(volume : Measure Domain3) := by
+  classical
+  set w : L2VF_R3 := indicatorConstLp 2 hs hμs c with hw
+  have hpair : inner ℝ c (∫ x in s, (convL2 K g : Domain3 → EuclideanSpace ℝ (Fin 3)) x
+        ∂(volume : Measure Domain3)) = inner ℝ w (convL2 K g) :=
+    (L2.inner_indicatorConstLp_eq_inner_setIntegral ℝ hs hμs c (convL2 K g)).symm
+  rw [hpair, convL2]
+  rw [← integral_inner (integrable_kernel_smul_translate K g) w]
+  refine integral_congr_ae (Filter.Eventually.of_forall fun h => ?_)
+  simp only [real_inner_smul_right]
+  congr 1
+  rw [show (inner ℝ w (translate_L2VF h g) : ℝ)
+      = inner ℝ (indicatorConstLp 2 hs hμs c) (translate_L2VF h g) from rfl,
+    L2.inner_indicatorConstLp_eq_setIntegral_inner (𝕜 := ℝ) (translate_L2VF h g) hs c hμs]
+  refine setIntegral_congr_ae hs ((coeFn_translate_L2VF h g).mono fun x hx _ => ?_)
+  rw [hx]
+
+/-- **RHS scalar reduction (PROVED).**  For any constant `c` and finite-measure measurable `s`,
+the inner product of `c` with the set-integral of the pointwise convolution `mollifyRep K g`
+over `s` equals the iterated scalar integral
+`∫ x in s, ∫ h, K.η h · ⟪c, g (x + h)⟫`.  Uses `integral_inner` on the inner `∫ y` integral,
+the translation substitution `y ↦ x + h`, and `K.even`. -/
+private theorem mollifyRep_setIntegral_inner (K : MollifierKernel) (g : L2VF_R3)
+    {s : Set Domain3} (hs : MeasurableSet s) (hμs : (volume : Measure Domain3) s ≠ ∞)
+    (c : EuclideanSpace ℝ (Fin 3)) :
+    (inner ℝ c (∫ x in s, mollifyRep K g x ∂(volume : Measure Domain3)))
+      = ∫ x in s, (∫ h : Domain3, K.η h
+          * inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h))
+            ∂(volume : Measure Domain3)) ∂(volume : Measure Domain3) := by
+  classical
+  rw [← integral_inner (integrableOn_mollifyRep K g hμs) c]
+  refine setIntegral_congr_ae hs (Filter.Eventually.of_forall fun x _ => ?_)
+  rw [mollifyRep]
+  rw [← integral_inner (integrable_kernel_translate_smul K g x) c]
+  rw [show (∫ y : Domain3, inner ℝ c (K.η (x - y) • (g : Domain3 → EuclideanSpace ℝ (Fin 3)) y)
+        ∂(volume : Measure Domain3))
+      = ∫ h : Domain3, inner ℝ c (K.η (x - (x + h))
+          • (g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h)) ∂(volume : Measure Domain3) from
+    (integral_add_left_eq_self
+      (fun y => inner ℝ c (K.η (x - y) • (g : Domain3 → EuclideanSpace ℝ (Fin 3)) y)) x).symm]
+  refine integral_congr_ae (Filter.Eventually.of_forall fun h => ?_)
+  simp only [real_inner_smul_right, show x - (x + h) = -h by abel, K.even]
+
+/-- **The isolated coeFn identity — now PROVED (no `sorry`, no axiom).**
 
 The coeFn of the `Lp`-valued Bochner integral `convL2 K g = ∫ h, K.η h • τ_h g` agrees a.e. with
-the pointwise convolution `mollifyRep K g x = ∫ y, K.η (x − y) • g y`.  This is the SINGLE
-remaining analytic gap of Pillar B: mathlib provides **no** "coeFn of an `Lp`-valued Bochner
-integral as the scalar integral of coeFns" lemma for this `volume`-on-ℝ³ vector-valued setting,
-and the raw double integral is NOT absolutely convergent on `ℝ³ × ℝ³` (`φ, g ∈ L²` are not `L¹`),
-so a naive scalar Fubini is unavailable.
+the pointwise convolution `mollifyRep K g x = ∫ y, K.η (x − y) • g y`.
 
-The honest provable route (no axiom, no weakening): pair both sides with `indicatorConstLp` of an
-arbitrary FINITE-measure set `s` and use `integral_inner`:
-`⟪convL2 K g, 1_s⟫ = ∫ h, K.η h • ⟪τ_h g, 1_s⟫ = ∫ h, K.η h • ∫_s g(·+h)`; on the FINITE set `s`
-the double integral IS absolutely convergent (`∫_s ‖φ‖ < ∞`), so Fubini + the measure-preserving
-shear `(x,h) ↦ (x, x+h)` (`measurePreserving_prod_add`) + `K.even` rewrite it to
-`∫_s (∫ y, K.η(x−y) • g y) = ∫_s mollifyRep K g`.  Agreement of `∫_s` over all finite `s` forces
-the a.e. equality.  This is ~200 delicate lines (joint a.e.-strong-measurability of
-`(h,x) ↦ g(x+h)` via `AEStronglyMeasurable.comp_quasiMeasurePreserving`, finite-set Fubini,
-`Lp`-`indicatorConstLp` duality); isolated here as the least-abstract honest gap so that BOTH
-analytic cores and the FK assembly are proved *modulo this one lemma*. -/
+mathlib provides **no** "coeFn of an `Lp`-valued Bochner integral as the scalar integral of
+coeFns" lemma for this `volume`-on-ℝ³ vector-valued setting, and the raw double integral is NOT
+absolutely convergent on `ℝ³ × ℝ³` (`φ, g ∈ L²` are not `L¹`), so a naive global scalar Fubini is
+unavailable.  The honest provable route, carried out here:
+
+* both `convL2 K g` (an `Lp` element) and `mollifyRep K g` (continuous, globally bounded by
+  `mollifyRep_apply_bound`, hence `integrableOn_mollifyRep`) are integrable on every finite-measure
+  set, so `ae_eq_of_forall_setIntegral_eq_of_sigmaFinite` reduces the goal to
+  `∫_s convL2 K g = ∫_s mollifyRep K g` for all finite measurable `s`;
+* equality of two `EuclideanSpace ℝ (Fin 3)` vectors is tested by `ext_inner_left`: it suffices to
+  show `⟪c, ∫_s convL2 K g⟫ = ⟪c, ∫_s mollifyRep K g⟫` for every `c`;
+* `convL2_setIntegral_inner` rewrites the LHS to `∫ h, K.η h · ∫ x in s, ⟪c, g (x+h)⟫` and
+  `mollifyRep_setIntegral_inner` rewrites the RHS to `∫ x in s, ∫ h, K.η h · ⟪c, g (x+h)⟫`;
+* on the FINITE set `s` the double integral of `F (x,h) = K.η h · ⟪c, g (x+h)⟫` is absolutely
+  convergent (`fubini_integrand_integrable`), so `integral_integral_swap` (Fubini over
+  `(volume.restrict s).prod volume`) exchanges the two orders. -/
 private theorem convL2_coeFn_ae (K : MollifierKernel) (g : L2VF_R3) :
     (convL2 K g : Domain3 → EuclideanSpace ℝ (Fin 3)) =ᵐ[volume] mollifyRep K g := by
-  sorry -- ALLOW_SORRY: coeFn of the Lp-valued Bochner integral `∫ h, K.η h • τ_h g` equals the
-  -- pointwise convolution `mollifyRep K g` a.e. (the finite-set inner-product-duality / shear-Fubini
-  -- route above). mathlib lacks the Lp-valued-integral coeFn lemma; the raw ℝ³×ℝ³ double integral
-  -- is not absolutely convergent, so this is the genuine missing-mathlib frontier of Pillar B.
+  classical
+  refine ae_eq_of_forall_setIntegral_eq_of_sigmaFinite
+    (fun s _ hμs => integrableOn_Lp_of_measure_ne_top (convL2 K g) (by norm_num) hμs.ne)
+    (fun s _ hμs => integrableOn_mollifyRep K g hμs.ne)
+    (fun s hs hμs => ?_)
+  refine ext_inner_left ℝ (fun c => ?_)
+  rw [convL2_setIntegral_inner K g hs hμs.ne c, mollifyRep_setIntegral_inner K g hs hμs.ne c]
+  -- Pull `K.η h` out of the inner set-integral, then Fubini-swap.
+  rw [show (∫ h : Domain3, K.η h
+        * (∫ x in s, inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h))
+            ∂(volume : Measure Domain3)) ∂(volume : Measure Domain3))
+      = ∫ h : Domain3, (∫ x in s, K.η h
+          * inner ℝ c ((g : Domain3 → EuclideanSpace ℝ (Fin 3)) (x + h))
+            ∂(volume : Measure Domain3)) ∂(volume : Measure Domain3) from
+    integral_congr_ae (Filter.Eventually.of_forall fun h => (integral_const_mul _ _).symm)]
+  exact (integral_integral_swap (fubini_integrand_integrable K g hs hμs.ne c)).symm
 
 /-- `mollifyRep K g`, as an a.e. function, lies in `L²`: it agrees a.e. with `convL2 K g`. -/
 private theorem memLp_mollifyRep (K : MollifierKernel) (g : L2VF_R3) :
@@ -897,7 +1244,7 @@ The mollified field `mollifyRep K g = K.η ⋆ g` lies in `L²(ℝ³)` globally,
 theorem young_convolution_memLp_L2 (K : MollifierKernel) (g : L2VF_R3) :
     ∃ hmem : MemLp (mollifyRep K g) 2 (volume : Measure Domain3),
       ‖hmem.toLp‖ ≤ ‖kernelL1R K‖ * ‖g‖ := by
-  -- PROVED modulo the single isolated frontier `convL2_coeFn_ae`.  The `MemLp` witness comes from
+  -- PROVED (the coeFn frontier `convL2_coeFn_ae` is now discharged).  The `MemLp` witness comes from
   -- `mollifyRep K g =ᵐ convL2 K g` (an honest `Lp` element); the norm bound is `convL2_norm_le`
   -- (the entire Young content) plus `‖kernelL1R K‖ = 1`.
   refine ⟨memLp_mollifyRep K g, ?_⟩
@@ -920,7 +1267,7 @@ theorem convolution_sub_L2_le_translation_modulus (K : MollifierKernel) (g : L2V
     (hmem : MemLp (mollifyRep K g) 2 (volume : Measure Domain3)) :
     ‖hmem.toLp - g‖
       ≤ ∫ h : Domain3, K.η h • ‖translate_L2VF h g - g‖ ∂(volume : Measure Domain3) := by
-  -- PROVED modulo the single isolated frontier `convL2_coeFn_ae` (consumed via the primitive).
+  -- PROVED (the coeFn frontier `convL2_coeFn_ae` is now discharged; consumed via the primitive).
   -- `hmem.toLp = convL2 K g = ∫ h, K.η h • τ_h g`, and `g = ∫ h, K.η h • g` (`K.mass_one`), so the
   -- defect is the single Bochner integral `∫ h, K.η h • (τ_h g − g)`; `‖∫ F‖ ≤ ∫ ‖F‖` plus
   -- `‖K.η h • v‖ = K.η h · ‖v‖` (`K.nonneg`) gives the modulus bound, with the kernel weight `K.η h`

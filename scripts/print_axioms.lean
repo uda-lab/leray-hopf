@@ -19,7 +19,8 @@
 --     propext  Classical.choice  Quot.sound
 --     LerayHopf.aubin_lions_R3  LerayHopf.galerkin_limit_passage_R3
 --     LerayHopf.galerkin_ode_solution_R3  LerayHopf.r3GalerkinScheme_exists
---     LerayHopf.r3_NSForms_exist  LerayHopf.spatial_compactness_R3
+--     LerayHopf.r3_NSForms_exist
+--     (spatial_compactness_R3 REMOVED — issue #2 — now a theorem via the FK chain)
 --
 --   lower_bound_from_inverse_square_lifespan (Core representative) — EXACTLY:
 --     propext  Classical.choice  Quot.sound  (no project axioms)

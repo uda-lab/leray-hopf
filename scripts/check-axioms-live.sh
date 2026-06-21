@@ -13,11 +13,12 @@
 #     LerayHopf.aubin_lions  LerayHopf.galerkin_limit_passage
 #     LerayHopf.galerkin_ode_solution  LerayHopf.torus3_NSForms_exist  (4 project)
 #
-#   exists_lerayHopf_r3_axiomatic — exactly 9 axioms:
+#   exists_lerayHopf_r3_axiomatic — exactly 8 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
 #     LerayHopf.aubin_lions_R3  LerayHopf.galerkin_limit_passage_R3
 #     LerayHopf.galerkin_ode_solution_R3  LerayHopf.r3GalerkinScheme_exists
-#     LerayHopf.r3_NSForms_exist  LerayHopf.spatial_compactness_R3  (6 project)
+#     LerayHopf.r3_NSForms_exist  (5 project)
+#     NOTE: spatial_compactness_R3 REMOVED (issue #2) — now a theorem via the FK chain.
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.
@@ -145,13 +146,14 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 
 # ---------------------------------------------------------------------------
 # Pin 2: exists_lerayHopf_r3_axiomatic
-#   6 project axioms + 3 kernel = 9 total
+#   5 project axioms + 3 kernel = 8 total
+#   (spatial_compactness_R3 removed — issue #2 — now a theorem via the FK chain)
 # ---------------------------------------------------------------------------
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound
    LerayHopf.aubin_lions_R3 LerayHopf.galerkin_limit_passage_R3
    LerayHopf.galerkin_ode_solution_R3 LerayHopf.r3GalerkinScheme_exists
-   LerayHopf.r3_NSForms_exist LerayHopf.spatial_compactness_R3"
+   LerayHopf.r3_NSForms_exist"
 
 # ---------------------------------------------------------------------------
 # Pin 3: Core torus representative — no project axioms, no sorryAx
