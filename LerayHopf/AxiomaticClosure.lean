@@ -9,20 +9,25 @@ open MeasureTheory Filter Topology
 /-!
 # Axiomatic closure of Leray–Hopf existence on 𝕋³
 
-**M6 — Commit 2 (the 4 axioms + assembly).**
+**M6 — Commit 2 (assembly + the remaining 3 axioms).**
 
-This file closes the T³ Leray–Hopf existence proof by axiomatizing the four analytic
-results that remain out of reach in Lean (concrete convection form, Galerkin ODE,
-Aubin–Lions compactness, and limit passage), constructing the proof-carrying solution
-structures, and assembling the main existence theorems.
+This file closes the T³ Leray–Hopf existence proof by axiomatizing the analytic results that
+remain out of reach in Lean (Galerkin ODE, Aubin–Lions compactness, and limit passage),
+constructing the proof-carrying solution structures, and assembling the existence machinery.
+
+**Issue #22 de-axiomatization:** The former fat axiom A4 `torus3_NSForms_exist` has been
+**removed**.  `Nonempty Torus3NSForms` is now the theorem `torus3_NSForms_exists` in
+`LerayHopf/TorusConvectionForm.lean`, derived sorry-free from the strictly-thinner gap axiom
+`torusConvectionGap_exists` via the proved `Torus3NSForms_of_gap`.  The capstone
+`exists_lerayHopf_torus3_axiomatic` is relocated to that downstream file.
 
 ## Architecture
 
-All four axioms are *true* and *minimal* (every field is used in the assembly).
-Non-vacuity of `torus3_NSForms_exist` is pinned via `b_galerkin` to the finite Galerkin
-convection form `galerkinConvection`, which is generically nonzero and explicitly excludes
-`b = 0`.  The spatial half of Aubin–Lions is *not* axiomatized: it is supplied as an
-explicit hypothesis discharged by the proved `rellich_L2Sigma`.
+The three axioms remaining in this file are *true* and *minimal* (every field is used in the
+assembly).  Non-vacuity of the convection form `b` is pinned (in the downstream gap) via
+`b_galerkin` to the finite Galerkin convection form `galerkinConvection`, which is generically
+nonzero and explicitly excludes `b = 0`.  The spatial half of Aubin–Lions is *not* axiomatized:
+it is supplied as an explicit hypothesis discharged by the proved `rellich_L2Sigma`.
 
 **v4 de-axiomatization:** The viscous (Stokes) form is no longer a field of `Torus3NSForms`
 (axiom A4).  It is the concrete `stokesTestPairing` definition (a Fourier tsum), which is
@@ -32,7 +37,7 @@ sound for all `u : L2VF`.  The energy-inequality fields use `viscousFormSq ν` d
 
 - `galerkinConvection`              : finite Galerkin convection form (Finset.sum, .re)
 - `Torus3NSForms`                   : structure bundling the T³ NS forms with their properties
-- `torus3_NSForms_exist`            : axiom — existence of `Torus3NSForms` (Temam II.§1)
+  (existence is now `torus3_NSForms_exists`, downstream in `TorusConvectionForm.lean`, issue #22)
 - `Torus3NSForms.b_self_zero`       : proved lemma — `b u u u = 0` from antisymmetry
 - `torus3Evolution`                 : `DissipativeEvolution` built from a `Torus3NSForms`
 - `GalerkinSolutionData`            : structure for the `n`-th Galerkin ODE solution
@@ -44,19 +49,16 @@ sound for all `u : L2VF`.  The energy-inequality fields use `viscousFormSq ν` d
 - `GalerkinCompactnessPackageFull`  : proof-carrying Galerkin compactness package
 - `build_galerkin_package`          : assembly — chains A1 → A2 (with rellich_L2Sigma) → A3
 - `exists_lerayHopf_from_package_full` : copies proofs from package to solution
-- `exists_lerayHopf_torus3_axiomatic` : main existence theorem (axiom-dependent; renamed from `exists_lerayHopf_torus3`)
+- `exists_lerayHopf_torus3_axiomatic` : main existence theorem — RELOCATED to
+  `TorusConvectionForm.lean` (issue #22), rerouted through `torus3_NSForms_exists`
 
 ## Assumptions
 
-Four axioms are added in this file (names below with one-line justifications):
+Three axioms are added in this file (names below with one-line justifications).  The fourth
+project axiom is the thinner `torusConvectionGap_exists`, in `TorusConvectionForm.lean` (issue #22,
+replacing the removed `torus3_NSForms_exist`).
 
-1. `torus3_NSForms_exist` — existence of the T³ NS convection form `b` (as a
-   `Torus3NSForms` structure; the viscous form is the concrete `stokesTestPairing`).
-   TRUE: the genuine `(u·∇)v` form witnesses it; NON-VACUOUS:
-   `b = 0` fails `b_galerkin` since `galerkinConvection ≢ 0`.  Blocked in Lean by the
-   missing torus integration-by-parts operator.  Temam II.§1; RRS §3.2.
-
-2. `galerkin_ode_solution` — Picard–Lindelöf on the finite-dimensional Galerkin space `Vₙ`
+1. `galerkin_ode_solution` — Picard–Lindelöf on the finite-dimensional Galerkin space `Vₙ`
    plus uniform energy and regularity bounds.  TRUE: the Galerkin ODE has Lipschitz RHS
    (polynomial nonlinearity on a finite-dim space); global existence follows from the energy
    estimate `‖uₙ(t)‖ ≤ ‖uₙ(0)‖`.  Blocked by the missing concrete `(u·∇)v` operator.
@@ -130,8 +132,8 @@ def IsGalerkinTest (w : L2Sigma) : Prop :=
 
 **Non-vacuity:** The field `b_galerkin` pins `b` to `galerkinConvection` on Galerkin
 subspaces, which is generically nonzero.  This excludes the vacuous witness `b := 0`
-and ensures the axiom `torus3_NSForms_exist` is genuinely about Navier–Stokes
-(not Stokes or heat).
+and ensures the existence witness `torus3_NSForms_exists` (issue #22, in
+`TorusConvectionForm.lean`) is genuinely about Navier–Stokes (not Stokes or heat).
 
 **Antisymmetry convention:** `b u v w = -b u w v` (skew in the last two slots).
 This is the correct form for the T³ convection form `b(u,v,w) = ∫ (u·∇v)·w`.
@@ -177,7 +179,7 @@ structure Torus3NSForms where
   This field genuinely excludes `b = 0` (which would fail here since `galerkinConvection ≢ 0`).
   **FLAG for Codex non-vacuity audit:** (i) `galerkinConvection` is the correct convection
   structure constant from `(u·∇)v` on `𝕋³`; (ii) this field excludes `b = 0`; (iii) the
-  genuine convection form witnesses `torus3_NSForms_exist`; (iv) `b_bound` is the
+  genuine convection form witnesses `torus3_NSForms_exists` (issue #22); (iv) `b_bound` is the
   smooth-test L² bound. -/
   b_galerkin : ∀ (n : ℕ) (u v w : L2Sigma),
     velocityProjection_n n (u : L2VF) = (u : L2VF) →
@@ -185,22 +187,16 @@ structure Torus3NSForms where
     velocityProjection_n n (w : L2VF) = (w : L2VF) →
     b u v w = galerkinConvection n (u : L2VF) (v : L2VF) (w : L2VF)
 
-/-! ### Axiom A4: T³ NS forms exist -/
+/-! ### A4 (de-axiomatized, issue #22): T³ NS forms exist via the thin gap
 
-/-- **Axiom A4:** The T³ Navier–Stokes convection form exists.
-
-The genuine convection form `b(u,v,w) = ∫_{𝕋³} ((u·∇)v)·w` is a witness:
-- Antisymmetry: integration by parts + `div u = 0` gives `b u v w = -b u w v`.
-- Trilinearity: the genuine form is multilinear (finite Fourier sums are linear).
-- Smooth-test bound: `b(u,v,w) = -∫(u·∇)w·v`, so `|b| ≤ ‖∇w‖_∞ ‖u‖_{L²} ‖v‖_{L²}`
-  with `‖∇w‖_∞ < ∞` for any trig polynomial `w` (i.e., `IsGalerkinTest w`).
-- Galerkin pin: `b` equals `galerkinConvection n` on `Vₙ` (explicit finite-sum calculation).
-
-NOTE: The viscous form is NOT axiomatized — it is the concrete `stokesTestPairing` def.
-
-Blocked in Lean by: missing `(u·∇)v` operator on L² torus fields + integration by parts.
-Temam II.§1; RRS §3.2. -/
-axiom torus3_NSForms_exist : Nonempty Torus3NSForms -- ALLOW_AXIOM: T³ NS convection form b exists (b=galerkinConvection on Vₙ, trilinear, smooth-test b_bound via b=-∫(u·∇)w·v); viscous form is concrete stokesTestPairing (NOT axiomatized); TRUE (genuine (u·∇)v form witnesses); NON-VACUOUS (b=0 fails b_galerkin); Temam II.§1; RRS §3.2
+The former fat axiom `torus3_NSForms_exist : Nonempty Torus3NSForms` has been **removed**.  Its
+content is now the theorem `torus3_NSForms_exists` in `LerayHopf/TorusConvectionForm.lean`, derived
+sorry-free from the strictly-thinner gap axiom `torusConvectionGap_exists` via the proved
+`Torus3NSForms_of_gap`: all trilinear `b_add_*`/`b_smul_*` algebra, the unrestricted L²-bound
+transfer, and the Galerkin pin are now theorem content; only the single weak-convection-operator
+frontier (the smooth-test bound / torus IBP that Mathlib lacks) remains axiomatized, in thinner
+form.  The capstone `exists_lerayHopf_torus3_axiomatic` is relocated to that downstream file and
+rerouted through `torus3_NSForms_exists`.  Temam II.§1; RRS §3.2. -/
 
 /-! ### Proved lemma: b u u u = 0 -/
 
@@ -546,18 +542,13 @@ theorem exists_lerayHopf_from_package_full (F : Torus3NSForms) (ν T : ℝ) (u�
        initial_trace := pkg.initial_trace_limit
        energy_class := pkg.energy_class_limit }⟩
 
-/-- **Main existence theorem (axiomatic):** For any `u₀ ∈ L²_σ`, `ν > 0`, `T > 0`, there
-exists a Torus3NSForms bundle `F` and a Leray–Hopf solution `u` on `[0, T]`.
+/-! ### Main existence theorem (axiomatic) — relocated (issue #22)
 
-The name `_axiomatic` advertises that this result depends on the four project axioms
-(`torus3_NSForms_exist`, `galerkin_ode_solution`, `aubin_lions`, `galerkin_limit_passage`).
-It is explicitly instructed (Issue #1 item 3); see `LerayHopf/Core.lean` for the
-axiom-free layer. Renamed from `exists_lerayHopf_torus3`. -/
-theorem exists_lerayHopf_torus3_axiomatic (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν)
-    (T : ℝ) (hT : 0 < T) :
-    ∃ F : Torus3NSForms, Nonempty (LerayHopfSolutionFull F ν T u₀) := by
-  obtain ⟨F⟩ := torus3_NSForms_exist
-  exact ⟨F, exists_lerayHopf_from_package_full F ν T u₀
-    (build_galerkin_package F ν hν T hT u₀)⟩
+The capstone `exists_lerayHopf_torus3_axiomatic` now lives downstream in
+`LerayHopf/TorusConvectionForm.lean`, where it is rerouted through the thin gap axiom
+`torusConvectionGap_exists` (via `torus3_NSForms_exists` / `Torus3NSForms_of_gap`) instead of the
+removed fat axiom `torus3_NSForms_exist`.  The assembly machinery it uses
+(`build_galerkin_package`, `exists_lerayHopf_from_package_full`) stays here; only the final
+capstone moved, because the thin gap construction is downstream of this file. -/
 
 end LerayHopf

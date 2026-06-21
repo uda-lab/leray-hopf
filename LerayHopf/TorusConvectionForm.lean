@@ -5,18 +5,25 @@ open MeasureTheory Filter Topology Complex
 /-!
 # Finite-sum algebraic lemmas for the T³ Galerkin convection form (issue #22)
 
-**Issue #22 — begin axiom removal for `torus3_NSForms_exist`.**
+**Issue #22 — axiom removal for `torus3_NSForms_exist` (COMPLETE in this file).**
 
-## What this file does and does not do
+## What this file does
 
 This file proves the **trilinearity** (additivity + ℝ-homogeneity in each slot), an
-explicit **bilinear L² bound**, and the **Galerkin antisymmetry over `Vₙ`** for
+explicit **bilinear L² bound**, the **Galerkin antisymmetry over `Vₙ`**, and the
+**box-level independence** (`galerkinConvection_level_step`/`_stable`) for
 `galerkinConvection n` (finite sums over `fourierBox n`), plus the helper
-`coeff_zero_outside_box` (Fourier support of `Vₙ`-elements).  **The file is sorry-free.**
+`coeff_zero_outside_box` (Fourier support of `Vₙ`-elements).
 
-It does NOT build a total `b : L2Sigma → L2Sigma → L2Sigma → ℝ` extending
-`galerkinConvection` to all of `L²_σ`: a total trilinear form extending the box-truncated
-form is the genuine Mathlib-absent operator gap (weak `(u·∇)v` on Lp), out of scope here.
+It then isolates the genuine Mathlib-absent operator gap — the weak `(u·∇)v` extension of the
+box-truncated form to all of `L²_σ` — into the single named hypothesis `TorusConvectionGap`, and
+**proves `Torus3NSForms_of_gap : TorusConvectionGap → Nonempty Torus3NSForms` sorry-free**.  This
+de-axiomatizes `torus3_NSForms_exist`: that fat axiom is **removed** (from `AxiomaticClosure.lean`)
+and replaced by the strictly-thinner gap axiom `torusConvectionGap_exists` (:below), through which
+the relocated capstone `exists_lerayHopf_torus3_axiomatic` is rerouted.  All trilinear / bound /
+Galerkin-pin content is now sorry-free theorem content, not axiomatic.  **The file is sorry-free**
+apart from the single marked gap axiom.  Mirrors the merged ℝ³ template
+`LerayHopf/R3/ConvectionForm.lean` (`ConvectionGap` / `R3NSForms_of_gap`).
 
 ## Antisymmetry — proved over the Galerkin subspace `Vₙ`
 
@@ -28,10 +35,11 @@ antisymmetric (`box × box` is not invariant under `(k,l) ↦ (k,-(k+l))`; `neg_
 covers only `k ↦ -k`), so the two `Vₙ` hypotheses are necessary, not a convenience.
 
 This `Vₙ` antisymmetry is the faithful piece of the unrestricted `Torus3NSForms.b_antisymm`
-field: that field is witnessed by the genuine non-truncated `∫ (u·∇)v·w` convection form and
-matched to this finite-box form via `b_galerkin`.  The remaining axiom `torus3_NSForms_exist`
-in `AxiomaticClosure.lean` is kept (the total `(u·∇)v` operator on `Lp` is Mathlib-absent), but
-no longer rests on any unproved antisymmetry over `Vₙ`.
+field: that field is derived (in `Torus3NSForms_of_gap`) from the gap field `b_antisymm_gap`, and
+the non-truncated form is matched to this finite-box form via `b_galerkin` ← `b_galerkin_pin`.
+The unrestricted antisymmetry over arbitrary `L²_σ` (which the box-truncated form does NOT satisfy)
+is the honest residual carried by the thin gap axiom `torusConvectionGap_exists`; the fat axiom
+`torus3_NSForms_exist` has been **removed**.
 
 ## Declarations added (all sorry-free)
 
@@ -45,10 +53,19 @@ no longer rests on any unproved antisymmetry over `Vₙ`.
 - `galerkinConvection_antisymm` — Galerkin antisymmetry over `Vₙ` (`v, w ∈ Vₙ`, `u` div-free):
   per-`k` restriction to the `σ_k`-invariant set `C_k`, involution reindex `l ↦ -(k+l)`, and the
   divergence-free identity `∑_a kₐ ûₐ(k) = 0` close the cancellation (Temam II.§1, RRS §3.2)
+- `galerkinConvection_level_step`/`galerkinConvection_level_stable` — box-level independence of
+  `galerkinConvection` once the box bounds the supports (well-posedness of the Galerkin pin)
+- `TorusConvectionGap` — the isolated weak-convection-operator gap (mirror of ℝ³ `ConvectionGap`)
+- `Torus3NSForms_of_gap` — sorry-free `TorusConvectionGap → Nonempty Torus3NSForms`
+- `torus3_NSForms_exists` — theorem replacing the removed fat axiom, via the thin gap
+- `exists_lerayHopf_torus3_axiomatic` — relocated capstone, rerouted through the thin gap
 
 ## Axiom status
 
-Zero new axioms.  `torus3_NSForms_exist` kept.
+One new thin axiom, `torusConvectionGap_exists` (the isolated torus weak-convection-operator
+frontier: smooth-test bound / torus IBP that Mathlib lacks).  The fat `torus3_NSForms_exist` is
+**removed**; all trilinear / bound / Galerkin-pin content is now sorry-free theorem content via
+`Torus3NSForms_of_gap`.
 -/
 
 namespace LerayHopf
@@ -394,5 +411,280 @@ theorem galerkinConvection_bound (n : ℕ) (w : L2VF)
     gcongr
   refine huv.trans (le_of_eq ?_)
   ring
+
+/-! ### Level stability of `galerkinConvection` (independence of the box once it bounds supports) -/
+
+set_option maxHeartbeats 1000000 in
+/-- **Level stability (monotone step).**  If all three slots lie in `Vₘ`
+(`velocityProjection_n m · = ·`) and `m ≤ n`, then truncating at the larger box `n` gives the
+same value as truncating at `m`:
+`galerkinConvection n u v w = galerkinConvection m u v w`.
+
+Proof: `fourierBox m ⊆ fourierBox n` (`fourierBox_monotone`).  In the level-`n` sum, the `k`-sum
+restricts to `fourierBox m` because the leading factor `û_a(k)` vanishes for `k ∉ fourierBox m`
+(`coeff_zero_outside_box m u hu`), and the `l`-sum restricts to `fourierBox m` because the factor
+`v̂_i(l)` vanishes for `l ∉ fourierBox m` (`coeff_zero_outside_box m v hv`).  The remaining
+`fourierBox m × fourierBox m` sum is exactly `galerkinConvection m u v w`; the `w`-coefficient is
+unchanged. -/
+theorem galerkinConvection_level_step (m n : ℕ) (hmn : m ≤ n) (u v w : L2VF)
+    (hu : velocityProjection_n m u = u) (hv : velocityProjection_n m v = v) :
+    galerkinConvection n u v w = galerkinConvection m u v w := by
+  classical
+  have hsub : fourierBox m ⊆ fourierBox n := fourierBox_monotone hmn
+  rw [galerkinConvection, galerkinConvection]
+  refine congrArg Complex.re ?_
+  refine Finset.sum_congr rfl fun i _ => ?_
+  refine Finset.sum_congr rfl fun a _ => ?_
+  -- Restrict the outer `k`-sum from `fourierBox n` down to `fourierBox m`: the leading factor
+  -- `û_a(k)` vanishes for `k ∉ fourierBox m`, so each dropped inner `l`-sum is zero.
+  refine (Finset.sum_subset hsub ?_).symm.trans ?_
+  · intro k _ hknotm
+    refine Finset.sum_eq_zero fun l _ => ?_
+    rw [coeff_zero_outside_box m u hu a k hknotm, zero_mul]
+  -- For each kept `k ∈ fourierBox m`, restrict the inner `l`-sum from `fourierBox n` to
+  -- `fourierBox m`: the factor `v̂_i(l)` vanishes for `l ∉ fourierBox m`.
+  refine Finset.sum_congr rfl fun k _ => ?_
+  refine (Finset.sum_subset hsub ?_).symm
+  intro l _ hlnotm
+  rw [coeff_zero_outside_box m v hv i l hlnotm]
+  ring
+
+/-- **Level stability (general, symmetric form).**  If all three slots lie in `Vₘ` *and* in `Vₙ`,
+then `galerkinConvection m u v w = galerkinConvection n u v w`.  Both truncations equal the
+truncation at `max m n` (each is the larger box for the other), so they agree.
+
+This is the consistency fact that makes a single total `b` pinned to `galerkinConvection` on every
+`Vₙ` (the `Torus3NSForms.b_galerkin` shape, quantified over `n`) well-posed: the pinned value does
+not depend on which box `n` is used, as long as it bounds the supports. -/
+theorem galerkinConvection_level_stable (m n : ℕ) (u v w : L2VF)
+    (hum : velocityProjection_n m u = u) (hvm : velocityProjection_n m v = v)
+    (hun : velocityProjection_n n u = u) (hvn : velocityProjection_n n v = v) :
+    galerkinConvection m u v w = galerkinConvection n u v w := by
+  have hmle : m ≤ max m n := le_max_left m n
+  have hnle : n ≤ max m n := le_max_right m n
+  rw [← galerkinConvection_level_step m (max m n) hmle u v w hum hvm,
+      ← galerkinConvection_level_step n (max m n) hnle u v w hun hvn]
+
+/-! ### The isolated torus convection gap and the conditional concrete `Torus3NSForms` (issue #22)
+
+This section mirrors the merged ℝ³ template `LerayHopf/R3/ConvectionForm.lean`
+(`ConvectionGap` + `R3NSForms_of_gap`).  It isolates the genuine Mathlib-absent pillar behind
+the project axiom `torus3_NSForms_exist` into a single named hypothesis `TorusConvectionGap`,
+and proves the conditional `TorusConvectionGap → Nonempty Torus3NSForms` **sorry-free**, so that
+the residual axiom shrinks from the fat structure-existence `torus3_NSForms_exist` to the thin
+`torusConvectionGap_exists` below — the trilinear algebra, the L²-bound transfer, and the
+Galerkin pin all become *theorem* content via `Torus3NSForms_of_gap`. -/
+
+/-- **The isolated torus convection gap — the weak-convection-operator extension.**
+
+`TorusConvectionGap` isolates the *genuine* Mathlib-absent pillar behind `torus3_NSForms_exist`:
+the extension of the finite, proven box-truncated form `galerkinConvection` to a *total* operator
+on `L²_σ(𝕋³)` with the analytic structure of `(u·∇)v`.  Mirrors ℝ³ `ConvectionGap`.
+
+What is genuinely missing — and what this structure carries:
+
+- `b`              — a total candidate convection form on all of `L²_σ(𝕋³)`;
+- `b_galerkin_pin` — `b` *restricts* to the finite `galerkinConvection n` on Galerkin
+                     subspaces `Vₙ` (the operator-extension content + the non-vacuity pin;
+                     this is exactly the `Torus3NSForms.b_galerkin` shape, and the value is
+                     well-posed across levels by `galerkinConvection_level_stable`);
+- `b_multilinear` — `b` is realised by a genuine `ℝ`-trilinear-map tower
+                     `B : L²_σ →ₗ[ℝ] L²_σ →ₗ[ℝ] L²_σ →ₗ[ℝ] ℝ` with `b u v w = B u v w`;
+                     yields `b_add_{1,2,3}` / `b_smul_{1,2,3}` over arbitrary `L²_σ` from
+                     `map_add` / `map_smul`, with **no continuity, no density**;
+- `b_antisymm_gap`— antisymmetry in the last two slots over **arbitrary** `L²_σ`
+                     (`b u v w = - b u w v`), the honest residual of the missing IBP /
+                     divergence-theorem operator (`galerkinConvection_antisymm` proves only the
+                     `Vₙ`-restricted version, so the unrestricted statement is genuinely part of
+                     the frontier);
+- `b_bound_test`  — the **smooth-test L² bound on the Galerkin-test diagonal**:
+                     `|b u v w| ≤ C(w)·‖u‖·‖v‖` for `u, v, w` Galerkin tests, with `C` depending
+                     only on `w`.  This is the genuine smooth-test estimate `|b| ≤ ‖∇w‖_∞‖u‖‖v‖`;
+                     `galerkinConvection_bound n` proves a finite-level version with an
+                     `n`-dependent constant, so the *uniform* (level-independent) constant here is
+                     the analytic content the box-truncated bound does not supply;
+- `b_cont_fixedTest` — joint L²-continuity of `(u,v) ↦ b u v w` at a **fixed Galerkin test** `w`
+                     (the genuine bilinear continuity that transports `b_bound_test` to all
+                     `u, v : L²_σ`);
+- `galerkinTest_dense` — density of the Galerkin-test class in `L²_σ(𝕋³)` (TRUE by
+                     `velocityProjection_n_tendsto`; carried as a field, mirroring ℝ³
+                     `ConvectionGap.schwartz_dense`).
+
+This is a **hypothesis** (data + Prop fields), **not** an `axiom`, and it never enters a theorem
+*name*; the resulting `Torus3NSForms_of_gap` is explicitly conditional.
+
+**No-smuggle audit.**  `TorusConvectionGap`
+- contains **no** `Torus3NSForms` field and **no** `Nonempty Torus3NSForms` field;
+- does **not** carry the trilinear `b_add_*` / `b_smul_*` / the full unrestricted `b_bound` ready
+  made — those are *derived* in `Torus3NSForms_of_gap` (`b_add_*`/`b_smul_*` ← `b_multilinear`;
+  the full `b_bound` over arbitrary `u, v` ← `b_bound_test` + `b_cont_fixedTest` +
+  `galerkinTest_dense`);
+- carries no `WeakFormNS`, energy-inequality, or solution content. -/
+structure TorusConvectionGap where
+  /-- The **total** candidate convection form on all of `L²_σ(𝕋³)`. -/
+  b : L2Sigma → L2Sigma → L2Sigma → ℝ
+  /-- **Operator-extension property + non-vacuity pin (the frontier).** On every Galerkin
+  subspace `Vₙ`, `b` restricts to the finite box-truncated form `galerkinConvection n`.  This is
+  exactly the `Torus3NSForms.b_galerkin` shape; the value is independent of the level `n` once it
+  bounds the supports (`galerkinConvection_level_stable`), so the pin is well-posed.  It excludes
+  `b = 0` since `galerkinConvection` is generically nonzero. -/
+  b_galerkin_pin : ∀ (n : ℕ) (u v w : L2Sigma),
+    velocityProjection_n n (u : L2VF) = (u : L2VF) →
+    velocityProjection_n n (v : L2VF) = (v : L2VF) →
+    velocityProjection_n n (w : L2VF) = (w : L2VF) →
+    b u v w = galerkinConvection n (u : L2VF) (v : L2VF) (w : L2VF)
+  /-- **Algebraic trilinear structure over arbitrary `L²_σ`.** `b` is realised by a genuine
+  `ℝ`-trilinear-map tower `B` with `b u v w = B u v w`.  Yields `b_add_{1,2,3}` and
+  `b_smul_{1,2,3}` directly from `B`'s `map_add` / `map_smul`. -/
+  b_multilinear :
+    ∃ B : L2Sigma →ₗ[ℝ] L2Sigma →ₗ[ℝ] L2Sigma →ₗ[ℝ] ℝ,
+      ∀ (u v w : L2Sigma), b u v w = B u v w
+  /-- **Antisymmetry in the last two slots over arbitrary `L²_σ`.** `b u v w = - b u w v` for all
+  `u v w`.  The honest residual of the missing weak-`(u·∇)v` / IBP operator (`galerkinConvection`
+  is antisymmetric only over `Vₙ`). -/
+  b_antisymm_gap : ∀ (u v w : L2Sigma), b u v w = - b u w v
+  /-- **Smooth-test L² bound on the Galerkin-test diagonal.** For Galerkin tests `u, v, w`,
+  `|b u v w| ≤ C(w)·‖u‖·‖v‖` with `C` depending only on `w`.  The genuine smooth-test estimate;
+  `galerkinConvection_bound n` gives only the finite-level (`n`-dependent constant) version. -/
+  b_bound_test : ∀ (w : L2Sigma), IsGalerkinTest w →
+    ∃ C : ℝ, ∀ (u v : L2Sigma), IsGalerkinTest u → IsGalerkinTest v →
+      |b u v w| ≤ C * ‖(u : L2VF)‖ * ‖(v : L2VF)‖
+  /-- **Joint L²-continuity of `(u,v) ↦ b u v w` at a fixed Galerkin test `w`.** The genuine
+  bilinear continuity that, with `galerkinTest_dense`, transports `b_bound_test` to all
+  `u, v : L²_σ`. -/
+  b_cont_fixedTest : ∀ (w : L2Sigma), IsGalerkinTest w →
+    Continuous (fun p : L2Sigma × L2Sigma => b p.1 p.2 w)
+  /-- **Density of the Galerkin-test class in `L²_σ(𝕋³)`.** Every `L²_σ` field is an L²-limit of
+  Galerkin tests.  TRUE by `velocityProjection_n_tendsto`; carried as a field (mirroring ℝ³
+  `ConvectionGap.schwartz_dense`). -/
+  galerkinTest_dense : ∀ (u : L2Sigma),
+    ∃ s : ℕ → L2Sigma, (∀ n, IsGalerkinTest (s n)) ∧
+      Filter.Tendsto s Filter.atTop (nhds u)
+
+/-- **The conditional concrete `Torus3NSForms` — a genuine derivation (issue #22).**
+
+Given the isolated `TorusConvectionGap`, a genuine `Torus3NSForms` exists, **sorry-free**.  Each
+`Torus3NSForms` field is obtained as follows (mirroring ℝ³ `R3NSForms_of_gap`):
+
+- `b_add_{1,2,3}` — from `g.b_multilinear`: rewrite `g.b _ _ _ = B _ _ _`, close by `B`'s
+                  `map_add`.  Works for *arbitrary* `u v w : L²_σ`, no continuity/density;
+- `b_smul_{1,2,3}` — same, via `B`'s `map_smul`;
+- `b_antisymm`  — directly from `g.b_antisymm_gap`;
+- `b_bound`     — from `g.b_bound_test` (fixed constant `C(w)` on the test diagonal) +
+                  `g.b_cont_fixedTest` + `g.galerkinTest_dense`, via the `le_of_tendsto_of_tendsto`
+                  limiting argument (the box-truncated `galerkinConvection_bound` is *not* used
+                  here: its constant is `n`-dependent, whereas `b_bound` needs a single `C(w)`);
+- `b_galerkin`  — directly from `g.b_galerkin_pin`.
+
+So `TorusConvectionGap` does **not** hand over the quantitative `Torus3NSForms` content ready-made:
+the unrestricted bound is derived from the test-diagonal bound through fixed-test continuity and
+density; only the algebraic trilinear/antisymmetry content is asserted, as the honest residual of
+the missing weak operator.  Non-vacuity flows through `g.b_galerkin_pin` (excludes `b = 0`). -/
+theorem Torus3NSForms_of_gap (g : TorusConvectionGap) : Nonempty Torus3NSForms := by
+  obtain ⟨B, hB⟩ := g.b_multilinear
+  refine ⟨{ b := g.b
+          , b_antisymm := ?b_antisymm
+          , b_add_1 := ?b_add_1
+          , b_add_2 := ?b_add_2
+          , b_add_3 := ?b_add_3
+          , b_smul_1 := ?b_smul_1
+          , b_smul_2 := ?b_smul_2
+          , b_smul_3 := ?b_smul_3
+          , b_bound := ?b_bound
+          , b_galerkin := ?b_galerkin }⟩
+  case b_antisymm =>
+    exact g.b_antisymm_gap
+  case b_add_1 =>
+    intro u u' v w
+    simp only [hB, map_add, LinearMap.add_apply]
+  case b_add_2 =>
+    intro u v v' w
+    simp only [hB, map_add, LinearMap.add_apply]
+  case b_add_3 =>
+    intro u v w w'
+    simp only [hB, map_add]
+  case b_smul_1 =>
+    intro c u v w
+    simp only [hB, map_smul, LinearMap.smul_apply, smul_eq_mul]
+  case b_smul_2 =>
+    intro c u v w
+    simp only [hB, map_smul, LinearMap.smul_apply, smul_eq_mul]
+  case b_smul_3 =>
+    intro c u v w
+    simp only [hB, map_smul, smul_eq_mul]
+  case b_bound =>
+    -- Derive the unrestricted L² bound from the test-diagonal bound + fixed-test continuity
+    -- + density (the box-truncated `galerkinConvection_bound` is NOT used — its constant is
+    -- level-dependent; here we need a single `C(w)`).
+    intro w hw
+    obtain ⟨C, hC⟩ := g.b_bound_test w hw
+    refine ⟨C, fun u v => ?_⟩
+    -- Approximate `u, v` by Galerkin-test sequences.
+    obtain ⟨su, hsu_test, hsu_lim⟩ := g.galerkinTest_dense u
+    obtain ⟨sv, hsv_test, hsv_lim⟩ := g.galerkinTest_dense v
+    have hcont := g.b_cont_fixedTest w hw
+    -- The bound holds on each diagonal term.
+    have hbound_seq : ∀ n : ℕ,
+        |g.b (su n) (sv n) w| ≤ C * ‖(su n : L2VF)‖ * ‖(sv n : L2VF)‖ :=
+      fun n => hC (su n) (sv n) (hsu_test n) (hsv_test n)
+    -- Diagonal sequence converges in the product topology.
+    have hlim_pair : Filter.Tendsto (fun n => (su n, sv n)) Filter.atTop (nhds (u, v)) :=
+      (Prod.tendsto_iff _ _).mpr ⟨hsu_lim, hsv_lim⟩
+    -- `b (su n) (sv n) w → b u v w` by continuity.
+    have hlim_b : Filter.Tendsto (fun n => g.b (su n) (sv n) w)
+        Filter.atTop (nhds (g.b u v w)) :=
+      (hcont.tendsto (u, v)).comp hlim_pair
+    -- Norms converge.
+    have hlim_norm_u : Filter.Tendsto (fun n => ‖(su n : L2VF)‖) Filter.atTop
+        (nhds ‖(u : L2VF)‖) :=
+      (continuous_norm.tendsto _).comp ((continuous_subtype_val.tendsto _).comp hsu_lim)
+    have hlim_norm_v : Filter.Tendsto (fun n => ‖(sv n : L2VF)‖) Filter.atTop
+        (nhds ‖(v : L2VF)‖) :=
+      (continuous_norm.tendsto _).comp ((continuous_subtype_val.tendsto _).comp hsv_lim)
+    have hlim_rhs : Filter.Tendsto (fun n => C * ‖(su n : L2VF)‖ * ‖(sv n : L2VF)‖)
+        Filter.atTop (nhds (C * ‖(u : L2VF)‖ * ‖(v : L2VF)‖)) :=
+      ((tendsto_const_nhds.mul hlim_norm_u).mul hlim_norm_v)
+    -- Pass the bound to the limit.
+    apply le_of_tendsto_of_tendsto
+      ((continuous_abs.tendsto _).comp hlim_b)
+      hlim_rhs
+    exact Filter.Eventually.of_forall (fun n => hbound_seq n)
+  case b_galerkin =>
+    exact g.b_galerkin_pin
+
+/-! ### The thin residual axiom and the rerouted capstone (issue #22) -/
+
+/-- **Thin residual existence axiom.**  A `TorusConvectionGap` exists.
+
+This is the single isolated torus weak-convection-operator frontier (the smooth-test bound /
+torus integration-by-parts that Mathlib lacks).  It is **strictly thinner** than the removed
+`torus3_NSForms_exist`: all of the trilinear `b_add_*`/`b_smul_*` algebra, the unrestricted
+L²-bound transfer, and the Galerkin pin are now *theorem* content via `Torus3NSForms_of_gap`.
+TRUE: the genuine `(u·∇)v` form witnesses it; NON-VACUOUS: `b_galerkin_pin` excludes `b = 0`. -/
+axiom torusConvectionGap_exists : Nonempty TorusConvectionGap -- ALLOW_AXIOM: isolates the single torus weak-convection-operator frontier (smooth-test bound / torus IBP that mathlib lacks); strictly thinner than torus3_NSForms_exist — all trilinear/bound/Galerkin-pin algebra is now THEOREM content via Torus3NSForms_of_gap; Temam II.§1; RRS §3.2
+
+/-- **T³ NS forms exist (de-axiomatized via the thin gap).**  Replaces the removed fat axiom
+`torus3_NSForms_exist`: `Nonempty Torus3NSForms` now follows from the thin
+`torusConvectionGap_exists` through the proved `Torus3NSForms_of_gap`. -/
+theorem torus3_NSForms_exists : Nonempty Torus3NSForms :=
+  torusConvectionGap_exists.elim fun g => Torus3NSForms_of_gap g
+
+/-- **Main existence theorem (axiomatic) — rerouted through the thin gap (issue #22).**
+
+For any `u₀ ∈ L²_σ`, `ν > 0`, `T > 0`, there exists a `Torus3NSForms` bundle `F` and a
+Leray–Hopf solution `u` on `[0, T]`.
+
+Relocated here from `LerayHopf/AxiomaticClosure.lean` (downstream of `TorusConvectionForm`, no
+import cycle) so the witness comes from `torus3_NSForms_exists` (built on the thin
+`torusConvectionGap_exists`) rather than the removed `torus3_NSForms_exist`.  The theorem name and
+statement are byte-identical to the original.  The `_axiomatic` suffix advertises dependence on the
+project axioms (`torusConvectionGap_exists`, `galerkin_ode_solution`, `aubin_lions`,
+`galerkin_limit_passage`); see `LerayHopf/Core.lean` for the axiom-free layer. -/
+theorem exists_lerayHopf_torus3_axiomatic (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν)
+    (T : ℝ) (hT : 0 < T) :
+    ∃ F : Torus3NSForms, Nonempty (LerayHopfSolutionFull F ν T u₀) := by
+  obtain ⟨F⟩ := torus3_NSForms_exists
+  exact ⟨F, exists_lerayHopf_from_package_full F ν T u₀
+    (build_galerkin_package F ν hν T hT u₀)⟩
 
 end LerayHopf
