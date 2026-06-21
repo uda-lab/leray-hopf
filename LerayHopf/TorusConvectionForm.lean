@@ -5,18 +5,25 @@ open MeasureTheory Filter Topology Complex
 /-!
 # Finite-sum algebraic lemmas for the T³ Galerkin convection form (issue #22)
 
-**Issue #22 — begin axiom removal for `torus3_NSForms_exist`.**
+**Issue #22 — axiom removal for `torus3_NSForms_exist` (COMPLETE in this file).**
 
-## What this file does and does not do
+## What this file does
 
 This file proves the **trilinearity** (additivity + ℝ-homogeneity in each slot), an
-explicit **bilinear L² bound**, and the **Galerkin antisymmetry over `Vₙ`** for
+explicit **bilinear L² bound**, the **Galerkin antisymmetry over `Vₙ`**, and the
+**box-level independence** (`galerkinConvection_level_step`/`_stable`) for
 `galerkinConvection n` (finite sums over `fourierBox n`), plus the helper
-`coeff_zero_outside_box` (Fourier support of `Vₙ`-elements).  **The file is sorry-free.**
+`coeff_zero_outside_box` (Fourier support of `Vₙ`-elements).
 
-It does NOT build a total `b : L2Sigma → L2Sigma → L2Sigma → ℝ` extending
-`galerkinConvection` to all of `L²_σ`: a total trilinear form extending the box-truncated
-form is the genuine Mathlib-absent operator gap (weak `(u·∇)v` on Lp), out of scope here.
+It then isolates the genuine Mathlib-absent operator gap — the weak `(u·∇)v` extension of the
+box-truncated form to all of `L²_σ` — into the single named hypothesis `TorusConvectionGap`, and
+**proves `Torus3NSForms_of_gap : TorusConvectionGap → Nonempty Torus3NSForms` sorry-free**.  This
+de-axiomatizes `torus3_NSForms_exist`: that fat axiom is **removed** (from `AxiomaticClosure.lean`)
+and replaced by the strictly-thinner gap axiom `torusConvectionGap_exists` (:below), through which
+the relocated capstone `exists_lerayHopf_torus3_axiomatic` is rerouted.  All trilinear / bound /
+Galerkin-pin content is now sorry-free theorem content, not axiomatic.  **The file is sorry-free**
+apart from the single marked gap axiom.  Mirrors the merged ℝ³ template
+`LerayHopf/R3/ConvectionForm.lean` (`ConvectionGap` / `R3NSForms_of_gap`).
 
 ## Antisymmetry — proved over the Galerkin subspace `Vₙ`
 
@@ -28,10 +35,11 @@ antisymmetric (`box × box` is not invariant under `(k,l) ↦ (k,-(k+l))`; `neg_
 covers only `k ↦ -k`), so the two `Vₙ` hypotheses are necessary, not a convenience.
 
 This `Vₙ` antisymmetry is the faithful piece of the unrestricted `Torus3NSForms.b_antisymm`
-field: that field is witnessed by the genuine non-truncated `∫ (u·∇)v·w` convection form and
-matched to this finite-box form via `b_galerkin`.  The remaining axiom `torus3_NSForms_exist`
-in `AxiomaticClosure.lean` is kept (the total `(u·∇)v` operator on `Lp` is Mathlib-absent), but
-no longer rests on any unproved antisymmetry over `Vₙ`.
+field: that field is derived (in `Torus3NSForms_of_gap`) from the gap field `b_antisymm_gap`, and
+the non-truncated form is matched to this finite-box form via `b_galerkin` ← `b_galerkin_pin`.
+The unrestricted antisymmetry over arbitrary `L²_σ` (which the box-truncated form does NOT satisfy)
+is the honest residual carried by the thin gap axiom `torusConvectionGap_exists`; the fat axiom
+`torus3_NSForms_exist` has been **removed**.
 
 ## Declarations added (all sorry-free)
 
@@ -45,10 +53,19 @@ no longer rests on any unproved antisymmetry over `Vₙ`.
 - `galerkinConvection_antisymm` — Galerkin antisymmetry over `Vₙ` (`v, w ∈ Vₙ`, `u` div-free):
   per-`k` restriction to the `σ_k`-invariant set `C_k`, involution reindex `l ↦ -(k+l)`, and the
   divergence-free identity `∑_a kₐ ûₐ(k) = 0` close the cancellation (Temam II.§1, RRS §3.2)
+- `galerkinConvection_level_step`/`galerkinConvection_level_stable` — box-level independence of
+  `galerkinConvection` once the box bounds the supports (well-posedness of the Galerkin pin)
+- `TorusConvectionGap` — the isolated weak-convection-operator gap (mirror of ℝ³ `ConvectionGap`)
+- `Torus3NSForms_of_gap` — sorry-free `TorusConvectionGap → Nonempty Torus3NSForms`
+- `torus3_NSForms_exists` — theorem replacing the removed fat axiom, via the thin gap
+- `exists_lerayHopf_torus3_axiomatic` — relocated capstone, rerouted through the thin gap
 
 ## Axiom status
 
-Zero new axioms.  `torus3_NSForms_exist` kept.
+One new thin axiom, `torusConvectionGap_exists` (the isolated torus weak-convection-operator
+frontier: smooth-test bound / torus IBP that Mathlib lacks).  The fat `torus3_NSForms_exist` is
+**removed**; all trilinear / bound / Galerkin-pin content is now sorry-free theorem content via
+`Torus3NSForms_of_gap`.
 -/
 
 namespace LerayHopf
