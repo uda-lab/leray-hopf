@@ -146,45 +146,91 @@ theorem velocityProjection_n_idem (n : ℕ) (u : L2VF) :
 
 /-! ### The finite-dimensional velocity subspace `Vₙ` -/
 
-/-- The `n`-th Galerkin subspace `Vₙ ≤ L2VF`: the range of the componentwise projector
-`velocityProjection_n n`.  Mirrors `R3/GalerkinScheme.lean`'s `galerkinSpan B n`, but defined
-from the projector (Route C) rather than from a basis. -/
-noncomputable def velocitySpan (n : ℕ) : Submodule ℝ L2VF :=
-  LinearMap.range (velocityProjection_n n).toLinearMap
+/-- The `n`-th Galerkin subspace `Vₙ ≤ L2VF`: the image of the divergence-free subspace
+`L2Sigma` under the componentwise projector `velocityProjection_n n`.
 
-/-- Membership in `velocitySpan n` is exactly "is a value of `velocityProjection_n n`". -/
+Mirrors `R3/GalerkinScheme.lean`'s `galerkinSpan B n` (the span of finitely many div-free basis
+vectors), but built from the Route-C projector.  Taking the image of `L2Sigma` — rather than the
+full range of `velocityProjection_n n` — is what makes `velocitySpan n ≤ L2Sigma` true:
+`velocityProjection_n n` does NOT map an arbitrary field into `L2Sigma` (it only does so when the
+argument is already divergence-free, `velocityProjection_n_preserves_L2Sigma`), so the honest
+Galerkin subspace is `Pₙ '' L2Sigma`. -/
+noncomputable def velocitySpan (n : ℕ) : Submodule ℝ L2VF :=
+  Submodule.map (velocityProjection_n n).toLinearMap L2Sigma
+
+/-- Membership in `velocitySpan n`: is the projection of some divergence-free field. -/
 theorem mem_velocitySpan_iff (n : ℕ) (x : L2VF) :
-    x ∈ velocitySpan n ↔ ∃ y, velocityProjection_n n y = x := by
-  simp only [velocitySpan, LinearMap.mem_range, ContinuousLinearMap.coe_coe]
+    x ∈ velocitySpan n ↔ ∃ y ∈ L2Sigma, velocityProjection_n n y = x := by
+  simp only [velocitySpan, Submodule.mem_map, ContinuousLinearMap.coe_coe]
 
 /-! ### Bridge lemmas: `Vₙ` is the fixed-point set of `velocityProjection_n n` -/
 
 /-- **Bridge (range ⊆ fixed points).** Every `v ∈ velocitySpan n` is fixed by the projector. -/
 theorem velocityP_fixes_span (n : ℕ) (v : velocitySpan n) :
     velocityProjection_n n (v : L2VF) = (v : L2VF) := by
-  obtain ⟨y, hy⟩ := (mem_velocitySpan_iff n (v : L2VF)).mp v.2
+  obtain ⟨y, _, hy⟩ := (mem_velocitySpan_iff n (v : L2VF)).mp v.2
   rw [← hy, velocityProjection_n_idem]
 
-/-- **Bridge (fixed points ⊆ range).** Any `x` fixed by the projector lies in `velocitySpan n`. -/
-theorem mem_velocitySpan_of_fixed (n : ℕ) (x : L2VF)
+/-- **Bridge (fixed points ⊆ range).** Any divergence-free `x` fixed by the projector lies in
+`velocitySpan n`.  The `L2Sigma` hypothesis is exactly satisfied by the Galerkin test functions
+in `u_ode` (typed `w : L2Sigma` with `velocityProjection_n n w = w`). -/
+theorem mem_velocitySpan_of_fixed (n : ℕ) (x : L2VF) (hxσ : x ∈ L2Sigma)
     (hx : velocityProjection_n n x = x) : x ∈ velocitySpan n :=
-  (mem_velocitySpan_iff n x).mpr ⟨x, hx⟩
+  (mem_velocitySpan_iff n x).mpr ⟨x, hxσ, hx⟩
 
 /-! ### Finite dimensionality and completeness -/
 
+/-- The `j`-th complex component of a `velocitySpan n` element lies in `fourierSpan n`.
+
+A `velocitySpan n` element `v` is fixed by `Pₙ`, so by `velocityProjection_n_component_comm` its
+`j`-th component equals `fourierProjection_n n` of itself, hence lies in the projector's range,
+which is `fourierSpan n`. -/
+theorem componentC_mem_fourierSpan (n : ℕ) (v : velocitySpan n) (j : Fin 3) :
+    L2VF_projComponentC j (v : L2VF) ∈ fourierSpan n := by
+  have hfix : velocityProjection_n n (v : L2VF) = (v : L2VF) := velocityP_fixes_span n v
+  have hcomp : L2VF_projComponentC j (v : L2VF)
+      = fourierProjection_n n (L2VF_projComponentC j (v : L2VF)) := by
+    conv_lhs => rw [← hfix]
+    rw [velocityProjection_n_component_comm]
+    rfl
+  rw [hcomp, fourierProjection_n]
+  exact Submodule.starProjection_apply_mem _ _
+
 /-- `velocitySpan n` is finite-dimensional.
 
-The projector `velocityProjection_n n` has finite-dimensional range: each complex component of a
-value lies in the finite-dimensional `fourierSpan n` (the cutoff kills coefficients outside the
-finite `fourierBox n`), and a velocity field is determined by its three components.  We realize
-this as a surjective linear map onto `velocitySpan n` from a finite-dimensional domain. -/
+Each complex component of a `velocitySpan n` element lies in the finite-dimensional `fourierSpan n`
+(`componentC_mem_fourierSpan`), and a velocity field is determined by its three complex components
+(`L2VF_ext_componentC_mFourierCoeff`).  Hence the linear map sending `v` to its three components is
+an **injection** `velocitySpan n ↪ (Fin 3 → fourierSpan n)` into a finite-dimensional space, so
+`velocitySpan n` is finite-dimensional. -/
 instance velocitySpan_finiteDimensional (n : ℕ) : FiniteDimensional ℝ (velocitySpan n) := by
-  -- `velocitySpan n = range Pₙ`; the restricted projector
-  -- `Pₙ' : L2VF →ₗ[ℝ] velocitySpan n` is surjective, so it suffices that the projector's range,
-  -- viewed through components, sits in a finite-dimensional product.  We use the embedding
-  -- `velocitySpan n → (fourierSpan n) × (fourierSpan n) × (fourierSpan n)` by complex components.
-  -- (Proof body deferred to lean-prover.)
-  sorry
+  -- The componentwise embedding `velocitySpan n →ₗ[ℝ] (Fin 3 → fourierSpan n)`.
+  letI : Module ℝ L2C := inferInstance
+  set emb : velocitySpan n →ₗ[ℝ] (Fin 3 → fourierSpan n) :=
+    { toFun := fun v j => ⟨L2VF_projComponentC j (v : L2VF), componentC_mem_fourierSpan n v j⟩
+      map_add' := by
+        intro v w; funext j; apply Subtype.ext
+        show L2VF_projComponentC j ((v + w : velocitySpan n) : L2VF)
+          = L2VF_projComponentC j (v : L2VF) + L2VF_projComponentC j (w : L2VF)
+        rw [Submodule.coe_add, map_add]
+      map_smul' := by
+        intro c v; funext j; apply Subtype.ext
+        show L2VF_projComponentC j ((c • v : velocitySpan n) : L2VF) = c • L2VF_projComponentC j (v : L2VF)
+        rw [Submodule.coe_smul, map_smul] }
+    with hemb
+  -- `fourierSpan n` is finite-dim over ℂ, hence over ℝ (restriction of scalars).
+  haveI : FiniteDimensional ℝ (fourierSpan n) :=
+    FiniteDimensional.trans ℝ ℂ (fourierSpan n)
+  haveI : FiniteDimensional ℝ (Fin 3 → fourierSpan n) := inferInstance
+  have hinj : Function.Injective emb := by
+    intro v w hvw
+    apply Subtype.ext
+    refine L2VF_ext_componentC_mFourierCoeff (fun j k => ?_)
+    have hj : (emb v) j = (emb w) j := congrFun hvw j
+    have : L2VF_projComponentC j (v : L2VF) = L2VF_projComponentC j (w : L2VF) :=
+      congrArg Subtype.val hj
+    rw [this]
+  exact FiniteDimensional.of_injective emb hinj
 
 /-- `velocitySpan n` is complete (finite-dimensional submodule of a normed space). -/
 instance velocitySpan_completeSpace (n : ℕ) : CompleteSpace (velocitySpan n) :=
@@ -199,18 +245,13 @@ instance velocitySpan_hasOrthogonalProjection (n : ℕ) :
 
 /-- `velocitySpan n ≤ L2Sigma`: every element of the Galerkin subspace is divergence-free.
 
-`velocityProjection_n n` preserves `L2Sigma`; but more directly, a value `v = Pₙ y` has the same
-Fourier support structure as any projected field — we use that any `v ∈ velocitySpan n` is fixed
-by `Pₙ` and... actually it suffices that `velocityProjection_n n` maps INTO `L2Sigma` only when
-the source is in `L2Sigma`.  The honest containment uses the div-free preservation applied to the
-fixed-point witness: `v = Pₙ v` and `Pₙ` lands in `L2Sigma` whenever the argument does — but the
-argument here is `v` itself.  See `velocitySpan_le_sigma` proof. -/
+Immediate now that `velocitySpan n = Pₙ '' L2Sigma`: a value `v = Pₙ y` with `y ∈ L2Sigma` is
+div-free by `velocityProjection_n_preserves_L2Sigma`. -/
 theorem velocitySpan_le_sigma (n : ℕ) : velocitySpan n ≤ L2Sigma := by
   intro v hv
-  -- `v` is a value of `Pₙ`: `v = Pₙ y`.  `Pₙ` preserves div-free, but `y` need not be div-free.
-  -- Instead: every value of `Pₙ` is divergence-free because the cutoff makes the divergence
-  -- symbol vanish.  Proof deferred to lean-prover (uses the Fourier characterisation directly).
-  sorry
+  obtain ⟨y, hyσ, hy⟩ := (mem_velocitySpan_iff n v).mp hv
+  rw [← hy]
+  exact velocityProjection_n_preserves_L2Sigma n y hyσ
 
 /-- The `j`-th component coercion is the same data; helper to keep the `L2Sigma` membership. -/
 theorem mem_sigma_of_mem_velocitySpan (n : ℕ) (v : velocitySpan n) : (v : L2VF) ∈ L2Sigma :=
@@ -236,6 +277,6 @@ theorem velocitySpanToSigma_smul (n : ℕ) (c : ℝ) (v : velocitySpan n) :
 /-- `velocityProjection_n n u₀ ∈ velocitySpan n` (analog of `galerkinP_mem_span`). -/
 theorem velocityP_initial_mem (n : ℕ) (u₀ : L2Sigma) :
     velocityProjection_n n (u₀ : L2VF) ∈ velocitySpan n :=
-  (mem_velocitySpan_iff n _).mpr ⟨(u₀ : L2VF), rfl⟩
+  (mem_velocitySpan_iff n _).mpr ⟨(u₀ : L2VF), u₀.2, rfl⟩
 
 end LerayHopf
