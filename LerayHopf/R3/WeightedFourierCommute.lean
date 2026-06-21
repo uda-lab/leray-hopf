@@ -72,6 +72,79 @@ theorem mulBdd_coeFn (m : Domain3 → ℝ)
       =ᵐ[volume] fun ξ => (m ξ : ℂ) • (g : Domain3 → ℂ) ξ :=
   MemLp.coeFn_toLp _
 
+/-- **ℝ-homogeneity of the bounded multiplier.** -/
+theorem mulBdd_smul (m : Domain3 → ℝ)
+    (hmem : MemLp (fun ξ : Domain3 => (m ξ : ℂ)) ⊤ (volume : Measure Domain3)) (r : ℝ)
+    (g : L2C_R3) :
+    mulBdd m hmem (r • g) = r • mulBdd m hmem g := by
+  apply Lp.ext
+  filter_upwards [mulBdd_coeFn m hmem (r • g), Lp.coeFn_smul r (mulBdd m hmem g),
+    mulBdd_coeFn m hmem g, Lp.coeFn_smul r g] with ξ h1 h2 h3 h4
+  rw [h1, h2, Pi.smul_apply, h4, h3, Pi.smul_apply]
+  simp only [smul_eq_mul, Complex.real_smul]
+  ring
+
+/-- **Additivity of the bounded multiplier.** -/
+theorem mulBdd_add (m : Domain3 → ℝ)
+    (hmem : MemLp (fun ξ : Domain3 => (m ξ : ℂ)) ⊤ (volume : Measure Domain3)) (g h : L2C_R3) :
+    mulBdd m hmem (g + h) = mulBdd m hmem g + mulBdd m hmem h := by
+  apply Lp.ext
+  filter_upwards [mulBdd_coeFn m hmem (g + h), Lp.coeFn_add (mulBdd m hmem g) (mulBdd m hmem h),
+    mulBdd_coeFn m hmem g, mulBdd_coeFn m hmem h, Lp.coeFn_add g h] with ξ h1 h2 h3 h4 h5
+  rw [h1, h2, Pi.add_apply, h3, h4, h5, Pi.add_apply, smul_add]
+
+/-- **Squared `L²`-norm of `mulBdd m g` as the weighted integral** `∫ (m ξ)² ‖g ξ‖²`. -/
+theorem norm_mulBdd_sq (m : Domain3 → ℝ)
+    (hmem : MemLp (fun ξ : Domain3 => (m ξ : ℂ)) ⊤ (volume : Measure Domain3)) (g : L2C_R3) :
+    ‖mulBdd m hmem g‖ ^ 2
+      = ∫ ξ : Domain3, (m ξ) ^ 2 * ‖(g : Domain3 → ℂ) ξ‖ ^ 2 ∂(volume : Measure Domain3) := by
+  rw [FourierL2.normSq_eq_integral_normSq_C (mulBdd m hmem g)]
+  refine integral_congr_ae ?_
+  filter_upwards [mulBdd_coeFn m hmem g] with ξ hξ
+  rw [hξ]
+  rw [norm_smul, mul_pow, Complex.norm_real, Real.norm_eq_abs, sq_abs]
+
+/-- **Operator bound for the bounded multiplier:** `‖mulBdd m g‖ ≤ C ‖g‖` whenever `|m| ≤ C`
+everywhere (the sup bound on `m` dominates the operator). -/
+theorem norm_mulBdd_le (m : Domain3 → ℝ)
+    (hmem : MemLp (fun ξ : Domain3 => (m ξ : ℂ)) ⊤ (volume : Measure Domain3)) {C : ℝ}
+    (hC : 0 ≤ C) (hmle : ∀ ξ, |m ξ| ≤ C) (g : L2C_R3) :
+    ‖mulBdd m hmem g‖ ≤ C * ‖g‖ := by
+  have hsq : ‖mulBdd m hmem g‖ ^ 2 ≤ (C * ‖g‖) ^ 2 := by
+    rw [norm_mulBdd_sq m hmem g, mul_pow, FourierL2.normSq_eq_integral_normSq_C g,
+      ← integral_const_mul]
+    have hgint : Integrable (fun ξ : Domain3 => ‖(g : Domain3 → ℂ) ξ‖ ^ 2)
+        (volume : Measure Domain3) :=
+      (memLp_two_iff_integrable_sq_norm (Lp.aestronglyMeasurable g)).mp (Lp.memLp g)
+    refine integral_mono_of_nonneg ?_ (hgint.const_mul (C ^ 2)) ?_
+    · filter_upwards with ξ; positivity
+    · filter_upwards with ξ
+      have hmsq : (m ξ) ^ 2 ≤ C ^ 2 := by
+        rw [← sq_abs (m ξ)]; exact pow_le_pow_left₀ (abs_nonneg _) (hmle ξ) 2
+      have hgnn : (0:ℝ) ≤ ‖(g : Domain3 → ℂ) ξ‖ ^ 2 := by positivity
+      exact mul_le_mul_of_nonneg_right hmsq hgnn
+  have hrhs : 0 ≤ C * ‖g‖ := mul_nonneg hC (norm_nonneg _)
+  nlinarith [norm_nonneg (mulBdd m hmem g), hsq, hrhs]
+
+/-- **Subtractivity of the bounded multiplier.** -/
+theorem mulBdd_sub (m : Domain3 → ℝ)
+    (hmem : MemLp (fun ξ : Domain3 => (m ξ : ℂ)) ⊤ (volume : Measure Domain3)) (g h : L2C_R3) :
+    mulBdd m hmem (g - h) = mulBdd m hmem g - mulBdd m hmem h := by
+  apply Lp.ext
+  filter_upwards [mulBdd_coeFn m hmem (g - h), Lp.coeFn_sub (mulBdd m hmem g) (mulBdd m hmem h),
+    mulBdd_coeFn m hmem g, mulBdd_coeFn m hmem h, Lp.coeFn_sub g h] with ξ h1 h2 h3 h4 h5
+  rw [h1, h2, Pi.sub_apply, h3, h4, h5, Pi.sub_apply, smul_sub]
+
+/-- **Continuity of the bounded multiplier operator** (it is `C`-Lipschitz). -/
+theorem continuous_mulBdd (m : Domain3 → ℝ)
+    (hmem : MemLp (fun ξ : Domain3 => (m ξ : ℂ)) ⊤ (volume : Measure Domain3)) {C : ℝ}
+    (hC : 0 ≤ C) (hmle : ∀ ξ, |m ξ| ≤ C) :
+    Continuous (fun g => mulBdd m hmem g) := by
+  refine (LipschitzWith.of_dist_le_mul (K := C.toNNReal) ?_).continuous
+  intro g h
+  rw [dist_eq_norm, dist_eq_norm, ← mulBdd_sub m hmem g h, Real.coe_toNNReal C hC]
+  exact norm_mulBdd_le m hmem hC hmle (g - h)
+
 /-- **Self-adjointness of the bounded real multiplier.**  `⟪c, mulBdd m g⟫ = ⟪mulBdd m c, g⟫`. -/
 theorem inner_mulBdd_left (m : Domain3 → ℝ)
     (hmem : MemLp (fun ξ : Domain3 => (m ξ : ℂ)) ⊤ (volume : Measure Domain3)) (c g : L2C_R3) :
