@@ -1178,4 +1178,27 @@ private theorem galerkin_reg_bound_curve (F : Torus3NSForms) (ν : ℝ) (hν : 0
     have : 0 ≤ T * ‖(u₀ : L2VF)‖ ^ 2 := by positivity
     linarith
 
+/-! ### D — `galerkinSolutionData_torus` (the deliverable)
+
+NOTE (soundness blocker, see PR/handoff): the torus `GalerkinSolutionData` (`AxiomaticClosure.lean`)
+quantifies `u_hasDeriv`/`u_ode` over ALL `t : ℝ`, whereas the genuine forward-global Galerkin
+solution (G1) is differentiable / solves the ODE only for `t ≥ 0` (the quadratic field blows up in
+finite backward time; the energy bound confines only forward).  This is exactly the over-strength
+claim the merged ℝ³ structure `GalerkinSolutionData_R3` already CORRECTED to `∀ t, 0 ≤ t →` (see its
+SOUNDNESS comments).  The forward-only fields below are all proved; the all-`t` wrapper is the one
+obstruction — it needs the same soundness correction on the torus structure. -/
+
+/-- Forward-time differentiability of the assembled curve (proved; `t ≥ 0`). -/
+private theorem solutionCurve_hasDeriv_forward (F : Torus3NSForms) (ν : ℝ) (n : ℕ)
+    (c : ℝ → velocitySpan n)
+    (hd : ∀ s, 0 ≤ s → HasDerivAt (fun r => (c r : L2VF))
+      (galerkinODE_vectorField F ν n (c s) : L2VF) s)
+    (t : ℝ) (ht : 0 ≤ t) :
+    HasDerivAt (fun s => (velocitySpanToSigma n (c s) : L2VF))
+      (deriv (fun s => (velocitySpanToSigma n (c s) : L2VF)) t) t := by
+  have heq : (fun s => (velocitySpanToSigma n (c s) : L2VF)) = fun s => (c s : L2VF) := by
+    funext s; rw [velocitySpanToSigma_coe]
+  rw [heq]
+  exact (hd t ht).differentiableAt.hasDerivAt
+
 end LerayHopf
