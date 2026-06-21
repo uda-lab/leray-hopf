@@ -50,6 +50,42 @@ theorem continuous_sqrtViscousWeight : Continuous sqrtViscousWeight := by
   unfold sqrtViscousWeight
   exact continuous_const.mul continuous_norm
 
+/-- Truncated square-root weight `min(√W ξ, k)` — bounded by `k`, continuous, nonneg. -/
+noncomputable def sqrtViscousWeightTrunc (k : ℕ) (ξ : Domain3) : ℝ :=
+  min (sqrtViscousWeight ξ) k
+
+theorem sqrtViscousWeightTrunc_nonneg (k : ℕ) (ξ : Domain3) : 0 ≤ sqrtViscousWeightTrunc k ξ :=
+  le_min (sqrtViscousWeight_nonneg ξ) (Nat.cast_nonneg k)
+
+theorem sqrtViscousWeightTrunc_abs_le (k : ℕ) (ξ : Domain3) :
+    |sqrtViscousWeightTrunc k ξ| ≤ k := by
+  rw [abs_of_nonneg (sqrtViscousWeightTrunc_nonneg k ξ)]
+  exact min_le_right _ _
+
+theorem continuous_sqrtViscousWeightTrunc (k : ℕ) : Continuous (sqrtViscousWeightTrunc k) :=
+  continuous_sqrtViscousWeight.min continuous_const
+
+/-- The ℂ-coerced truncated weight is in `L^∞`. -/
+theorem memLp_top_sqrtViscousWeightTrunc (k : ℕ) :
+    MemLp (fun ξ : Domain3 => (sqrtViscousWeightTrunc k ξ : ℂ)) ⊤ (volume : Measure Domain3) := by
+  refine memLp_top_of_bound
+    (Complex.continuous_ofReal.comp (continuous_sqrtViscousWeightTrunc k)).aestronglyMeasurable
+    (k : ℝ) ?_
+  filter_upwards with ξ
+  rw [Complex.norm_real, Real.norm_eq_abs]
+  exact sqrtViscousWeightTrunc_abs_le k ξ
+
+/-- The truncated weights increase to `√W` pointwise: `min(√W,k) ↑ √W` as `k → ∞`. -/
+theorem tendsto_sqrtViscousWeightTrunc (ξ : Domain3) :
+    Filter.Tendsto (fun k : ℕ => sqrtViscousWeightTrunc k ξ) Filter.atTop
+      (nhds (sqrtViscousWeight ξ)) := by
+  -- For `k ≥ ⌈√W ξ⌉₊`, `min(√W ξ, k) = √W ξ`; the family is eventually constant.
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [Filter.eventually_ge_atTop (⌈sqrtViscousWeight ξ⌉₊)] with k hk
+  symm
+  rw [sqrtViscousWeightTrunc, min_eq_left]
+  exact (Nat.le_ceil _).trans (Nat.cast_le.mpr hk)
+
 /-! ### Bounded multiplier on `L2C_R3` and its Bochner commute -/
 
 /-- `mulBdd m hm hC g` is the `L²`-class of `ξ ↦ (m ξ : ℂ) • g ξ`, for a bounded
