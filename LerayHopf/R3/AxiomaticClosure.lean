@@ -460,18 +460,27 @@ structure AubinLionsPackage_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     AEStronglyMeasurable (fun t => (u t : L2VF_R3))
       (MeasureTheory.volume.restrict (Set.Icc 0 T))
   /-- **LOCAL space-time convergence** of the subsequence to the limit: for every ball
-  radius `R`, `∫₀ᵀ ∫_{B_R} ‖uₙ(t,x) - u(t,x)‖² dx dt → 0` along the subsequence `φ`.
+  radius `R`, the ball-restricted difference `uₙ − u` converges to `0` in
+  `L²(0,T; L²(B_R))`, i.e. its time-`eLpNorm` (exponent `2`, over `volume` restricted to
+  `[0,T]`) tends to `0` along the subsequence `φ`.
 
-  This is the LOCAL form (ball-restricted), supported by the local `spatial_compactness_R3`
-  (no tightness).  Sufficient for the nonlinear limit passage since `b_bound` test fields
-  are Schwartz (rapid decay controls the tail). -/
+  **eLpNorm-form (issue #31, owner-approved 2026-06-21).** This is the FAITHFUL encoding of
+  L²(0,T; L²(B_R)) convergence. The earlier Bochner interval-integral form
+  `∫₀ᵀ ∫_{B_R} ‖uₙ − u‖² → 0` was vacuous-shaped: Lean's `integral_undef` makes the inner
+  Bochner integral `0` for non-integrable integrands, so that form was satisfiable with junk-`0`
+  per-`n` integrals — it could NOT certify `MemLp (fun t => restrictToBall R (u t)) 2 …`, which
+  blocks E1 (`kineticEnergy_lsc_bound`). The `eLpNorm` form has no junk-`0` collapse and carries
+  exactly the intended content; it strengthens the field's *statement* (the axiom's type) without
+  adding any axiom.
+
+  This is the LOCAL form (ball-restricted via `restrictToBall`), supported by the local
+  `spatial_compactness_R3` (no tightness).  Sufficient for the nonlinear limit passage since
+  `b_bound` test fields are Schwartz (rapid decay controls the tail). -/
   strong_convergence : ∀ R : ℝ,
     Filter.Tendsto
-      (fun n => ∫ t in (0 : ℝ)..T,
-        ∫ x in Metric.closedBall (0 : Domain3) R,
-          ‖(((galSeq (φ n)).u t : L2VF_R3) x : EuclideanSpace ℝ (Fin 3)) -
-           ((u t : L2VF_R3) x : EuclideanSpace ℝ (Fin 3))‖ ^ 2
-          ∂(volume : Measure Domain3))
+      (fun n => MeasureTheory.eLpNorm
+        (fun t => restrictToBall R ((galSeq (φ n)).u t) - restrictToBall R (u t))
+        2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)))
       Filter.atTop (nhds 0)
 
 /-! ### Axiom AX-2: Aubin–Lions on ℝ³ -/
