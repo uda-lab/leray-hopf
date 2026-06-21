@@ -869,6 +869,26 @@ private theorem mulBdd_steklov_normSq_le_average
     _ = δ⁻¹ * ∫ s in t..(t + δ), ‖mulBdd m hmem (G s)‖ ^ 2 := by
         rw [← mul_assoc]; congr 1; field_simp
 
+/-- **Per-component weighted Steklov–Jensen bound (the gate, one Fourier component).**  For each
+`j`, the full (unbounded-weight) spectral viscous integrand of the Steklov-averaged `j`-component is
+bounded by the time-average of the per-`s` spectral integrand:
+
+  `∫_ξ W ‖𝓕(projⱼ steklovAvg) ξ‖² ≤ δ⁻¹ ∫_s ∫_ξ W ‖𝓕(projⱼ (u s)) ξ‖²`,   `W = (2π)²‖ξ‖²`.
+
+Proof: pass to the bounded truncations `m_k = min(√W,k)`; for each `k` the bounded-multiplier
+Jensen bound `mulBdd_steklov_normSq_le_average` plus `norm_mulBdd_sq` gives the truncated estimate,
+and `(m_k)² ≤ W` bounds its RHS by the full one; the LHS converges to the full integral by
+dominated convergence (the `H¹` Steklov average makes `W‖𝓕(projⱼ steklovAvg)‖²` integrable). -/
+private theorem viscousFourier_steklov_component_le (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) (j : Fin 3) :
+    ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
+        ‖(𝓕 (L2VF_projComponentC_R3 j (steklovAvg 𝔊 F ν u₀ n gs δ t)) : L2C_R3) ξ‖ ^ 2
+      ≤ δ⁻¹ * ∫ s in t..(t + δ),
+          ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
+            ‖(𝓕 (L2VF_projComponentC_R3 j (gs.u s)) : L2C_R3) ξ‖ ^ 2 := by
+  sorry
+
 /-- **Viscous (H¹) Jensen bound on the Steklov average — the C2 first-PR target.** For `0 < δ`
 and `0 ≤ t`, the viscous dissipation seminorm of the Steklov average is bounded by the time-average
 of the curve's viscous seminorm over the forward window:
@@ -915,25 +935,31 @@ private theorem viscousFormSq_steklovAvg_le_average (𝔊 : R3GalerkinScheme) (F
   -- `j`-th Fourier component of the Steklov average.  The L²-element commute
   -- `fourier_proj_steklovAvg_eq` (PROVED above, sorry-free) rewrites that component as the
   -- time-average `δ⁻¹ • ∫_s 𝓕 (proj_j (u s))`.
+  -- Expose the LHS spectrally (F7); each summand is `∫_ξ W ‖𝓕(projⱼ steklovAvg)ξ‖²`.
   rw [FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier]
-  -- ALLOW_SORRY: viscous/H¹ Steklov Jensen bound — FRONTIER SHRUNK (this PR, #15).
-  -- PROVED sorry-free here and consumed above: (a) the L²-level Bochner Jensen template
-  -- `norm_integral_sq_le_length_mul_integral_normSq` / `steklovAvg_normSq_le_average`; (b) the
-  -- spectral exposure `viscousFormSq_R3_eq_integral_normSq_fourier` (F7), now applied to the LHS;
-  -- (c) the per-component L²-ELEMENT commute `fourier_proj_steklovAvg_eq`
-  --   `𝓕 (proj_j (δ⁻¹ • ∫_s u s)) = δ⁻¹ • ∫_s 𝓕 (proj_j (u s))`  (in `L2C_R3`),
-  --   proved sorry-free from `ContinuousLinearMap.integral_comp_comm` (proj_j) +
-  --   `LinearIsometry.integral_comp_comm` (𝓕) + `fourier_smul`.
-  -- The SINGLE genuine missing-mathlib pillar that remains is the POINTWISE coeFn interchange of
-  -- the `Lp`-valued time integral against the unbounded spectral weight `(2π)²‖ξ‖²`:
-  --   `(δ⁻¹ • ∫_s 𝓕(proj_j(u s)))ξ =ᵐ[ξ] δ⁻¹ • ∫_s (𝓕(proj_j(u s)))ξ`
-  -- together with the joint `(s,ξ)`-measurable representative needed for the per-ξ scalar Jensen
-  -- and the Tonelli swap `∫_ξ weight·δ⁻¹∫_s‖·‖² = δ⁻¹∫_s ∫_ξ weight‖·‖²`.  This is the SAME
-  -- coeFn-of-`Lp`-valued-Bochner-integral obstruction isolated as `convL2_coeFn_ae` in
-  -- FrechetKolmogorov.lean (mathlib has no such lemma; the unbounded weight blocks the
-  -- L²-element route, and the raw `(s,ξ)` double integral lacks a global jointly-measurable coeFn
-  -- representative).  NOT an axiom, NOT a false blocker.
-  sorry -- ALLOW_SORRY: per-frequency coeFn-of-Lp-valued-time-integral interchange + weighted Tonelli (the `convL2_coeFn_ae`-class gap, weighted by `(2π)²‖ξ‖²`). Frontier shrunk this PR: F7 spectral exposure applied + per-component L²-element commute `fourier_proj_steklovAvg_eq` proved sorry-free above. NOT an axiom, NOT a false blocker.
+  -- Rewrite the RHS time-integrand `viscousFormSq_R3 1 (u s)` spectrally and pull the finite sum
+  -- out of the (interval) time integral and the `δ⁻¹` factor.
+  have hle : t ≤ t + δ := by linarith
+  -- per-`s` spectral integrand for component `j`
+  set Ij : Fin 3 → ℝ → ℝ := fun j s =>
+    ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
+      ‖(𝓕 (L2VF_projComponentC_R3 j (gs.u s)) : L2C_R3) ξ‖ ^ 2 with hIj
+  -- each `Ij j` is interval-integrable on `[t,t+δ]` (continuous in `s`: the integrand depends
+  -- continuously on the `L²`-curve; but we only need integrability, which holds because the time
+  -- integral of `viscousFormSq_R3 1 (u s)` is finite via `reg_bound` and each summand is `≥0`).
+  have hIjint : ∀ j, IntervalIntegrable (Ij j) volume t (t + δ) := by
+    sorry
+  have hRHS : δ⁻¹ * ∫ s in t..(t + δ), viscousFormSq_R3 1 ((gs.u s : L2VF_R3))
+      = ∑ j : Fin 3, δ⁻¹ * ∫ s in t..(t + δ), Ij j s := by
+    rw [← Finset.mul_sum]
+    congr 1
+    rw [← intervalIntegral.integral_finsetSum (fun j _ => hIjint j)]
+    refine intervalIntegral.integral_congr (fun s _ => ?_)
+    simp only [hIj]
+    rw [FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier]
+  rw [hRHS]
+  refine Finset.sum_le_sum (fun j _ => ?_)
+  exact viscousFourier_steklov_component_le 𝔊 F ν u₀ n gs hδ ht j
 
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
