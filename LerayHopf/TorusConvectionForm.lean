@@ -9,42 +9,42 @@ open MeasureTheory Filter Topology Complex
 
 ## What this file does and does not do
 
-This file proves the **trilinearity** (additivity + ℝ-homogeneity in each slot) and an
-explicit **bilinear L² bound** for `galerkinConvection n` (finite sums over `fourierBox n`),
-plus the helper `coeff_zero_outside_box` (Fourier support of `Vₙ`-elements).
+This file proves the **trilinearity** (additivity + ℝ-homogeneity in each slot), an
+explicit **bilinear L² bound**, and the **Galerkin antisymmetry over `Vₙ`** for
+`galerkinConvection n` (finite sums over `fourierBox n`), plus the helper
+`coeff_zero_outside_box` (Fourier support of `Vₙ`-elements).  **The file is sorry-free.**
 
 It does NOT build a total `b : L2Sigma → L2Sigma → L2Sigma → ℝ` extending
 `galerkinConvection` to all of `L²_σ`: a total trilinear form extending the box-truncated
 form is the genuine Mathlib-absent operator gap (weak `(u·∇)v` on Lp), out of scope here.
 
-## The genuine remaining gaps
+## Antisymmetry — proved over the Galerkin subspace `Vₙ`
 
-- **Antisymmetry** `galerkinConvection n u v w = -galerkinConvection n u w v` is the standard
-  Galerkin convection antisymmetry — but it holds only when the **test slots `v, w` lie in
-  `Vₙ`** (finite Fourier support), not for arbitrary `v, w : L2VF`.  The box truncation
-  `box × box` is not invariant under the involution `(k,l) ↦ (k,-(k+l))` that the IBP
-  reindexing needs (`neg_mem_fourierBox` only covers `k ↦ -k`); finite support of `u` alone
-  does NOT rescue it.  See `galerkinConvection_antisymm` for the full analysis: as currently
-  stated (arbitrary `v, w`) it is FALSE, and discharging it needs a signature change
-  (add `velocityProjection_n n v = v`, `velocityProjection_n n w = w` — owner: lean-coder).
-- **Extension to all of L²_σ**: the total `(u·∇)v` operator on `Lp` (Mathlib-absent).
+`galerkinConvection n u v w = -galerkinConvection n u w v` is the standard Galerkin convection
+antisymmetry.  It holds when the **test slots `v, w` lie in `Vₙ`** (finite Fourier support,
+`velocityProjection_n n v = v` and `velocityProjection_n n w = w`) — and `galerkinConvection_antisymm`
+proves exactly that.  For arbitrary `v, w : L2VF` the box-truncated form is genuinely NOT
+antisymmetric (`box × box` is not invariant under `(k,l) ↦ (k,-(k+l))`; `neg_mem_fourierBox`
+covers only `k ↦ -k`), so the two `Vₙ` hypotheses are necessary, not a convenience.
 
-Until antisymmetry (restated over `Vₙ`) is proved and the extension is built, the axiom
-`torus3_NSForms_exist` deliberately remains in `AxiomaticClosure.lean`.
+This `Vₙ` antisymmetry is the faithful piece of the unrestricted `Torus3NSForms.b_antisymm`
+field: that field is witnessed by the genuine non-truncated `∫ (u·∇)v·w` convection form and
+matched to this finite-box form via `b_galerkin`.  The remaining axiom `torus3_NSForms_exist`
+in `AxiomaticClosure.lean` is kept (the total `(u·∇)v` operator on `Lp` is Mathlib-absent), but
+no longer rests on any unproved antisymmetry over `Vₙ`.
 
-## Declarations added
+## Declarations added (all sorry-free)
 
-### Sorry-free
 - `coeff_zero_outside_box` — Fourier coeff of `Vₙ` elements vanishes outside `fourierBox n`
 - `norm_mFourierCoeff3_le` — single Fourier coefficient ≤ L² norm (Bessel/`lp` bound)
 - `galerkinConvection_add_1/2/3` — additivity in each slot (`Finset.sum_add_distrib`)
 - `galerkinConvection_smul_1/2/3` — ℝ-homogeneity in each slot (`Finset.mul_sum` + cast)
 - `galerkinConvection_bound` — explicit bilinear L² bound (triangle inequality + Bessel +
   operator-norm bound; no convergence, finite sums only)
-
-### Honest sorry (1)
-- `galerkinConvection_antisymm` — FALSE as stated (arbitrary `v, w`); see its docstring.
-  Requires a signature change to `v, w ∈ Vₙ` before it can be proved.
+- `neg_add_involutive` — the involution identity `-(k + -(k + l)) = l` for the antisymmetry reindex
+- `galerkinConvection_antisymm` — Galerkin antisymmetry over `Vₙ` (`v, w ∈ Vₙ`, `u` div-free):
+  per-`k` restriction to the `σ_k`-invariant set `C_k`, involution reindex `l ↦ -(k+l)`, and the
+  divergence-free identity `∑_a kₐ ûₐ(k) = 0` close the cancellation (Temam II.§1, RRS §3.2)
 
 ## Axiom status
 
@@ -197,41 +197,132 @@ theorem galerkinConvection_smul_3 (n : ℕ) (c : ℝ) (u v w : L2VF) :
   refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun a _ =>
     Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun l _ => by ring
 
-/-! ### Antisymmetry of `galerkinConvection n` — the remaining honest sorry -/
+/-! ### Antisymmetry of `galerkinConvection n` — over the Galerkin subspace `Vₙ` -/
 
-/-- **Antisymmetry (NOT provable as currently stated — needs `v, w ∈ Vₙ`):**
-`galerkinConvection n u v w = -galerkinConvection n u w v` for div-free `u`.
+/-- The involution `σ_k : l ↦ -(k+l)` on the symmetric index set `C_k` used in the antisymmetry
+reindex.  On `C_k := (fourierBox n).filter (fun l => -(k+l) ∈ fourierBox n)` it is a
+self-inverse bijection (an involution): `σ_k (σ_k l) = l` and `σ_k` maps `C_k` to itself. -/
+private lemma neg_add_involutive (k l : Fin 3 → ℤ) : -(k + -(k + l)) = l := by
+  funext i; simp [Pi.neg_apply]
 
-**Why the prior route is invalid AND the statement itself is too strong.**
-Write the antisymmetry target as
-  `galerkinConvection n u v w + galerkinConvection n u w v`
-  `= (∑ i,a ∑_{k,l ∈ box} û_a(k) · (2πi lₐ) · (v̂_i(l)·ŵ_i(-(k+l)) + ŵ_i(l)·v̂_i(-(k+l)))).re`.
+/-- **Antisymmetry of the Galerkin convection form over the test subspace `Vₙ`.**
 
-The full-lattice convection form `∑_{k+l+m=0} û_a(k)·(2πi lₐ)·v̂_i(l)·ŵ_i(m)` is antisymmetric
-because the constraint set `{k+l+m=0}` is symmetric under the swap `l ↔ m`, and the relabel
-turns `lₐ` into `lₐ+mₐ = -kₐ`, which `∑_a kₐ û_a(k) = 0` (`DivFreeL2 u`) kills.
+For `u ∈ L²_σ` (divergence-free) and test slots `v, w ∈ Vₙ` (finite Fourier support,
+`velocityProjection_n n v = v`, `velocityProjection_n n w = w`):
+`galerkinConvection n u v w = -galerkinConvection n u w v`.
 
-The box-truncated form replaces `m` by `-(k+l)` with `k,l ∈ box` but leaves `m = -(k+l)`
-**unrestricted** (it ranges over `[-2n,2n]³`).  The truncation index set `box × box` is
-therefore **NOT invariant** under the involution `(k,l) ↦ (k, -(k+l))` that antisymmetry
-requires: `neg_mem_fourierBox` only proves `-k ∈ box ↔ k ∈ box`, not `-(k+l) ∈ box`, and in
-general `-(k+l) ∉ box` for `k,l ∈ box` (e.g. `k=(1,0,0), l=(1,1,0) ⇒ -(k+l)=(-2,-1,0) ∉ box`
-for `n=1`).  Hence the `l ↔ m` reindexing that drives the IBP cancellation is invalid here,
-and finite Fourier support of `u` does NOT rescue it (it only extends the `k`-sum to ℤ³; the
-`l`-sum stays truncated to `box`, so the form remains asymmetric in `(l, m)`).
+This is the standard Faedo–Galerkin convection antisymmetry (Temam II.§1, RRS §3.2): it is the
+faithful, truthful piece of the unrestricted `Torus3NSForms.b_antisymm` field, which is
+witnessed by the genuine non-truncated `∫ (u·∇)v·w` convection form and matched to this
+finite-box form via `b_galerkin`.
 
-The identity becomes true once `v, w ∈ Vₙ` (`velocityProjection_n n v = v`, likewise `w`):
-then `v̂_i, ŵ_i` vanish outside `box`, the `l`-sum and the `m = -(k+l)` argument both become
-effectively full-lattice, and the `l ↔ m` reindex closes (cf. Temam II.§1, RRS §3.2 — the
-standard Galerkin antisymmetry is over test functions in `Vₙ`).
-
-**Blocker (signature, owner = lean-coder):** the conclusion needs the two added hypotheses
-`velocityProjection_n n v = v` and `velocityProjection_n n w = w`.  With those, the proof is
-the full-lattice IBP reindex + `DivFreeL2 u`.  As written (arbitrary `v w : L2VF`) the
-statement is false, so no honest proof exists at this signature. -/
-theorem galerkinConvection_antisymm (n : ℕ) (u : L2Sigma) (v w : L2VF) :
+**Why `v, w ∈ Vₙ` is required.** The box-truncated form leaves `m = -(k+l)` unrestricted, so
+the raw index set `box × box` is NOT invariant under the involution `(k,l) ↦ (k,-(k+l))` that
+antisymmetry needs (`neg_mem_fourierBox` covers only `k ↦ -k`).  Finite support of `u` alone
+does not rescue it.  Under `hv, hw`, the coefficients `v̂_i, ŵ_i` vanish outside `box`
+(`coeff_zero_outside_box`), so every nonzero summand has `l ∈ box` AND `-(k+l) ∈ box`; both
+sums collapse to the `σ_k`-invariant set `C_k`, where the `l ↔ -(k+l)` reindex is a genuine
+involution.  The cancellation `lₐ + (-(k+l))ₐ = -kₐ` is then killed by `∑_a kₐ û_a(k) = 0`
+(`DivFreeL2 u`). -/
+theorem galerkinConvection_antisymm (n : ℕ) (u : L2Sigma) (v w : L2VF)
+    (hv : velocityProjection_n n v = v) (hw : velocityProjection_n n w = w) :
     galerkinConvection n (u : L2VF) v w = -galerkinConvection n (u : L2VF) w v := by
-  sorry -- ALLOW_SORRY: FALSE AS STATED — box-truncated convection form is NOT antisymmetric for arbitrary v,w; box×box is not invariant under (k,l)↦(k,-(k+l)) (neg_mem_fourierBox covers only k↦-k); finite support of u does not rescue (l-sum stays truncated). Provable only after lean-coder adds hypotheses `velocityProjection_n n v = v` and `velocityProjection_n n w = w`; then full-lattice l↔m IBP reindex + DivFreeL2 u closes. Not a false-blocker: statement genuinely needs v,w∈Vₙ.
+  classical
+  -- Divergence-free condition on `u`.
+  have hdiv : DivFreeL2 (u : L2VF) := (mem_L2Sigma_iff _).mp u.2
+  -- Abbreviations for the three coefficient families.
+  set U : Fin 3 → (Fin 3 → ℤ) → ℂ :=
+    fun a k => mFourierCoeff3 (L2VF_projComponentC a (u : L2VF)) k with hU
+  set V : Fin 3 → (Fin 3 → ℤ) → ℂ :=
+    fun i l => mFourierCoeff3 (L2VF_projComponentC i v) l with hV
+  set W : Fin 3 → (Fin 3 → ℤ) → ℂ :=
+    fun i l => mFourierCoeff3 (L2VF_projComponentC i w) l with hW
+  -- Support facts from `hv`, `hw` (coefficients vanish outside the box).
+  have hVsupp : ∀ (i : Fin 3) (l : Fin 3 → ℤ), l ∉ fourierBox n → V i l = 0 := by
+    intro i l hl; exact coeff_zero_outside_box n v hv i l hl
+  have hWsupp : ∀ (i : Fin 3) (l : Fin 3 → ℤ), l ∉ fourierBox n → W i l = 0 := by
+    intro i l hl; exact coeff_zero_outside_box n w hw i l hl
+  -- The two complex sums (before taking `Re`).
+  set A : ℂ := ∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n, ∑ l ∈ fourierBox n,
+      U a k * ((2 * (Real.pi : ℂ) * Complex.I * (l a : ℂ)) * (V i l * W i (-(k + l)))) with hA
+  set A' : ℂ := ∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n, ∑ l ∈ fourierBox n,
+      U a k * ((2 * (Real.pi : ℂ) * Complex.I * (l a : ℂ)) * (W i l * V i (-(k + l)))) with hA'
+  -- Reduce to: the complex sums add to zero.
+  suffices hsum : A + A' = 0 by
+    have hre : A.re = -A'.re := by
+      have := congrArg Complex.re hsum
+      simpa [Complex.add_re] using eq_neg_of_add_eq_zero_left this
+    rw [galerkinConvection, galerkinConvection]
+    exact hre
+  -- The two-factor `2π i` constant.
+  set c : ℂ := 2 * (Real.pi : ℂ) * Complex.I with hc
+  -- The symmetric (σ_k-invariant) inner index set.
+  set Cset : (Fin 3 → ℤ) → Finset (Fin 3 → ℤ) :=
+    fun k => (fourierBox n).filter (fun l => -(k + l) ∈ fourierBox n) with hCset
+  -- σ_k maps `Cset k` to itself (involution).
+  have hmem_C : ∀ (k l : Fin 3 → ℤ), l ∈ Cset k → -(k + l) ∈ Cset k := by
+    intro k l hl
+    rw [hCset, Finset.mem_filter] at hl ⊢
+    refine ⟨hl.2, ?_⟩
+    rw [neg_add_involutive]; exact hl.1
+  -- The reindexed-and-combined per-`(i,a,k)` block, summed over `a`, vanishes.
+  -- Step 1: rewrite `A + A'` as a single triple sum of per-`(i,a,k)` blocks.
+  have key : A + A' = ∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n,
+      ∑ l ∈ Cset k, c * (-(k a : ℂ)) * U a k * (V i l * W i (-(k + l))) := by
+    rw [hA, hA', ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun a _ => ?_
+    rw [← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    -- Restrict both `l`-sums from the box to `Cset k` (zero outside).
+    have hPrestr : ∑ l ∈ fourierBox n,
+          U a k * (c * (l a : ℂ) * (V i l * W i (-(k + l)))) =
+        ∑ l ∈ Cset k, U a k * (c * (l a : ℂ) * (V i l * W i (-(k + l)))) := by
+      refine (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
+      intro l hl hlC
+      have : -(k + l) ∉ fourierBox n := by
+        simp only [hCset, Finset.mem_filter, not_and] at hlC; exact hlC hl
+      rw [hWsupp i _ this]; ring
+    have hQrestr : ∑ l ∈ fourierBox n,
+          U a k * (c * (l a : ℂ) * (W i l * V i (-(k + l)))) =
+        ∑ l ∈ Cset k, U a k * (c * (l a : ℂ) * (W i l * V i (-(k + l)))) := by
+      refine (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
+      intro l hl hlC
+      have : -(k + l) ∉ fourierBox n := by
+        simp only [hCset, Finset.mem_filter, not_and] at hlC; exact hlC hl
+      rw [hVsupp i _ this]; ring
+    -- Reindex the `Q`-sum over `Cset k` by the involution `σ_k`.
+    have hQrei : ∑ l ∈ Cset k, U a k * (c * (l a : ℂ) * (W i l * V i (-(k + l)))) =
+        ∑ l ∈ Cset k, U a k * (c * ((-(k + l)) a : ℂ) * (W i (-(k + l)) * V i l)) := by
+      refine Finset.sum_nbij' (fun l => -(k + l)) (fun l => -(k + l)) ?_ ?_ ?_ ?_ ?_
+      · intro l hl; exact hmem_C k l hl
+      · intro l hl; exact hmem_C k l hl
+      · intro l _; rw [neg_add_involutive]
+      · intro l _; rw [neg_add_involutive]
+      · intro l _; rw [neg_add_involutive]
+    -- Combine the `c·l_a` and `c·(-(k+l))_a` terms into `c·(-k_a)`.
+    rw [hPrestr, hQrestr, hQrei, ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun l _ => ?_
+    have hka : ((-(k + l)) a : ℂ) = -(k a : ℂ) - (l a : ℂ) := by
+      simp [Pi.neg_apply, Pi.add_apply]; push_cast; ring
+    rw [hka]; ring
+  -- Now sum over `a` and kill via divergence-freeness.
+  rw [key]
+  refine Finset.sum_eq_zero fun i _ => ?_
+  -- Move `∑_a` to the innermost position (swap past `∑_k` then `∑_l`).
+  rw [Finset.sum_comm]
+  refine Finset.sum_eq_zero fun k _ => ?_
+  rw [Finset.sum_comm]
+  refine Finset.sum_eq_zero fun l _ => ?_
+  -- Factor the `a`-independent part out and apply the divergence-free identity.
+  have hfac : ∑ a : Fin 3, c * (-(k a : ℂ)) * U a k * (V i l * W i (-(k + l)))
+      = -(c * (V i l * W i (-(k + l)))) *
+          (∑ a : Fin 3, (k a : ℂ) * U a k) := by
+    rw [Finset.mul_sum]
+    refine Finset.sum_congr rfl fun a _ => ?_
+    ring
+  rw [hfac, hdiv k, mul_zero]
 
 /-! ### L² bound for `galerkinConvection n` at fixed `n` -/
 
