@@ -669,22 +669,16 @@ axiom torusConvectionGap_exists : Nonempty TorusConvectionGap -- ALLOW_AXIOM: is
 theorem torus3_NSForms_exists : Nonempty Torus3NSForms :=
   torusConvectionGap_exists.elim fun g => Torus3NSForms_of_gap g
 
-/-- **Main existence theorem (axiomatic) — rerouted through the thin gap (issue #22).**
+/-! **Main existence theorem on 𝕋³ (axiomatic) — RELOCATED (issue #24).**
 
-For any `u₀ ∈ L²_σ`, `ν > 0`, `T > 0`, there exists a `Torus3NSForms` bundle `F` and a
-Leray–Hopf solution `u` on `[0, T]`.
-
-Relocated here from `LerayHopf/AxiomaticClosure.lean` (downstream of `TorusConvectionForm`, no
-import cycle) so the witness comes from `torus3_NSForms_exists` (built on the thin
-`torusConvectionGap_exists`) rather than the removed `torus3_NSForms_exist`.  The theorem name and
-statement are byte-identical to the original.  The `_axiomatic` suffix advertises dependence on the
-project axioms (`torusConvectionGap_exists`, `galerkin_ode_solution`, `aubin_lions`,
-`galerkin_limit_passage`); see `LerayHopf/Core.lean` for the axiom-free layer. -/
-theorem exists_lerayHopf_torus3_axiomatic (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν)
-    (T : ℝ) (hT : 0 < T) :
-    ∃ F : Torus3NSForms, Nonempty (LerayHopfSolutionFull F ν T u₀) := by
-  obtain ⟨F⟩ := torus3_NSForms_exists
-  exact ⟨F, exists_lerayHopf_from_package_full F ν T u₀
-    (build_galerkin_package F ν hν T hT u₀)⟩
+`exists_lerayHopf_torus3_axiomatic` now lives in `LerayHopf/TorusGalerkinODECapstone.lean`,
+downstream of this file.  The relocation is forced by the issue-#24 discharge of
+`galerkin_ode_solution`: the capstone sources its per-`n` Galerkin sequence from the axiom-free
+`galerkinSolutionData_torus` (`TorusGalerkinODESolve.lean`) over the finite-dim `velocitySpan n`.
+That ODE chain imports this file, so the capstone must sit below it in the DAG to stay acyclic.
+The building blocks it uses (`torus3_NSForms_exists`, `build_galerkin_package_of_galSeq`,
+`exists_lerayHopf_from_package_full`) remain defined upstream and are visible downstream through the
+import.  See `LerayHopf/Core.lean` for the axiom-free layer; `LerayHopf/TorusAxiomatic.lean`
+re-exports the relocated capstone. -/
 
 end LerayHopf

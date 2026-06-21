@@ -40,36 +40,34 @@ sound for all `u : L2VF`.  The energy-inequality fields use `viscousFormSq ν` d
   (existence is now `torus3_NSForms_exists`, downstream in `TorusConvectionForm.lean`, issue #22)
 - `Torus3NSForms.b_self_zero`       : proved lemma — `b u u u = 0` from antisymmetry
 - `torus3Evolution`                 : `DissipativeEvolution` built from a `Torus3NSForms`
-- `GalerkinSolutionData`            : structure for the `n`-th Galerkin ODE solution
-- `galerkin_ode_solution`           : axiom — Picard–Lindelöf on finite-dim `Vₙ` (Temam III.3)
+- `GalerkinSolutionData`            : structure for the `n`-th Galerkin ODE solution (issue #24:
+  `u_hasDeriv`/`u_ode` forward-only `∀ t, 0 ≤ t →`, matching the merged ℝ³ sibling — the all-`t`
+  form was an un-physical over-claim, see those fields' SOUNDNESS comments)
 - `AubinLionsPackage`               : structure carrying the compactness subsequence (parameterized by the Galerkin sequence)
 - `aubin_lions`                     : axiom — Aubin–Lions with spatial half discharged
 - `galerkin_limit_passage`          : axiom — limit passage to weak NS solution (Temam III.3)
 - `LerayHopfSolutionFull`           : proof-carrying Leray–Hopf solution structure
 - `GalerkinCompactnessPackageFull`  : proof-carrying Galerkin compactness package
-- `build_galerkin_package`          : assembly — chains A1 → A2 (with rellich_L2Sigma) → A3
+- `build_galerkin_package_of_galSeq` : assembly (axiom-free core) — chains A2 (with rellich_L2Sigma) → A3 from an explicit Galerkin sequence
 - `exists_lerayHopf_from_package_full` : copies proofs from package to solution
 - `exists_lerayHopf_torus3_axiomatic` : main existence theorem — RELOCATED to
-  `TorusConvectionForm.lean` (issue #22), rerouted through `torus3_NSForms_exists`
+  `TorusGalerkinODECapstone.lean` (issue #24), rerouted through the proved `galSeq_of_torus`
 
 ## Assumptions
 
-Three axioms are added in this file (names below with one-line justifications).  The fourth
+Two axioms are added in this file (names below with one-line justifications).  The third torus
 project axiom is the thinner `torusConvectionGap_exists`, in `TorusConvectionForm.lean` (issue #22,
-replacing the removed `torus3_NSForms_exist`).
+replacing the removed `torus3_NSForms_exist`).  The former `galerkin_ode_solution` axiom has been
+**removed** (issue #24): the finite-dim torus Galerkin ODE is solved unconditionally by the proved
+`galerkinSolutionData_torus` (`LerayHopf/TorusGalerkinODESolve.lean`), and the capstone is rerouted
+through `galSeq_of_torus`.
 
-1. `galerkin_ode_solution` — Picard–Lindelöf on the finite-dimensional Galerkin space `Vₙ`
-   plus uniform energy and regularity bounds.  TRUE: the Galerkin ODE has Lipschitz RHS
-   (polynomial nonlinearity on a finite-dim space); global existence follows from the energy
-   estimate `‖uₙ(t)‖ ≤ ‖uₙ(0)‖`.  Blocked by the missing concrete `(u·∇)v` operator.
-   Temam III.3, Theorem 3.1.
-
-3. `aubin_lions` — Aubin–Lions time compactness; the spatial half is an explicit hypothesis
+1. `aubin_lions` — Aubin–Lions time compactness; the spatial half is an explicit hypothesis
    discharged by the proved `rellich_L2Sigma`, so this axiom covers ONLY the Bochner-time
    half.  TRUE: classical Aubin–Lions/Lions–Aubin.  Blocked by missing Bochner-Sobolev
    time-derivative bounds in Lean.  Temam III.2.1.
 
-4. `galerkin_limit_passage` — passage from the strong-L²(0,T) subsequence to a weak NS
+2. `galerkin_limit_passage` — passage from the strong-L²(0,T) subsequence to a weak NS
    solution satisfying the energy inequality and initial trace.  TRUE: strong L²(0,T)
    convergence kills the nonlinear error via Cauchy–Schwarz + the continuity bound; lsc
    energy; initial trace from energy + `velocityProjection_n_tendsto`.  Temam III.3.
@@ -245,11 +243,26 @@ structure GalerkinSolutionData (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma) (
     velocityProjection_n_preserves_L2Sigma n (u₀ : L2VF) u₀.2⟩
   /-- Range in `Vₙ`: the solution stays in the Galerkin subspace. -/
   u_inVn : ∀ t, (u t : L2VF) = velocityProjection_n n (u t : L2VF)
-  /-- The curve `t ↦ (u t : L2VF)` is differentiable at every `t`. -/
-  u_hasDeriv : ∀ t, HasDerivAt (fun s => (u s : L2VF)) (deriv (fun s => (u s : L2VF)) t) t
-  /-- The projected Galerkin ODE: for all `w ∈ Vₙ`,
-  `⟪u'(t), w⟫ + ν · stokesTestPairing(u(t), w) + b(u(t), u(t), w) = 0`. -/
-  u_ode : ∀ t, ∀ w : L2Sigma, (w : L2VF) = velocityProjection_n n (w : L2VF) →
+  /-- The curve `t ↦ (u t : L2VF)` is differentiable at every **forward** time `t ≥ 0`.
+
+  SOUNDNESS (forward-only, issue #24): physical Galerkin solutions are confined by the forward
+  energy bound `½‖u(t)‖² ≤ ½‖Pₙu₀‖²`, which controls the solution only for `t ≥ 0`.  This
+  quadratic-in-`u` ODE field can blow up in finite *backward* time, so asserting the derivative
+  for all `t : ℝ` was a latent over-strength claim (an un-physical guarantee that the global
+  solver cannot honor — it would assert inhabitation of a generically-empty type).  Restricted to
+  `0 ≤ t`, matching the merged ℝ³ sibling `GalerkinSolutionData_R3.u_hasDeriv`
+  (`LerayHopf/R3/AxiomaticClosure.lean`). -/
+  u_hasDeriv : ∀ t, 0 ≤ t → HasDerivAt (fun s => (u s : L2VF))
+    (deriv (fun s => (u s : L2VF)) t) t
+  /-- The projected Galerkin ODE at **forward** times `t ≥ 0`: for all `w ∈ Vₙ`,
+  `⟪u'(t), w⟫ + ν · stokesTestPairing(u(t), w) + b(u(t), u(t), w) = 0`.
+
+  SOUNDNESS (forward-only, issue #24): same rationale as `u_hasDeriv` — the ODE identity is only
+  guaranteed on the forward time interval where the energy estimate confines the solution; the
+  quadratic field blows up in finite backward time, so the all-`t` form was a latent over-strength
+  claim.  Restricted to `0 ≤ t`, matching the merged ℝ³ sibling `GalerkinSolutionData_R3.u_ode`
+  (`LerayHopf/R3/AxiomaticClosure.lean`). -/
+  u_ode : ∀ t, 0 ≤ t → ∀ w : L2Sigma, (w : L2VF) = velocityProjection_n n (w : L2VF) →
     inner (𝕜 := ℝ) (deriv (fun s => (u s : L2VF)) t) (w : L2VF) +
     ν * stokesTestPairing (u t : L2VF) (w : L2VF) + F.b (u t) (u t) w = 0
   /-- H¹ regularity: the solution stays in H¹ (required for `rellich_L2Sigma` summability). -/
@@ -271,20 +284,16 @@ structure GalerkinSolutionData (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma) (
     ∫ t in (0 : ℝ)..T, h1EnergySq (u t : L2VF) ≤
     T * ‖(u₀ : L2VF)‖ ^ 2 + ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν)
 
-/-! ### Axiom A1: Galerkin ODE existence -/
+/-! ### A1: Galerkin ODE existence — DISCHARGED (issue #24)
 
-/-- **Axiom A1:** The `n`-th Galerkin ODE has a global solution with uniform bounds.
-
-Picard–Lindelöf applies on `Vₙ` (finite-dimensional real inner product space; the RHS
-is polynomial hence locally Lipschitz); global existence follows from the energy estimate
-`‖uₙ(t)‖ ≤ ‖uₙ(0)‖` (using `b_antisymm` → `b_self_zero`); the `reg_mem` field holds
-because `Vₙ ⊆ H¹` (finite Fourier support).
-
-Blocked in Lean by: missing concrete `(u·∇)v` operator and Picard–Lindelöf for Hilbert
-spaces in Lean (only ODE on Banach is available; the finite-dim Galerkin case is standard
-but not in mathlib).  Temam III.3, Theorem 3.1. -/
-axiom galerkin_ode_solution (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma) (n : ℕ) : -- ALLOW_AXIOM: Picard–Lindelöf on finite-dim Vₙ + energy identity → global bounds; TRUE and MINIMAL; blocked by missing (u·∇)v; Temam III.3
-    GalerkinSolutionData F ν u₀ n
+The former `axiom galerkin_ode_solution : GalerkinSolutionData F ν u₀ n` has been **removed**.
+The `n`-th finite-dimensional torus Galerkin ODE is now solved **unconditionally** by the proved
+`galerkinSolutionData_torus` (`LerayHopf/TorusGalerkinODESolve.lean`), built over the finite-dim
+real subspace `velocitySpan n` (`LerayHopf/TorusGalerkinScheme.lean`) via Picard–Lindelöf +
+forward-global continuation (`forwardGlobalSolution_exists`) and the proved energy/dissipation
+bounds.  The capstone `exists_lerayHopf_torus3_axiomatic` is rerouted through it via
+`galSeq_of_torus` (`LerayHopf/TorusGalerkinODECapstone.lean`), dropping this axiom from its
+`#print axioms`.  Mirrors the merged ℝ³ discharge of `galerkin_ode_solution_R3` (issue #10). -/
 
 /-! ### Aubin–Lions compactness package -/
 
@@ -469,7 +478,8 @@ structure LerayHopfSolutionFull (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma
 
 /-- The **full Galerkin compactness package** carrying genuine proof fields.
 
-Produced by `build_galerkin_package` (A1 → A2 with `rellich_L2Sigma` → A3).
+Produced by `build_galerkin_package_of_galSeq` (A2 with `rellich_L2Sigma` → A3) from an explicit
+Galerkin sequence — for the capstone, the proved axiom-free `galSeq_of_torus` (issue #24).
 
 **Energy class (v5 fix):** The `energy_class_limit` field proof-carries that the limit
 curve lies in the Leray–Hopf energy class: a.e. `memH1VF` on `[0, T]` (giving
@@ -500,36 +510,46 @@ structure GalerkinCompactnessPackageFull (F : Torus3NSForms) (ν T : ℝ) (u₀ 
 
 /-! ### Assembly theorems -/
 
-/-- **Assembly:** Build a `GalerkinCompactnessPackageFull` by chaining A1 → A2 (with
-`rellich_L2Sigma`) → A3.
+/-- **Assembly (axiom-free core).**  Build a `GalerkinCompactnessPackageFull` from an
+EXPLICIT Galerkin sequence `galSeq`, chaining A2 (with `rellich_L2Sigma`) → A3.
 
-The prover fills the body; the key steps are:
-1. Apply `galerkin_ode_solution` (A1) to get `galSeq : ∀ n, GalerkinSolutionData F ν u₀ n`.
-2. Apply `aubin_lions` (A2) with `spatial := rellich_L2Sigma` to get the Aubin–Lions package.
-3. Apply `galerkin_limit_passage` (A3) to get the weak equation + energy inequality + initial trace.
-4. Pack into `GalerkinCompactnessPackageFull`. -/
-noncomputable def build_galerkin_package (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
-    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma) :
+This is the body of `build_galerkin_package` factored from Step 2 onward (issue #24): it takes
+`galSeq` as a parameter instead of producing it via the `galerkin_ode_solution` axiom, so it
+carries NO dependency on A1.  Every downstream consumer (`aubin_lions`,
+`galerkin_limit_passage`, the whole packing) is unchanged; only the source of `galSeq` is lifted
+out.  Routing the capstone through this builder with a concrete, axiom-free `galSeq` is what
+discharges `galerkin_ode_solution`.
+
+The steps are:
+1. Apply `aubin_lions` (A2) with `spatial := rellich_L2Sigma` to get the Aubin–Lions package.
+2. Apply `galerkin_limit_passage` (A3) to get the weak equation + energy inequality + initial trace.
+3. Pack into `GalerkinCompactnessPackageFull`. -/
+noncomputable def build_galerkin_package_of_galSeq (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
+    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) :
     GalerkinCompactnessPackageFull F ν T u₀ := by
-  -- Step 1 (A1): the Galerkin ODE solutions, one per `n`.
-  have galSeq : ∀ n, GalerkinSolutionData F ν u₀ n :=
-    fun n => galerkin_ode_solution F ν hν u₀ n
-  -- Step 2 (A2): Aubin–Lions, with the spatial half discharged by `rellich_L2Sigma`.
+  -- Step 1 (A2): Aubin–Lions, with the spatial half discharged by `rellich_L2Sigma`.
   have alPkg : AubinLionsPackage F ν T u₀ galSeq :=
     aubin_lions F ν hν T hT u₀ galSeq rellich_L2Sigma
-  -- Step 3 (A3): limit passage to the good representative.  The goal is a `Type`
+  -- Step 2 (A3): limit passage to the good representative.  The goal is a `Type`
   -- (a structure), so the existential is unpacked with `Exists.choose` rather than
   -- `obtain` (which only eliminates into `Prop`).  The a.e.-link conjunct
   -- (`hspec.1`) is intentionally discarded.
   have hex := galerkin_limit_passage F ν hν T hT u₀ galSeq alPkg
   have hspec := hex.choose_spec
-  -- Step 4: pack into the proof-carrying structure.
+  -- Step 3: pack into the proof-carrying structure.
   exact
     { limit := hex.choose
       weak_eq_limit := hspec.2.1
       energy_ineq_limit := hspec.2.2.1
       initial_trace_limit := hspec.2.2.2.1
       energy_class_limit := hspec.2.2.2.2 }
+
+/-! The former `build_galerkin_package` (A1 → A2 → A3, sourcing `galSeq` from the now-removed
+`galerkin_ode_solution` axiom) has been **deleted** (issue #24).  The capstone
+`exists_lerayHopf_torus3_axiomatic` now routes through `build_galerkin_package_of_torus`
+(`LerayHopf/TorusGalerkinODECapstone.lean`), which feeds the axiom-free proved sequence
+`galSeq_of_torus` into `build_galerkin_package_of_galSeq` directly. -/
 
 /-- **Assembly:** A `GalerkinCompactnessPackageFull` yields `Nonempty (LerayHopfSolutionFull …)`. -/
 theorem exists_lerayHopf_from_package_full (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
@@ -542,13 +562,15 @@ theorem exists_lerayHopf_from_package_full (F : Torus3NSForms) (ν T : ℝ) (u�
        initial_trace := pkg.initial_trace_limit
        energy_class := pkg.energy_class_limit }⟩
 
-/-! ### Main existence theorem (axiomatic) — relocated (issue #22)
+/-! ### Main existence theorem (axiomatic) — relocated (issues #22, #24)
 
 The capstone `exists_lerayHopf_torus3_axiomatic` now lives downstream in
-`LerayHopf/TorusConvectionForm.lean`, where it is rerouted through the thin gap axiom
-`torusConvectionGap_exists` (via `torus3_NSForms_exists` / `Torus3NSForms_of_gap`) instead of the
-removed fat axiom `torus3_NSForms_exist`.  The assembly machinery it uses
-(`build_galerkin_package`, `exists_lerayHopf_from_package_full`) stays here; only the final
-capstone moved, because the thin gap construction is downstream of this file. -/
+`LerayHopf/TorusGalerkinODECapstone.lean` (relocated again in issue #24).  It is rerouted through
+the thin gap axiom `torusConvectionGap_exists` (via `torus3_NSForms_exists` / `Torus3NSForms_of_gap`,
+issue #22) for the NS-forms witness, AND through the proved axiom-free `galSeq_of_torus` (issue #24)
+for the per-`n` Galerkin sequence — discharging the former `galerkin_ode_solution` axiom.  The
+assembly machinery it uses (`build_galerkin_package_of_galSeq`, `exists_lerayHopf_from_package_full`)
+stays here; only the final capstone moved, because both the thin gap construction and the proved
+solver are downstream of this file. -/
 
 end LerayHopf

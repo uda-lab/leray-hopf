@@ -8,13 +8,16 @@
 #
 # Expected axiom sets (kernel axioms shared by all):
 #
-#   exists_lerayHopf_torus3_axiomatic — exactly 7 axioms:
+#   exists_lerayHopf_torus3_axiomatic — exactly 6 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
 #     LerayHopf.aubin_lions  LerayHopf.galerkin_limit_passage
-#     LerayHopf.galerkin_ode_solution  LerayHopf.torusConvectionGap_exists  (4 project)
+#     LerayHopf.torusConvectionGap_exists  (3 project)
 #     NOTE: torus3_NSForms_exist REMOVED (issue #22) — Nonempty Torus3NSForms is now the theorem
 #           torus3_NSForms_exists, SWAPPED for the thinner torusConvectionGap_exists gap axiom via
-#           the proved Torus3NSForms_of_gap; net torus project axioms still 4.
+#           the proved Torus3NSForms_of_gap.
+#     NOTE: galerkin_ode_solution REMOVED (issue #24) — discharged by routing the capstone through
+#           the axiom-free galerkinSolutionData_torus (proved finite-dim Galerkin ODE over
+#           velocitySpan n); net torus project axioms now 3.
 #
 #   exists_lerayHopf_r3_axiomatic — exactly 7 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
@@ -145,12 +148,12 @@ assert_core_clean() {
 
 # ---------------------------------------------------------------------------
 # Pin 1: exists_lerayHopf_torus3_axiomatic
-#   4 project axioms + 3 kernel = 7 total
+#   3 project axioms + 3 kernel = 6 total  (galerkin_ode_solution removed, issue #24)
 # ---------------------------------------------------------------------------
 assert_axioms "exists_lerayHopf_torus3_axiomatic" \
   "propext Classical.choice Quot.sound
    LerayHopf.aubin_lions LerayHopf.galerkin_limit_passage
-   LerayHopf.galerkin_ode_solution LerayHopf.torusConvectionGap_exists"
+   LerayHopf.torusConvectionGap_exists"
 
 # ---------------------------------------------------------------------------
 # Pin 2: exists_lerayHopf_r3_axiomatic
