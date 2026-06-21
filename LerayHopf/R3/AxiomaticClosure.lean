@@ -663,9 +663,11 @@ theorem exists_lerayHopf_from_package_full_R3 (𝔊 : R3GalerkinScheme) (F : R3N
 `T > 0`, there exist a Galerkin scheme `𝔊`, an NS-forms bundle `F`, and a Leray–Hopf
 solution `u` on `[0, T]`.
 
-The name `_axiomatic` advertises that this result depends on the six project axioms
+The name `_axiomatic` advertises that this result depends on the five project axioms
 (`r3GalerkinScheme_exists`, `r3_NSForms_exist`, `galerkin_ode_solution_R3`,
-`spatial_compactness_R3`, `aubin_lions_R3`, `galerkin_limit_passage_R3`).
+`aubin_lions_R3`, `galerkin_limit_passage_R3`).  `spatial_compactness_R3` is NO LONGER
+among them — it was the former sixth project axiom and is now a proved `theorem`
+(discharged via the FK chain, PR #35 / issue #2).
 It is explicitly instructed (Issue #1 item 3); see `LerayHopf/Core.lean` for the
 axiom-free layer. Renamed from `exists_lerayHopf_r3`. -/
 theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
