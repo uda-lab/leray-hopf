@@ -72,6 +72,7 @@ import LerayHopf.R3.SpatialCompactness   -- localCompactness_R3_of_ballCompact, 
 import LerayHopf.R3.TrilinearEstimate    -- b-bound analytic core (downstream of R3NSForms.b_bound)
 import LerayHopf.R3.FourierL2            -- 𝓕, L2C_R3, viscousFormSq_R3_eq_integral_normSq_fourier (F7 spectral exposure for the viscous/H¹ Steklov Jensen bound)
 import LerayHopf.R3.WeightedFourierCommute -- mulBdd bounded-multiplier commute + truncated weight (closes the viscous/H¹ Steklov Jensen gate)
+import LerayHopf.R3.GalerkinODE          -- galerkinCurve_reg_mem (H¹ regularity of any curve in the Galerkin subspace)
 import Mathlib.MeasureTheory.Integral.Bochner.Set   -- set/interval integrals over balls
 
 namespace LerayHopf
@@ -666,6 +667,35 @@ private theorem steklovAvg_norm_le_u0 (𝔊 : R3GalerkinScheme) (F : R3NSForms �
   calc ‖∫ s in t..(t + δ), (gs.u s : L2VF_R3)‖
       ≤ ‖(u₀ : L2VF_R3)‖ * δ := hbd
     _ = δ * ‖(u₀ : L2VF_R3)‖ := mul_comm _ _
+
+/-- **The Steklov average stays in the Galerkin subspace** `Vₙ = range (𝔊.P n)`.  Because every
+sample `gs.u s` is a fixed point of `𝔊.P n` (`u_inVn`) and `𝔊.P n` (a CLM) commutes with the
+Bochner integral. -/
+private theorem steklovAvg_inVn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) :
+    (steklovAvg 𝔊 F ν u₀ n gs δ t : L2VF_R3)
+      = 𝔊.P n (steklovAvg 𝔊 F ν u₀ n gs δ t : L2VF_R3) := by
+  have hle : t ≤ t + δ := by linarith
+  have hcont : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.uIcc t (t + δ)) := by
+    refine (galerkin_curve_continuous 𝔊 F ν u₀ n gs).mono ?_
+    rw [Set.uIcc_of_le hle]; intro s hs; exact le_trans ht hs.1
+  have hint : IntervalIntegrable (fun s => (gs.u s : L2VF_R3)) volume t (t + δ) :=
+    hcont.intervalIntegrable
+  rw [steklovAvg, map_smul]
+  congr 1
+  -- `𝔊.P n (∫_s u s) = ∫_s 𝔊.P n (u s) = ∫_s (u s)` (using `u_inVn`, reversed).
+  rw [← ContinuousLinearMap.intervalIntegral_comp_comm _ hint]
+  refine intervalIntegral.integral_congr (fun s _ => ?_)
+  exact gs.u_inVn s
+
+/-- **H¹ regularity of the Steklov average.**  The averaged state is in `H¹`, since it stays in the
+Schwartz Galerkin subspace `Vₙ` (`steklovAvg_inVn`). -/
+private theorem steklovAvg_memH1 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) :
+    memH1VF_R3 (steklovAvg 𝔊 F ν u₀ n gs δ t : L2VF_R3) :=
+  galerkinCurve_reg_mem 𝔊 n _ (steklovAvg_inVn 𝔊 F ν u₀ n gs hδ ht)
 
 /-- **Steklov average approximates the original curve.** If, on the window
 `[t, t+δ]`, the curve varies by less than `ε` in L², then
