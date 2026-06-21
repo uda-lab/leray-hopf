@@ -587,6 +587,100 @@ interval-averaging route to C2 (the real Aubin–Lions argument). They are prove
 independently of the final assembly so that the route's reusable pieces are landed even
 while the full space-time diagonalization remains open (see the C2 TODO). -/
 
+/-- **Hilbert-space Jensen for a Bochner interval average (squared-norm form).** For a curve
+`f : ℝ → H` into a complete real inner-product space, continuous on the window `[a,b]` (`a ≤ b`),
+the squared norm of the Bochner interval integral is bounded by the window length times the
+integral of the squared norm:
+
+  `‖∫_a^b f s ds‖² ≤ (b − a) · ∫_a^b ‖f s‖² ds`.
+
+This is the analytic core of the Steklov/Jensen averaging estimate: dividing by `(b−a)²` turns
+it into `‖⨍_a^b f‖² ≤ ⨍_a^b ‖f‖²` (Jensen for the convex map `‖·‖²` under the normalized window
+measure). It is `Lp`-frontier-free — the proof is the triangle inequality
+`‖∫ f‖ ≤ ∫ ‖f‖` (`intervalIntegral.norm_integral_le_integral_norm`) followed by the scalar
+Cauchy–Schwarz / Hölder `(∫_a^b ‖f‖·1)² ≤ (∫_a^b ‖f‖²)(∫_a^b 1²)`
+(`MeasureTheory.integral_mul_norm_le_Lp_mul_Lq`, `p = q = 2`). -/
+private theorem norm_integral_sq_le_length_mul_integral_normSq
+    {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
+    {f : ℝ → H} {a b : ℝ} (hab : a ≤ b)
+    (hf : ContinuousOn f (Set.uIcc a b)) :
+    ‖∫ s in a..b, f s‖ ^ 2 ≤ (b - a) * ∫ s in a..b, ‖f s‖ ^ 2 := by
+  -- `f` is interval-integrable, and so are `‖f·‖` and `‖f·‖²` (continuity on the compact window).
+  have hfint : IntervalIntegrable f volume a b := (hf).intervalIntegrable
+  have hnorm_cont : ContinuousOn (fun s => ‖f s‖) (Set.uIcc a b) := hf.norm
+  -- Step 1 (triangle): `‖∫ f‖ ≤ ∫_a^b ‖f s‖`.
+  have hstep1 : ‖∫ s in a..b, f s‖ ≤ ∫ s in a..b, ‖f s‖ :=
+    intervalIntegral.norm_integral_le_integral_norm hab
+  have hnorm_nonneg_int : 0 ≤ ∫ s in a..b, ‖f s‖ :=
+    intervalIntegral.integral_nonneg hab fun s _ => norm_nonneg _
+  -- Step 2 (Cauchy–Schwarz / Hölder, `p = q = 2`): `(∫_a^b ‖f‖)² ≤ (∫_a^b ‖f‖²)(b − a)`.
+  -- Move to the set integral over `Ioc a b` with the restricted (finite) measure.
+  set μ : Measure ℝ := volume.restrict (Set.Ioc a b) with hμ
+  haveI : IsFiniteMeasure μ := by
+    rw [hμ]; refine isFiniteMeasure_restrict.2 ?_
+    rw [Real.volume_Ioc]; exact ENNReal.ofReal_ne_top
+  -- `MemLp` of the scalar `‖f·‖` and of the constant `1` at exponent `2` on the finite window.
+  have hfnorm_meas : AEStronglyMeasurable (fun s => ‖f s‖) μ := by
+    rw [hμ]
+    exact (hnorm_cont.mono (by rw [Set.uIcc_of_le hab]; exact Set.Ioc_subset_Icc_self))
+      |>.aestronglyMeasurable measurableSet_Ioc
+  have hbdd : ∃ C, ∀ s ∈ Set.Ioc a b, ‖f s‖ ≤ C := by
+    have hcompact : IsCompact (Set.uIcc a b) := isCompact_uIcc
+    obtain ⟨C, hC⟩ := (hcompact.image_of_continuousOn hnorm_cont).bddAbove
+    refine ⟨C, fun s hs => ?_⟩
+    exact hC ⟨s, by rw [Set.uIcc_of_le hab]; exact Set.Ioc_subset_Icc_self hs, rfl⟩
+  obtain ⟨C, hC⟩ := hbdd
+  have hfnorm_memLp : MemLp (fun s => ‖f s‖) (ENNReal.ofReal (2 : ℝ)) μ := by
+    rw [ENNReal.ofReal_ofNat]
+    refine MemLp.of_bound hfnorm_meas (max C 0) ?_
+    rw [hμ]; refine ae_restrict_of_forall_mem measurableSet_Ioc fun s hs => ?_
+    rw [Real.norm_eq_abs, abs_of_nonneg (norm_nonneg _)]
+    exact le_trans (hC s hs) (le_max_left _ _)
+  have hone_memLp : MemLp (fun _ : ℝ => (1 : ℝ)) (ENNReal.ofReal (2 : ℝ)) μ := by
+    rw [ENNReal.ofReal_ofNat]; exact memLp_const 1
+  -- Apply the Bochner Hölder inequality with `p = q = 2` to `‖f·‖` and the constant `1`.
+  have hpq : (2 : ℝ).HolderConjugate 2 := Real.holderConjugate_iff.mpr ⟨by norm_num, by norm_num⟩
+  have hholder := MeasureTheory.integral_mul_norm_le_Lp_mul_Lq
+    (μ := μ) (p := 2) (q := 2) (f := fun s => ‖f s‖) (g := fun _ : ℝ => (1 : ℝ))
+    hpq hfnorm_memLp hone_memLp
+  -- Simplify the Hölder bound: `∫ ‖f‖·‖1‖ = ∫ ‖f‖`, and `‖1‖^(2:ℝ) = 1`.
+  simp only [Real.norm_eq_abs, abs_of_nonneg (norm_nonneg _), abs_one, mul_one,
+    Real.one_rpow, one_pow, Real.rpow_two] at hholder
+  -- Rewrite the set integrals over `μ` as interval integrals (`μ = volume.restrict (Ioc a b)`).
+  have hμ_to_interval : ∀ g : ℝ → ℝ, ∫ s, g s ∂μ = ∫ s in a..b, g s := by
+    intro g
+    rw [hμ, intervalIntegral.integral_of_le hab]
+  have hμ_const : ∫ _s : ℝ, (1 : ℝ) ∂μ = b - a := by
+    rw [hμ_to_interval]; simp [intervalIntegral.integral_const]
+  -- `hholder : ∫_a^b ‖f‖ ≤ (∫ ‖f‖² ∂μ)^(1/2) · (∫ 1 ∂μ)^(1/2)`.
+  rw [hμ_const, hμ_to_interval (fun s => ‖f s‖), hμ_to_interval (fun s => ‖f s‖ ^ 2)] at hholder
+  -- `hholder : ∫_a^b ‖f‖ ≤ (∫_a^b ‖f‖²)^(1/2) · (b−a)^(1/2)`.
+  -- Square and clear the rpows to get the Cauchy–Schwarz bound, then chain with Step 1.
+  have hI2_nonneg : 0 ≤ ∫ s in a..b, ‖f s‖ ^ 2 :=
+    intervalIntegral.integral_nonneg hab fun s _ => sq_nonneg _
+  have hba_nonneg : 0 ≤ b - a := sub_nonneg.mpr hab
+  have hcs : (∫ s in a..b, ‖f s‖) ^ 2 ≤ (b - a) * ∫ s in a..b, ‖f s‖ ^ 2 := by
+    have hsq := mul_self_le_mul_self hnorm_nonneg_int hholder
+    calc (∫ s in a..b, ‖f s‖) ^ 2
+        = (∫ s in a..b, ‖f s‖) * (∫ s in a..b, ‖f s‖) := by rw [sq]
+      _ ≤ ((∫ s in a..b, ‖f s‖ ^ 2) ^ (1 / 2 : ℝ) * (b - a) ^ (1 / 2 : ℝ))
+            * ((∫ s in a..b, ‖f s‖ ^ 2) ^ (1 / 2 : ℝ) * (b - a) ^ (1 / 2 : ℝ)) := hsq
+      _ = (b - a) * ∫ s in a..b, ‖f s‖ ^ 2 := by
+          rw [show ((∫ s in a..b, ‖f s‖ ^ 2) ^ (1 / 2 : ℝ) * (b - a) ^ (1 / 2 : ℝ))
+                * ((∫ s in a..b, ‖f s‖ ^ 2) ^ (1 / 2 : ℝ) * (b - a) ^ (1 / 2 : ℝ))
+              = ((∫ s in a..b, ‖f s‖ ^ 2) ^ (1 / 2 : ℝ)) ^ (2 : ℕ)
+                  * ((b - a) ^ (1 / 2 : ℝ)) ^ (2 : ℕ) by ring]
+          rw [← Real.rpow_natCast ((∫ s in a..b, ‖f s‖ ^ 2) ^ (1 / 2 : ℝ)) 2,
+            ← Real.rpow_natCast ((b - a) ^ (1 / 2 : ℝ)) 2,
+            ← Real.rpow_mul hI2_nonneg, ← Real.rpow_mul hba_nonneg]
+          norm_num
+          rw [mul_comm]
+  -- Chain: `‖∫ f‖² ≤ (∫ ‖f‖)² ≤ (b−a) ∫ ‖f‖²`.
+  calc ‖∫ s in a..b, f s‖ ^ 2
+      ≤ (∫ s in a..b, ‖f s‖) ^ 2 := by
+        apply pow_le_pow_left₀ (norm_nonneg _) hstep1
+    _ ≤ (b - a) * ∫ s in a..b, ‖f s‖ ^ 2 := hcs
+
 /-- **Steklov interval-average of a Galerkin curve.** For mesh `δ` and base time `t`,
 `steklovAvg gs δ t := δ⁻¹ • ∫_{t}^{t+δ} (gs.u s : L2VF_R3) ds` (Bochner interval integral
 in `L2VF_R3`). For `δ > 0` this is the average of the curve over `[t, t+δ]`. -/
@@ -662,6 +756,81 @@ private theorem steklovAvg_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
         intro s hs; exact hmod s hs
     _ = ε * δ := by rw [show (t + δ) - t = δ by ring, abs_of_pos hδ]
     _ = δ * ε := by ring
+
+/-- **L² Jensen bound on the Steklov average (squared-norm form).** For `0 < δ` and `0 ≤ t`,
+the squared L² norm of the Steklov average is bounded by the average of the squared norms over
+the forward window:
+
+  `‖steklovAvg gs δ t‖² ≤ δ⁻¹ · ∫_{t}^{t+δ} ‖(gs.u s)‖² ds`.
+
+This is the kinetic (`H = L²`) instance of the Hilbert-space Bochner-average Jensen lemma
+`norm_integral_sq_le_length_mul_integral_normSq`, applied to the continuous Galerkin curve on
+the window `[t, t+δ] ⊆ Ici 0`. It is `Lp`-frontier-free.
+
+This is the template the still-open viscous/H¹ Jensen bound instantiates at the Fourier level
+(modulo the pointwise `Lp`-valued Bochner-integral coeFn interchange — the genuine missing
+mathlib pillar, isolated in this repo as `convL2_coeFn_ae`). -/
+private theorem steklovAvg_normSq_le_average (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) :
+    ‖steklovAvg 𝔊 F ν u₀ n gs δ t‖ ^ 2
+      ≤ δ⁻¹ * ∫ s in t..(t + δ), ‖((gs.u s : L2VF_R3))‖ ^ 2 := by
+  have hle : t ≤ t + δ := by linarith
+  -- continuity of the curve on the window `[t, t+δ] ⊆ Ici 0`
+  have hcont : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.uIcc t (t + δ)) := by
+    refine (galerkin_curve_continuous 𝔊 F ν u₀ n gs).mono ?_
+    rw [Set.uIcc_of_le hle]; intro s hs; exact le_trans ht hs.1
+  -- the Hilbert-space Bochner-average Jensen lemma on `[t, t+δ]` (window length `δ`)
+  have hjensen := norm_integral_sq_le_length_mul_integral_normSq (f := fun s => (gs.u s : L2VF_R3))
+    hle hcont
+  rw [show (t + δ) - t = δ by ring] at hjensen
+  -- `‖δ⁻¹ • ∫‖² = δ⁻² · ‖∫‖²`, then use the Jensen bound `‖∫‖² ≤ δ · ∫ ‖u s‖²`.
+  rw [steklovAvg, norm_smul, mul_pow, norm_inv, Real.norm_eq_abs, abs_of_pos hδ]
+  calc (δ⁻¹) ^ 2 * ‖∫ s in t..(t + δ), (gs.u s : L2VF_R3)‖ ^ 2
+      ≤ (δ⁻¹) ^ 2 * (δ * ∫ s in t..(t + δ), ‖(gs.u s : L2VF_R3)‖ ^ 2) := by
+        apply mul_le_mul_of_nonneg_left hjensen (by positivity)
+    _ = δ⁻¹ * ∫ s in t..(t + δ), ‖(gs.u s : L2VF_R3)‖ ^ 2 := by
+        rw [← mul_assoc]
+        congr 1
+        field_simp
+
+/-- **Viscous (H¹) Jensen bound on the Steklov average — the C2 first-PR target.** For `0 < δ`
+and `0 ≤ t`, the viscous dissipation seminorm of the Steklov average is bounded by the time-average
+of the curve's viscous seminorm over the forward window:
+
+  `viscousFormSq_R3 1 (steklovAvg gs δ t) ≤ δ⁻¹ · ∫_{t}^{t+δ} viscousFormSq_R3 1 (gs.u s) ds`.
+
+This is the H¹/Jensen bound the Aubin–Lions Steklov route needs (step 2 of the C2 plan): combined
+with the `n`-uniform `reg_bound` (`∫_{0}^{T} viscousFormSq_R3 1 (gs.u s) ≤ ½‖u₀‖²`), it gives the
+averaged states an `n`-uniform *pointwise* H¹ bound, which the raw pointwise samples lacked (see the
+C2 route discussion), and which P3's `spatialInput_R3_of_localRellich` consumes.
+
+PROOF STRUCTURE (the analytic shape, isolating the one genuine gap): `viscousFormSq_R3 1 w` is the
+weighted-Fourier energy `∑_j ∫_ξ (2π)²‖ξ‖² ‖(𝓕 (proj_j w)) ξ‖² dξ` (`Regularity.viscousFormSq_R3`).
+Since `w ↦ 𝓕 (proj_j w)` is an `ℝ`-linear continuous map `L2VF_R3 →L[ℝ] L2C_R3`,
+`ContinuousLinearMap.integral_comp_comm` gives the L²-element identity
+`𝓕 (proj_j (δ⁻¹ • ∫_s u s)) = δ⁻¹ • ∫_s 𝓕 (proj_j (u s))`. The bound then follows, per frequency
+`ξ`, by Cauchy–Schwarz on the time-average (the scalar
+`norm_integral_sq_le_length_mul_integral_normSq` proved above, applied at each `ξ`), multiplied by
+the nonnegative weight `(2π)²‖ξ‖²` and Tonelli-swapped (absolutely convergent here: the window
+`[t,t+δ]` is compact, the curve continuous, and `∫_s viscousFormSq_R3 1 (u s)` finite).
+
+The SINGLE genuine missing-mathlib pillar is the pointwise `Lp`-valued Bochner-integral coeFn
+interchange `(𝓕 (proj_j (δ⁻¹ • ∫_s u s))) ξ =ᵐ[ξ] δ⁻¹ ∫_s (𝓕 (proj_j (u s))) ξ ds` — exactly the
+gap already isolated in this repo as `convL2_coeFn_ae` (`FrechetKolmogorov.lean`). The L²-level
+Jensen template it instantiates IS proved sorry-free above
+(`norm_integral_sq_le_length_mul_integral_normSq`, `steklovAvg_normSq_le_average`).
+
+NOTE: the spectral `∑_j ∫_ξ … 𝓕 …` rewriting requires the `R3.FourierL2` exposure lemma and the
+`𝓕` notation, which this module does not import (imports are `lean-coder`-owned, AGENTS.md Hard
+rule 10). The statement here is therefore kept at the `viscousFormSq_R3` level; the Fourier-side
+assembly + the isolated interchange land once the `FourierL2` import is added by `lean-coder`. -/
+private theorem viscousFormSq_steklovAvg_le_average (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) :
+    viscousFormSq_R3 1 (steklovAvg 𝔊 F ν u₀ n gs δ t)
+      ≤ δ⁻¹ * ∫ s in t..(t + δ), viscousFormSq_R3 1 ((gs.u s : L2VF_R3)) := by
+  sorry -- ALLOW_SORRY: viscous/H¹ Steklov Jensen bound. The L²-level Jensen template is PROVED sorry-free above (`norm_integral_sq_le_length_mul_integral_normSq`, `steklovAvg_normSq_le_average`). The SINGLE genuine missing-mathlib pillar is the pointwise `Lp`-valued Bochner-integral coeFn interchange `(𝓕 (proj_j (δ⁻¹•∫_s u s))) ξ =ᵐ δ⁻¹ ∫_s (𝓕 (proj_j (u s))) ξ ds` — the SAME gap isolated as `convL2_coeFn_ae` in FrechetKolmogorov.lean (mathlib has no coeFn-of-Lp-valued-integral lemma). Given that interchange, per-ξ Cauchy–Schwarz (the L²-template above) + Tonelli against the nonnegative weight `(2π)²‖ξ‖²` (absolutely convergent: compact window + continuous curve + finite `∫_s viscousFormSq_R3 1 (u s)`) yields the bound. Completing it here also needs the `R3.FourierL2` spectral exposure lemma + `𝓕` notation, i.e. a `lean-coder`-owned import (AGENTS.md Hard rule 10). NOT an axiom, NOT a false blocker.
 
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
