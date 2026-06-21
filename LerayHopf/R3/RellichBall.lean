@@ -13,8 +13,9 @@ open scoped FourierTransform
 
 **Milestone:** `rellich-balls`
 
-This file supplies the analytic frontier formerly carried by the `spatial_compactness_R3`
-axiom (via `LocalRellichInput.ballCompact`, `SpatialCompactness.lean:94-99`).  As of PR #35
+This file supplies the analytic frontier formerly carried by the
+`spatial_compactness_R3` axiom (via `LocalRellichInput.ballCompact`,
+`SpatialCompactness.lean:94-99`).  As of PR #35
 the FK chain is `sorry`-free, and `spatial_compactness_R3` is no longer an axiom — it is a
 proved `theorem` assembled from this file's deliverable (see `AxiomaticClosure.lean`).
 Concretely this file does two things:
