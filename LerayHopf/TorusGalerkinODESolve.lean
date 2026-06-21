@@ -938,4 +938,62 @@ private theorem galerkin_energy_identity_curve (F : Torus3NSForms) (ν : ℝ) (n
       (- ν * viscousFormSq 1 (c t : L2VF)) t :=
   energy_hasDerivAt_of_localSolution F ν n c t (hd t ht)
 
+/-! ### The `h1EnergySq = L² + gradient` split on `Vₙ` (planner risk #3) -/
+
+/-- Each `Vₙ`-element component's weighted coefficient sum is a finite sum over `fourierBox n`. -/
+private theorem componentC_h1_summable (n : ℕ) (u : L2VF) (hu : velocityProjection_n n u = u)
+    (j : Fin 3) (g : (Fin 3 → ℤ) → ℝ) :
+    Summable (fun k : Fin 3 → ℤ => g k * ‖mFourierCoeff3 (L2VF_projComponentC j u) k‖ ^ 2) := by
+  apply summable_of_ne_finset_zero (s := fourierBox n)
+  intro k hk
+  rw [coeff_zero_outside_box n u hu j k hk]; simp
+
+/-- **`h1EnergySq` split on `Vₙ`.** For `u ∈ Vₙ` (finite Fourier support):
+`h1EnergySq u = ‖u‖²_{L2VF} + (2π)²⁻¹ · viscousFormSq 1 u`.
+
+The H¹ weight `(1 + ∑ᵢkᵢ²)` splits into the L²-part (`1`) — which is `‖u‖²` by Parseval +
+Pythagoras — and the gradient part (`∑ᵢkᵢ²`), which is `(2π)²⁻¹·viscousFormSq 1 u`. -/
+theorem h1EnergySq_eq_L2_add_viscous (n : ℕ) (u : L2VF) (hu : velocityProjection_n n u = u) :
+    h1EnergySq u = ‖u‖ ^ 2 + ((2 * Real.pi) ^ 2)⁻¹ * viscousFormSq 1 u := by
+  -- Parseval per component: `‖componentC j u‖² = ∑'ₖ ‖ûⱼ(k)‖²`.
+  have hL2 : ‖u‖ ^ 2 = ∑ j : Fin 3, ∑' k : Fin 3 → ℤ,
+      ‖mFourierCoeff3 (L2VF_projComponentC j u) k‖ ^ 2 := by
+    rw [L2VF_norm_sq_eq_sum_componentC]
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    exact L2C_norm_sq_eq_tsum_coeff_sq (L2VF_projComponentC j u)
+  rw [hL2, h1EnergySq, viscousFormSq, one_mul, Finset.mul_sum, ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl (fun j _ => ?_)
+  -- Rewrite each per-`j` summand into the split form, then split the tsum.
+  have hsplit : (fun k : Fin 3 → ℤ =>
+        (1 + ∑ i : Fin 3, (k i : ℝ) ^ 2) * ‖mFourierCoeff3 (L2VF_projComponentC j u) k‖ ^ 2)
+      = fun k => ‖mFourierCoeff3 (L2VF_projComponentC j u) k‖ ^ 2
+        + ((2 * Real.pi) ^ 2)⁻¹ * ((2 * Real.pi) ^ 2 * (∑ i : Fin 3, (k i : ℝ) ^ 2) *
+            ‖mFourierCoeff3 (L2VF_projComponentC j u) k‖ ^ 2) := by
+    funext k
+    have hne : ((2 * Real.pi) ^ 2) ≠ 0 := by positivity
+    field_simp
+  rw [hsplit, Summable.tsum_add (componentC_h1_summable n u hu j (fun _ => 1) |>.congr (by intro k; ring))
+    (by
+      have := componentC_h1_summable n u hu j (fun k => ((2 * Real.pi) ^ 2)⁻¹ *
+        ((2 * Real.pi) ^ 2 * (∑ i : Fin 3, (k i : ℝ) ^ 2)))
+      refine this.congr (fun k => ?_); ring),
+    ← tsum_mul_left]
+
+/-- **E2 — uniform energy bound.** `½‖c t‖² ≤ ½‖Pₙ u₀‖²` for the G1 curve at `t ≥ 0`. -/
+private theorem galerkin_energy_bound_curve (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (n : ℕ)
+    (u₀ : L2Sigma) (c : ℝ → velocitySpan n)
+    (hc0 : (c 0 : L2VF) = velocityProjection_n n (u₀ : L2VF))
+    (hd : ∀ s, 0 ≤ s → HasDerivAt (fun r => (c r : L2VF))
+      (galerkinODE_vectorField F ν n (c s) : L2VF) s)
+    (t : ℝ) (ht : 0 ≤ t) :
+    (1 / 2 : ℝ) * ‖(c t : L2VF)‖ ^ 2 ≤
+    (1 / 2 : ℝ) * ‖velocityProjection_n n (u₀ : L2VF)‖ ^ 2 := by
+  have hnorm : ‖(c t : L2VF)‖ ≤ ‖(c 0 : L2VF)‖ :=
+    norm_le_of_forwardSolution F ν n hν c ht
+      (fun s hs => hd s hs.1) t ⟨ht, le_rfl⟩
+  rw [hc0] at hnorm
+  have hsq : ‖(c t : L2VF)‖ ^ 2 ≤ ‖velocityProjection_n n (u₀ : L2VF)‖ ^ 2 :=
+    pow_le_pow_left₀ (norm_nonneg _) hnorm 2
+  linarith
+
 end LerayHopf
