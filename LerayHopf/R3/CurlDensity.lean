@@ -14,11 +14,13 @@ open scoped Topology RealInnerProductSpace FourierTransform
 This file's single deliverable is
 
 ```
-theorem curlSchwartzDense_holds : CurlSchwartzDense
+theorem curlSchwartzDense_provedRoute : CurlSchwartzDense
 ```
 
 i.e. a PROOF of the isolated density frontier `CurlSchwartzDense`
-(`LerayHopf/R3/SchwartzDivFreeBasis.lean`):
+(`LerayHopf/R3/SchwartzDivFreeBasis.lean`) — the aspirational discharge route that would
+RETIRE the marked density `axiom curlSchwartzDense_holds` (issue #21).  Named distinctly to
+avoid a clash (this file imports `SchwartzDivFreeBasis`, where that axiom lives):
 
 ```
 CurlSchwartzDense :=
@@ -26,10 +28,12 @@ CurlSchwartzDense :=
     (Submodule.span ℝ (Set.range curlSchwartzL2)).topologicalClosure
 ```
 
-Once proved, this upgrades `CurlSchwartzDense` from a carried hypothesis to a theorem,
-so the capstone can feed `schwartzGalerkinBasis_of_curlDense` an actual proof and remove
-the axiom `r3GalerkinScheme_exists`. **That capstone rewiring is OUT OF SCOPE here**; this
-file only proves the density and edits nothing outside itself.
+Once proved, this upgrades `CurlSchwartzDense` from the marked axiom `curlSchwartzDense_holds`
+(`SchwartzDivFreeBasis.lean`, the single density axiom kept after the issue-#21 swap) to a
+theorem, eliminating the last R3 spatial axiom.  The capstone rewiring itself
+(`r3GalerkinScheme_exists` now a discharged theorem, `curlSchwartzDense_holds` the thin
+density axiom) was done in issue #21; **proving the density to retire that axiom is OUT OF
+SCOPE here**; this file only works toward the density and edits nothing outside itself.
 
 ## The classical route (Helmholtz / Weyl, Fourier proof)
 
@@ -830,14 +834,19 @@ theorem l2sigma_le_closure_span_curl :
 
 /-! ### Deliverable -/
 
-/-- **Deliverable.**  The isolated density frontier holds: the L²-closure of the span of curls
-of Schwartz vector potentials contains the whole weakly-divergence-free subspace `L2Sigma_R3`.
+/-- **Deliverable (discharge route for the issue-#21 axiom).**  The isolated density frontier
+holds: the L²-closure of the span of curls of Schwartz vector potentials contains the whole
+weakly-divergence-free subspace `L2Sigma_R3`.
 
-This is a PROOF of `CurlSchwartzDense` (no extra hypotheses), discharging the single classical
-input carried by `schwartzGalerkinBasis_of_curlDense`.  It is `l2sigma_le_closure_span_curl`
-repackaged at the exact `CurlSchwartzDense` type — `CurlSchwartzDense` unfolds definitionally to
-that closure containment. -/
-theorem curlSchwartzDense_holds : CurlSchwartzDense :=
+This is the aspirational PROOF of `CurlSchwartzDense` (no extra hypotheses) that would RETIRE
+the marked `axiom curlSchwartzDense_holds` (`SchwartzDivFreeBasis.lean`, issue #21): once
+`l2sigma_le_closure_span_curl` is sorry-free, replacing the axiom body with this theorem
+removes the last R3 spatial axiom.  It carries the same `sorry` as
+`l2sigma_le_closure_span_curl` and is a LEAF (imported by nothing on the capstone path), so it
+does NOT contaminate `exists_lerayHopf_r3_axiomatic`'s axiom set — that capstone routes through
+the marked axiom, not this sorry-backed route.  Named distinctly from the axiom to avoid a
+name clash (`SchwartzDivFreeBasis.curlSchwartzDense_holds` is the axiom this file imports). -/
+theorem curlSchwartzDense_provedRoute : CurlSchwartzDense :=
   l2sigma_le_closure_span_curl
 
 end LerayHopf

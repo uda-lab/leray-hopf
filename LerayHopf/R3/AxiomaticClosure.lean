@@ -18,14 +18,16 @@ The T³ 8-round audit lessons are baked in preemptively.
 
 ## Architecture
 
-Five axioms are added in this file.  AX-SC (`spatial_compactness_R3`) is NO LONGER assumed:
-it is now a THEOREM, discharged (issue #2) via the sorry-free Fréchet–Kolmogorov chain
-(`localCompactness_R3_of_ballCompact ∘ localRellichInput_of_frechetKolmogorov ∘
-frechetKolmogorov_holds`).  The remaining single extra (vs. T³) is the piece T³ PROVED
-but ℝ³ cannot supply concretely:
+Four axioms are added in THIS file.  Two former axioms are NO LONGER assumed here:
+AX-SC (`spatial_compactness_R3`, now a THEOREM via the Fréchet–Kolmogorov chain, issue #2)
+and AX-G (`r3GalerkinScheme_exists`, now a discharged THEOREM, issue #21).  The single extra
+(vs. T³) that T³ PROVED but ℝ³ cannot supply concretely is now isolated to the thin
+density `curlSchwartzDense_holds` (an axiom in `SchwartzDivFreeBasis.lean`, downstream):
 
 - **AX-G `r3GalerkinScheme_exists`** — the approximation-projection family
-  (replaces T³'s proved `velocityProjection_n`).
+  (replaces T³'s proved `velocityProjection_n`); DISCHARGED (issue #21) — now a `theorem` in
+  `SchwartzDivFreeBasis.lean` resting on the thin density axiom `curlSchwartzDense_holds`,
+  which is the actual project axiom counted in its place (net 5, a swap).
 
 The former AX-SC `spatial_compactness_R3` (local Rellich H¹(B_R)↪↪L²(B_R); replaces T³'s
 proved `rellich_L2Sigma`; Rellich FAILS globally on ℝ³ but LOCAL convergence on every ball
@@ -53,7 +55,7 @@ calibration constant, and does not vanish on all Schwartz triples.
 ## Main definitions and theorems
 
 - `R3GalerkinScheme`                 : structure bundling the approximation-projection family
-- `r3GalerkinScheme_exists`          : axiom — existence of `R3GalerkinScheme`
+- `r3GalerkinScheme_exists`          : THEOREM (issue #21) — existence of `R3GalerkinScheme`; discharged in `SchwartzDivFreeBasis.lean` via `curlSchwartzDense_holds` (relocated for acyclicity)
 - `IsGalerkinTest_R3`                : test-function predicate for ℝ³
 - `convIntegralSchwartz`             : genuine `∑_{i,a} ∫ u_a (∂_a v_i) w_i` convection integral on Schwartz fields (defined in `DivergenceFree.lean`)
 - `R3NSForms`                        : structure bundling the ℝ³ NS convection form
@@ -70,27 +72,27 @@ calibration constant, and does not vanish on all Schwartz triples.
 - `GalerkinCompactnessPackageFull_R3`: proof-carrying Galerkin compactness package
 - `build_galerkin_package_R3`        : assembly — chains A1 → A2 (spatial_compactness_R3) → A3
 - `exists_lerayHopf_from_package_full_R3` : lifts a package to `Nonempty (LerayHopfSolutionFull_R3 …)`
-- `exists_lerayHopf_r3_axiomatic`    : main existence theorem (axiom-dependent; renamed from `exists_lerayHopf_r3`)
+- `exists_lerayHopf_r3_axiomatic`    : main existence theorem — RELOCATED (issue #21) to `SchwartzDivFreeBasis.lean`
 
 ## Assumptions
 
-Five axioms are added in this file (names below with justifications).  AX-SC
-`spatial_compactness_R3` was the sixth and is now DISCHARGED (issue #2) — it is a theorem
-proved via the Fréchet–Kolmogorov chain, not an assumption (see item 4 below).
+Four axioms are added in THIS file (names below with justifications).  TWO former axioms are
+now DISCHARGED and are NOT assumptions here: AX-SC `spatial_compactness_R3` (issue #2, FK
+chain — item 4 below) and AX-G `r3GalerkinScheme_exists` (issue #21 — item 1 below).  The
+fifth project axiom is now `curlSchwartzDense_holds` (in `SchwartzDivFreeBasis.lean`), the
+thin density that AX-G was swapped for.
 
-1. `r3GalerkinScheme_exists` — existence of a Galerkin approximation-projection family
-   on `L²_σ(ℝ³)` with smooth (Schwartz) range (e.g. frequency-ball truncation or smooth
-   Hermite/mollification basis). The `range_schwartz` field excludes `P = id` (L² ⊄
-   Schwartz), ensuring every Galerkin test field is Schwartz so `b_bound` and `reg_mem`
-   are non-vacuous.  The `tendsto_id` field is RESTRICTED to `u ∈ L2Sigma_R3` (strong
-   convergence on the divergence-free subspace only): a divergence-free Galerkin scheme is
-   total only in `L²_σ(ℝ³)`, never in all of `L²(ℝ³; ℝ³)`, so an unrestricted
-   `∀ u : L2VF_R3` form was a latent over-strength (Codex-confirmed) and has been removed;
-   every consumer applies `P n` only to div-free data. TRUE classically (Paley–Wiener;
-   smooth Galerkin bases exist); blocked in Lean by the missing indicator Fourier-multiplier
-   on Lp. Lemarié-Rieusset §2.  See `LerayHopf/R3/GalerkinScheme.lean`
-   (`nonempty_r3GalerkinScheme_of_basis`) for the axiom-free constructive witness of this
-   structure from a single density hypothesis.
+1. `r3GalerkinScheme_exists` — NO LONGER AN AXIOM (DISCHARGED, issue #21). Existence of a
+   Galerkin approximation-projection family on `L²_σ(ℝ³)` with smooth (Schwartz) range.  The
+   `range_schwartz` field excludes `P = id` (L² ⊄ Schwartz), ensuring every Galerkin test
+   field is Schwartz so `b_bound` and `reg_mem` are non-vacuous.  The `tendsto_id` field is
+   RESTRICTED to `u ∈ L2Sigma_R3` (a divergence-free Galerkin scheme is total only in
+   `L²_σ(ℝ³)`; an unrestricted `∀ u : L2VF_R3` form was a latent over-strength, removed).
+   Now PROVED as the `theorem` `r3GalerkinScheme_exists` in `SchwartzDivFreeBasis.lean`,
+   assembled from P5 `nonempty_r3GalerkinScheme_of_basis` (`GalerkinScheme.lean`) and the
+   single marked density axiom `curlSchwartzDense_holds` — the SWAP that replaced this 6-field
+   structure axiom with a thin `Submodule` density `Prop` (net project-axiom count unchanged).
+   Lemarié-Rieusset §2.
 
 2. `r3_NSForms_exist` — existence of the ℝ³ NS convection form `b`. The genuine
    `∫(u·∇)v·w` form witnesses it; non-vacuity pinned via `b_galerkin` to
@@ -176,8 +178,14 @@ structure R3GalerkinScheme where
       L2VF_projComponent_R3 j (P n u) =
         (ψ j).toLp 2 (volume : Measure Domain3)
 
-/-- **Axiom AX-G:** A Galerkin approximation-projection family on `L²_σ(ℝ³)` exists. -/
-axiom r3GalerkinScheme_exists : Nonempty R3GalerkinScheme -- ALLOW_AXIOM: existence of a Galerkin approximation-projection family on L²_σ(ℝ³) with SMOOTH (Schwartz) range (e.g. frequency-ball truncation / smooth Hermite basis); range_schwartz excludes P=id (L²⊄Schwartz) ensuring IsGalerkinTest fields are Schwartz, making b_bound and reg_mem non-vacuous; TRUE classically (Paley–Wiener; smooth Galerkin bases exist); blocked in Lean by the missing indicator Fourier-multiplier on Lp; Lemarié-Rieusset §2
+/-! **Former axiom AX-G — now DISCHARGED (issue #21).** A Galerkin approximation-projection
+family on `L²_σ(ℝ³)` exists.  No longer an axiom: it is proved as the `theorem`
+`r3GalerkinScheme_exists` in `LerayHopf/R3/SchwartzDivFreeBasis.lean`, assembled from the
+constructive witness P5 (`nonempty_r3GalerkinScheme_of_basis`) and the single marked density
+input `curlSchwartzDense_holds`.  The proof lives downstream (it needs the witness chain,
+which imports this file), so the structure `R3GalerkinScheme` stays here while its
+inhabitation moves one level down the import DAG.  The capstone `exists_lerayHopf_r3_axiomatic`
+is relocated to the same downstream file for the same reason. -/
 
 /-! ### Galerkin test predicate for ℝ³ -/
 
@@ -668,24 +676,16 @@ theorem exists_lerayHopf_from_package_full_R3 (𝔊 : R3GalerkinScheme) (F : R3N
        initial_trace := pkg.initial_trace_limit
        energy_class := pkg.energy_class_limit }⟩
 
-/-- **Main existence theorem on ℝ³ (axiomatic):** For any `u₀ ∈ L²_σ(ℝ³)`, `ν > 0`,
-`T > 0`, there exist a Galerkin scheme `𝔊`, an NS-forms bundle `F`, and a Leray–Hopf
-solution `u` on `[0, T]`.
+/-! **Main existence theorem on ℝ³ (axiomatic) — RELOCATED (issue #21).**
 
-The name `_axiomatic` advertises that this result depends on the five project axioms
-(`r3GalerkinScheme_exists`, `r3_NSForms_exist`, `galerkin_ode_solution_R3`,
-`aubin_lions_R3`, `galerkin_limit_passage_R3`).  `spatial_compactness_R3` is NO LONGER
-among them — it was the former sixth project axiom and is now a proved `theorem`
-(discharged via the FK chain, PR #35 / issue #2).
-It is explicitly instructed (Issue #1 item 3); see `LerayHopf/Core.lean` for the
-axiom-free layer. Renamed from `exists_lerayHopf_r3`. -/
-theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
-    (T : ℝ) (hT : 0 < T) :
-    ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),
-    Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀) := by
-  obtain ⟨𝔊⟩ := r3GalerkinScheme_exists
-  obtain ⟨F⟩ := r3_NSForms_exist 𝔊
-  exact ⟨𝔊, F, exists_lerayHopf_from_package_full_R3 𝔊 F ν T u₀
-    (build_galerkin_package_R3 𝔊 F ν hν T hT u₀)⟩
+`exists_lerayHopf_r3_axiomatic` now lives in `LerayHopf/R3/SchwartzDivFreeBasis.lean`,
+downstream of this file.  The relocation is forced by the issue-#21 swap: the capstone
+obtains its Galerkin scheme from `r3GalerkinScheme_exists`, which became a discharged
+`theorem` resting on the constructive witness chain (`nonempty_r3GalerkinScheme_of_basis` in
+`GalerkinScheme.lean`).  That chain imports this file, so the capstone must sit below it in
+the DAG to stay acyclic.  All the building blocks it uses (`r3_NSForms_exist`,
+`build_galerkin_package_R3`, `exists_lerayHopf_from_package_full_R3`) remain defined here and
+are visible downstream through the import.  See `LerayHopf/Core.lean` for the axiom-free
+layer; `LerayHopf/R3Axiomatic.lean` re-exports the relocated capstone. -/
 
 end LerayHopf
