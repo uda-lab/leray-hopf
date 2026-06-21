@@ -163,6 +163,20 @@ theorem mem_velocitySpan_iff (n : ℕ) (x : L2VF) :
     x ∈ velocitySpan n ↔ ∃ y ∈ L2Sigma, velocityProjection_n n y = x := by
   simp only [velocitySpan, Submodule.mem_map, ContinuousLinearMap.coe_coe]
 
+/-! ### Fourier support of `Vₙ` elements -/
+
+/-- If `velocityProjection_n n u = u` (i.e. `u ∈ Vₙ`), the `j`-th Fourier coefficient of `u`
+vanishes outside `fourierBox n`.  Copy of the `TorusConvectionForm.lean` lemma, hoisted here so
+the downstream torus ODE solver (which does not import `TorusConvectionForm`) can use it. -/
+theorem coeff_zero_outside_box (n : ℕ) (u : L2VF)
+    (hu : velocityProjection_n n u = u) (j : Fin 3) (k : Fin 3 → ℤ)
+    (hk : k ∉ fourierBox n) :
+    mFourierCoeff3 (L2VF_projComponentC j u) k = 0 := by
+  have hcomm := velocityProjection_n_component_comm n u j
+  rw [hu] at hcomm
+  conv_lhs => rw [hcomm]
+  rw [ContinuousLinearMap.coe_restrictScalars', fourierProjection_n_mFourierCoeff, if_neg hk]
+
 /-! ### Bridge lemmas: `Vₙ` is the fixed-point set of `velocityProjection_n n` -/
 
 /-- **Bridge (range ⊆ fixed points).** Every `v ∈ velocitySpan n` is fixed by the projector. -/
