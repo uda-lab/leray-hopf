@@ -47,7 +47,8 @@ sound for all `u : L2VF`.  The energy-inequality fields use `viscousFormSq ν` d
 - `galerkin_limit_passage`          : axiom — limit passage to weak NS solution (Temam III.3)
 - `LerayHopfSolutionFull`           : proof-carrying Leray–Hopf solution structure
 - `GalerkinCompactnessPackageFull`  : proof-carrying Galerkin compactness package
-- `build_galerkin_package`          : assembly — chains A1 → A2 (with rellich_L2Sigma) → A3
+- `build_galerkin_package_of_galSeq` : assembly (axiom-free core) — chains A2 (with rellich_L2Sigma) → A3 from an explicit Galerkin sequence
+- `build_galerkin_package`          : assembly — chains A1 → A2 (with rellich_L2Sigma) → A3 (via the of_galSeq core)
 - `exists_lerayHopf_from_package_full` : copies proofs from package to solution
 - `exists_lerayHopf_torus3_axiomatic` : main existence theorem — RELOCATED to
   `TorusConvectionForm.lean` (issue #22), rerouted through `torus3_NSForms_exists`
@@ -500,36 +501,53 @@ structure GalerkinCompactnessPackageFull (F : Torus3NSForms) (ν T : ℝ) (u₀ 
 
 /-! ### Assembly theorems -/
 
-/-- **Assembly:** Build a `GalerkinCompactnessPackageFull` by chaining A1 → A2 (with
-`rellich_L2Sigma`) → A3.
+/-- **Assembly (axiom-free core).**  Build a `GalerkinCompactnessPackageFull` from an
+EXPLICIT Galerkin sequence `galSeq`, chaining A2 (with `rellich_L2Sigma`) → A3.
 
-The prover fills the body; the key steps are:
-1. Apply `galerkin_ode_solution` (A1) to get `galSeq : ∀ n, GalerkinSolutionData F ν u₀ n`.
-2. Apply `aubin_lions` (A2) with `spatial := rellich_L2Sigma` to get the Aubin–Lions package.
-3. Apply `galerkin_limit_passage` (A3) to get the weak equation + energy inequality + initial trace.
-4. Pack into `GalerkinCompactnessPackageFull`. -/
-noncomputable def build_galerkin_package (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
-    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma) :
+This is the body of `build_galerkin_package` factored from Step 2 onward (issue #24): it takes
+`galSeq` as a parameter instead of producing it via the `galerkin_ode_solution` axiom, so it
+carries NO dependency on A1.  Every downstream consumer (`aubin_lions`,
+`galerkin_limit_passage`, the whole packing) is unchanged; only the source of `galSeq` is lifted
+out.  Routing the capstone through this builder with a concrete, axiom-free `galSeq` is what
+discharges `galerkin_ode_solution`.
+
+The steps are:
+1. Apply `aubin_lions` (A2) with `spatial := rellich_L2Sigma` to get the Aubin–Lions package.
+2. Apply `galerkin_limit_passage` (A3) to get the weak equation + energy inequality + initial trace.
+3. Pack into `GalerkinCompactnessPackageFull`. -/
+noncomputable def build_galerkin_package_of_galSeq (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
+    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) :
     GalerkinCompactnessPackageFull F ν T u₀ := by
-  -- Step 1 (A1): the Galerkin ODE solutions, one per `n`.
-  have galSeq : ∀ n, GalerkinSolutionData F ν u₀ n :=
-    fun n => galerkin_ode_solution F ν hν u₀ n
-  -- Step 2 (A2): Aubin–Lions, with the spatial half discharged by `rellich_L2Sigma`.
+  -- Step 1 (A2): Aubin–Lions, with the spatial half discharged by `rellich_L2Sigma`.
   have alPkg : AubinLionsPackage F ν T u₀ galSeq :=
     aubin_lions F ν hν T hT u₀ galSeq rellich_L2Sigma
-  -- Step 3 (A3): limit passage to the good representative.  The goal is a `Type`
+  -- Step 2 (A3): limit passage to the good representative.  The goal is a `Type`
   -- (a structure), so the existential is unpacked with `Exists.choose` rather than
   -- `obtain` (which only eliminates into `Prop`).  The a.e.-link conjunct
   -- (`hspec.1`) is intentionally discarded.
   have hex := galerkin_limit_passage F ν hν T hT u₀ galSeq alPkg
   have hspec := hex.choose_spec
-  -- Step 4: pack into the proof-carrying structure.
+  -- Step 3: pack into the proof-carrying structure.
   exact
     { limit := hex.choose
       weak_eq_limit := hspec.2.1
       energy_ineq_limit := hspec.2.2.1
       initial_trace_limit := hspec.2.2.2.1
       energy_class_limit := hspec.2.2.2.2 }
+
+/-- **Assembly:** Build a `GalerkinCompactnessPackageFull` by chaining A1 → A2 (with
+`rellich_L2Sigma`) → A3.
+
+Re-expressed (issue #24) through `build_galerkin_package_of_galSeq`: A1 (`galerkin_ode_solution`)
+supplies the explicit `galSeq`, then the axiom-free core does A2 → A3.  Kept until the concrete
+solver replaces the A1 source in the capstone. -/
+noncomputable def build_galerkin_package (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
+    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma) :
+    GalerkinCompactnessPackageFull F ν T u₀ :=
+  -- Step 1 (A1): the Galerkin ODE solutions, one per `n`.
+  build_galerkin_package_of_galSeq F ν hν T hT u₀
+    (fun n => galerkin_ode_solution F ν hν u₀ n)
 
 /-- **Assembly:** A `GalerkinCompactnessPackageFull` yields `Nonempty (LerayHopfSolutionFull …)`. -/
 theorem exists_lerayHopf_from_package_full (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
