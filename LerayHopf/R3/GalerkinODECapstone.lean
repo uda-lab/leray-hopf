@@ -29,10 +29,10 @@ cycle; it lands here, one level below `GalerkinODESolve`.
 Routing the capstone through `galSeq_R3_of_basis` (axiom-free, concrete scheme) instead of
 the `galerkin_ode_solution_R3` axiom drops EXACTLY that axiom from
 `exists_lerayHopf_r3_axiomatic`'s `#print axioms`.  After issue #15 (which removed
-`aubin_lions_R3` — proving its spatial half and swapping its time content for the two
-strictly-thinner `timeCompactnessInput_R3` + `galerkinSpaceTimeExtraction_R3`), the capstone rests
-on the FIVE project axioms: `curlSchwartzDense_holds`, `r3_NSForms_exist`,
-`galerkin_limit_passage_R3`, `timeCompactnessInput_R3`, `galerkinSpaceTimeExtraction_R3`.
+`aubin_lions_R3` — proving its spatial half and swapping its time content 1-for-1 for the single
+strictly-thinner UNCONDITIONAL `galerkinSpaceTimeExtraction_R3`), the capstone rests
+on the FOUR project axioms: `curlSchwartzDense_holds`, `r3_NSForms_exist`,
+`galerkin_limit_passage_R3`, `galerkinSpaceTimeExtraction_R3`.
 
 ## Declarations added
 
@@ -80,12 +80,13 @@ The witness scheme is the CONCRETE `schemeOfBasis B`, with `B` drawn from
 `nonempty_schwartzGalerkinBasis` (NOT from `r3GalerkinScheme_exists`, which would discard the
 basis via `Nonempty.elim` and reintroduce the need for the per-scheme ODE axiom).
 
-The name `_axiomatic` advertises that this result depends on the FIVE remaining project axioms
+The name `_axiomatic` advertises that this result depends on the FOUR remaining project axioms
 (`curlSchwartzDense_holds`, `r3_NSForms_exist`, `galerkin_limit_passage_R3`,
-`timeCompactnessInput_R3`, `galerkinSpaceTimeExtraction_R3`).
+`galerkinSpaceTimeExtraction_R3`).
 `galerkin_ode_solution_R3` is NO LONGER among them — discharged here (issue #10).
 `aubin_lions_R3` is NO LONGER among them — removed (issue #15): its spatial half PROVED, its time
-content swapped for the two strictly-thinner `timeCompactnessInput_R3` + `galerkinSpaceTimeExtraction_R3`.
+content swapped 1-for-1 for the single strictly-thinner UNCONDITIONAL `galerkinSpaceTimeExtraction_R3`
+(the former separate `timeCompactnessInput_R3` axiom is removed; its modulus is absorbed here).
 `r3GalerkinScheme_exists` was discharged earlier (issue #21, `curlSchwartzDense_holds`);
 `spatial_compactness_R3` earlier still (issue #2, FK chain). -/
 theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)

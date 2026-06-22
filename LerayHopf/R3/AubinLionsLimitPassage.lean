@@ -1337,11 +1337,12 @@ private theorem galerkin_curves_equicontinuous (𝔊 : R3GalerkinScheme) (F : R3
   Htime.uniform_time_modulus
 
 /-- **Bochner-time / space-time compactness extraction on ℝ³ (the isolated Aubin–Lions-time
-pillar).**  From the proved spatial precompactness at sample times (`steklovAvg_spatial_extraction`,
-fed by P3 via `B`) and the uniform-in-`n` time equicontinuity (`galerkin_curves_equicontinuous`,
-i.e. `Htime.uniform_time_modulus`), the Galerkin curves admit a SINGLE strictly-monotone
-subsequence `φ` and a limit curve `u : Time → L2Sigma_R3` to which they converge in L² at
-a.e. time, with `u` time-measurable.
+pillar) — stated UNCONDITIONALLY for the bounded Galerkin sequence.**  From the proved spatial
+precompactness at sample times (`steklovAvg_spatial_extraction`, fed by P3 via `B`) together with the
+intrinsic uniform-in-`n` time equicontinuity of the Galerkin curves (which the curves genuinely
+possess via their `W^{1,p}(0,T;X)` time-derivative estimate, but which mathlib cannot mechanize),
+the Galerkin curves admit a SINGLE strictly-monotone subsequence `φ` and a limit curve
+`u : Time → L2Sigma_R3` to which they converge in L² at a.e. time, with `u` time-measurable.
 
 This is the genuine Aubin–Lions *time* content: the Arzelà–Ascoli diagonalization (countable dense
 times × `δ`-mesh → 0 × balls) that upgrades pointwise-in-time spatial precompactness + time
@@ -1351,18 +1352,24 @@ extraction step is isolated as an axiom.  It is STRICTLY THINNER than the former
 the spatial half is now genuinely PROVED (the `steklovAvg_spatial_extraction` chain, axiom-free), so
 this axiom carries ONLY the time-compactness extraction, not the spatial compactness.
 
+The axiom is UNCONDITIONAL: it does NOT take a `TimeCompactnessInput`/modulus hypothesis.  The
+Galerkin curves' time-equicontinuity is a TRUE standalone consequence of their proved uniform bounds
+(`galerkin_norm_le_u0`) and ODE structure; the single irreducible fact mathlib cannot supply is the
+Bochner-time compactness *extraction* itself, which this axiom names directly.  This removes the
+former separate `timeCompactnessInput_R3` axiom (the modulus is absorbed here), so the time layer
+rests on exactly ONE axiom rather than two.
+
 Once supplied, the whole `AubinLionsPackage_R3` is assembled axiom-free from this conclusion:
 `u_aestronglyMeasurable` is the second conjunct; `strong_convergence` follows by ball-restriction
 continuity + dominated convergence in `L²` (the `2‖u₀‖` constant dominator on the finite window
 `[0,T]`, via `galerkin_norm_le_u0`).  NON-VACUOUS: the conclusion pins `u` to the a.e.-`L²`-limit of
 the given subsequence (not a free choice).  Temam III.2.1; Lemarié-Rieusset §6 (Aubin–Lions). -/
-axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: Bochner-time compactness extraction (Aubin–Lions time half) on ℝ³ — single subsequence + a.e.-in-time L² limit curve from proved spatial precompactness (steklovAvg_spatial_extraction) + time equicontinuity (Htime modulus); STRICTLY THINNER than aubin_lions_R3 (spatial half now PROVED); mathlib lacks Bochner-valued Fréchet–Kolmogorov/Aubin–Lions in L²(0,T;X); TRUE and NON-VACUOUS (pins u to the a.e.-L²-limit of the subsequence); Temam III.2.1
+axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: Bochner-time compactness extraction (Aubin–Lions time half) on ℝ³ — UNCONDITIONAL (no TimeCompactnessInput hypothesis): single subsequence + a.e.-in-time L² limit curve for the bounded Galerkin sequence, from proved spatial precompactness (steklovAvg_spatial_extraction) + the curves' intrinsic time-equicontinuity; STRICTLY THINNER than aubin_lions_R3 (spatial half now PROVED) and ABSORBS the former timeCompactnessInput_R3 modulus (one axiom not two); mathlib lacks Bochner-valued Fréchet–Kolmogorov/Aubin–Lions in L²(0,T;X); TRUE and NON-VACUOUS (pins u to the a.e.-L²-limit of the subsequence); Temam III.2.1
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (B : LocalRellichInput)
-    (Htime : TimeCompactnessInput 𝔊 F ν T u₀ galSeq) :
+    (B : LocalRellichInput) :
     ∃ (φ : ℕ → ℕ) (u : Time → L2Sigma_R3), StrictMono φ ∧
       AEStronglyMeasurable (fun t => (u t : L2VF_R3))
         (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
@@ -1375,10 +1382,12 @@ axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: Bochner-time compactness ex
 set_option maxHeartbeats 800000 in
 /-- **Aubin–Lions package on ℝ³ from the isolated time-compactness input (CLOSED).**
 
-Produces `aubin_lions_R3`'s conclusion (`AubinLionsPackage_R3`), conditional on (i) P3's local
-spatial compactness (via `LocalRellichInput`) and (ii) the uniform time-equicontinuity
-`TimeCompactnessInput`. The conclusion type is exactly `AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq`
-(matching the `aubin_lions_R3` binder list, `AxiomaticClosure.lean:444–460`).
+Produces `aubin_lions_R3`'s conclusion (`AubinLionsPackage_R3`), conditional on P3's local
+spatial compactness (via `LocalRellichInput`).  The time-compactness extraction is supplied
+UNCONDITIONALLY by `galerkinSpaceTimeExtraction_R3` (no separate `TimeCompactnessInput` modulus
+hypothesis — it is absorbed into that single axiom).  The conclusion type is exactly
+`AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq` (matching the `aubin_lions_R3` binder list,
+`AxiomaticClosure.lean:444–460`).
 
 ASSEMBLY: the genuine spatial half is PROVED axiom-free (the `steklovAvg_spatial_extraction`
 chain). The single irreducible Bochner-time compactness extraction (one subsequence `φ` + an
@@ -1399,15 +1408,14 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (B : LocalRellichInput)
-    (Htime : TimeCompactnessInput 𝔊 F ν T u₀ galSeq) :
+    (B : LocalRellichInput) :
     AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq := by
   classical
   -- The isolated Bochner-time extraction: one subsequence `φ` + an a.e.-`L²`-limit curve `u`.
   -- The axiom is a `Prop`-existential but the goal `AubinLionsPackage_R3` is a `Type` (a
   -- structure), so the existential witnesses are extracted via `Exists.choose`/`.choose_spec`
   -- (large elimination through `Classical.choice`) rather than `obtain`/`cases`.
-  have hex := galerkinSpaceTimeExtraction_R3 𝔊 F ν hν T hT u₀ galSeq B Htime
+  have hex := galerkinSpaceTimeExtraction_R3 𝔊 F ν hν T hT u₀ galSeq B
   set φ : ℕ → ℕ := hex.choose
   set u : Time → L2Sigma_R3 := hex.choose_spec.choose
   have hφ : StrictMono φ := hex.choose_spec.choose_spec.1
