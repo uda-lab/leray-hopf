@@ -788,27 +788,10 @@ This lemma (formerly the single analytic gap blocking the forward direction of
 `mem_sigma_iff_fourier_transverse`) is now PROVED, axiom-free, via the reality lemma
 `fourier_hermitian_real`.  The forward direction is consequently fully discharged.
 
-**Removal plan for `curlSchwartzDense_holds` (import-DAG note, issue #3).**
-`CurlDensity.lean` already imports `SchwartzDivFreeBasis.lean`, so once
-`curlSchwartzDense_provedRoute` is sorry-free it CANNOT be used in-place to retire the
-marked declaration — that would require `SchwartzDivFreeBasis` to import `CurlDensity`,
-creating a cycle.  The clean one-step route (owner-approved scope, issue #3):
-
-  1. Prove P2 here → sorries in `mem_sigma_iff_fourier_transverse` and
-     `l2sigma_le_closure_span_curl` discharge → `curlSchwartzDense_provedRoute` becomes sorry-free.
-  2. Create `LerayHopf/R3/CurlDensityCapstone.lean` that imports BOTH `CurlDensity` and
-     `SchwartzDivFreeBasis`, and in that file:
-       - provides `nonempty_schwartzGalerkinBasis` routed through `curlSchwartzDense_provedRoute`
-         (bypassing the marked declaration in `SchwartzDivFreeBasis`), and
-       - replaces `r3GalerkinScheme_exists` to route through the proved version.
-     Alternatively: in `SchwartzDivFreeBasis.lean`, change the body of
-     `curlSchwartzDense_holds` from `sorry / axiom` to
-     `curlSchwartzDense_provedRoute` — only valid if that file is restructured to NOT import
-     `CurlDensity` (reverse-DAG direction). The capstone-file route is cleaner and acyclic.
-
-  **Definition of done:** `#print axioms nonempty_schwartzGalerkinBasis` contains no
-  `curlSchwartzDense_holds`; `lake build` passes; `check-no-axiom` clean on both files.
--/
+Axiom removal wired in `CurlDensityCapstone.lean` (Route A, issue #3):
+`curlSchwartzDense_provedRoute` here is the sorry-free, axiom-free proof; that file
+re-anchors `curlSchwartzDense_holds` / `nonempty_schwartzGalerkinBasis` /
+`r3GalerkinScheme_exists` to this proved theorem, eliminating the axiom. -/
 
 /-- **Reality of the Fourier transform of a Hermitian Schwartz function.**  If
 `g : 𝓢(ℝ³, ℂ)` is Hermitian (`g(-v) = conj(g(v))` for all `v`), then `𝓕 g` is real-valued:
@@ -1548,16 +1531,13 @@ theorem l2sigma_le_closure_span_curl :
 
 /-! ### Deliverable -/
 
-/-- **Deliverable (discharge route for the issue-#21 axiom).**  The density frontier holds: the
-L²-closure of the span of curls of Schwartz vector potentials contains the whole
-weakly-divergence-free subspace `L2Sigma_R3`.
+/-- **Deliverable.**  The density frontier holds: the L²-closure of the span of curls of
+Schwartz vector potentials contains the whole weakly-divergence-free subspace `L2Sigma_R3`.
 
-This is a complete, `sorry`-free, axiom-free PROOF of `CurlSchwartzDense` (no extra hypotheses),
-which RETIRES the marked `axiom curlSchwartzDense_holds` (`SchwartzDivFreeBasis.lean`, issue #21):
-replacing the axiom body with this theorem removes the last R3 spatial axiom (the wiring is a
-separate downstream step, since this file imports `SchwartzDivFreeBasis`).  Named distinctly from
-the axiom to avoid a name clash (`SchwartzDivFreeBasis.curlSchwartzDense_holds` is the axiom this
-file imports). -/
+This is a complete, `sorry`-free, axiom-free PROOF of `CurlSchwartzDense` (no extra hypotheses).
+The axiom `curlSchwartzDense_holds` is RETIRED: `CurlDensityCapstone.lean` (Route A, issue #3)
+re-anchors all consumers to this theorem; `#print axioms exists_lerayHopf_r3_axiomatic` no
+longer lists `curlSchwartzDense_holds` (R3 project axioms: 5 → 4). -/
 theorem curlSchwartzDense_provedRoute : CurlSchwartzDense :=
   l2sigma_le_closure_span_curl
 
