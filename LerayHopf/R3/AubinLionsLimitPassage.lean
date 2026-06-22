@@ -55,11 +55,14 @@ hypothesis would re-assert the conclusions (smuggling), so per the ADDENDUM we D
 `galerkinLimitPassage_R3_of_goodRep`. P2 does NOT itself produce the full `galerkin_limit_passage_R3`
 conclusion (this mirrors R3-d, which proved `b`-form lemmas without producing `Nonempty R3NSForms`).
 
-**Axioms in this file (issue #44 scaffold):** `galerkinSpaceTimeExtraction_R3` is now a `theorem`
-(placeholder body `:= by sorry -- ALLOW_SORRY`) proved via two thinner axioms in
-`ArzelaAscoliTime.lean`:
-- `galerkin_equicontinuity_from_ODE` (T0.1) — ODE equicontinuity modulus
-- `galerkin_weakLimit_R3` (T0.2) — Banach–Alaoglu + div-free weak limit in `L2Sigma_R3`
+**Axioms backing this file (issue #44):** `galerkinSpaceTimeExtraction_R3` is a PROVED `theorem`
+(no sorry in its body) delegating to `u_lim_aestronglyMeasurable` in `ArzelaAscoliTime.lean`.
+The two residual axioms live in `ArzelaAscoliTime.lean`:
+- `galerkin_spacetime_precompact_R3` — refine-capable local Aubin–Lions–Simon spacetime
+  precompactness (L²-in-time Bochner convergence on balls; Mathlib lacks this)
+- `galerkin_weakLimit_R3` — Banach–Alaoglu + div-free weak limit in `L2Sigma_R3`
+  (Mathlib lacks weak compactness in Hilbert + weak-closedness of div-free subspace)
+Note: `galerkin_equicontinuity_from_ODE` (T0.1) was DELETED as UNSOUND (see `ArzelaAscoliTime.lean`).
 No `opaque`/`constant`/`unsafe`. The honest isolated hypotheses (P3's `LocalRellichInput`,
 R3-d's `hdiv`, P5's `SchwartzGalerkinBasis.dense_span`) remain explicit *arguments*, not axioms.
 
@@ -1389,10 +1392,12 @@ the ball restrictions of `u` to the per-ball a.e.-`L²`-limits of the given subs
 choice).  Temam III.2.1; Lemarié-Rieusset §6 (Aubin–Lions, local).
 
 **Issue #44 note:** This was formerly `axiom galerkinSpaceTimeExtraction_R3`.  It is now a
-`theorem` (ALLOW_SORRY scaffold) proved via `u_lim_aestronglyMeasurable` from two thinner axioms
-`galerkin_equicontinuity_from_ODE` (T0.1) and `galerkin_weakLimit_R3` (T0.2) in
-`ArzelaAscoliTime.lean`, plus the Arzelà–Ascoli chain T1–T4.  Signature is BYTE-IDENTICAL. -/
-theorem galerkinSpaceTimeExtraction_R3 -- ALLOW_SORRY: #44 galerkinSpaceTimeExtraction_R3 (T5.1), scaffold — proved from galerkin_equicontinuity_from_ODE + galerkin_weakLimit_R3 + T1–T4 chain in ArzelaAscoliTime.lean; to be discharged by lean-prover
+PROVED `theorem`, proved via `u_lim_aestronglyMeasurable` from the two sound thinner axioms
+`galerkin_spacetime_precompact_R3` (refine-capable local Aubin–Lions–Simon spacetime precompactness)
+and `galerkin_weakLimit_R3` (Banach–Alaoglu + div-free weak limit in `L2Sigma_R3`), plus the
+proved Arzelà–Ascoli-in-time chain (`perBall_ae_subseq`, `diag_ae_subseq`) in
+`ArzelaAscoliTime.lean`.  Signature is BYTE-IDENTICAL.  No sorry in proof body. -/
+theorem galerkinSpaceTimeExtraction_R3
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
@@ -1421,8 +1426,9 @@ hypothesis — it is absorbed into that single axiom).  The conclusion type is e
 ASSEMBLY: the genuine spatial half is PROVED axiom-free (the `steklovAvg_spatial_extraction`
 chain). The single irreducible LOCAL Bochner-time compactness extraction (one subsequence `φ` + a
 measurable limit curve `u` with per-ball `restrictToBall R` a.e.-in-time `L²` convergence) is
-supplied by `galerkinSpaceTimeExtraction_R3` (the isolated Aubin–Lions-time axiom, genuinely
-weaker/thinner than `aubin_lions_R3` — local, no tightness, no global-`L²` claim). From that
+supplied by `galerkinSpaceTimeExtraction_R3` (theorem, issue #44, proved; resting on the two
+thinner axioms `galerkin_spacetime_precompact_R3` + `galerkin_weakLimit_R3` — local, no tightness,
+no global-`L²` claim, genuinely weaker/thinner than `aubin_lions_R3`). From that
 extraction this constructor assembles every field axiom-free:
 * `φ`, `φ_mono`, `u` — directly from the extraction;
 * `u_aestronglyMeasurable` — the extraction's measurability conjunct;
