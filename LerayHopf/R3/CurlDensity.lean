@@ -833,6 +833,28 @@ private theorem schwartz_antiHermitian_has_testSymbol_preimage
         hFourierφ) ξ]
   rw [hg_apply ξ, ← mul_assoc, mul_inv_cancel₀ hcne, one_mul, Complex.conj_conj]
 
+/-- **Anti-Hermitian test integral vanishing.**  If `u ∈ L2Sigma_R3`, then for every
+*anti-Hermitian* Schwartz symbol `h` (`h(-ξ) = -conj(h ξ)`), the Fourier-side pairing
+`∫ h(ξ) · T_u(ξ) dξ` vanishes.
+
+This is `mem_sigma_iff_fourier_integral_zero` upgraded by `(P2)`: the available test symbols
+`testSymbol φ` (`φ` real Schwartz) range over *all* anti-Hermitian Schwartz symbols
+(`schwartz_antiHermitian_has_testSymbol_preimage`), so the vanishing of every `testSymbol`
+pairing extends to every anti-Hermitian Schwartz pairing. -/
+private theorem antiHermitianTest_integral_zero (u : L2VF_R3) (hmem : u ∈ L2Sigma_R3)
+    (h : SchwartzMap Domain3 ℂ) (hH : ∀ ξ : Domain3, h (-ξ) = -(starRingEnd ℂ) (h ξ)) :
+    ∫ ξ : Domain3, (h : Domain3 → ℂ) ξ * transverseDefect u ξ
+        ∂(volume : Measure Domain3) = 0 := by
+  obtain ⟨φ, hφ⟩ := schwartz_antiHermitian_has_testSymbol_preimage h hH
+  have hzero := (mem_sigma_iff_fourier_integral_zero u).1 hmem φ
+  -- the integrand `conj((2πi)·𝓕(schwartzC φ)) = testSymbol φ = h`.
+  rw [← hzero]
+  refine integral_congr_ae ?_
+  filter_upwards with ξ
+  rw [show (starRingEnd ℂ) ((2 * Real.pi * Complex.I)
+        * (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ) = testSymbol φ ξ from rfl,
+    show testSymbol φ ξ = (h : Domain3 → ℂ) ξ from congrFun hφ ξ]
+
 /-- **Step 2 (spectral div-free characterization).**  A field `u ∈ L2VF_R3` is weakly
 divergence-free (`u ∈ L2Sigma_R3`) iff its Fourier transform is a.e. transverse:
 `∑ j, ξ_j û_j(ξ) = 0` for a.e. `ξ`.
@@ -864,28 +886,100 @@ theorem mem_sigma_iff_fourier_transverse (u : L2VF_R3) :
     -- (`û_j` Hermitian as Fourier of a real component).  Testing an anti-Hermitian locally
     -- integrable function against all anti-Hermitian Schwartz symbols pins it a.e. to zero
     -- via the even/odd-part reduction to `ae_eq_zero_of_integral_contDiff_smul_eq_zero`.
-    have _hLI := locallyIntegrable_transverseDefect u
-    have _hzero := (mem_sigma_iff_fourier_integral_zero u).1 hmem
-    -- The even/odd (Hermitian) reduction.  `T_u` is anti-Hermitian: by the now-PROVED
-    -- `(P1)` reflection identity `fourier_ofReal_reflect_eq_conj`, each component satisfies
-    -- `û_j(-ξ) =ᵐ conj(û_j(ξ))`, so with `(-ξ)_j = -ξ_j` we get `T_u(-ξ) =ᵐ -conj(T_u(ξ))` —
-    -- i.e. `Re T_u` is odd and `Im T_u` is even.  The available test symbols `testSymbol φ`
-    -- are exactly the anti-Hermitian Schwartz functions (`testSymbol_antiHermitian`), whose
-    -- real parts are odd-real and imaginary parts even-real.  Choosing `φ` with
-    -- `testSymbol φ = g_o` (odd) and another with `testSymbol φ = i·g_e` (even) would split
-    -- `∫ g·T_u = ∫ g_o Re T_u + i∫ g_e Im T_u` into two vanishing pieces, feeding
-    -- `ae_eq_zero_of_integral_contDiff_smul_eq_zero` (which IS in mathlib).
-    --
-    -- (P1) is DISCHARGED above (`fourier_ofReal_reflect_eq_conj`, axiom-free, no `sorry`).
-    -- The single remaining blocker is:
-    --   (P2) surjectivity of `φ ↦ testSymbol φ` onto every anti-Hermitian compactly-supported
-    --        smooth symbol, which reduces to: `𝓕⁻` of a Hermitian Schwartz function is the
-    --        complexification of a real Schwartz function (Schwartz-space real-part extraction
-    --        under Hermitian symmetry).  NOT in mathlib; constructible (weeks-class) from
-    --        `SchwartzMap.postcompCLM Complex.conjCLE` (Schwartz conjugation) + a real-valuedness
-    --        argument + `Complex.reCLM` extraction — but not available today.  This is the lone
-    --        surviving analytic frontier of the forward direction; the REVERSE is fully proved.
-    sorry -- ALLOW_SORRY: #3 mem_sigma_iff_fourier_transverse forward — gated on P2 (`schwartz_antiHermitian_has_testSymbol_preimage`, stub above); proof uses P2 to supply odd/even Schwartz witnesses for the du-Bois-Reymond argument; lean-prover target (issue #3)
+    have hLI := locallyIntegrable_transverseDefect u
+    -- du-Bois-Reymond: it suffices to test `T_u` against every real smooth compactly
+    -- supported `g`.  Each such `g` splits as `2g = gE + gO` into (twice the) even/odd parts,
+    -- whose complexifications (`i·gE`, `gO`) are anti-Hermitian Schwartz symbols handled by
+    -- `antiHermitianTest_integral_zero`.
+    refine ae_eq_zero_of_integral_contDiff_smul_eq_zero hLI ?_
+    intro g g_diff g_supp
+    -- `g ∘ neg` is smooth and compactly supported.
+    have hneg_diff : ContDiff ℝ (⊤ : ℕ∞) (fun ξ : Domain3 => g (-ξ)) :=
+      g_diff.comp contDiff_neg
+    have hneg_supp : HasCompactSupport (fun ξ : Domain3 => g (-ξ)) := by
+      have := g_supp.comp_homeomorph (Homeomorph.neg Domain3)
+      simpa [Function.comp_def] using this
+    -- twice-even / twice-odd parts `gE = g + g∘neg`, `gO = g − g∘neg`.
+    set gE : Domain3 → ℝ := fun ξ => g ξ + g (-ξ) with hgE
+    set gO : Domain3 → ℝ := fun ξ => g ξ - g (-ξ) with hgO
+    have hgE_diff : ContDiff ℝ (⊤ : ℕ∞) gE := g_diff.add hneg_diff
+    have hgO_diff : ContDiff ℝ (⊤ : ℕ∞) gO := g_diff.sub hneg_diff
+    have hgE_supp : HasCompactSupport gE := g_supp.add hneg_supp
+    have hgO_supp : HasCompactSupport gO := g_supp.sub hneg_supp
+    -- complexifications: `i·gE` (anti-Herm) and `gO` (anti-Herm).
+    have hCE_diff : ContDiff ℝ (⊤ : ℕ∞) (fun ξ : Domain3 => Complex.I * (gE ξ : ℂ)) :=
+      contDiff_const.mul (Complex.ofRealCLM.contDiff.comp hgE_diff)
+    have hCE_supp : HasCompactSupport (fun ξ : Domain3 => Complex.I * (gE ξ : ℂ)) :=
+      (hgE_supp.comp_left (g := fun r : ℝ => (r : ℂ)) Complex.ofReal_zero).mul_left
+    have hCO_diff : ContDiff ℝ (⊤ : ℕ∞) (fun ξ : Domain3 => (gO ξ : ℂ)) :=
+      Complex.ofRealCLM.contDiff.comp hgO_diff
+    have hCO_supp : HasCompactSupport (fun ξ : Domain3 => (gO ξ : ℂ)) :=
+      hgO_supp.comp_left (g := fun r : ℝ => (r : ℂ)) Complex.ofReal_zero
+    -- as Schwartz maps (the coercion is definitionally the underlying function).
+    set hE : SchwartzMap Domain3 ℂ := hCE_supp.toSchwartzMap hCE_diff with hhE
+    set hO : SchwartzMap Domain3 ℂ := hCO_supp.toSchwartzMap hCO_diff with hhO
+    have hE_coe : ∀ ξ : Domain3, hE ξ = Complex.I * (gE ξ : ℂ) := fun _ => rfl
+    have hO_coe : ∀ ξ : Domain3, hO ξ = (gO ξ : ℂ) := fun _ => rfl
+    -- anti-Hermitian conditions.
+    have hE_aH : ∀ ξ : Domain3, hE (-ξ) = -(starRingEnd ℂ) (hE ξ) := by
+      intro ξ
+      rw [hE_coe, hE_coe]
+      have heq : gE (-ξ) = gE ξ := by simp only [hgE, neg_neg]; ring
+      rw [heq, map_mul, Complex.conj_I, Complex.conj_ofReal]; ring
+    have hO_aH : ∀ ξ : Domain3, hO (-ξ) = -(starRingEnd ℂ) (hO ξ) := by
+      intro ξ
+      rw [hO_coe, hO_coe]
+      have heq : gO (-ξ) = -gO ξ := by simp only [hgO, neg_neg]; ring
+      rw [heq, Complex.conj_ofReal, Complex.ofReal_neg]
+    -- the two anti-Hermitian pairings vanish.
+    have hEZero := antiHermitianTest_integral_zero u hmem hE hE_aH
+    have hOZero := antiHermitianTest_integral_zero u hmem hO hO_aH
+    simp only [hE_coe, hO_coe] at hEZero hOZero
+    -- integrability of the compactly-supported pieces against the locally integrable `T_u`.
+    have hInt : ∀ k : Domain3 → ℝ, Continuous k → HasCompactSupport k →
+        Integrable (fun ξ : Domain3 => (k ξ : ℂ) * transverseDefect u ξ)
+          (volume : Measure Domain3) := by
+      intro k hk_cont hk_supp
+      have := hLI.integrable_smul_left_of_hasCompactSupport (𝕜 := ℂ)
+        (g := fun ξ : Domain3 => (k ξ : ℂ))
+        (Complex.continuous_ofReal.comp hk_cont)
+        (hk_supp.comp_left (g := fun r : ℝ => (r : ℂ)) Complex.ofReal_zero)
+      simpa [smul_eq_mul] using this
+    have hIntE := hInt gE hgE_diff.continuous hgE_supp
+    have hIntO := hInt gO hgO_diff.continuous hgO_supp
+    -- `∫ (gE:ℂ)·T_u = 0` (drop the `Complex.I` factor from `hEZero`).
+    have hEZero' : ∫ ξ : Domain3, (gE ξ : ℂ) * transverseDefect u ξ
+        ∂(volume : Measure Domain3) = 0 := by
+      have hI : Complex.I * ∫ ξ : Domain3, (gE ξ : ℂ) * transverseDefect u ξ
+          ∂(volume : Measure Domain3) = 0 := by
+        rw [← integral_const_mul]
+        simp_rw [← mul_assoc]
+        exact hEZero
+      exact (mul_eq_zero.1 hI).resolve_left Complex.I_ne_zero
+    -- assemble: `∫ (g:ℂ)·T_u = (∫ (gE:ℂ)·T_u + ∫ (gO:ℂ)·T_u)/2 = 0`.
+    have hsplit : ∀ ξ : Domain3,
+        (g ξ : ℂ) * transverseDefect u ξ
+          = (2 : ℂ)⁻¹ * ((gE ξ : ℂ) * transverseDefect u ξ
+              + (gO ξ : ℂ) * transverseDefect u ξ) := by
+      intro ξ
+      simp only [hgE, hgO]
+      push_cast
+      ring
+    calc ∫ ξ : Domain3, g ξ • transverseDefect u ξ ∂(volume : Measure Domain3)
+        = ∫ ξ : Domain3, (2 : ℂ)⁻¹ * ((gE ξ : ℂ) * transverseDefect u ξ
+            + (gO ξ : ℂ) * transverseDefect u ξ) ∂(volume : Measure Domain3) := by
+          refine integral_congr_ae ?_
+          filter_upwards with ξ
+          rw [Complex.real_smul, hsplit ξ]
+      _ = (2 : ℂ)⁻¹ * (∫ ξ : Domain3, ((gE ξ : ℂ) * transverseDefect u ξ
+            + (gO ξ : ℂ) * transverseDefect u ξ) ∂(volume : Measure Domain3)) := by
+          rw [integral_const_mul]
+      _ = (2 : ℂ)⁻¹ * ((∫ ξ : Domain3, (gE ξ : ℂ) * transverseDefect u ξ
+            ∂(volume : Measure Domain3))
+            + ∫ ξ : Domain3, (gO ξ : ℂ) * transverseDefect u ξ
+            ∂(volume : Measure Domain3)) := by
+          rw [integral_add hIntE hIntO]
+      _ = 0 := by rw [hEZero', hOZero]; ring
   · -- Reverse (a.e. transverse ⇒ weakly divergence-free): fully proved.
     intro htr
     exact mem_sigma_of_transverse_ae u htr
