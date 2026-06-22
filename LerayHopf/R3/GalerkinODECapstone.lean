@@ -1,4 +1,4 @@
-import LerayHopf.R3.SchwartzDivFreeBasis
+import LerayHopf.R3.CurlDensityCapstone   -- nonempty_schwartzGalerkinBasis (proved, issue #3 / #21)
 import LerayHopf.R3.GalerkinODESolve
 import LerayHopf.R3.AubinLionsAssembly   -- build_galerkin_package_R3_of_galSeq (relocated, issue #15)
 
