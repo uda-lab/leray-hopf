@@ -78,22 +78,23 @@ The pinned mathlib provides the heavy L²-Fourier toolkit: `MeasureTheory.Lp.fou
 (with `Lp.inner_fourier_eq` Parseval, `Lp.norm_fourier_eq` Plancherel), the orthogonal-complement
 density criterion (`Submodule.orthogonal_orthogonal_eq_closure`), the du-Bois-Reymond lemma
 (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`), and `Lp.compMeasurePreserving` +
-`Measure.measurePreserving_neg`.  What mathlib still lacks is narrowly the *Helmholtz/Leray-specific*
-content (no `curl`/`divergence` operator, no Helmholtz decomposition, no `closure(span curl) = L²_σ`).
+`Measure.measurePreserving_neg`.  The *Helmholtz/Leray-specific* content absent from mathlib (no
+`curl`/`divergence` operator, no Helmholtz decomposition, no `closure(span curl) = L²_σ`) is built
+here from those primitives.
 
-The single remaining `sorry` is the isolated analytic core of the density transfer:
+**This file is now `sorry`-free and axiom-free.**  The Step-4 density transfer is fully proved:
 
-* `l2sigma_inner_orthogonalCurl_eq_zero` — the *vector* Parseval bridge on `L2VF_R3`
-  (`⟪u,w⟫ = ∫ ∑_j conj(û_j) ŵ_j`, the three-component sum of `Lp.inner_fourier_eq`) plus the
-  extraction of longitudinality of `ŵ` from `w ⊥ all curls` (`fourier_curlSchwartz_eq_cross` +
-  `cross_iξ_spans_transverse` + the Fourier-side fundamental lemma), then the pointwise
-  transverse ⊥ longitudinal cancellation.  All its building blocks (Steps 1–3 + the now-proved
-  forward Step 2) are in place; this lemma is their assembly.
+* `inner_L2VF_eq_integral_sum_fourier` — the *vector* Parseval bridge on `L2VF_R3`
+  (`⟪u,w⟫ = ∫ ∑_j conj(û_j) ŵ_j`, the three-component sum of `Lp.inner_fourier_eq`);
+* `orthogonalCurl_longitudinal_ae` — extraction of longitudinality of `ŵ` from `w ⊥ all curls`
+  (`fourier_curlSchwartz_eq_cross` + `conj_cross_sum_eq` triple-product re-grouping + the
+  Hermitian-test du-Bois-Reymond `ae_zero_of_hermitianTest`, whose Hermitian tests are realised via
+  `schwartz_hermitian_has_fourier_preimage`);
+* `transverse_longitudinal_cancel` — the pointwise transverse ⊥ longitudinal cancellation;
+* `l2sigma_inner_orthogonalCurl_eq_zero` assembles these, and `l2sigma_le_closure_span_curl`
+  closes the orthogonal-complement reduction via `Submodule.orthogonal_orthogonal_eq_closure`.
 
-The Step-4 orthogonal-complement reduction (`l2sigma_le_closure_span_curl`) is itself PROVED:
-it cleanly reduces to `l2sigma_inner_orthogonalCurl_eq_zero` via
-`Submodule.orthogonal_orthogonal_eq_closure`.  The TOP-LEVEL type stays exactly
-`CurlSchwartzDense` — a real discharge target, never weakened.
+The TOP-LEVEL type stays exactly `CurlSchwartzDense` — a real discharge target, never weakened.
 
 This file introduces **no** `axiom`/`opaque`/`constant`/`unsafe`.
 
@@ -359,6 +360,98 @@ private theorem complexInner_compLpL_ofReal
         norm_cast
     _ = ((∫ x, (a : Domain3 → ℝ) x * (b : Domain3 → ℝ) x ∂(volume : Measure Domain3) : ℝ) : ℂ) :=
         integral_ofReal
+
+/-- **Component decomposition of the `L2VF_R3` inner product.**  The real inner product on
+`L2VF_R3 = L²(ℝ³; ℝ³)` is the sum over the three coordinates of the component inner products. -/
+private theorem inner_L2VF_eq_sum_component (a b : L2VF_R3) :
+    (inner ℝ a b : ℝ)
+      = ∑ j : Fin 3, (inner ℝ (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b) : ℝ) := by
+  -- each component inner as an integral of the pointwise product
+  have hcomp : ∀ j : Fin 3,
+      (inner ℝ (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b) : ℝ)
+        = ∫ x, (L2VF_projComponent_R3 j a : Domain3 → ℝ) x
+            * (L2VF_projComponent_R3 j b : Domain3 → ℝ) x ∂(volume : Measure Domain3) := by
+    intro j
+    rw [MeasureTheory.L2.inner_def]
+    refine integral_congr_ae ?_
+    filter_upwards with x
+    simp only [RCLike.inner_apply, conj_trivial]; ring
+  have hint : ∀ j : Fin 3, Integrable (fun x => (L2VF_projComponent_R3 j a : Domain3 → ℝ) x
+      * (L2VF_projComponent_R3 j b : Domain3 → ℝ) x) (volume : Measure Domain3) := by
+    intro j
+    have hI := MeasureTheory.L2.integrable_inner (𝕜 := ℝ)
+      (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b)
+    refine hI.congr ?_
+    filter_upwards with x
+    simp only [RCLike.inner_apply, conj_trivial]; ring
+  simp_rw [hcomp]
+  rw [← integral_finsetSum _ (fun j _ => hint j), MeasureTheory.L2.inner_def]
+  refine integral_congr_ae ?_
+  -- a.e. each component coercion is the coordinate projection of `a x`, `b x`
+  have hcoe : ∀ᵐ x ∂(volume : Measure Domain3), ∀ j : Fin 3,
+      (L2VF_projComponent_R3 j a : Domain3 → ℝ) x = (a : Domain3 → EuclideanSpace ℝ (Fin 3)) x j
+        ∧ (L2VF_projComponent_R3 j b : Domain3 → ℝ) x = (b : Domain3 → EuclideanSpace ℝ (Fin 3)) x j := by
+    rw [MeasureTheory.ae_all_iff]
+    intro j
+    filter_upwards [(EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL a,
+      (EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL b] with x hax hbx
+    exact ⟨hax, hbx⟩
+  filter_upwards [hcoe] with x hx
+  rw [PiLp.inner_apply]
+  refine Finset.sum_congr rfl ?_
+  intro j _
+  rw [RCLike.inner_apply, conj_trivial, (hx j).1, (hx j).2]
+  ring
+
+/-- **Vector Parseval bridge.**  The (complexified) real inner product of two velocity fields
+equals the integral of the three-component sum of Hermitian products of their complex component
+Fourier transforms:
+`⟪u, w⟫ = ∫ ∑_j conj(û_j(ξ)) · ŵ_j(ξ) dξ`, where `û_j = 𝓕 (L2VF_projComponentC_R3 j u)`.
+
+Assembles `inner_L2VF_eq_sum_component` (vector → component inners), `complexInner_compLpL_ofReal`
+(real → complex component inner), `Lp.inner_fourier_eq` (Plancherel per component), and the
+finite-sum/integral swap. -/
+private theorem inner_L2VF_eq_integral_sum_fourier (a b : L2VF_R3) :
+    ((inner ℝ a b : ℝ) : ℂ)
+      = ∫ ξ : Domain3, ∑ j : Fin 3,
+          (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j a) : L2C_R3) ξ)
+            * (𝓕 (L2VF_projComponentC_R3 j b) : L2C_R3) ξ
+        ∂(volume : Measure Domain3) := by
+  -- component inner products, complexified and Planchereled
+  have hcomp : ∀ j : Fin 3,
+      ((inner ℝ (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b) : ℝ) : ℂ)
+        = ∫ ξ : Domain3,
+            (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j a) : L2C_R3) ξ)
+              * (𝓕 (L2VF_projComponentC_R3 j b) : L2C_R3) ξ ∂(volume : Measure Domain3) := by
+    intro j
+    rw [← complexInner_compLpL_ofReal (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b)]
+    -- the complexified component is `L2VF_projComponentC_R3 j`
+    rw [show (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
+            (L2VF_projComponent_R3 j a) = L2VF_projComponentC_R3 j a from
+          (ContinuousLinearMap.comp_apply _ _ _).symm,
+      show (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
+            (L2VF_projComponent_R3 j b) = L2VF_projComponentC_R3 j b from
+          (ContinuousLinearMap.comp_apply _ _ _).symm]
+    rw [← MeasureTheory.Lp.inner_fourier_eq, MeasureTheory.L2.inner_def]
+    refine integral_congr_ae ?_
+    filter_upwards with ξ
+    simp only [RCLike.inner_apply]; ring
+  -- integrability of each Fourier-side component integrand
+  have hint : ∀ j : Fin 3, Integrable
+      (fun ξ : Domain3 => (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j a) : L2C_R3) ξ)
+        * (𝓕 (L2VF_projComponentC_R3 j b) : L2C_R3) ξ) (volume : Measure Domain3) := by
+    intro j
+    have hI := MeasureTheory.L2.integrable_inner (𝕜 := ℂ)
+      (𝓕 (L2VF_projComponentC_R3 j a)) (𝓕 (L2VF_projComponentC_R3 j b))
+    refine hI.congr ?_
+    filter_upwards with ξ
+    simp only [RCLike.inner_apply]; ring
+  rw [show ((inner ℝ a b : ℝ) : ℂ)
+        = ((∑ j : Fin 3, (inner ℝ (L2VF_projComponent_R3 j a)
+            (L2VF_projComponent_R3 j b) : ℝ) : ℝ) : ℂ) from by rw [inner_L2VF_eq_sum_component]]
+  push_cast
+  rw [Finset.sum_congr rfl (fun j _ => hcomp j)]
+  rw [integral_finsetSum _ (fun j _ => hint j)]
 
 /-- Per-component Plancherel pairing: the complex cast of the real L²-inner product
 `⟪(∂_j φ).toLp, u_j⟫` equals the Fourier-side pairing
@@ -990,6 +1083,130 @@ theorem mem_sigma_iff_fourier_transverse (u : L2VF_R3) :
     intro htr
     exact mem_sigma_of_transverse_ae u htr
 
+/-- **General du-Bois-Reymond against Hermitian Schwartz tests.**  A locally integrable
+`f : ℝ³ → ℂ` that integrates to zero against every *Hermitian* Schwartz symbol
+(`G(-ξ) = conj(G ξ)`) vanishes a.e.
+
+Same even/odd reduction as the forward direction of `mem_sigma_iff_fourier_transverse`, but
+the parity assignment is mirrored: for a real smooth compactly-supported test `g`, the
+even part `gE = g + g∘neg` complexifies to a *Hermitian* symbol directly, while `i·gO`
+(`gO = g − g∘neg`) is Hermitian; both feed the hypothesis, and `2g = gE + gO`. -/
+private theorem ae_zero_of_hermitianTest
+    (f : Domain3 → ℂ) (hf : LocallyIntegrable f (volume : Measure Domain3))
+    (htest : ∀ G : SchwartzMap Domain3 ℂ, (∀ ξ : Domain3, G (-ξ) = (starRingEnd ℂ) (G ξ)) →
+        ∫ ξ : Domain3, (G : Domain3 → ℂ) ξ * f ξ ∂(volume : Measure Domain3) = 0) :
+    ∀ᵐ ξ ∂(volume : Measure Domain3), f ξ = 0 := by
+  refine ae_eq_zero_of_integral_contDiff_smul_eq_zero hf ?_
+  intro g g_diff g_supp
+  have hneg_diff : ContDiff ℝ (⊤ : ℕ∞) (fun ξ : Domain3 => g (-ξ)) :=
+    g_diff.comp contDiff_neg
+  have hneg_supp : HasCompactSupport (fun ξ : Domain3 => g (-ξ)) := by
+    have := g_supp.comp_homeomorph (Homeomorph.neg Domain3)
+    simpa [Function.comp_def] using this
+  set gE : Domain3 → ℝ := fun ξ => g ξ + g (-ξ) with hgE
+  set gO : Domain3 → ℝ := fun ξ => g ξ - g (-ξ) with hgO
+  have hgE_diff : ContDiff ℝ (⊤ : ℕ∞) gE := g_diff.add hneg_diff
+  have hgO_diff : ContDiff ℝ (⊤ : ℕ∞) gO := g_diff.sub hneg_diff
+  have hgE_supp : HasCompactSupport gE := g_supp.add hneg_supp
+  have hgO_supp : HasCompactSupport gO := g_supp.sub hneg_supp
+  -- complexifications: `gE` (Hermitian) and `i·gO` (Hermitian).
+  have hCE_diff : ContDiff ℝ (⊤ : ℕ∞) (fun ξ : Domain3 => (gE ξ : ℂ)) :=
+    Complex.ofRealCLM.contDiff.comp hgE_diff
+  have hCE_supp : HasCompactSupport (fun ξ : Domain3 => (gE ξ : ℂ)) :=
+    hgE_supp.comp_left (g := fun r : ℝ => (r : ℂ)) Complex.ofReal_zero
+  have hCO_diff : ContDiff ℝ (⊤ : ℕ∞) (fun ξ : Domain3 => Complex.I * (gO ξ : ℂ)) :=
+    contDiff_const.mul (Complex.ofRealCLM.contDiff.comp hgO_diff)
+  have hCO_supp : HasCompactSupport (fun ξ : Domain3 => Complex.I * (gO ξ : ℂ)) :=
+    (hgO_supp.comp_left (g := fun r : ℝ => (r : ℂ)) Complex.ofReal_zero).mul_left
+  set hE : SchwartzMap Domain3 ℂ := hCE_supp.toSchwartzMap hCE_diff with hhE
+  set hO : SchwartzMap Domain3 ℂ := hCO_supp.toSchwartzMap hCO_diff with hhO
+  have hE_coe : ∀ ξ : Domain3, hE ξ = (gE ξ : ℂ) := fun _ => rfl
+  have hO_coe : ∀ ξ : Domain3, hO ξ = Complex.I * (gO ξ : ℂ) := fun _ => rfl
+  -- Hermitian conditions.
+  have hE_H : ∀ ξ : Domain3, hE (-ξ) = (starRingEnd ℂ) (hE ξ) := by
+    intro ξ
+    rw [hE_coe, hE_coe]
+    have heq : gE (-ξ) = gE ξ := by simp only [hgE, neg_neg]; ring
+    rw [heq, Complex.conj_ofReal]
+  have hO_H : ∀ ξ : Domain3, hO (-ξ) = (starRingEnd ℂ) (hO ξ) := by
+    intro ξ
+    rw [hO_coe, hO_coe]
+    have heq : gO (-ξ) = -gO ξ := by simp only [hgO, neg_neg]; ring
+    rw [heq, map_mul, Complex.conj_I, Complex.conj_ofReal, Complex.ofReal_neg]; ring
+  have hEZero := htest hE hE_H
+  have hOZero := htest hO hO_H
+  simp only [hE_coe, hO_coe] at hEZero hOZero
+  -- integrability of the compactly-supported pieces against the locally integrable `f`.
+  have hInt : ∀ k : Domain3 → ℝ, Continuous k → HasCompactSupport k →
+      Integrable (fun ξ : Domain3 => (k ξ : ℂ) * f ξ) (volume : Measure Domain3) := by
+    intro k hk_cont hk_supp
+    have := hf.integrable_smul_left_of_hasCompactSupport (𝕜 := ℂ)
+      (g := fun ξ : Domain3 => (k ξ : ℂ))
+      (Complex.continuous_ofReal.comp hk_cont)
+      (hk_supp.comp_left (g := fun r : ℝ => (r : ℂ)) Complex.ofReal_zero)
+    simpa [smul_eq_mul] using this
+  have hIntE := hInt gE hgE_diff.continuous hgE_supp
+  have hIntO := hInt gO hgO_diff.continuous hgO_supp
+  -- `∫ (gO:ℂ)·f = 0` (drop the `Complex.I` factor from `hOZero`).
+  have hOZero' : ∫ ξ : Domain3, (gO ξ : ℂ) * f ξ ∂(volume : Measure Domain3) = 0 := by
+    have hI : Complex.I * ∫ ξ : Domain3, (gO ξ : ℂ) * f ξ ∂(volume : Measure Domain3) = 0 := by
+      rw [← integral_const_mul]
+      simp_rw [← mul_assoc]
+      exact hOZero
+    exact (mul_eq_zero.1 hI).resolve_left Complex.I_ne_zero
+  -- assemble: `∫ g•f = (∫ gE·f + ∫ gO·f)/2 = 0`.
+  have hsplit : ∀ ξ : Domain3,
+      (g ξ : ℂ) * f ξ
+        = (2 : ℂ)⁻¹ * ((gE ξ : ℂ) * f ξ + (gO ξ : ℂ) * f ξ) := by
+    intro ξ
+    simp only [hgE, hgO]
+    push_cast
+    ring
+  calc ∫ ξ : Domain3, g ξ • f ξ ∂(volume : Measure Domain3)
+      = ∫ ξ : Domain3, (2 : ℂ)⁻¹ * ((gE ξ : ℂ) * f ξ + (gO ξ : ℂ) * f ξ)
+          ∂(volume : Measure Domain3) := by
+        refine integral_congr_ae ?_
+        filter_upwards with ξ
+        rw [Complex.real_smul, hsplit ξ]
+    _ = (2 : ℂ)⁻¹ * (∫ ξ : Domain3, ((gE ξ : ℂ) * f ξ + (gO ξ : ℂ) * f ξ)
+          ∂(volume : Measure Domain3)) := by rw [integral_const_mul]
+    _ = (2 : ℂ)⁻¹ * ((∫ ξ : Domain3, (gE ξ : ℂ) * f ξ ∂(volume : Measure Domain3))
+          + ∫ ξ : Domain3, (gO ξ : ℂ) * f ξ ∂(volume : Measure Domain3)) := by
+        rw [integral_add hIntE hIntO]
+    _ = 0 := by rw [hEZero, hOZero']; ring
+
+/-- **Hermitian Schwartz preimage under `𝓕 ∘ schwartzC`.**  Every Hermitian Schwartz symbol
+`G` (`G(-ξ) = conj(G ξ)`) is `𝓕 (schwartzC φ)` for some *real* Schwartz `φ`.  Same construction
+as `schwartz_antiHermitian_has_testSymbol_preimage` (P2), minus the `testSymbol` wrapper:
+`Φ = 𝓕⁻ G` is real-valued (`fourier_hermitian_real`), `φ = Re ∘ Φ`, and
+`𝓕 (schwartzC φ) = 𝓕 (𝓕⁻ G) = G`. -/
+private theorem schwartz_hermitian_has_fourier_preimage
+    (G : SchwartzMap Domain3 ℂ) (hH : ∀ ξ : Domain3, G (-ξ) = (starRingEnd ℂ) (G ξ)) :
+    ∃ φ : SchwartzMap Domain3 ℝ, (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) = G := by
+  set Φ : SchwartzMap Domain3 ℂ := 𝓕⁻ G with hΦdef
+  have hΦreal : ∀ ξ : Domain3, (starRingEnd ℂ) (Φ ξ) = Φ ξ := by
+    intro ξ
+    have hcoeInv : (Φ : Domain3 → ℂ) = 𝓕⁻ ((G : Domain3 → ℂ)) := by
+      rw [hΦdef]; exact SchwartzMap.fourierInv_coe G
+    have hcoeF : ((𝓕 G : SchwartzMap Domain3 ℂ) : Domain3 → ℂ) = 𝓕 ((G : Domain3 → ℂ)) :=
+      SchwartzMap.fourier_coe G
+    have hΦpt : Φ ξ = (𝓕 G : SchwartzMap Domain3 ℂ) (-ξ) := by
+      rw [show Φ ξ = (Φ : Domain3 → ℂ) ξ from rfl, hcoeInv,
+        Real.fourierInv_eq_fourier_neg,
+        show 𝓕 ((G : Domain3 → ℂ)) (-ξ) = ((𝓕 G : SchwartzMap Domain3 ℂ) : Domain3 → ℂ) (-ξ)
+          from (congrFun hcoeF (-ξ)).symm]
+    rw [hΦpt, fourier_hermitian_real G hH]
+  refine ⟨Φ.postcompCLM (RCLike.reCLM (K := ℂ)), ?_⟩
+  have hschwartzCφ : schwartzC (Φ.postcompCLM (RCLike.reCLM (K := ℂ))) = Φ := by
+    apply SchwartzMap.ext
+    intro ξ
+    rw [schwartzC_apply, SchwartzMap.postcompCLM_apply, RCLike.reCLM_apply]
+    have := hΦreal ξ
+    rw [Complex.conj_eq_iff_re] at this
+    rw [RCLike.re_to_complex]
+    exact this
+  rw [hschwartzCφ, hΦdef, fourier_fourierInv_eq]
+
 /-! ### Step 3 — fiberwise transverse spanning by curl symbols -/
 
 /-- **Step 3 (fiberwise spanning).**  For `ξ ≠ 0`, every transverse target vector `b : ℂ³`
@@ -1052,6 +1269,202 @@ theorem cross_iξ_spans_transverse
     field_simp
     linear_combination (-(ξ 2 : ℂ)) * hb3
 
+/-- **Pointwise transverse ⊥ longitudinal cancellation.**  At a fixed `ξ ≠ 0`, if `û` is
+transverse (`∑_j ξ_j û_j = 0`) and `ŵ` is longitudinal (`ŵ × ξ = 0`, written componentwise
+`ŵ_{k+1} ξ_{k+2} − ŵ_{k+2} ξ_{k+1} = 0`), then the Hermitian pairing `∑_j conj(û_j) ŵ_j = 0`.
+
+Pure ℂ³ linear algebra: `ŵ × ξ = 0 ⟹ ŵ ∥ ξ`, so `ξ_i · ∑_j conj(û_j) ŵ_j = ŵ_i · ∑_j conj(û_j) ξ_j`
+and the right factor is `conj(∑_j ξ_j û_j) = 0`; pick `i` with `ξ_i ≠ 0`. -/
+private theorem transverse_longitudinal_cancel
+    (ξ : Domain3) (hξ : ξ ≠ 0) (û ŵ : Fin 3 → ℂ)
+    (htrans : ∑ j : Fin 3, (ξ j : ℂ) * û j = 0)
+    (hlong : ∀ k : Fin 3,
+        ŵ (k + 1) * (ξ (k + 2) : ℂ) - ŵ (k + 2) * (ξ (k + 1) : ℂ) = 0) :
+    ∑ j : Fin 3, (starRingEnd ℂ) (û j) * ŵ j = 0 := by
+  -- transverse, conjugated: `∑_j conj(û_j) ξ_j = 0`.
+  have hT : (starRingEnd ℂ) (û 0) * (ξ 0 : ℂ) + (starRingEnd ℂ) (û 1) * (ξ 1 : ℂ)
+      + (starRingEnd ℂ) (û 2) * (ξ 2 : ℂ) = 0 := by
+    have h := congrArg (starRingEnd ℂ) htrans
+    rw [Fin.sum_univ_three, map_add, map_add, map_mul, map_mul, map_mul, map_zero,
+      Complex.conj_ofReal, Complex.conj_ofReal, Complex.conj_ofReal] at h
+    linear_combination h
+  -- the three cross relations.
+  have h0 := hlong 0
+  have h1 := hlong 1
+  have h2 := hlong 2
+  simp only [Fin.isValue, Fin.reduceAdd] at h0 h1 h2
+  -- some component of `ξ` is nonzero.
+  have hex : (ξ 0 : ℂ) ≠ 0 ∨ (ξ 1 : ℂ) ≠ 0 ∨ (ξ 2 : ℂ) ≠ 0 := by
+    by_contra h
+    push Not at h
+    obtain ⟨e0, e1, e2⟩ := h
+    refine hξ ?_
+    have r0 : ξ 0 = 0 := by exact_mod_cast e0
+    have r1 : ξ 1 = 0 := by exact_mod_cast e1
+    have r2 : ξ 2 = 0 := by exact_mod_cast e2
+    ext i; fin_cases i <;> simp [r0, r1, r2]
+  rw [Fin.sum_univ_three]
+  rcases hex with hi | hi | hi
+  · have key : (ξ 0 : ℂ) * ((starRingEnd ℂ) (û 0) * ŵ 0 + (starRingEnd ℂ) (û 1) * ŵ 1
+        + (starRingEnd ℂ) (û 2) * ŵ 2) = 0 := by
+      linear_combination ŵ 0 * hT - (starRingEnd ℂ) (û 1) * h2 + (starRingEnd ℂ) (û 2) * h1
+    exact (mul_eq_zero.1 key).resolve_left hi
+  · have key : (ξ 1 : ℂ) * ((starRingEnd ℂ) (û 0) * ŵ 0 + (starRingEnd ℂ) (û 1) * ŵ 1
+        + (starRingEnd ℂ) (û 2) * ŵ 2) = 0 := by
+      linear_combination ŵ 1 * hT + (starRingEnd ℂ) (û 0) * h2 - (starRingEnd ℂ) (û 2) * h0
+    exact (mul_eq_zero.1 key).resolve_left hi
+  · have key : (ξ 2 : ℂ) * ((starRingEnd ℂ) (û 0) * ŵ 0 + (starRingEnd ℂ) (û 1) * ŵ 1
+        + (starRingEnd ℂ) (û 2) * ŵ 2) = 0 := by
+      linear_combination ŵ 2 * hT - (starRingEnd ℂ) (û 0) * h1 + (starRingEnd ℂ) (û 1) * h0
+    exact (mul_eq_zero.1 key).resolve_left hi
+
+/-- **Conjugated curl-symbol pairing as a longitudinal pairing.**  The Hermitian pairing of the
+conjugated curl symbol `conj(crossWithIξ ξ a)` with a vector `ŵ` re-groups (triple-product
+symmetry, `ξ` real so `conj(2πi ξ) = −2πi ξ`) into `−2πi` times the pairing of `conj a` with the
+cross field `ŵ × ξ`. -/
+private theorem conj_cross_sum_eq (ξ : Domain3) (a ŵ : Fin 3 → ℂ) :
+    ∑ j : Fin 3, (starRingEnd ℂ) (crossWithIξ ξ a j) * ŵ j
+      = -(2 * Real.pi * Complex.I) * ∑ m : Fin 3,
+          (starRingEnd ℂ) (a m)
+            * (ŵ (m + 1) * (ξ (m + 2) : ℂ) - ŵ (m + 2) * (ξ (m + 1) : ℂ)) := by
+  have hc : (starRingEnd ℂ) (2 * (Real.pi : ℂ) * Complex.I) = -(2 * Real.pi * Complex.I) := by
+    rw [map_mul, map_mul, Complex.conj_I, Complex.conj_ofReal,
+      show ((2 : ℂ)) = ((2 : ℝ) : ℂ) by norm_num, Complex.conj_ofReal]; ring
+  simp only [crossWithIξ, map_mul, map_sub, Complex.conj_ofReal, hc]
+  rw [Fin.sum_univ_three, Fin.sum_univ_three]
+  simp only [Fin.isValue, Fin.reduceAdd]
+  ring
+
+set_option maxHeartbeats 1600000 in
+/-- **Longitudinality of `ŵ` from orthogonality to all curls.**  If `w` is orthogonal to every
+curl `curlSchwartzL2 ψ`, then its complex Fourier transform `ŵ` is longitudinal a.e.: the cross
+field `ŵ × ξ` vanishes, here the `k`-th component
+`ŵ_{k+1}(ξ) ξ_{k+2} − ŵ_{k+2}(ξ) ξ_{k+1} = 0` for a.e. `ξ`.
+
+Proof: pairing `⟪curlSchwartzL2 ψ, w⟫ = 0` (Parseval bridge + curl symbol `fourier_curlSchwartz_eq_cross`
++ `conj_cross_sum_eq` triple-product re-grouping) gives, for a single-component potential
+`ψ`, `∫ conj(𝓕(schwartzC φ)) · (ŵ × ξ)_k = 0` for every real `φ`.  By the
+Hermitian-test du-Bois-Reymond lemma `ae_zero_of_hermitianTest` (whose Hermitian tests are realised
+through `schwartz_hermitian_has_fourier_preimage`), `(ŵ × ξ)_k = 0` a.e. -/
+private theorem orthogonalCurl_longitudinal_ae
+    (w : L2VF_R3) (hw : w ∈ (Submodule.span ℝ (Set.range curlSchwartzL2))ᗮ) (k : Fin 3) :
+    ∀ᵐ ξ ∂(volume : Measure Domain3),
+      (𝓕 (L2VF_projComponentC_R3 (k + 1) w) : L2C_R3) ξ * (ξ (k + 2) : ℂ)
+        - (𝓕 (L2VF_projComponentC_R3 (k + 2) w) : L2C_R3) ξ * (ξ (k + 1) : ℂ) = 0 := by
+  set Wf : Domain3 → ℂ :=
+    fun ξ => (𝓕 (L2VF_projComponentC_R3 (k + 1) w) : L2C_R3) ξ * (ξ (k + 2) : ℂ)
+      - (𝓕 (L2VF_projComponentC_R3 (k + 2) w) : L2C_R3) ξ * (ξ (k + 1) : ℂ) with hWf
+  -- continuity of the coordinate weights
+  have hcont : ∀ i : Fin 3, ∀ K : Set Domain3,
+      ContinuousOn (fun ξ : Domain3 => (ξ i : ℂ)) K := by
+    intro i K
+    exact (Complex.continuous_ofReal.comp (EuclideanSpace.proj (𝕜 := ℝ) i).continuous).continuousOn
+  -- each component `ŵ j` is integrable on compacts
+  have hmemK : ∀ (j : Fin 3) (K : Set Domain3), IsCompact K →
+      IntegrableOn ((𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) : Domain3 → ℂ) K volume := by
+    intro j K hK
+    have hm : MemLp ((𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) : Domain3 → ℂ) 2
+        (volume.restrict K) := (Lp.memLp (𝓕 (L2VF_projComponentC_R3 j w))).restrict K
+    haveI : IsFiniteMeasure ((volume : Measure Domain3).restrict K) :=
+      ⟨by simpa using hK.measure_lt_top (μ := (volume : Measure Domain3))⟩
+    exact hm.integrable (by norm_num)
+  -- `Wf` is locally integrable
+  have hLI : LocallyIntegrable Wf (volume : Measure Domain3) := by
+    rw [locallyIntegrable_iff]
+    intro K hK
+    refine IntegrableOn.sub ?_ ?_
+    · exact (hmemK (k + 1) K hK).mul_continuousOn (hcont (k + 2) K) hK
+    · exact (hmemK (k + 2) K hK).mul_continuousOn (hcont (k + 1) K) hK
+  -- per-potential orthogonality: `∫ conj(𝓕(schwartzC φ)) Wf = 0`.
+  have hcurlOrth : ∀ φ : SchwartzMap Domain3 ℝ,
+      ∫ ξ : Domain3, (starRingEnd ℂ) ((𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ) * Wf ξ
+        ∂(volume : Measure Domain3) = 0 := by
+    intro φ
+    set ψ : Fin 3 → SchwartzMap Domain3 ℝ := fun m => if m = k then φ else 0 with hψ
+    have hmem : curlSchwartzL2 ψ ∈ Submodule.span ℝ (Set.range curlSchwartzL2) :=
+      Submodule.subset_span (Set.mem_range_self ψ)
+    have h0 : (inner ℝ (curlSchwartzL2 ψ) w : ℝ) = 0 :=
+      (Submodule.mem_orthogonal _ w).1 hw (curlSchwartzL2 ψ) hmem
+    have hbr := inner_L2VF_eq_integral_sum_fourier (curlSchwartzL2 ψ) w
+    rw [h0, Complex.ofReal_zero] at hbr
+    -- `𝓕(schwartzC 0) = 0`.
+    have hsc0 : (𝓕 (schwartzC (0 : SchwartzMap Domain3 ℝ)) : SchwartzMap Domain3 ℂ) = 0 := by
+      have : schwartzC (0 : SchwartzMap Domain3 ℝ) = 0 := by
+        apply SchwartzMap.ext; intro ξ; rw [schwartzC_apply]; simp
+      rw [this, ← SchwartzMap.fourierTransformCLM_apply (𝕜 := ℂ)]; exact map_zero _
+    -- the per-potential a.e. identity `𝓕(potentialComponentC ψ m) =ᵐ 𝓕(schwartzC (ψ m))`.
+    have hpot : ∀ m : Fin 3, ((𝓕 (potentialComponentC ψ m) : L2C_R3) : Domain3 → ℂ)
+        =ᵐ[volume] fun ξ => (𝓕 (schwartzC (ψ m)) : SchwartzMap Domain3 ℂ) ξ := by
+      intro m
+      have hF : (𝓕 (potentialComponentC ψ m) : L2C_R3)
+          = (𝓕 (schwartzC (ψ m))).toLp 2 (volume : Measure Domain3) := by
+        rw [potentialComponentC_eq]; exact SchwartzMap.toLp_fourier_eq (schwartzC (ψ m))
+      rw [hF]; exact (𝓕 (schwartzC (ψ m))).coeFn_toLp 2 (volume : Measure Domain3)
+    -- the a.e. integrand identity: bridge integrand `= -(2πi)·(conj(𝓕(schwartzC φ))·Wf)`.
+    have hae : (fun ξ => ∑ j : Fin 3,
+          (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j (curlSchwartzL2 ψ)) : L2C_R3) ξ)
+            * (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ)
+        =ᵐ[volume] fun ξ => -(2 * Real.pi * Complex.I)
+          * ((starRingEnd ℂ) ((𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ) * Wf ξ) := by
+      have hcAll := MeasureTheory.ae_all_iff.2 (fun j : Fin 3 => fourier_curlSchwartz_eq_cross ψ j)
+      have hpAll := MeasureTheory.ae_all_iff.2 hpot
+      filter_upwards [hcAll, hpAll] with ξ hcξ hpξ
+      -- rewrite the curl components, then re-group via `conj_cross_sum_eq`.
+      have hstep1 : ∑ j : Fin 3,
+            (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j (curlSchwartzL2 ψ)) : L2C_R3) ξ)
+              * (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ
+          = ∑ j : Fin 3,
+            (starRingEnd ℂ) (crossWithIξ ξ
+                (fun m => (𝓕 (potentialComponentC ψ m) : L2C_R3) ξ) j)
+              * (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ :=
+        Finset.sum_congr rfl (fun j _ => by rw [hcξ j])
+      rw [hstep1, conj_cross_sum_eq ξ (fun m => (𝓕 (potentialComponentC ψ m) : L2C_R3) ξ)
+        (fun j => (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ)]
+      have hψk : ψ k = φ := by rw [hψ]; simp
+      congr 1
+      -- collapse the single-component sum at `m = k`.
+      rw [Finset.sum_eq_single k]
+      · -- main term: `m = k`, `ψ k = φ`, `Wfun_k = Wf ξ`.
+        rw [hpξ k, hψk, hWf]
+      · -- other terms vanish: `ψ m = 0` for `m ≠ k`.
+        intro m _ hmk
+        have hψm : ψ m = 0 := by rw [hψ]; simp [hmk]
+        rw [hpξ m, hψm, hsc0]
+        simp
+      · intro h; exact absurd (Finset.mem_univ k) h
+    -- assemble: `0 = -(2πi)·∫ conj(𝓕(schwartzC φ))·Wf`, hence the integral vanishes.
+    rw [integral_congr_ae hae, integral_const_mul] at hbr
+    have hfac : -(2 * (Real.pi : ℂ) * Complex.I) ≠ 0 := by
+      simp [Real.pi_ne_zero, Complex.I_ne_zero]
+    exact (mul_eq_zero.1 hbr.symm).resolve_left hfac
+  -- du-Bois-Reymond against Hermitian tests.
+  refine ae_zero_of_hermitianTest Wf hLI ?_
+  intro G hG
+  -- realize `conj ∘ G` (Hermitian) as `𝓕 (schwartzC φ)`.
+  have hG'H : ∀ ξ : Domain3, (G.postcompCLM (Complex.conjCLE : ℂ →L[ℝ] ℂ)) (-ξ)
+      = (starRingEnd ℂ) ((G.postcompCLM (Complex.conjCLE : ℂ →L[ℝ] ℂ)) ξ) := by
+    intro ξ
+    simp only [SchwartzMap.postcompCLM_apply]
+    show (starRingEnd ℂ) (G (-ξ)) = (starRingEnd ℂ) ((starRingEnd ℂ) (G ξ))
+    rw [hG ξ]
+  obtain ⟨φ, hφ⟩ := schwartz_hermitian_has_fourier_preimage
+    (G.postcompCLM (Complex.conjCLE : ℂ →L[ℝ] ℂ)) hG'H
+  have hco := hcurlOrth φ
+  -- `conj (𝓕(schwartzC φ) ξ) = conj (conj (G ξ)) = G ξ`.
+  have hGeq : ∀ ξ : Domain3,
+      (starRingEnd ℂ) ((𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ) = (G : Domain3 → ℂ) ξ := by
+    intro ξ
+    rw [show (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ
+          = (G.postcompCLM (Complex.conjCLE : ℂ →L[ℝ] ℂ)) ξ from congrFun
+            (congrArg (fun (f : SchwartzMap Domain3 ℂ) => (f : Domain3 → ℂ)) hφ) ξ]
+    simp only [SchwartzMap.postcompCLM_apply]
+    show (starRingEnd ℂ) ((starRingEnd ℂ) (G ξ)) = (G : Domain3 → ℂ) ξ
+    rw [Complex.conj_conj]
+  rw [show (fun ξ : Domain3 => (G : Domain3 → ℂ) ξ * Wf ξ)
+        = fun ξ => (starRingEnd ℂ) ((𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ) * Wf ξ from by
+      funext ξ; rw [hGeq ξ]]
+  exact hco
+
 /-! ### Step 4 — density transfer (the Helmholtz/Weyl analytic core) -/
 
 /-- **Isolated analytic core of Step 4 (longitudinal ⊥ transverse).**  If `u` is weakly
@@ -1060,19 +1473,47 @@ divergence-free (`u ∈ L2Sigma_R3`, so `û` is transverse a.e. by the forward d
 (`w ∈ (span (range curlSchwartzL2))ᗮ`, which forces `ŵ` to be longitudinal a.e. — orthogonal
 to the plane `ξ^⊥` swept out by the curl symbols, `cross_iξ_spans_transverse`), then `u ⊥ w`.
 
-Pointwise on the Fourier side `⟪û(ξ), ŵ(ξ)⟫ = 0` (transverse ⊥ longitudinal), and vector
-Parseval (`Lp.inner_fourier_eq` summed over the three components) lifts this to `⟪u, w⟫ = 0`.
-
-This is the one remaining analytic frontier of the density transfer: assembling the
-vector-valued Parseval bridge `⟪u, w⟫ = ∫ ∑_j conj(û_j) ŵ_j` on `L2VF_R3` and extracting
-longitudinality of `ŵ` from `w ⊥ all curls` via `fourier_curlSchwartz_eq_cross` +
-`cross_iξ_spans_transverse` + the Fourier-side fundamental lemma. The building blocks
-(Steps 1–3 + the now-proved forward Step 2) are all in place; this lemma is their assembly. -/
+Pointwise on the Fourier side `⟪û(ξ), ŵ(ξ)⟫ = 0` (transverse ⊥ longitudinal,
+`transverse_longitudinal_cancel`), and the vector Parseval bridge
+`inner_L2VF_eq_integral_sum_fourier` lifts this to `⟪u, w⟫ = 0`.  Transversality of `û` is the
+forward direction of `mem_sigma_iff_fourier_transverse`; longitudinality of `ŵ` is
+`orthogonalCurl_longitudinal_ae`.  PROVED, `sorry`-free. -/
 private theorem l2sigma_inner_orthogonalCurl_eq_zero
     (u : L2VF_R3) (hu : u ∈ L2Sigma_R3)
     (w : L2VF_R3) (hw : w ∈ (Submodule.span ℝ (Set.range curlSchwartzL2))ᗮ) :
     (inner ℝ u w : ℝ) = 0 := by
-  sorry -- ALLOW_SORRY: #3 l2sigma_inner_orthogonalCurl_eq_zero — isolated analytic core of Step 4: vector Parseval on L2VF_R3 (∑_j Lp.inner_fourier_eq) + extraction of longitudinality of ŵ from w ⊥ all curls (fourier_curlSchwartz_eq_cross + cross_iξ_spans_transverse + Fourier-side fundamental lemma), then pointwise transverse ⊥ longitudinal. Steps 1-3 + forward Step 2 all proved; this is their assembly. NOT in mathlib (no vector Plancherel-component bridge / Helmholtz). lean-prover target (issue #3)
+  -- `û` transverse a.e. (forward Step 2).
+  have htransAe : ∀ᵐ ξ ∂(volume : Measure Domain3), transverseDefect u ξ = 0 :=
+    (transverse_ae_iff u).1 ((mem_sigma_iff_fourier_transverse u).1 hu)
+  -- `ŵ` longitudinal a.e. (all three cross components).
+  have hl0 := orthogonalCurl_longitudinal_ae w hw 0
+  have hl1 := orthogonalCurl_longitudinal_ae w hw 1
+  have hl2 := orthogonalCurl_longitudinal_ae w hw 2
+  -- `ξ ≠ 0` a.e. (`volume` has no atoms).
+  have hne : ∀ᵐ ξ ∂(volume : Measure Domain3), ξ ≠ 0 := by
+    rw [ae_iff]
+    simp only [not_not, Set.setOf_eq_eq_singleton]
+    exact measure_singleton 0
+  -- the Parseval bridge integrand vanishes a.e. (transverse ⊥ longitudinal).
+  have hint0 : ∫ ξ : Domain3, ∑ j : Fin 3,
+      (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ)
+        * (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ ∂(volume : Measure Domain3) = 0 := by
+    rw [show (0 : ℂ) = ∫ _ξ : Domain3, (0 : ℂ) ∂(volume : Measure Domain3) by simp]
+    refine integral_congr_ae ?_
+    filter_upwards [htransAe, hl0, hl1, hl2, hne] with ξ ht h0 h1 h2 hξ
+    refine transverse_longitudinal_cancel ξ hξ
+      (fun j => (𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ)
+      (fun j => (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ) ?_ ?_
+    · simpa only [transverseDefect] using ht
+    · intro k
+      fin_cases k
+      · exact h0
+      · exact h1
+      · exact h2
+  -- conclude through the Parseval bridge.
+  have hcast : ((inner ℝ u w : ℝ) : ℂ) = 0 := by
+    rw [inner_L2VF_eq_integral_sum_fourier u w, hint0]
+  exact_mod_cast hcast
 
 /-- **Step 4 (density transfer).**  The full deliverable, stated as the closure containment.
 Given a transverse field `u ∈ L2Sigma_R3` (Step 2), the fiberwise spanning (Steps 1+3) lets us
@@ -1087,11 +1528,10 @@ curl symbol `iξ×ψ̂` (Step 1) and the fiberwise spanning (Step 3), `v ⊥ cur
 *longitudinal* (parallel to `ξ`); `v ∈ L2Sigma_R3` forces `v̂` a.e. *transverse* (Step 2 forward);
 the two meet only at `v̂ = 0`, whence `v = 0` by the L² Fourier isometry `Lp.fourierTransformₗᵢ`.
 
-Status: the orthogonal-complement reduction below is PROVED.  It reduces the goal, via
-`Submodule.orthogonal_orthogonal_eq_closure` and `Submodule.mem_orthogonal'`, to the isolated
-analytic core `l2sigma_inner_orthogonalCurl_eq_zero` (the lone remaining `sorry`): every
-`w ⊥ all curls` is orthogonal to every `u ∈ L2Sigma_R3`.  The FORWARD spectral characterization
-`mem_sigma_iff_fourier_transverse` it consumes is now fully proved (no longer P2-blocked). -/
+Status: PROVED, `sorry`-free.  The orthogonal-complement reduction below uses
+`Submodule.orthogonal_orthogonal_eq_closure` and `Submodule.mem_orthogonal'` to reduce the goal to
+the analytic core `l2sigma_inner_orthogonalCurl_eq_zero` (every `w ⊥ all curls` is orthogonal to
+every `u ∈ L2Sigma_R3`), which is itself proved. -/
 theorem l2sigma_le_closure_span_curl :
     (L2Sigma_R3 : Submodule ℝ L2VF_R3) ≤
       (Submodule.span ℝ (Set.range curlSchwartzL2)).topologicalClosure := by
@@ -1108,18 +1548,16 @@ theorem l2sigma_le_closure_span_curl :
 
 /-! ### Deliverable -/
 
-/-- **Deliverable (discharge route for the issue-#21 axiom).**  The isolated density frontier
-holds: the L²-closure of the span of curls of Schwartz vector potentials contains the whole
+/-- **Deliverable (discharge route for the issue-#21 axiom).**  The density frontier holds: the
+L²-closure of the span of curls of Schwartz vector potentials contains the whole
 weakly-divergence-free subspace `L2Sigma_R3`.
 
-This is the aspirational PROOF of `CurlSchwartzDense` (no extra hypotheses) that would RETIRE
-the marked `axiom curlSchwartzDense_holds` (`SchwartzDivFreeBasis.lean`, issue #21): once
-`l2sigma_le_closure_span_curl` is sorry-free, replacing the axiom body with this theorem
-removes the last R3 spatial axiom.  It carries the same `sorry` as
-`l2sigma_le_closure_span_curl` and is a LEAF (imported by nothing on the capstone path), so it
-does NOT contaminate `exists_lerayHopf_r3_axiomatic`'s axiom set — that capstone routes through
-the marked axiom, not this sorry-backed route.  Named distinctly from the axiom to avoid a
-name clash (`SchwartzDivFreeBasis.curlSchwartzDense_holds` is the axiom this file imports). -/
+This is a complete, `sorry`-free, axiom-free PROOF of `CurlSchwartzDense` (no extra hypotheses),
+which RETIRES the marked `axiom curlSchwartzDense_holds` (`SchwartzDivFreeBasis.lean`, issue #21):
+replacing the axiom body with this theorem removes the last R3 spatial axiom (the wiring is a
+separate downstream step, since this file imports `SchwartzDivFreeBasis`).  Named distinctly from
+the axiom to avoid a name clash (`SchwartzDivFreeBasis.curlSchwartzDense_holds` is the axiom this
+file imports). -/
 theorem curlSchwartzDense_provedRoute : CurlSchwartzDense :=
   l2sigma_le_closure_span_curl
 
