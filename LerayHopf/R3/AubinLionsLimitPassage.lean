@@ -1408,8 +1408,8 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
   -- structure), so the existential witnesses are extracted via `Exists.choose`/`.choose_spec`
   -- (large elimination through `Classical.choice`) rather than `obtain`/`cases`.
   have hex := galerkinSpaceTimeExtraction_R3 𝔊 F ν hν T hT u₀ galSeq B Htime
-  set φ : ℕ → ℕ := hex.choose with hφdef
-  set u : Time → L2Sigma_R3 := hex.choose_spec.choose with hudef
+  set φ : ℕ → ℕ := hex.choose
+  set u : Time → L2Sigma_R3 := hex.choose_spec.choose
   have hφ : StrictMono φ := hex.choose_spec.choose_spec.1
   have hmeas : AEStronglyMeasurable (fun t => (u t : L2VF_R3))
       (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) :=
@@ -1501,8 +1501,8 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
   have hut : MeasureTheory.UnifTight fSeq 2 μ := by
     intro ε _hε
     refine ⟨Set.univ, ?_, fun n => ?_⟩
-    · simp [hμ, Measure.restrict_apply_univ, Real.volume_Icc, ENNReal.ofReal_ne_top]
-    · simp [Set.compl_univ, eLpNorm_zero, zero_le]
+    · exact measure_ne_top μ Set.univ
+    · simp
   have := MeasureTheory.tendsto_Lp_of_tendsto_ae (μ := μ) (p := 2) one_le_two
     (by norm_num) hAESM_f hMemLp_g hui hut hae_ball
   -- convert `eLpNorm (fSeq n - g)` to the goal's pointwise-difference form
