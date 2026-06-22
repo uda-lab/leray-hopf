@@ -19,13 +19,12 @@
 #           the axiom-free galerkinSolutionData_torus (proved finite-dim Galerkin ODE over
 #           velocitySpan n); net torus project axioms now 3.
 #
-#   exists_lerayHopf_r3_axiomatic — exactly 8 axioms:
+#   exists_lerayHopf_r3_axiomatic — exactly 7 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
 #     LerayHopf.galerkin_limit_passage_R3
-#     LerayHopf.curlSchwartzDense_holds
 #     LerayHopf.r3_NSForms_exist
 #     LerayHopf.galerkin_spacetime_precompact_R3
-#     LerayHopf.galerkin_weakLimit_R3  (5 project)
+#     LerayHopf.galerkin_weakLimit_R3  (4 project)
 #     NOTE: spatial_compactness_R3 REMOVED (issue #2) — now a theorem via the FK chain.
 #     NOTE: r3GalerkinScheme_exists REMOVED (issue #21) — now a theorem, SWAPPED for the
 #           thinner curlSchwartzDense_holds density axiom.
@@ -40,6 +39,10 @@
 #           precompactness) and galerkin_weakLimit_R3 (a.e.-t per-ball limits ⇒ measurable weak limit
 #           in L2Sigma_R3). The over-strong strong-L² time-modulus route (codex P1) is NOT used.
 #           Net R3 project axioms 5.
+#     NOTE: curlSchwartzDense_holds REMOVED (issue #3 / #21) — the Helmholtz/Weyl curl-density
+#           is now PROVED sorry-free in CurlDensity.lean (curlSchwartzDense_provedRoute, Fourier
+#           route). CurlDensityCapstone.lean rewires curlSchwartzDense_holds / nonempty_schwartzGalerkinBasis
+#           / r3GalerkinScheme_exists to the proved theorem. Net R3 project axioms now 4.
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.
@@ -188,11 +191,13 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 #      - galerkin_weakLimit_R3 (a.e.-t per-ball limits ⇒ measurable weak limit in
 #        L2Sigma_R3; Banach–Alaoglu + div-free weak-closedness, not in mathlib).
 #    Net R3 project axioms 5; the over-strong strong-L² time-modulus axiom is NOT used.)
+#   (curlSchwartzDense_holds REMOVED — issue #3 / #21 — proved sorry-free via the Fourier
+#    route in LerayHopf/R3/CurlDensity.lean (curlSchwartzDense_provedRoute); wired in
+#    CurlDensityCapstone.lean as a theorem. Net R3 project axioms now 4.)
 # ---------------------------------------------------------------------------
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound
    LerayHopf.galerkin_limit_passage_R3
-   LerayHopf.curlSchwartzDense_holds
    LerayHopf.r3_NSForms_exist
    LerayHopf.galerkin_spacetime_precompact_R3
    LerayHopf.galerkin_weakLimit_R3"

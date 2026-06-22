@@ -67,6 +67,7 @@ import LerayHopf.R3.GalerkinODECapstone
 import LerayHopf.R3.ArzelaAscoliTime      -- issue #44: T0.1/T0.2 axioms + T1–T4 scaffold
 import LerayHopf.R3.AubinLionsLimitPassage
 import LerayHopf.R3.CurlDensity
+import LerayHopf.R3.CurlDensityCapstone   -- issue #3: curlSchwartzDense_holds now a proved theorem
 import LerayHopf.R3.FrechetKolmogorov
 import LerayHopf.R3.ConvectionOperator
 import LerayHopf.R3.ConvectionForm

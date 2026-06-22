@@ -23,7 +23,6 @@
 --   exists_lerayHopf_r3_axiomatic — EXACTLY:
 --     propext  Classical.choice  Quot.sound
 --     LerayHopf.galerkin_limit_passage_R3
---     LerayHopf.curlSchwartzDense_holds
 --     LerayHopf.r3_NSForms_exist
 --     LerayHopf.galerkin_spacetime_precompact_R3
 --     LerayHopf.galerkin_weakLimit_R3
@@ -40,6 +39,9 @@
 --      (refine-capable local Aubin–Lions–Simon spacetime precompactness) + galerkin_weakLimit_R3
 --      (a.e.-t per-ball limits ⇒ measurable weak limit in L2Sigma_R3); the over-strong strong-L²
 --      time-modulus route flagged by codex P1 is NOT used; net R3 5)
+--     (curlSchwartzDense_holds REMOVED — issue #3 / #21 — proved sorry-free via the Fourier
+--      route in CurlDensity.lean (curlSchwartzDense_provedRoute); CurlDensityCapstone.lean
+--      rewires the consumers to the proved theorem; net R3 project axioms now 4)
 --
 --   lower_bound_from_inverse_square_lifespan (Core representative) — EXACTLY:
 --     propext  Classical.choice  Quot.sound  (no project axioms)
