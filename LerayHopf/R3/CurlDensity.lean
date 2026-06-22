@@ -711,6 +711,40 @@ creating a cycle.  The clean one-step route (owner-approved scope, issue #3):
   `curlSchwartzDense_holds`; `lake build` passes; `check-no-axiom` clean on both files.
 -/
 
+/-- **Reality of the Fourier transform of a Hermitian Schwartz function.**  If
+`g : 𝓢(ℝ³, ℂ)` is Hermitian (`g(-v) = conj(g(v))` for all `v`), then `𝓕 g` is real-valued:
+`conj(𝓕 g ξ) = 𝓕 g ξ`.
+
+Pointwise integral argument (mirrors `fourier_schwartzC_hermitian`): pushing `conj` into the
+integral defining `𝓕 g ξ = ∫ 𝐞(-⟪v,ξ⟫) g v` turns the unit-modulus character into its
+inverse `𝐞(⟪v,ξ⟫)` and conjugates the integrand to `g(-v)` (Hermitian); the substitution
+`v ↦ -v` (negation is measure preserving) restores `∫ 𝐞(-⟪v,ξ⟫) g v = 𝓕 g ξ`. -/
+private theorem fourier_hermitian_real
+    (g : SchwartzMap Domain3 ℂ)
+    (hg : ∀ v : Domain3, g (-v) = (starRingEnd ℂ) (g v)) (ξ : Domain3) :
+    (starRingEnd ℂ) ((𝓕 g : SchwartzMap Domain3 ℂ) ξ) = (𝓕 g : SchwartzMap Domain3 ℂ) ξ := by
+  -- Move to the underlying function `𝓕 (g : Domain3 → ℂ)`.
+  have hcoe : ((𝓕 g : SchwartzMap Domain3 ℂ) : Domain3 → ℂ) = 𝓕 ((g : Domain3 → ℂ)) :=
+    SchwartzMap.fourier_coe g
+  rw [show (𝓕 g : SchwartzMap Domain3 ℂ) ξ = 𝓕 ((g : Domain3 → ℂ)) ξ from congrFun hcoe ξ]
+  -- LHS: push `conj` into the integral defining `𝓕 _ ξ`.
+  rw [Real.fourier_eq, ← integral_conj]
+  -- Conjugated integrand `conj(𝐞(-⟪v,ξ⟫) • g v) = 𝐞(⟪v,ξ⟫) • g(-v)`.
+  have hconj : (∫ v : Domain3, (starRingEnd ℂ) ((Real.fourierChar (-(inner ℝ v ξ : ℝ))) • g v)
+        ∂(volume : Measure Domain3))
+      = ∫ v : Domain3, (Real.fourierChar (-(inner ℝ (-v) ξ : ℝ))) • g (-v)
+        ∂(volume : Measure Domain3) := by
+    refine integral_congr_ae ?_
+    filter_upwards with v
+    simp only [Circle.smul_def, smul_eq_mul, inner_neg_left, map_mul, neg_neg]
+    rw [hg v]
+    -- character: `conj((𝐞 (-⟪v,ξ⟫) : ℂ)) = (𝐞 (⟪v,ξ⟫) : ℂ)`
+    rw [← Circle.coe_inv_eq_conj, ← AddChar.map_neg_eq_inv, neg_neg]
+  rw [hconj]
+  -- substitute `v ↦ -v`: `∫ F(-v) = ∫ F(v)`, recovering `𝓕 g ξ`.
+  rw [integral_neg_eq_self (fun v => (Real.fourierChar (-(inner ℝ v ξ : ℝ))) • g v)
+    (volume : Measure Domain3)]
+
 /-- **(P2) Schwartz Hermitian preimage extraction (must-prove — item 11 in the plan).**
 
 If `h : 𝓢(ℝ³, ℂ)` is anti-Hermitian in the sense `h(-ξ) = -conj(h(ξ))` (i.e. `h` is an
@@ -736,8 +770,68 @@ Key Mathlib decls: `SchwartzMap.postcompCLM`, `Complex.conjCLE`, `RCLike.reCLM`,
 private theorem schwartz_antiHermitian_has_testSymbol_preimage
     (h : SchwartzMap Domain3 ℂ)
     (hH : ∀ ξ : Domain3, h (-ξ) = -(starRingEnd ℂ) (h ξ)) :
-    ∃ φ : SchwartzMap Domain3 ℝ, testSymbol φ = h :=
-  sorry -- ALLOW_SORRY: #3 schwartz_antiHermitian_has_testSymbol_preimage — (P2) Schwartz Hermitian real-extraction; constructible from postcompCLM conjCLE + reCLM + fourierCLE.symm + FourierInvPair + fourier_ofReal_reflect_eq_conj; NOT in mathlib; weeks-class; lean-prover target (issue #3)
+    ∃ φ : SchwartzMap Domain3 ℝ, testSymbol φ = h := by
+  -- The factor `c = 2π i` and its (non-zero) inverse.
+  set c : ℂ := 2 * Real.pi * Complex.I with hc
+  have hcne : c ≠ 0 := by
+    rw [hc]; simp [Real.pi_ne_zero, Complex.I_ne_zero]
+  -- `conj c = -c`.
+  have hconjc : (starRingEnd ℂ) c = -c := by
+    rw [hc, map_mul, map_mul, Complex.conj_I, Complex.conj_ofReal,
+      show ((2 : ℂ)) = ((2 : ℝ) : ℂ) by norm_num, Complex.conj_ofReal]
+    ring
+  -- `g := c⁻¹ • (conj ∘ h)`, a Schwartz map with `g ξ = c⁻¹ * conj (h ξ)`.
+  set g : SchwartzMap Domain3 ℂ :=
+    c⁻¹ • (h.postcompCLM (Complex.conjCLE : ℂ →L[ℝ] ℂ)) with hgdef
+  have hg_apply : ∀ ξ : Domain3, g ξ = c⁻¹ * (starRingEnd ℂ) (h ξ) := by
+    intro ξ
+    rw [hgdef, SchwartzMap.smul_apply, SchwartzMap.postcompCLM_apply, smul_eq_mul]
+    rfl
+  -- `g` is Hermitian: `g (-ξ) = conj (g ξ)`.
+  have hgHerm : ∀ ξ : Domain3, g (-ξ) = (starRingEnd ℂ) (g ξ) := by
+    intro ξ
+    rw [hg_apply, hg_apply, hH ξ, map_mul, Complex.conj_conj, map_neg, Complex.conj_conj,
+      map_inv₀, hconjc]
+    ring
+  -- `Φ := 𝓕⁻ g`, the Schwartz inverse Fourier transform of `g`.
+  set Φ : SchwartzMap Domain3 ℂ := 𝓕⁻ g with hΦdef
+  -- `Φ` is real-valued: `conj (Φ ξ) = Φ ξ`.
+  have hΦreal : ∀ ξ : Domain3, (starRingEnd ℂ) (Φ ξ) = Φ ξ := by
+    intro ξ
+    -- pointwise `𝓕⁻ g ξ = 𝓕 g (-ξ)`.
+    have hcoeInv : (Φ : Domain3 → ℂ) = 𝓕⁻ ((g : Domain3 → ℂ)) := by
+      rw [hΦdef]; exact SchwartzMap.fourierInv_coe g
+    have hcoeF : ((𝓕 g : SchwartzMap Domain3 ℂ) : Domain3 → ℂ) = 𝓕 ((g : Domain3 → ℂ)) :=
+      SchwartzMap.fourier_coe g
+    have hΦpt : Φ ξ = (𝓕 g : SchwartzMap Domain3 ℂ) (-ξ) := by
+      rw [show Φ ξ = (Φ : Domain3 → ℂ) ξ from rfl, hcoeInv,
+        Real.fourierInv_eq_fourier_neg,
+        show 𝓕 ((g : Domain3 → ℂ)) (-ξ) = ((𝓕 g : SchwartzMap Domain3 ℂ) : Domain3 → ℂ) (-ξ)
+          from (congrFun hcoeF (-ξ)).symm]
+    rw [hΦpt, fourier_hermitian_real g hgHerm]
+  -- `φ := Re ∘ Φ` as a real Schwartz function.
+  refine ⟨Φ.postcompCLM (RCLike.reCLM (K := ℂ)), ?_⟩
+  -- `schwartzC φ = Φ` (since `Φ` is real-valued).
+  have hschwartzCφ : schwartzC (Φ.postcompCLM (RCLike.reCLM (K := ℂ))) = Φ := by
+    apply SchwartzMap.ext
+    intro ξ
+    rw [schwartzC_apply, SchwartzMap.postcompCLM_apply, RCLike.reCLM_apply]
+    -- `(Re (Φ ξ) : ℂ) = Φ ξ` because `Φ ξ` is real (`conj = id`).
+    have := hΦreal ξ
+    rw [Complex.conj_eq_iff_re] at this
+    rw [RCLike.re_to_complex]
+    exact this
+  -- `𝓕 (schwartzC φ) = 𝓕 Φ = 𝓕 (𝓕⁻ g) = g`.
+  have hFourierφ : (𝓕 (schwartzC (Φ.postcompCLM (RCLike.reCLM (K := ℂ))))
+      : SchwartzMap Domain3 ℂ) = g := by
+    rw [hschwartzCφ, hΦdef, fourier_fourierInv_eq]
+  -- Finish: `testSymbol φ ξ = conj (c · g ξ) = conj (conj (h ξ)) = h ξ`.
+  funext ξ
+  rw [testSymbol]
+  rw [show (𝓕 (schwartzC (Φ.postcompCLM (RCLike.reCLM (K := ℂ)))) : SchwartzMap Domain3 ℂ) ξ
+      = g ξ from congrFun (congrArg (fun (f : SchwartzMap Domain3 ℂ) => (f : Domain3 → ℂ))
+        hFourierφ) ξ]
+  rw [hg_apply ξ, ← mul_assoc, mul_inv_cancel₀ hcne, one_mul, Complex.conj_conj]
 
 /-- **Step 2 (spectral div-free characterization).**  A field `u ∈ L2VF_R3` is weakly
 divergence-free (`u ∈ L2Sigma_R3`) iff its Fourier transform is a.e. transverse:
