@@ -265,7 +265,50 @@ theorem perBall_ae_subseq
         Filter.Tendsto
           (fun n => restrictToBall k ((galSeq (ψ (ρ n))).u t : L2VF_R3))
           Filter.atTop (nhds (g_k t)) := by
-  sorry -- ALLOW_SORRY: #44 perBall_ae_subseq (refine-capable) — proof route: (1) apply galerkin_spacetime_precompact_R3 with input ψ hψ k to get ρ₀ g_k hρ₀ hg_aesm heLp; (2) show AESM of each fun t => restrictToBall k ((galSeq (ψ (ρ₀ n))).u t) via u_hasDeriv + ContinuousOn + continuous_restrictToBall'; (3) apply tendstoInMeasure_of_tendsto_eLpNorm (by norm_num) hf_aesm hg_aesm heLp; (4) apply TendstoInMeasure.exists_seq_tendsto_ae to get further σ StrictMono + a.e. convergence; (5) set ρ := ρ₀ ∘ σ, StrictMono ρ from StrictMono.comp hρ₀ hσ; output is ψ (ρ n) = ψ (ρ₀ (σ n)). (Adaptation of the previously-proved non-refine-capable version: thread ψ through, replace φ₀ with ρ₀ and ψ with the outer composition.)
+  -- Step 1: refine-capable axiom A with input `ψ` at radius `k` gives `ρ₀` and `g_k` with
+  -- L²-in-time Bochner convergence along `ψ ∘ ρ₀`.
+  obtain ⟨ρ₀, g_k, hρ₀, hg_aesm, heLp⟩ :=
+    galerkin_spacetime_precompact_R3 𝔊 F ν hν T hT u₀ galSeq ψ hψ k
+  -- Step 2: each ball-restricted Galerkin curve is a.e.-strongly-measurable on `[0,T]`.
+  have hf_aesm : ∀ n, AEStronglyMeasurable
+      (fun t => restrictToBall (k : ℝ) ((galSeq (ψ (ρ₀ n))).u t : L2VF_R3))
+      (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) := by
+    intro n
+    have hcurve : ContinuousOn (fun t => ((galSeq (ψ (ρ₀ n))).u t : L2VF_R3)) (Set.Ici 0) :=
+      fun t ht => (((galSeq (ψ (ρ₀ n))).u_hasDeriv t ht).continuousAt.continuousWithinAt)
+    have hcurve_aesm : AEStronglyMeasurable (fun t => ((galSeq (ψ (ρ₀ n))).u t : L2VF_R3))
+        (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) :=
+      (hcurve.mono Set.Icc_subset_Ici_self).aestronglyMeasurable measurableSet_Icc
+    exact (continuous_restrictToBall' (k : ℝ)).comp_aestronglyMeasurable hcurve_aesm
+  -- Step 3: L²-in-time convergence ⇒ convergence in measure.
+  have hTIM : TendstoInMeasure (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T))
+      (fun n t => restrictToBall (k : ℝ) ((galSeq (ψ (ρ₀ n))).u t : L2VF_R3)) atTop g_k :=
+    tendstoInMeasure_of_tendsto_eLpNorm (by norm_num) hf_aesm hg_aesm heLp
+  -- Step 4: a.e.-t convergent further subsequence `σ`; output subsequence is `ρ₀ ∘ σ`.
+  obtain ⟨σ, hσ, hae⟩ := hTIM.exists_seq_tendsto_ae
+  refine ⟨ρ₀ ∘ σ, g_k, hρ₀.comp hσ, hg_aesm, ?_⟩
+  filter_upwards [hae] with t ht
+  exact ht
+
+/-- Factorization of a nested family of extractions: if `Φ (k+1) = Φ k ∘ ρ k` with each `ρ k`
+strictly monotone, then for `k ≤ n` the extraction `Φ n` is `Φ k` post-composed with a strictly
+monotone map. (Local copy of `SpatialCompactness.nested_extraction_factor`, which is `private`.) -/
+private theorem nested_extraction_factor (Φ ρ : ℕ → ℕ → ℕ)
+    (hρ : ∀ k, StrictMono (ρ k)) (hstep : ∀ k, Φ (k + 1) = Φ k ∘ ρ k) :
+    ∀ k n, k ≤ n → ∃ R : ℕ → ℕ, StrictMono R ∧ Φ n = Φ k ∘ R := by
+  intro k n hkn
+  induction n with
+  | zero =>
+    obtain rfl : k = 0 := Nat.le_zero.mp hkn
+    exact ⟨id, strictMono_id, rfl⟩
+  | succ m ih =>
+    rcases Nat.lt_or_ge k (m + 1) with hlt | hge
+    · obtain ⟨R, hR, hReq⟩ := ih (Nat.lt_succ_iff.mp hlt)
+      refine ⟨R ∘ ρ m, hR.comp (hρ m), ?_⟩
+      rw [hstep m, hReq]
+      rfl
+    · obtain rfl : k = m + 1 := Nat.le_antisymm hkn hge
+      exact ⟨id, strictMono_id, rfl⟩
 
 /-- **`diag_ae_subseq` — Diagonal subsequence converging a.e. in `t` for ALL ball radii `k : ℕ`.**
 
@@ -298,7 +341,80 @@ theorem diag_ae_subseq
           Filter.Tendsto
             (fun n => restrictToBall k ((galSeq (φ n)).u t : L2VF_R3))
             Filter.atTop (nhds (g_k t)) := by
-  sorry -- ALLOW_SORRY: #44 diag_ae_subseq — proof route (now UNBLOCKED by refine-capable axiom A): Cantor diagonal tower. By induction on k, build tower (φ_k : ℕ → ℕ) with φ_0 = id and φ_{k+1} = φ_k ∘ ρ_{k+1} where ρ_{k+1} comes from perBall_ae_subseq with input ψ := φ_k hψ := hφ_k at radius k+1 (no dependent reindex — galSeq stays fixed; ψ carries the current level). This gives g_{k+1} : ℝ → L2ballR3 (k+1) and StrictMono ρ_{k+1}. The diagonal φ n := φ_n n is StrictMono (standard argument: each level is strictly monotone and refines; φ_{k+1} n ≥ φ_k (ρ_{k+1} n) ≥ φ_k n + 1 by StrictMono). For fixed k, for n ≥ k, φ n = φ_k (something monotone in n ≥ n), so the a.e.-t convergence for φ_k transfers to the diagonal. The full-measure a.e. set is the countable intersection ⋂_k S_k of full-measure sets (use MeasureTheory.ae_all_iff.mpr). Claim: perBall_ae_subseq applied at each step with input φ_k produces the tower; standard diagonal StrictMono argument via φ_{k+1} n > φ_{k+1} (n-1) > ... > φ_k n.
+  classical
+  -- Cumulative extraction tower: `stepData k ψ hψ` = the refine-capable `perBall_ae_subseq` at
+  -- radius `k` with input subsequence `ψ`, packaged as a subtype carrying the further `ρ`, its
+  -- strict-monotonicity, and the radius-`k` limit `g` + a.e.-t convergence along `ψ ∘ ρ`.
+  let stepData : ∀ (k : ℕ) (ψ : ℕ → ℕ), StrictMono ψ →
+      { ρ : ℕ → ℕ // StrictMono ρ ∧ ∃ g : ℝ → L2ballR3 k,
+        AEStronglyMeasurable g (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
+        ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)), Filter.Tendsto
+          (fun n => restrictToBall k ((galSeq (ψ (ρ n))).u t : L2VF_R3))
+          Filter.atTop (nhds (g t)) } :=
+    fun k ψ hψ =>
+      let h := perBall_ae_subseq 𝔊 F ν hν T hT u₀ galSeq ψ hψ k
+      ⟨h.choose, h.choose_spec.choose_spec.1,
+        h.choose_spec.choose, h.choose_spec.choose_spec.2.1, h.choose_spec.choose_spec.2.2⟩
+  -- Recursively build the cumulative extraction `Φ k`, with `Φ (k+1) = Φ k ∘ ρ k`.
+  let rec_data : ℕ → { Φk : ℕ → ℕ // StrictMono Φk } := fun k => Nat.rec
+    (⟨id, strictMono_id⟩)
+    (fun j prev => ⟨prev.1 ∘ (stepData j prev.1 prev.2).1,
+      prev.2.comp (stepData j prev.1 prev.2).2.1⟩) k
+  let Φ : ℕ → ℕ → ℕ := fun k => (rec_data k).1
+  let ρ : ℕ → ℕ → ℕ := fun k => (stepData k (rec_data k).1 (rec_data k).2).1
+  have hΦmono : ∀ k, StrictMono (Φ k) := fun k => (rec_data k).2
+  have hρmono : ∀ k, StrictMono (ρ k) := fun k =>
+    (stepData k (rec_data k).1 (rec_data k).2).2.1
+  have hstep : ∀ k, Φ (k + 1) = Φ k ∘ ρ k := fun k => rfl
+  -- At each level `k`, the cumulative extraction `Φ (k+1)` converges on ball `k` (a.e.-t).
+  have hconv : ∀ k : ℕ, ∃ g : ℝ → L2ballR3 k,
+      AEStronglyMeasurable g (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
+      ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)), Filter.Tendsto
+        (fun n => restrictToBall k ((galSeq (Φ (k + 1) n)).u t : L2VF_R3))
+        Filter.atTop (nhds (g t)) := by
+    intro k
+    obtain ⟨g, hg_aesm, hg_ae⟩ := (stepData k (rec_data k).1 (rec_data k).2).2.2
+    exact ⟨g, hg_aesm, hg_ae⟩
+  -- The diagonal subsequence.
+  refine ⟨fun n => Φ (n + 1) (n + 1), ?_, ?_⟩
+  · -- StrictMono of the diagonal.
+    intro a b hab
+    have h1 : Φ (a + 1) (a + 1) < Φ (a + 1) (b + 1) := hΦmono (a + 1) (by omega)
+    obtain ⟨R, hR, hReq⟩ :=
+      nested_extraction_factor Φ ρ hρmono hstep (a + 1) (b + 1) (by omega)
+    have h2 : Φ (a + 1) (b + 1) ≤ Φ (b + 1) (b + 1) := by
+      rw [hReq]
+      exact (hΦmono (a + 1)).monotone (hR.id_le (b + 1))
+    exact lt_of_lt_of_le h1 h2
+  · -- Per-ball a.e.-t convergence of the diagonal.
+    intro k
+    obtain ⟨g, hg_aesm, hg_ae⟩ := hconv k
+    refine ⟨g, hg_aesm, ?_⟩
+    -- For `n ≥ k`, factor `Φ (n+1) = Φ (k+1) ∘ R` with `R` strictly monotone; the diagonal at
+    -- radius `k` is then a subsequence of the level-`k` convergent sequence.
+    have hfact : ∀ n, k ≤ n → ∃ s : ℕ, n + 1 ≤ s ∧ Φ (n + 1) (n + 1) = Φ (k + 1) s := by
+      intro n hn
+      obtain ⟨R, hR, hReq⟩ :=
+        nested_extraction_factor Φ ρ hρmono hstep (k + 1) (n + 1) (by omega)
+      refine ⟨R (n + 1), hR.id_le (n + 1), ?_⟩
+      rw [hReq]; rfl
+    choose s hs_ge hs_eq using fun n (hn : k ≤ n) => hfact n hn
+    set σ : ℕ → ℕ := fun n => if hn : k ≤ n then s n hn else n + 1 with hσ
+    have hσ_ge : ∀ n, k ≤ n → n + 1 ≤ σ n := by
+      intro n hn; simp only [hσ, dif_pos hn]; exact hs_ge n hn
+    have hσ_eq : ∀ n, k ≤ n → Φ (n + 1) (n + 1) = Φ (k + 1) (σ n) := by
+      intro n hn; simp only [hσ, dif_pos hn]; exact hs_eq n hn
+    have hσ_top : Filter.Tendsto σ Filter.atTop Filter.atTop := by
+      refine tendsto_atTop_mono' Filter.atTop ?_ tendsto_id
+      filter_upwards [eventually_ge_atTop k] with n hn
+      show n ≤ σ n
+      exact le_trans (Nat.le_succ n) (hσ_ge n hn)
+    filter_upwards [hg_ae] with t ht
+    have hcomp := ht.comp hσ_top
+    refine hcomp.congr' ?_
+    filter_upwards [eventually_ge_atTop k] with n hn
+    simp only [Function.comp_apply]
+    rw [hσ_eq n hn]
 
 /-! ### T4 — Assembly: measurable limit curve -/
 
