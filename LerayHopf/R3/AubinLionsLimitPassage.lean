@@ -870,6 +870,37 @@ private theorem clampedAvg_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
       rw [abs_of_nonneg (by linarith [hs.2] : (0:ℝ) ≤ t - s)]; linarith [hs.1]
     exact hmod t s htIcc hsIcc habs
 
+/-- **eLpNorm raw↔clamped-average bound on `[0,T]`.**  The time-`L²` `eLpNorm` of the
+ball-restricted raw↔clamped-average difference over `[0,T]` is controlled by the uniform pointwise
+modulus bound `ε` times `√T`: since `restrictToBall R` is `1`-Lipschitz, the pointwise difference is
+`≤ ‖u_t − clampedAvg δ T t‖ ≤ ε` (`clampedAvg_approx`), and `eLpNorm` of an `ε`-bounded function over
+the finite window `[0,T]` is `≤ ε · T^{1/2}`.  This is the raw↔avg term of the C2 `ε/3` split. -/
+private theorem eLpNorm_raw_sub_clampedAvg_le (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ T ε : ℝ} (R : ℝ) (hδ : 0 < δ) (hδT : 2 * δ ≤ T)
+    (hε : 0 ≤ ε)
+    (hmod : ∀ s s' : ℝ, s ∈ Set.Icc (0 : ℝ) T → s' ∈ Set.Icc (0 : ℝ) T → |s - s'| ≤ δ →
+      ‖((gs.u s) : L2VF_R3) - ((gs.u s') : L2VF_R3)‖ ≤ ε) :
+    MeasureTheory.eLpNorm
+        (fun t => restrictToBall R (gs.u t : L2VF_R3)
+          - restrictToBall R (clampedAvg 𝔊 F ν u₀ n gs δ T t))
+        2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T))
+      ≤ ENNReal.ofReal T ^ (2 : ENNReal).toReal⁻¹ * ENNReal.ofReal ε := by
+  -- pointwise `‖·‖ ≤ ε` on `[0,T]` via 1-Lipschitz `restrictToBall` + `clampedAvg_approx`
+  have hbound : ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
+      ‖restrictToBall R (gs.u t : L2VF_R3)
+          - restrictToBall R (clampedAvg 𝔊 F ν u₀ n gs δ T t)‖ ≤ ε := by
+    refine (ae_restrict_iff' measurableSet_Icc).mpr (ae_of_all _ (fun t ht => ?_))
+    have hlip : ‖restrictToBall R (gs.u t : L2VF_R3)
+        - restrictToBall R (clampedAvg 𝔊 F ν u₀ n gs δ T t)‖
+        ≤ ‖(gs.u t : L2VF_R3) - clampedAvg 𝔊 F ν u₀ n gs δ T t‖ := by
+      rw [← dist_eq_norm, ← dist_eq_norm]
+      exact restrictToBall_dist_le R _ _
+    exact le_trans hlip (clampedAvg_approx 𝔊 F ν u₀ n gs hδ hδT ht hmod)
+  -- `eLpNorm` of an `ε`-bounded function: `≤ ofReal ε · μ(univ)^(1/p)`, `μ(univ) = ofReal T`.
+  refine le_trans (eLpNorm_le_of_ae_bound hbound) ?_
+  rw [Measure.restrict_apply_univ, Real.volume_Icc, sub_zero]
+
 /-- **L² Jensen bound on the Steklov average (squared-norm form).** For `0 < δ` and `0 ≤ t`,
 the squared L² norm of the Steklov average is bounded by the average of the squared norms over
 the forward window:
