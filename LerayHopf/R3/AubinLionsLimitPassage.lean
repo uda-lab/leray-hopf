@@ -74,6 +74,8 @@ import LerayHopf.R3.FourierL2            -- 𝓕, L2C_R3, viscousFormSq_R3_eq_in
 import LerayHopf.R3.WeightedFourierCommute -- mulBdd bounded-multiplier commute + truncated weight (closes the viscous/H¹ Steklov Jensen gate)
 import LerayHopf.R3.GalerkinODE          -- galerkinCurve_reg_mem (H¹ regularity of any curve in the Galerkin subspace)
 import Mathlib.MeasureTheory.Integral.Bochner.Set   -- set/interval integrals over balls
+import Mathlib.MeasureTheory.Function.UnifTight      -- UnifTight + tendsto_Lp_of_tendsto_ae (Vitali) for the C2 dominated-Lp passage
+import Mathlib.MeasureTheory.Function.UniformIntegrable -- UnifIntegrable + unifIntegrable_of for the C2 dominated-Lp passage
 
 namespace LerayHopf
 
@@ -825,59 +827,6 @@ private theorem steklovAvgBack_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms �
     _ = ε * δ := by rw [show t - (t - δ) = δ by ring, abs_of_pos hδ]
     _ = δ * ε := by ring
 
-/-- **Time-continuity of the Steklov average in its base point.**  For `0 < δ` and any
-`b > 0`, the map `t ↦ steklovAvg gs δ t` is continuous on `[0, b]`.  Writing
-`steklovAvg gs δ t = δ⁻¹ • (∫_0^{t+δ} u − ∫_0^t u)`, both primitives are continuous in the
-endpoint over the compact window `[0, b+δ]` (`continuousOn_primitive_interval`), and the
-forward-shift `t ↦ t+δ` is continuous; the scalar `δ⁻¹ •` is a continuous-linear map.
-
-This is the route-agnostic time-regularity backbone: it gives time-measurability of the
-averaged curves (a prerequisite for the `AubinLionsPackage_R3.u_aestronglyMeasurable` field and
-for any Bochner-time integral over `[0,T]`). -/
-private theorem steklovAvg_continuousOn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
-    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ b : ℝ} (hδ : 0 < δ) (hb : 0 ≤ b) :
-    ContinuousOn (fun t => steklovAvg 𝔊 F ν u₀ n gs δ t) (Set.Icc 0 b) := by
-  -- the curve is continuous on `Ici 0`, hence integrable on every compact window
-  have hcurve : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
-    galerkin_curve_continuous 𝔊 F ν u₀ n gs
-  -- `G x = ∫_0^x u` is continuous on `[0, b+δ]` (primitive of an integrable function)
-  have hintOn : IntegrableOn (fun s => (gs.u s : L2VF_R3)) (Set.uIcc 0 (b + δ)) volume := by
-    refine (hcurve.mono ?_).integrableOn_compact isCompact_uIcc
-    rw [Set.uIcc_of_le (by linarith)]; intro s hs; exact hs.1
-  have hGcont : ContinuousOn (fun x => ∫ s in (0:ℝ)..x, (gs.u s : L2VF_R3))
-      (Set.uIcc 0 (b + δ)) :=
-    intervalIntegral.continuousOn_primitive_interval hintOn
-  rw [Set.uIcc_of_le (by linarith : (0:ℝ) ≤ b + δ)] at hGcont
-  -- decompose `steklovAvg δ t = δ⁻¹ • (G (t+δ) − G t)` (Chasles), valid for `0 ≤ t`
-  have hdecomp : ∀ t ∈ Set.Icc (0:ℝ) b,
-      steklovAvg 𝔊 F ν u₀ n gs δ t
-        = δ⁻¹ • ((∫ s in (0:ℝ)..(t + δ), (gs.u s : L2VF_R3))
-          - ∫ s in (0:ℝ)..t, (gs.u s : L2VF_R3)) := by
-    intro t ht
-    rw [steklovAvg]
-    congr 1
-    -- `∫_t^{t+δ} = ∫_0^{t+δ} − ∫_0^t` via interval additivity
-    have hint0t : IntervalIntegrable (fun s => (gs.u s : L2VF_R3)) volume 0 t := by
-      refine (hcurve.mono ?_).intervalIntegrable
-      rw [Set.uIcc_of_le ht.1]; intro s hs; exact hs.1
-    have hint0tδ : IntervalIntegrable (fun s => (gs.u s : L2VF_R3)) volume 0 (t + δ) := by
-      refine (hcurve.mono ?_).intervalIntegrable
-      rw [Set.uIcc_of_le (by linarith [ht.1])]; intro s hs; exact hs.1
-    exact (intervalIntegral.integral_interval_sub_left hint0tδ hint0t).symm
-  refine ContinuousOn.congr ?_ hdecomp
-  -- `t ↦ δ⁻¹ • (G(t+δ) − G(t))` is continuous on `[0,b]`
-  have hshift : ContinuousOn (fun t : ℝ => t + δ) (Set.Icc 0 b) :=
-    (continuous_id.add continuous_const).continuousOn
-  have hmaps : Set.MapsTo (fun t : ℝ => t + δ) (Set.Icc 0 b) (Set.Icc 0 (b + δ)) := by
-    intro t ht; exact ⟨by linarith [ht.1], by linarith [ht.2]⟩
-  have hGshift : ContinuousOn (fun t => ∫ s in (0:ℝ)..(t + δ), (gs.u s : L2VF_R3))
-      (Set.Icc 0 b) := hGcont.comp hshift hmaps
-  have hGid : ContinuousOn (fun t => ∫ s in (0:ℝ)..t, (gs.u s : L2VF_R3))
-      (Set.Icc 0 b) :=
-    hGcont.mono (fun t ht => ⟨ht.1, by linarith [ht.2]⟩)
-  exact (continuous_const_smul δ⁻¹).comp_continuousOn (hGshift.sub hGid)
-
 /-- **Clamped Steklov average on `[0,T]`.**  Forward average `steklovAvg δ t` for `t ≤ T − δ`
 (forward window `[t,t+δ] ⊆ [0,T]`), backward average `steklovAvgBack δ t` for `t > T − δ` (backward
 window `[t−δ,t] ⊆ [0,T]`, valid when `2δ ≤ T`).  This covers the whole interval `[0,T]` with windows
@@ -1423,6 +1372,7 @@ axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: Bochner-time compactness ex
 
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
+set_option maxHeartbeats 800000 in
 /-- **Aubin–Lions package on ℝ³ from the isolated time-compactness input (CLOSED).**
 
 Produces `aubin_lions_R3`'s conclusion (`AubinLionsPackage_R3`), conditional on (i) P3's local
@@ -1454,8 +1404,20 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
     AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq := by
   classical
   -- The isolated Bochner-time extraction: one subsequence `φ` + an a.e.-`L²`-limit curve `u`.
-  obtain ⟨φ, u, hφ, hmeas, hae⟩ :=
-    galerkinSpaceTimeExtraction_R3 𝔊 F ν hν T hT u₀ galSeq B Htime
+  -- The axiom is a `Prop`-existential but the goal `AubinLionsPackage_R3` is a `Type` (a
+  -- structure), so the existential witnesses are extracted via `Exists.choose`/`.choose_spec`
+  -- (large elimination through `Classical.choice`) rather than `obtain`/`cases`.
+  have hex := galerkinSpaceTimeExtraction_R3 𝔊 F ν hν T hT u₀ galSeq B Htime
+  set φ : ℕ → ℕ := hex.choose with hφdef
+  set u : Time → L2Sigma_R3 := hex.choose_spec.choose with hudef
+  have hφ : StrictMono φ := hex.choose_spec.choose_spec.1
+  have hmeas : AEStronglyMeasurable (fun t => (u t : L2VF_R3))
+      (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) :=
+    hex.choose_spec.choose_spec.2.1
+  have hae : ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
+      Filter.Tendsto (fun n => ((galSeq (φ n)).u t : L2VF_R3)) Filter.atTop
+        (nhds (u t : L2VF_R3)) :=
+    hex.choose_spec.choose_spec.2.2
   refine
     { φ := φ
       φ_mono := hφ
@@ -1494,22 +1456,53 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
     intro n
     rw [hμ]
     refine (ae_restrict_iff' measurableSet_Icc).mpr (ae_of_all _ (fun t ht => ?_))
-    refine le_trans (norm_restrictToBall_le R _) ?_
+    refine le_trans (norm_restrictToBall_le' R _) ?_
     exact galerkin_norm_le_u0 𝔊 F ν u₀ (φ n) (galSeq (φ n)) ht.1
-  -- `g ∈ MemLp 2 μ`: a.e.-bounded by the constant `‖u₀‖` on the finite measure
+  -- `g ∈ MemLp 2 μ`: a.e.-bounded by the constant `‖u₀‖` on the finite measure.
   have hMemLp_g : MemLp g 2 μ := by
     have hgbd : ∀ᵐ t ∂μ, ‖g t‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
-      rw [hμ]
-      refine (ae_restrict_iff' measurableSet_Icc).mpr ?_
-      have h2 : ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0:ℝ) T)),
-          ‖(u t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
-        sorry
-      sorry
+      -- Step 1: ‖u t‖ ≤ ‖u₀‖ a.e. in μ by norm-lsc through the a.e. pointwise limit `hae`.
+      have h2 : ∀ᵐ t ∂μ, ‖(u t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
+        have hbnd_all : ∀ n, ∀ᵐ t ∂μ, ‖((galSeq (φ n)).u t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
+          intro n
+          rw [hμ]
+          exact (ae_restrict_iff' measurableSet_Icc).mpr
+            (ae_of_all _ fun t ht => galerkin_norm_le_u0 𝔊 F ν u₀ (φ n) (galSeq (φ n)) ht.1)
+        filter_upwards [hae, ae_all_iff.mpr hbnd_all] with t ht hbnd_t
+        exact le_of_tendsto' ht.norm hbnd_t
+      -- Step 2: ‖g t‖ ≤ ‖u t‖ ≤ ‖u₀‖ via 1-Lipschitz `restrictToBall`.
+      filter_upwards [h2] with t ht
+      exact le_trans (norm_restrictToBall_le' R _) ht
     exact MemLp.of_bound hAESM_g _ hgbd
-  -- UnifIntegrable + UnifTight from the constant bound `‖u₀‖` (pick `C > ‖u₀‖`)
-  have hSM_f : ∀ n, StronglyMeasurable (fSeq n) := by sorry
-  have hui : MeasureTheory.UnifIntegrable fSeq 2 μ := by sorry
-  have hut : MeasureTheory.UnifTight fSeq 2 μ := by sorry
+  -- `UnifIntegrable fSeq 2 μ`: from the uniform a.e. bound ‖fSeq n t‖ ≤ ‖u₀‖.
+  -- For each ε > 0, pick δ so that for small-measure sets s, the indicator eLpNorm ≤ ε.
+  -- Since ‖fSeq n t‖ ≤ ‖u₀‖ a.e., the indicator over s has eLpNorm ≤ ‖u₀‖ · μ(s)^(1/2)
+  -- (Cauchy–Schwarz / eLpNorm_le_of_ae_bound), which is small when μ(s) is small.
+  have hui : MeasureTheory.UnifIntegrable fSeq 2 μ := by
+    intro ε hε
+    -- bound on indicator eLpNorm from a.e. pointwise bound
+    -- `eLpNorm (s.indicator (fSeq n)) 2 μ ≤ eLpNorm_le_of_ae_bound (‖u₀‖) + ...`
+    -- Use MemLp.eLpNorm_indicator_le on the constant function ‖u₀‖ ∈ MemLp 2 μ
+    -- then show the indicator eLpNorm is ≤ that of the constant.
+    have hC_memLp : MemLp (fun _ : ℝ => ‖(u₀ : L2VF_R3)‖) 2 μ := memLp_const _
+    obtain ⟨δ, hδpos, hδ⟩ := hC_memLp.eLpNorm_indicator_le one_le_two (by norm_num) hε
+    refine ⟨δ, hδpos, fun n s hs hμs => ?_⟩
+    -- bound eLpNorm (s.indicator (fSeq n)) ≤ eLpNorm (s.indicator (fun _ => ‖u₀‖))
+    have hle : eLpNorm (s.indicator (fSeq n)) 2 μ
+        ≤ eLpNorm (s.indicator (fun _ : ℝ => ‖(u₀ : L2VF_R3)‖)) 2 μ := by
+      apply eLpNorm_mono_ae
+      filter_upwards [hbound n] with t ht
+      simp only [Set.indicator_apply]
+      split_ifs
+      · simpa using ht
+      · simp
+    exact le_trans hle (hδ s hs hμs)
+  -- `UnifTight fSeq 2 μ`: on a finite measure, take s = univ (sᶜ = ∅, indicator = 0).
+  have hut : MeasureTheory.UnifTight fSeq 2 μ := by
+    intro ε _hε
+    refine ⟨Set.univ, ?_, fun n => ?_⟩
+    · simp [hμ, Measure.restrict_apply_univ, Real.volume_Icc, ENNReal.ofReal_ne_top]
+    · simp [Set.compl_univ, eLpNorm_zero, zero_le]
   have := MeasureTheory.tendsto_Lp_of_tendsto_ae (μ := μ) (p := 2) one_le_two
     (by norm_num) hAESM_f hMemLp_g hui hut hae_ball
   -- convert `eLpNorm (fSeq n - g)` to the goal's pointwise-difference form
