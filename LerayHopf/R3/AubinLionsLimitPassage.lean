@@ -71,6 +71,8 @@ import LerayHopf.R3.AxiomaticClosure     -- AubinLionsPackage_R3, GalerkinSoluti
 import LerayHopf.R3.SpatialCompactness   -- localCompactness_R3_of_ballCompact, LocalRellichInput
 import LerayHopf.R3.TrilinearEstimate    -- b-bound analytic core (downstream of R3NSForms.b_bound)
 import LerayHopf.R3.FourierL2            -- 𝓕, L2C_R3, viscousFormSq_R3_eq_integral_normSq_fourier (F7 spectral exposure for the viscous/H¹ Steklov Jensen bound)
+import LerayHopf.R3.WeightedFourierCommute -- mulBdd bounded-multiplier commute + truncated weight (closes the viscous/H¹ Steklov Jensen gate)
+import LerayHopf.R3.GalerkinODE          -- galerkinCurve_reg_mem (H¹ regularity of any curve in the Galerkin subspace)
 import Mathlib.MeasureTheory.Integral.Bochner.Set   -- set/interval integrals over balls
 
 namespace LerayHopf
@@ -637,6 +639,24 @@ private noncomputable def steklovAvg (𝔊 : R3GalerkinScheme) (F : R3NSForms �
     (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (δ t : ℝ) : L2VF_R3 :=
   δ⁻¹ • ∫ s in t..(t + δ), (gs.u s : L2VF_R3)
 
+/-- **Backward Steklov interval-average** over `[t−δ, t]`: `δ⁻¹ • ∫_{t−δ}^{t} (gs.u s) ds`.
+This is the boundary-strip companion of `steklovAvg`: for `t` near `T` the forward window
+`[t, t+δ]` exits `[0,T]`, but the backward window `[t−δ, t]` stays inside `[0,T]` whenever
+`δ ≤ t ≤ T`, so the time modulus controls it.  Definitionally `steklovAvgBack δ t = steklovAvg δ (t−δ)`
+(the forward average based at `t−δ`), which lets every forward lemma transfer by a base-point shift. -/
+private noncomputable def steklovAvgBack (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (δ t : ℝ) : L2VF_R3 :=
+  δ⁻¹ • ∫ s in (t - δ)..t, (gs.u s : L2VF_R3)
+
+/-- The backward average is the forward average based at `t − δ`. -/
+private theorem steklovAvgBack_eq (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (δ t : ℝ) :
+    steklovAvgBack 𝔊 F ν u₀ n gs δ t = steklovAvg 𝔊 F ν u₀ n gs δ (t - δ) := by
+  rw [steklovAvgBack, steklovAvg]
+  rw [show t - δ + δ = t by ring]
+
 /-- **L² uniform bound on the Steklov average.** For `0 < δ` and `0 ≤ t`, the averaged
 state is bounded by `‖u₀‖`, uniformly in `n` and `t`.  This is the average of a curve all
 of whose values satisfy `‖(gs.u s)‖ ≤ ‖u₀‖` (via `galerkin_norm_le_u0`). -/
@@ -665,6 +685,51 @@ private theorem steklovAvg_norm_le_u0 (𝔊 : R3GalerkinScheme) (F : R3NSForms �
   calc ‖∫ s in t..(t + δ), (gs.u s : L2VF_R3)‖
       ≤ ‖(u₀ : L2VF_R3)‖ * δ := hbd
     _ = δ * ‖(u₀ : L2VF_R3)‖ := mul_comm _ _
+
+/-- **The Steklov average stays in the Galerkin subspace** `Vₙ = range (𝔊.P n)`.  Because every
+sample `gs.u s` is a fixed point of `𝔊.P n` (`u_inVn`) and `𝔊.P n` (a CLM) commutes with the
+Bochner integral. -/
+private theorem steklovAvg_inVn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) :
+    (steklovAvg 𝔊 F ν u₀ n gs δ t : L2VF_R3)
+      = 𝔊.P n (steklovAvg 𝔊 F ν u₀ n gs δ t : L2VF_R3) := by
+  have hle : t ≤ t + δ := by linarith
+  have hcont : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.uIcc t (t + δ)) := by
+    refine (galerkin_curve_continuous 𝔊 F ν u₀ n gs).mono ?_
+    rw [Set.uIcc_of_le hle]; intro s hs; exact le_trans ht hs.1
+  have hint : IntervalIntegrable (fun s => (gs.u s : L2VF_R3)) volume t (t + δ) :=
+    hcont.intervalIntegrable
+  rw [steklovAvg, map_smul]
+  congr 1
+  -- `𝔊.P n (∫_s u s) = ∫_s 𝔊.P n (u s) = ∫_s (u s)` (using `u_inVn`, reversed).
+  rw [← ContinuousLinearMap.intervalIntegral_comp_comm _ hint]
+  refine intervalIntegral.integral_congr (fun s _ => ?_)
+  exact gs.u_inVn s
+
+/-- **H¹ regularity of the Steklov average.**  The averaged state is in `H¹`, since it stays in the
+Schwartz Galerkin subspace `Vₙ` (`steklovAvg_inVn`). -/
+private theorem steklovAvg_memH1 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) :
+    memH1VF_R3 (steklovAvg 𝔊 F ν u₀ n gs δ t : L2VF_R3) :=
+  galerkinCurve_reg_mem 𝔊 n _ (steklovAvg_inVn 𝔊 F ν u₀ n gs hδ ht)
+
+/-- L² uniform bound on the **backward** Steklov average (window `[t−δ,t] ⊆ Ici 0` when `δ ≤ t`). -/
+private theorem steklovAvgBack_norm_le_u0 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (hδt : δ ≤ t) :
+    ‖steklovAvgBack 𝔊 F ν u₀ n gs δ t‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
+  rw [steklovAvgBack_eq]
+  exact steklovAvg_norm_le_u0 𝔊 F ν u₀ n gs hδ (by linarith)
+
+/-- H¹ regularity of the **backward** Steklov average (window `[t−δ,t] ⊆ Ici 0` when `δ ≤ t`). -/
+private theorem steklovAvgBack_memH1 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (hδt : δ ≤ t) :
+    memH1VF_R3 (steklovAvgBack 𝔊 F ν u₀ n gs δ t : L2VF_R3) := by
+  rw [steklovAvgBack_eq]
+  exact steklovAvg_memH1 𝔊 F ν u₀ n gs hδ (by linarith)
 
 /-- **Steklov average approximates the original curve.** If, on the window
 `[t, t+δ]`, the curve varies by less than `ε` in L², then
@@ -705,6 +770,36 @@ private theorem steklovAvg_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     _ = ε * δ := by rw [show (t + δ) - t = δ by ring, abs_of_pos hδ]
     _ = δ * ε := by ring
 
+/-- **Backward Steklov average approximates the original curve at the right endpoint.** If, on the
+backward window `[t−δ, t]`, the curve varies from its value at `t` by less than `ε`, then
+`‖(gs.u t) − steklovAvgBack δ t‖ ≤ ε`.  Boundary-strip companion of `steklovAvg_approx`; the window
+`[t−δ,t]` stays in `[0,T]` for `δ ≤ t ≤ T`, so the time modulus supplies `hmod`. -/
+private theorem steklovAvgBack_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t ε : ℝ} (hδ : 0 < δ) (hδt : δ ≤ t)
+    (hmod : ∀ s ∈ Set.uIoc (t - δ) t, ‖(gs.u t : L2VF_R3) - (gs.u s : L2VF_R3)‖ ≤ ε) :
+    ‖(gs.u t : L2VF_R3) - steklovAvgBack 𝔊 F ν u₀ n gs δ t‖ ≤ ε := by
+  have hle : t - δ ≤ t := by linarith
+  have ht0 : (0 : ℝ) ≤ t - δ := by linarith
+  have hcont : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
+    galerkin_curve_continuous 𝔊 F ν u₀ n gs
+  have hwin : Set.uIcc (t - δ) t ⊆ Set.Ici (0 : ℝ) := by
+    rw [Set.uIcc_of_le hle]; intro s hs; exact le_trans ht0 hs.1
+  have hint : IntervalIntegrable (fun s => (gs.u s : L2VF_R3)) volume (t - δ) t :=
+    (hcont.mono hwin).intervalIntegrable
+  have hconst : (gs.u t : L2VF_R3) = δ⁻¹ • ∫ _s in (t - δ)..t, (gs.u t : L2VF_R3) := by
+    rw [intervalIntegral.integral_const, smul_smul]
+    rw [show t - (t - δ) = δ by ring, inv_mul_cancel₀ (ne_of_gt hδ), one_smul]
+  rw [hconst, steklovAvgBack, ← smul_sub,
+    ← intervalIntegral.integral_sub (intervalIntegrable_const) hint]
+  rw [norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hδ, inv_mul_le_iff₀ hδ]
+  calc ‖∫ s in (t - δ)..t, ((gs.u t : L2VF_R3) - (gs.u s : L2VF_R3))‖
+      ≤ ε * |t - (t - δ)| := by
+        refine intervalIntegral.norm_integral_le_of_norm_le_const ?_
+        intro s hs; exact hmod s hs
+    _ = ε * δ := by rw [show t - (t - δ) = δ by ring, abs_of_pos hδ]
+    _ = δ * ε := by ring
+
 /-- **L² Jensen bound on the Steklov average (squared-norm form).** For `0 < δ` and `0 ≤ t`,
 the squared L² norm of the Steklov average is bounded by the average of the squared norms over
 the forward window:
@@ -741,6 +836,20 @@ private theorem steklovAvg_normSq_le_average (𝔊 : R3GalerkinScheme) (F : R3NS
         rw [← mul_assoc]
         congr 1
         field_simp
+
+/-- **Continuity of the `j`-th Fourier-component curve.** `s ↦ 𝓕 (proj_j (gs.u s))` is continuous
+on `Ici 0` (composition of the continuous Galerkin curve with the continuous-linear `proj_j` and
+the isometry `𝓕`). -/
+private theorem fourierProjCurve_continuousOn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (j : Fin 3) :
+    ContinuousOn (fun s => (𝓕 (L2VF_projComponentC_R3 j (gs.u s)) : L2C_R3)) (Set.Ici 0) := by
+  have hcurve : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
+    galerkin_curve_continuous 𝔊 F ν u₀ n gs
+  -- `𝓕 ∘ proj_j` is continuous (CLM composed with the Fourier isometry).
+  have hmap : Continuous (fun w : L2VF_R3 => (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3)) :=
+    (Lp.fourierTransformₗᵢ Domain3 ℂ).continuous.comp (L2VF_projComponentC_R3 j).continuous
+  exact hmap.comp_continuousOn hcurve
 
 /-- **Fourier component of a Steklov average — the L²-element commute (PROVED, no `sorry`).**
 For `0 < δ` and `0 ≤ t`, the `j`-th Fourier component of the Steklov average is the time-average
@@ -783,6 +892,156 @@ private theorem fourier_proj_steklovAvg_eq (𝔊 : R3GalerkinScheme) (F : R3NSFo
     (μ := (volume : Measure ℝ).restrict (Set.Ioc t (t + δ)))
     (fun s => (L2VF_projComponentC_R3 j (gs.u s) : L2C_R3))).symm
 
+/-- **Per-truncation weighted Jensen bound.** For a bounded multiplier `m` (`MemLp ⊤`) and a curve
+`G` continuous on `[t,t+δ]`, the squared weighted norm of the Steklov-averaged Fourier component is
+bounded by the time-average of the squared weighted norms:
+
+  `‖mulBdd m (δ⁻¹ • ∫_{t}^{t+δ} G s)‖² ≤ δ⁻¹ · ∫_{t}^{t+δ} ‖mulBdd m (G s)‖²`.
+
+This is the Hilbert-space Bochner–Jensen template `norm_integral_sq_le_length_mul_integral_normSq`
+applied to the continuous curve `s ↦ mulBdd m (G s)` (continuity via `continuous_mulBdd`), combined
+with the bounded-multiplier Bochner commute `mulBdd_intervalIntegral_comm` — entirely
+`Lp`-frontier-free (no pointwise coeFn interchange). -/
+private theorem mulBdd_steklov_normSq_le_average
+    {m : Domain3 → ℝ}
+    (hmem : MemLp (fun ξ : Domain3 => (m ξ : ℂ)) ⊤ (volume : Measure Domain3)) {C : ℝ}
+    (hC : 0 ≤ C) (hmle : ∀ ξ, |m ξ| ≤ C)
+    {G : ℝ → L2C_R3} {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t)
+    (hGcont : ContinuousOn G (Set.Ici 0)) :
+    ‖mulBdd m hmem (δ⁻¹ • ∫ s in t..(t + δ), G s)‖ ^ 2
+      ≤ δ⁻¹ * ∫ s in t..(t + δ), ‖mulBdd m hmem (G s)‖ ^ 2 := by
+  have hle : t ≤ t + δ := by linarith
+  have hwin : Set.uIcc t (t + δ) ⊆ Set.Ici (0 : ℝ) := by
+    rw [Set.uIcc_of_le hle]; intro s hs; exact le_trans ht hs.1
+  have hGcontWin : ContinuousOn G (Set.uIcc t (t + δ)) := hGcont.mono hwin
+  have hGint : IntervalIntegrable G volume t (t + δ) := hGcontWin.intervalIntegrable
+  -- the curve `s ↦ mulBdd m (G s)` is continuous on the window
+  have hMGcontWin : ContinuousOn (fun s => mulBdd m hmem (G s)) (Set.uIcc t (t + δ)) :=
+    (continuous_mulBdd m hmem hC hmle).comp_continuousOn hGcontWin
+  have hMGint : IntervalIntegrable (fun s => mulBdd m hmem (G s)) volume t (t + δ) :=
+    hMGcontWin.intervalIntegrable
+  -- push `mulBdd m` through the `δ⁻¹ •` and the Bochner integral
+  rw [mulBdd_smul m hmem, mulBdd_intervalIntegral_comm m hmem hGint hMGint]
+  -- now it is the Hilbert Jensen template applied to `s ↦ mulBdd m (G s)`
+  rw [norm_smul, mul_pow, norm_inv, Real.norm_eq_abs, abs_of_pos hδ]
+  have hjensen := norm_integral_sq_le_length_mul_integral_normSq
+    (f := fun s => mulBdd m hmem (G s)) hle hMGcontWin
+  rw [show (t + δ) - t = δ by ring] at hjensen
+  calc (δ⁻¹) ^ 2 * ‖∫ s in t..(t + δ), mulBdd m hmem (G s)‖ ^ 2
+      ≤ (δ⁻¹) ^ 2 * (δ * ∫ s in t..(t + δ), ‖mulBdd m hmem (G s)‖ ^ 2) := by
+        apply mul_le_mul_of_nonneg_left hjensen (by positivity)
+    _ = δ⁻¹ * ∫ s in t..(t + δ), ‖mulBdd m hmem (G s)‖ ^ 2 := by
+        rw [← mul_assoc]; congr 1; field_simp
+
+/-- **Per-component weighted Steklov–Jensen bound (the gate, one Fourier component).**  For each
+`j`, the full (unbounded-weight) spectral viscous integrand of the Steklov-averaged `j`-component is
+bounded by the time-average of the per-`s` spectral integrand:
+
+  `∫_ξ W ‖𝓕(projⱼ steklovAvg) ξ‖² ≤ δ⁻¹ ∫_s ∫_ξ W ‖𝓕(projⱼ (u s)) ξ‖²`,   `W = (2π)²‖ξ‖²`.
+
+Proof: pass to the bounded truncations `m_k = min(√W,k)`; for each `k` the bounded-multiplier
+Jensen bound `mulBdd_steklov_normSq_le_average` plus `norm_mulBdd_sq` gives the truncated estimate,
+and `(m_k)² ≤ W` bounds its RHS by the full one; the LHS converges to the full integral by
+dominated convergence (the `H¹` Steklov average makes `W‖𝓕(projⱼ steklovAvg)‖²` integrable). -/
+private theorem viscousFourier_steklov_component_le (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) (j : Fin 3) :
+    ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
+        ‖(𝓕 (L2VF_projComponentC_R3 j (steklovAvg 𝔊 F ν u₀ n gs δ t)) : L2C_R3) ξ‖ ^ 2
+      ≤ δ⁻¹ * ∫ s in t..(t + δ),
+          ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
+            ‖(𝓕 (L2VF_projComponentC_R3 j (gs.u s)) : L2C_R3) ξ‖ ^ 2 := by
+  classical
+  set Gbar : L2C_R3 := 𝓕 (L2VF_projComponentC_R3 j (steklovAvg 𝔊 F ν u₀ n gs δ t)) with hGbar
+  set Gcurve : ℝ → L2C_R3 := fun s => 𝓕 (L2VF_projComponentC_R3 j (gs.u s)) with hGcurve
+  -- The integrands as `∫ (m_k ξ)² ‖·‖²` and full `∫ W ‖·‖²`.
+  set W : Domain3 → ℝ := fun ξ => (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 with hW
+  -- `Gbar = δ⁻¹ • ∫_s Gcurve s` (the proved L²-element commute).
+  have hGbar_eq : Gbar = δ⁻¹ • ∫ s in t..(t + δ), Gcurve s := by
+    rw [hGbar, hGcurve]; exact fourier_proj_steklovAvg_eq 𝔊 F ν u₀ n gs hδ ht j
+  -- `Gcurve` is continuous on `Ici 0`.
+  have hGcont : ContinuousOn Gcurve (Set.Ici (0 : ℝ)) :=
+    fourierProjCurve_continuousOn 𝔊 F ν u₀ n gs j
+  -- abbreviation for the truncated multiplier
+  set m : ℕ → Domain3 → ℝ := fun k => sqrtViscousWeightTrunc k with hm
+  have hmem : ∀ k, MemLp (fun ξ : Domain3 => (m k ξ : ℂ)) ⊤ (volume : Measure Domain3) :=
+    fun k => memLp_top_sqrtViscousWeightTrunc k
+  have hmle : ∀ k ξ, |m k ξ| ≤ (k : ℝ) := fun k ξ => sqrtViscousWeightTrunc_abs_le k ξ
+  -- pointwise `(m k ξ)² ≤ W ξ` and `(m k ξ)² → W ξ`
+  have hmsq_le : ∀ k ξ, (m k ξ) ^ 2 ≤ W ξ := by
+    intro k ξ
+    rw [hW]
+    calc (m k ξ) ^ 2 ≤ (sqrtViscousWeight ξ) ^ 2 := by
+          rw [hm]; apply pow_le_pow_left₀ (sqrtViscousWeightTrunc_nonneg k ξ) (min_le_left _ _)
+      _ = (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 := by rw [sqrtViscousWeight_sq]; rfl
+  have hmsq_tendsto : ∀ ξ, Filter.Tendsto (fun k => (m k ξ) ^ 2) Filter.atTop (nhds (W ξ)) := by
+    intro ξ
+    have h1 := (tendsto_sqrtViscousWeightTrunc ξ).pow 2
+    rw [show sqrtViscousWeight ξ ^ 2 = W ξ from by rw [sqrtViscousWeight_sq]; rfl] at h1
+    exact h1
+  -- LHS full integrand integrable (Steklov average is H¹)
+  have hSteklovH1 : memH1VF_R3 (steklovAvg 𝔊 F ν u₀ n gs δ t : L2VF_R3) :=
+    steklovAvg_memH1 𝔊 F ν u₀ n gs hδ ht
+  have hLHSint : Integrable (fun ξ => W ξ * ‖(Gbar : Domain3 → ℂ) ξ‖ ^ 2)
+      (volume : Measure Domain3) := by
+    rw [hGbar, hW]; exact integrable_viscous_integrand_of_memH1 _ hSteklovH1 j
+  -- The truncated LHS equals `‖mulBdd (m k) Gbar‖²`, and converges (DCT) to the full integral.
+  have hLHS_k : ∀ k, ∫ ξ, (m k ξ) ^ 2 * ‖(Gbar : Domain3 → ℂ) ξ‖ ^ 2 ∂(volume : Measure Domain3)
+      = ‖mulBdd (m k) (hmem k) Gbar‖ ^ 2 := fun k => (norm_mulBdd_sq (m k) (hmem k) Gbar).symm
+  have hLHS_tendsto : Filter.Tendsto
+      (fun k => ∫ ξ, (m k ξ) ^ 2 * ‖(Gbar : Domain3 → ℂ) ξ‖ ^ 2 ∂(volume : Measure Domain3))
+      Filter.atTop (nhds (∫ ξ, W ξ * ‖(Gbar : Domain3 → ℂ) ξ‖ ^ 2 ∂(volume : Measure Domain3))) := by
+    refine MeasureTheory.tendsto_integral_of_dominated_convergence
+      (fun ξ => W ξ * ‖(Gbar : Domain3 → ℂ) ξ‖ ^ 2) ?_ hLHSint ?_ ?_
+    · intro k
+      exact (((continuous_sqrtViscousWeightTrunc k).pow 2).aestronglyMeasurable).mul
+        ((Lp.aestronglyMeasurable Gbar).norm.pow 2)
+    · intro k
+      filter_upwards with ξ
+      rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+      exact mul_le_mul_of_nonneg_right (hmsq_le k ξ) (by positivity)
+    · filter_upwards with ξ
+      exact (hmsq_tendsto ξ).mul_const _
+  -- Per-`k`, the truncated LHS ≤ the full RHS.
+  have hle : t ≤ t + δ := by linarith
+  have hperk : ∀ k, ∫ ξ, (m k ξ) ^ 2 * ‖(Gbar : Domain3 → ℂ) ξ‖ ^ 2 ∂(volume : Measure Domain3)
+      ≤ δ⁻¹ * ∫ s in t..(t + δ), ∫ ξ, W ξ *
+          ‖(Gcurve s : Domain3 → ℂ) ξ‖ ^ 2 ∂(volume : Measure Domain3) := by
+    intro k
+    -- truncated LHS = ‖mulBdd (m k) Gbar‖²  ≤ δ⁻¹ ∫_s ‖mulBdd (m k) (Gcurve s)‖²  (Jensen)
+    rw [hLHS_k k, hGbar_eq]
+    refine le_trans (mulBdd_steklov_normSq_le_average (hmem k) (Nat.cast_nonneg k) (hmle k)
+      hδ ht hGcont) ?_
+    -- `‖mulBdd (m k) (Gcurve s)‖² = ∫ (m k)² ‖Gcurve s‖²  ≤ ∫ W ‖Gcurve s‖²`
+    refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+    refine intervalIntegral.integral_mono_on hle ?_ ?_ (fun s _ => ?_)
+    · -- integrability of `s ↦ ‖mulBdd (m k) (Gcurve s)‖²` (continuous curve)
+      have hcontw : ContinuousOn (fun s => mulBdd (m k) (hmem k) (Gcurve s)) (Set.uIcc t (t + δ)) :=
+        (continuous_mulBdd (m k) (hmem k) (Nat.cast_nonneg k) (hmle k)).comp_continuousOn
+          (hGcont.mono (by rw [Set.uIcc_of_le hle]; intro s hs; exact le_trans ht hs.1))
+      exact (hcontw.norm.pow 2).intervalIntegrable
+    · -- integrability of `s ↦ ∫ W ‖Gcurve s‖²` (continuous via the field, transported)
+      have hwin : Set.uIcc t (t + δ) ⊆ Set.Ici (0 : ℝ) := by
+        rw [Set.uIcc_of_le hle]; intro s hs; exact le_trans ht hs.1
+      have heq : ∀ s, (∫ ξ, W ξ * ‖(Gcurve s : Domain3 → ℂ) ξ‖ ^ 2 ∂(volume : Measure Domain3))
+          = ‖weightedFourierComponent (gs.u s : L2VF_R3) (gs.reg_mem s) j‖ ^ 2 := by
+        intro s; rw [hW, hGcurve]
+        exact (norm_weightedFourierComponent_sq (gs.u s : L2VF_R3) (gs.reg_mem s) j).symm
+      refine ContinuousOn.intervalIntegrable ?_
+      exact ContinuousOn.congr (((gs.viscous_curve_continuous j).mono hwin).norm.pow 2)
+        (fun s _ => heq s)
+    · -- pointwise: `‖mulBdd (m k) (Gcurve s)‖² = ∫ (m k)²‖Gcurve s‖² ≤ ∫ W ‖Gcurve s‖²`
+      rw [norm_mulBdd_sq (m k) (hmem k) (Gcurve s)]
+      refine integral_mono_of_nonneg ?_ ?_ ?_
+      · filter_upwards with ξ; positivity
+      · rw [hW]; exact integrable_viscous_integrand_of_memH1 (gs.u s : L2VF_R3) (gs.reg_mem s) j
+      · filter_upwards with ξ
+        exact mul_le_mul_of_nonneg_right (hmsq_le k ξ) (by positivity)
+  -- Conclude by passing to the limit `k → ∞`.
+  have hfinal := le_of_tendsto hLHS_tendsto (Filter.Eventually.of_forall hperk)
+  -- `hfinal : ∫ W ‖Gbar‖² ≤ δ⁻¹ ∫_s ∫ W ‖Gcurve s‖²`; this is the goal modulo the abbreviations.
+  exact hfinal
+
 /-- **Viscous (H¹) Jensen bound on the Steklov average — the C2 first-PR target.** For `0 < δ`
 and `0 ≤ t`, the viscous dissipation seminorm of the Steklov average is bounded by the time-average
 of the curve's viscous seminorm over the forward window:
@@ -794,32 +1053,27 @@ with the `n`-uniform `reg_bound` (`∫_{0}^{T} viscousFormSq_R3 1 (gs.u s) ≤ �
 averaged states an `n`-uniform *pointwise* H¹ bound, which the raw pointwise samples lacked (see the
 C2 route discussion), and which P3's `spatialInput_R3_of_localRellich` consumes.
 
-PROOF STRUCTURE (the analytic shape, isolating the one genuine gap): `viscousFormSq_R3 1 w` is the
-weighted-Fourier energy `∑_j ∫_ξ (2π)²‖ξ‖² ‖(𝓕 (proj_j w)) ξ‖² dξ`, exposed by F7
-(`FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier`, now applied to the LHS in the proof body).
-Since `w ↦ 𝓕 (proj_j w)` is built from the `ℝ`-linear continuous `proj_j : L2VF_R3 →L[ℝ] L2C_R3`
-and the `ℂ`-linear isometry equiv `𝓕`, the per-component **L²-element commute**
-`fourier_proj_steklovAvg_eq` is **PROVED here, sorry-free**:
-`𝓕 (proj_j (δ⁻¹ • ∫_s u s)) = δ⁻¹ • ∫_s 𝓕 (proj_j (u s))` (in `L2C_R3`), via
-`ContinuousLinearMap.integral_comp_comm` (proj_j) + `LinearIsometry.integral_comp_comm` (𝓕) +
-`fourier_smul`. The bound would then follow, per frequency `ξ`, by Cauchy–Schwarz on the
-time-average (the scalar `norm_integral_sq_le_length_mul_integral_normSq` proved above, applied at
-each `ξ`), multiplied by the nonnegative weight `(2π)²‖ξ‖²` and Tonelli-swapped (absolutely
-convergent here: the window `[t,t+δ]` is compact, the curve continuous, and
-`∫_s viscousFormSq_R3 1 (u s)` finite).
+PROOF (now `sorry`-free, issue #15): `viscousFormSq_R3 1 w` is the weighted-Fourier energy
+`∑_j ∫_ξ (2π)²‖ξ‖² ‖(𝓕 (proj_j w)) ξ‖² dξ` (F7).  Both sides are exposed spectrally (F7), reducing to
+a per-component bound `viscousFourier_steklov_component_le` summed over `j`.  Per component:
+* the L²-element commute `fourier_proj_steklovAvg_eq` gives
+  `𝓕 (proj_j steklovAvg) = δ⁻¹ • ∫_s 𝓕 (proj_j (u s))` (in `L2C_R3`);
+* the unbounded spectral weight `W = (2π)²‖ξ‖²` is handled by TRUNCATION: for each `k`, the bounded
+  multiplier `m_k = min(√W,k)` (`WeightedFourierCommute.mulBdd`) commutes with the Bochner interval
+  integral (`mulBdd_intervalIntegral_comm`, proved via `ext_inner_left` + `innerSL`), so the proved
+  Hilbert-space Bochner–Jensen template `norm_integral_sq_le_length_mul_integral_normSq` (applied to
+  the continuous curve `s ↦ mulBdd m_k (𝓕 (proj_j (u s)))`) gives the per-`k` weighted estimate
+  `mulBdd_steklov_normSq_le_average`;
+* `(m_k)² ≤ W` bounds each per-`k` RHS by the full one, and dominated convergence
+  (`tendsto_integral_of_dominated_convergence`, dominator `W‖𝓕(proj_j steklovAvg)‖²` integrable
+  because the Steklov average is `H¹` — `steklovAvg_memH1`) sends the per-`k` LHS to the full LHS.
 
-The SINGLE genuine missing-mathlib pillar that remains is the POINTWISE `Lp`-valued Bochner-integral
-coeFn interchange `(δ⁻¹ • ∫_s 𝓕 (proj_j (u s))) ξ =ᵐ[ξ] δ⁻¹ ∫_s (𝓕 (proj_j (u s))) ξ ds`, together
-with the joint `(s,ξ)`-measurable representative the per-ξ Jensen + weighted Tonelli swap require —
-exactly the coeFn-of-`Lp`-valued-Bochner-integral gap already isolated in this repo as
-`convL2_coeFn_ae` (`FrechetKolmogorov.lean`), here against the *unbounded* weight `(2π)²‖ξ‖²`. The
-L²-level Jensen template it instantiates IS proved sorry-free above
-(`norm_integral_sq_le_length_mul_integral_normSq`, `steklovAvg_normSq_le_average`).
-
-FRONTIER STATUS (this PR, #15): the `R3.FourierL2` import is now added (single enabling import, see
-the import block), F7 is applied to the LHS, and the per-component L²-element commute is proved
-sorry-free (`fourier_proj_steklovAvg_eq`). The residual `sorry` is sharpened to the pointwise
-coeFn-interchange + weighted Tonelli step described above. -/
+This avoids entirely the pointwise `Lp`-valued-Bochner coeFn interchange / joint `(s,ξ)`-measurable
+representative that the earlier frontier note flagged (the `convL2_coeFn_ae`-class obstruction):
+the bounded-multiplier route keeps every step at the `L²`-element level, and the unbounded weight is
+recovered by the monotone truncation limit.  The interval-integrability of the per-`s` spectral
+integrand uses the new `GalerkinSolutionData_R3.viscous_curve_continuous` field (finite-dim-derived
+continuity of `s ↦ √W • 𝓕(proj_j (u s))`). -/
 private theorem viscousFormSq_steklovAvg_le_average (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
     (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) :
@@ -829,25 +1083,100 @@ private theorem viscousFormSq_steklovAvg_le_average (𝔊 : R3GalerkinScheme) (F
   -- `j`-th Fourier component of the Steklov average.  The L²-element commute
   -- `fourier_proj_steklovAvg_eq` (PROVED above, sorry-free) rewrites that component as the
   -- time-average `δ⁻¹ • ∫_s 𝓕 (proj_j (u s))`.
+  -- Expose the LHS spectrally (F7); each summand is `∫_ξ W ‖𝓕(projⱼ steklovAvg)ξ‖²`.
   rw [FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier]
-  -- ALLOW_SORRY: viscous/H¹ Steklov Jensen bound — FRONTIER SHRUNK (this PR, #15).
-  -- PROVED sorry-free here and consumed above: (a) the L²-level Bochner Jensen template
-  -- `norm_integral_sq_le_length_mul_integral_normSq` / `steklovAvg_normSq_le_average`; (b) the
-  -- spectral exposure `viscousFormSq_R3_eq_integral_normSq_fourier` (F7), now applied to the LHS;
-  -- (c) the per-component L²-ELEMENT commute `fourier_proj_steklovAvg_eq`
-  --   `𝓕 (proj_j (δ⁻¹ • ∫_s u s)) = δ⁻¹ • ∫_s 𝓕 (proj_j (u s))`  (in `L2C_R3`),
-  --   proved sorry-free from `ContinuousLinearMap.integral_comp_comm` (proj_j) +
-  --   `LinearIsometry.integral_comp_comm` (𝓕) + `fourier_smul`.
-  -- The SINGLE genuine missing-mathlib pillar that remains is the POINTWISE coeFn interchange of
-  -- the `Lp`-valued time integral against the unbounded spectral weight `(2π)²‖ξ‖²`:
-  --   `(δ⁻¹ • ∫_s 𝓕(proj_j(u s)))ξ =ᵐ[ξ] δ⁻¹ • ∫_s (𝓕(proj_j(u s)))ξ`
-  -- together with the joint `(s,ξ)`-measurable representative needed for the per-ξ scalar Jensen
-  -- and the Tonelli swap `∫_ξ weight·δ⁻¹∫_s‖·‖² = δ⁻¹∫_s ∫_ξ weight‖·‖²`.  This is the SAME
-  -- coeFn-of-`Lp`-valued-Bochner-integral obstruction isolated as `convL2_coeFn_ae` in
-  -- FrechetKolmogorov.lean (mathlib has no such lemma; the unbounded weight blocks the
-  -- L²-element route, and the raw `(s,ξ)` double integral lacks a global jointly-measurable coeFn
-  -- representative).  NOT an axiom, NOT a false blocker.
-  sorry -- ALLOW_SORRY: per-frequency coeFn-of-Lp-valued-time-integral interchange + weighted Tonelli (the `convL2_coeFn_ae`-class gap, weighted by `(2π)²‖ξ‖²`). Frontier shrunk this PR: F7 spectral exposure applied + per-component L²-element commute `fourier_proj_steklovAvg_eq` proved sorry-free above. NOT an axiom, NOT a false blocker.
+  -- Rewrite the RHS time-integrand `viscousFormSq_R3 1 (u s)` spectrally and pull the finite sum
+  -- out of the (interval) time integral and the `δ⁻¹` factor.
+  have hle : t ≤ t + δ := by linarith
+  -- per-`s` spectral integrand for component `j`
+  set Ij : Fin 3 → ℝ → ℝ := fun j s =>
+    ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
+      ‖(𝓕 (L2VF_projComponentC_R3 j (gs.u s)) : L2C_R3) ξ‖ ^ 2 with hIj
+  -- each `Ij j` is interval-integrable on `[t,t+δ]`: it equals `‖weightedFourierComponent (u s) j‖²`,
+  -- a continuous function of `s` (norm² of the continuous weighted-Fourier curve — the new field).
+  have hwin : Set.uIcc t (t + δ) ⊆ Set.Ici (0 : ℝ) := by
+    rw [Set.uIcc_of_le hle]; intro s hs; exact le_trans ht hs.1
+  have hIjeq : ∀ j s, Ij j s
+      = ‖weightedFourierComponent (gs.u s : L2VF_R3) (gs.reg_mem s) j‖ ^ 2 := by
+    intro j s
+    rw [hIj]
+    exact (norm_weightedFourierComponent_sq (gs.u s : L2VF_R3) (gs.reg_mem s) j).symm
+  have hIjint : ∀ j, IntervalIntegrable (Ij j) volume t (t + δ) := by
+    intro j
+    have hcont : ContinuousOn (Ij j) (Set.uIcc t (t + δ)) :=
+      ContinuousOn.congr (((gs.viscous_curve_continuous j).mono hwin).norm.pow 2)
+        (fun s _ => hIjeq j s)
+    exact hcont.intervalIntegrable
+  have hRHS : δ⁻¹ * ∫ s in t..(t + δ), viscousFormSq_R3 1 ((gs.u s : L2VF_R3))
+      = ∑ j : Fin 3, δ⁻¹ * ∫ s in t..(t + δ), Ij j s := by
+    rw [← Finset.mul_sum]
+    congr 1
+    rw [← intervalIntegral.integral_finsetSum (fun j _ => hIjint j)]
+    refine intervalIntegral.integral_congr (fun s _ => ?_)
+    simp only [hIj]
+    rw [FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier]
+  rw [hRHS]
+  refine Finset.sum_le_sum (fun j _ => ?_)
+  exact viscousFourier_steklov_component_le 𝔊 F ν u₀ n gs hδ ht j
+
+/-- The viscous-form curve `s ↦ viscousFormSq_R3 1 (gs.u s)` is continuous on `Ici 0`
+(`= ∑_j ‖weightedFourierComponent (u s) j‖²`, a sum of norm² of the continuous weighted-Fourier
+curves — the new `viscous_curve_continuous` field). -/
+private theorem viscousFormSq_curve_continuousOn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ) (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
+    ContinuousOn (fun s => viscousFormSq_R3 1 (gs.u s : L2VF_R3)) (Set.Ici (0 : ℝ)) := by
+  have heq : ∀ s, viscousFormSq_R3 1 (gs.u s : L2VF_R3)
+      = ∑ j : Fin 3, ‖weightedFourierComponent (gs.u s : L2VF_R3) (gs.reg_mem s) j‖ ^ 2 := by
+    intro s
+    rw [FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier]
+    exact Finset.sum_congr rfl
+      (fun j _ => (norm_weightedFourierComponent_sq (gs.u s : L2VF_R3) (gs.reg_mem s) j).symm)
+  refine ContinuousOn.congr ?_ (fun s _ => heq s)
+  exact continuousOn_finset_sum _ (fun j _ => ((gs.viscous_curve_continuous j).norm.pow 2))
+
+/-- **n-uniform pointwise H¹ bound on the Steklov averages.**  For the forward window
+`[t,t+δ] ⊆ [0,T]` (i.e. `0 ≤ t`, `t+δ ≤ T`), the averaged state's viscous seminorm is bounded by
+`δ⁻¹ ν⁻¹ · ½‖u₀‖²` — finite and `n`-independent (this is the bound `spatialInput_R3_of_localRellich`
+consumes; the raw pointwise samples lacked it).  Combines the gate
+`viscousFormSq_steklovAvg_le_average` with the integrated `reg_bound`. -/
+private theorem viscousFormSq_steklovAvg_uniform_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma_R3) (n : ℕ) (T : ℝ) (hT : 0 < T)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t)
+    (htδT : t + δ ≤ T) :
+    viscousFormSq_R3 1 (steklovAvg 𝔊 F ν u₀ n gs δ t)
+      ≤ δ⁻¹ * (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) := by
+  have hle : t ≤ t + δ := by linarith
+  have hcont : ContinuousOn (fun s => viscousFormSq_R3 1 (gs.u s : L2VF_R3)) (Set.Ici (0 : ℝ)) :=
+    viscousFormSq_curve_continuousOn 𝔊 F ν u₀ n gs
+  have hnn : ∀ s, 0 ≤ viscousFormSq_R3 1 (gs.u s : L2VF_R3) :=
+    fun s => viscousFormSq_R3_nonneg (by norm_num) _
+  have hint0T : IntervalIntegrable (fun s => viscousFormSq_R3 1 (gs.u s : L2VF_R3)) volume 0 T := by
+    refine (hcont.mono ?_).intervalIntegrable
+    rw [Set.uIcc_of_le hT.le]; intro s hs; exact hs.1
+  -- window sub-integral ≤ full [0,T] integral (nonneg integrand, `Ioc t (t+δ) ⊆ Ioc 0 T`)
+  have hwindow : ∫ s in t..(t + δ), viscousFormSq_R3 1 (gs.u s : L2VF_R3)
+      ≤ ∫ s in (0:ℝ)..T, viscousFormSq_R3 1 (gs.u s : L2VF_R3) := by
+    rw [intervalIntegral.integral_of_le hle, intervalIntegral.integral_of_le hT.le]
+    refine setIntegral_mono_set hint0T.1 (ae_of_all _ (fun s => hnn s)) ?_
+    refine HasSubset.Subset.eventuallyLE (fun s hs => ?_)
+    exact ⟨lt_of_le_of_lt ht hs.1, le_trans hs.2 htδT⟩
+  -- full integral ≤ ν⁻¹ · ½‖u₀‖² via reg_bound (ν-scaling)
+  have hreg : ∫ s in (0:ℝ)..T, viscousFormSq_R3 1 (gs.u s : L2VF_R3)
+      ≤ ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2) := by
+    have hrb := gs.reg_bound T hT
+    have hscale : ∀ s, viscousFormSq_R3 ν (gs.u s : L2VF_R3)
+        = ν * viscousFormSq_R3 1 (gs.u s : L2VF_R3) := by
+      intro s; rw [viscousFormSq_R3_eq_smul, smul_eq_mul]
+    rw [intervalIntegral.integral_congr (g := fun s => ν * viscousFormSq_R3 1 (gs.u s : L2VF_R3))
+      (fun s _ => hscale s), intervalIntegral.integral_const_mul] at hrb
+    -- `ν * I ≤ ½‖u₀‖²` ⇒ `I ≤ ν⁻¹ ½‖u₀‖²`
+    rw [le_inv_mul_iff₀ hν]
+    exact hrb
+  calc viscousFormSq_R3 1 (steklovAvg 𝔊 F ν u₀ n gs δ t)
+      ≤ δ⁻¹ * ∫ s in t..(t + δ), viscousFormSq_R3 1 (gs.u s : L2VF_R3) :=
+        viscousFormSq_steklovAvg_le_average 𝔊 F ν u₀ n gs hδ ht
+    _ ≤ δ⁻¹ * (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) :=
+        mul_le_mul_of_nonneg_left (le_trans hwindow hreg) (by positivity)
 
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 

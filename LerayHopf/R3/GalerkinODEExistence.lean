@@ -466,6 +466,33 @@ structure FinDimGlobalODE (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBa
 
 /-! ### R3 — assemble the `GalerkinODEInput` from a global curve -/
 
+/-- H¹ regularity of a span element (it is fixed by `galerkinP B n`). -/
+private theorem galerkinSpan_memH1 (B : SchwartzGalerkinBasis) (n : ℕ) (v : galerkinSpan B n) :
+    memH1VF_R3 (v : L2VF_R3) :=
+  galerkinCurve_reg_mem (schemeOfBasis B) n (v : L2VF_R3)
+    ((galerkinSpan B n).starProjection_eq_self_iff.mpr v.2).symm
+
+/-- The weighted Fourier component, as an **ℝ-linear map** on the finite-dimensional Galerkin
+subspace `V_n = galerkinSpan B n`.  Linearity is `weightedFourierComponent_add` / `_smul`
+(the `H¹`-proof argument is irrelevant). -/
+noncomputable def weightedFourierComponentₗ (B : SchwartzGalerkinBasis) (n : ℕ) (j : Fin 3) :
+    galerkinSpan B n →ₗ[ℝ] L2C_R3 where
+  toFun v := weightedFourierComponent (v : L2VF_R3) (galerkinSpan_memH1 B n v) j
+  map_add' v w := by
+    simp only [Submodule.coe_add]
+    exact weightedFourierComponent_add (v : L2VF_R3) (w : L2VF_R3)
+      (galerkinSpan_memH1 B n v) (galerkinSpan_memH1 B n w) (galerkinSpan_memH1 B n (v + w)) j
+  map_smul' r v := by
+    simp only [Submodule.coe_smul, RingHom.id_apply]
+    exact weightedFourierComponent_smul r (v : L2VF_R3)
+      (galerkinSpan_memH1 B n v) (galerkinSpan_memH1 B n (r • v)) j
+
+/-- The weighted Fourier component map on `V_n` is **continuous** (linear map out of a
+finite-dimensional space). -/
+theorem continuous_weightedFourierComponentₗ (B : SchwartzGalerkinBasis) (n : ℕ) (j : Fin 3) :
+    Continuous (weightedFourierComponentₗ B n j) :=
+  (weightedFourierComponentₗ B n j).continuous_of_finiteDimensional
+
 /-- From a global curve `c : Time → V_n` solving the AUTONOMOUS field equation
 `c' = G_n(c)` (the residual `FinDimGlobalODE` hypothesis), assemble the full
 `GalerkinODEInput`: the curve and its initial value, subspace confinement `u_inVn`, the
@@ -485,7 +512,8 @@ noncomputable def galerkinODEInput_of_globalCurve
       u_initial := ?_
       u_inVn := ?_
       u_hasDeriv := ?_
-      u_ode := ?_ }
+      u_ode := ?_
+      viscous_curve_continuous := ?_ }
   · -- `u 0 = ⟨galerkinP B n u₀, …⟩`.  Equate the underlying `L2VF_R3` vectors via `G.c_initial`.
     apply Subtype.ext
     show (G.c 0 : L2VF_R3) = galerkinP B n (u₀ : L2VF_R3)
@@ -517,6 +545,21 @@ noncomputable def galerkinODEInput_of_globalCurve
     -- `galerkinSpanToSigma B n (G.c t) = u t` and `galerkinSpanToSigma B n wV = w`.
     rw [hbw]
     ring
+  · -- `viscous_curve_continuous`: the weighted Fourier component curve factors as the continuous
+    -- linear `weightedFourierComponentₗ` applied to the continuous (finite-dim) Galerkin curve.
+    intro j
+    -- The curve `s ↦ G.c s` is continuous into `V_n` (the subtype): its `L2VF_R3` coercion has a
+    -- derivative on `Ici 0`, and the subtype topology is induced.
+    have hcSpan : ContinuousOn (fun s => G.c s) (Set.Ici (0 : ℝ)) := by
+      rw [Topology.IsInducing.subtypeVal.continuousOn_iff]
+      exact fun t ht => (G.c_hasDeriv t ht).continuousAt.continuousWithinAt
+    -- Compose with the continuous linear weighted-Fourier map; the values agree pointwise.
+    have hcomp : ContinuousOn
+        (fun s => weightedFourierComponentₗ B n j (G.c s)) (Set.Ici (0 : ℝ)) :=
+      (continuous_weightedFourierComponentₗ B n j).comp_continuousOn hcSpan
+    refine hcomp.congr (fun s _ => ?_)
+    -- `weightedFourierComponent (u s) _ j = weightedFourierComponentₗ B n j (G.c s)` (proof-irrel.).
+    rfl
 
 /-! ### D — the deliverable -/
 

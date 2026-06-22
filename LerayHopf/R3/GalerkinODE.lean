@@ -65,6 +65,46 @@ namespace LerayHopf
 open MeasureTheory
 open scoped Topology
 
+/-! ### M0 — H¹ regularity of a Galerkin-subspace curve -/
+
+/-- H¹ regularity of any vector staying in the Schwartz Galerkin subspace. -/
+theorem galerkinCurve_reg_mem (𝔊 : R3GalerkinScheme) (n : ℕ) (v : L2VF_R3)
+    (hv : v = 𝔊.P n v) : memH1VF_R3 v := by
+  -- `𝔊.range_schwartz n v` gives a real Schwartz `ψ` with the j-th real component of
+  -- `𝔊.P n v` equal to `(ψ j).toLp`; since `v = 𝔊.P n v`, the same holds for `v`.  The
+  -- complex component `L2VF_projComponentC_R3 j v` is then `RCLike.ofRealCLM ∘ (ψ j)` at the
+  -- Lp level, i.e. the toLp of the complex Schwartz map `(ψ j).postcompCLM RCLike.ofRealCLM`;
+  -- `SchwartzMap.memSobolev` gives `MemSobolev 1 2` of its tempered-distribution coercion,
+  -- and the two coercions agree by `toTemperedDistribution_toLp_eq`.
+  obtain ⟨ψ, hψ⟩ := 𝔊.range_schwartz n v
+  intro j
+  -- the complex Schwartz function whose toLp is the complex component of `v`
+  set g : SchwartzMap Domain3 ℂ := (ψ j).postcompCLM (RCLike.ofRealCLM (K := ℂ)) with hg
+  -- the complex component equals `g.toLp`
+  have hcomp : L2VF_projComponentC_R3 j v = g.toLp 2 (volume : Measure Domain3) := by
+    have hreal : L2VF_projComponent_R3 j v = (ψ j).toLp 2 (volume : Measure Domain3) := by
+      rw [hv]; exact hψ j
+    apply Lp.ext
+    have h1 : (L2VF_projComponentC_R3 j v : Domain3 → ℂ)
+        =ᵐ[volume] fun a => (RCLike.ofRealCLM (K := ℂ)) ((L2VF_projComponent_R3 j v) a) := by
+      rw [L2VF_projComponentC_R3]
+      exact ContinuousLinearMap.coeFn_compLpL _ _
+    rw [hreal] at h1
+    have hpsi : ((ψ j).toLp 2 (volume : Measure Domain3) : Domain3 → ℝ) =ᵐ[volume] ⇑(ψ j) :=
+      SchwartzMap.coeFn_toLp (ψ j) 2 (volume : Measure Domain3)
+    have h2 : (g.toLp 2 (volume : Measure Domain3) : Domain3 → ℂ)
+        =ᵐ[volume] fun a => (RCLike.ofRealCLM (K := ℂ)) ((ψ j) a) := by
+      refine (SchwartzMap.coeFn_toLp g 2 (volume : Measure Domain3)).trans ?_
+      filter_upwards with a
+      rw [hg, SchwartzMap.postcompCLM_apply]
+    refine h1.trans (Filter.EventuallyEq.trans ?_ h2.symm)
+    filter_upwards [hpsi] with a ha
+    rw [ha]
+  -- the goal (after `intro j`) is `MemSobolev 1 2 (component : 𝓢')`; rewrite the component to
+  -- `g.toLp` and use that the two tempered-distribution coercions agree.
+  rw [hcomp, MeasureTheory.Lp.toTemperedDistribution_toLp_eq]
+  exact SchwartzMap.memSobolev (s := (1 : ℝ)) (p := 2) g
+
 /-! ### S0 — the isolated analytic frontier hypothesis -/
 
 /-- Isolated analytic frontier for the ℝ³ Galerkin ODE.
@@ -110,6 +150,12 @@ structure GalerkinODEInput (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (w : L2VF_R3) = 𝔊.P n (w : L2VF_R3) →
     inner (𝕜 := ℝ) (deriv (fun s => (u s : L2VF_R3)) t) (w : L2VF_R3) +
     ν * stokesTestPairing_R3 (u t : L2VF_R3) (w : L2VF_R3) + F.b (u t) (u t) w = 0
+  /-- **Weighted-Fourier continuity (finite-dim-derived).** The weighted-Fourier component curve
+  `s ↦ √W • 𝓕(projⱼ (u s))` is continuous on `Ici 0`.  Discharged at the concrete producer from
+  the finite-dimensionality of the Galerkin subspace (all norms equivalent there). -/
+  viscous_curve_continuous : ∀ j : Fin 3,
+    ContinuousOn (fun s => weightedFourierComponent (u s : L2VF_R3)
+      (galerkinCurve_reg_mem 𝔊 n (u s : L2VF_R3) (u_inVn s)) j) (Set.Ici 0)
 
 /-! ### Helper — `viscousFormSq_R3` scales linearly in `ν` -/
 
@@ -135,46 +181,6 @@ theorem stokesTestPairing_R3_diag (u : L2VF_R3) :
   simp only
   congr 1
   rw [Complex.mul_conj, Complex.ofReal_re, Complex.normSq_eq_norm_sq]
-
-/-! ### M0 — H¹ regularity of a Galerkin-subspace curve -/
-
-/-- H¹ regularity of any vector staying in the Schwartz Galerkin subspace. -/
-theorem galerkinCurve_reg_mem (𝔊 : R3GalerkinScheme) (n : ℕ) (v : L2VF_R3)
-    (hv : v = 𝔊.P n v) : memH1VF_R3 v := by
-  -- `𝔊.range_schwartz n v` gives a real Schwartz `ψ` with the j-th real component of
-  -- `𝔊.P n v` equal to `(ψ j).toLp`; since `v = 𝔊.P n v`, the same holds for `v`.  The
-  -- complex component `L2VF_projComponentC_R3 j v` is then `RCLike.ofRealCLM ∘ (ψ j)` at the
-  -- Lp level, i.e. the toLp of the complex Schwartz map `(ψ j).postcompCLM RCLike.ofRealCLM`;
-  -- `SchwartzMap.memSobolev` gives `MemSobolev 1 2` of its tempered-distribution coercion,
-  -- and the two coercions agree by `toTemperedDistribution_toLp_eq`.
-  obtain ⟨ψ, hψ⟩ := 𝔊.range_schwartz n v
-  intro j
-  -- the complex Schwartz function whose toLp is the complex component of `v`
-  set g : SchwartzMap Domain3 ℂ := (ψ j).postcompCLM (RCLike.ofRealCLM (K := ℂ)) with hg
-  -- the complex component equals `g.toLp`
-  have hcomp : L2VF_projComponentC_R3 j v = g.toLp 2 (volume : Measure Domain3) := by
-    have hreal : L2VF_projComponent_R3 j v = (ψ j).toLp 2 (volume : Measure Domain3) := by
-      rw [hv]; exact hψ j
-    apply Lp.ext
-    have h1 : (L2VF_projComponentC_R3 j v : Domain3 → ℂ)
-        =ᵐ[volume] fun a => (RCLike.ofRealCLM (K := ℂ)) ((L2VF_projComponent_R3 j v) a) := by
-      rw [L2VF_projComponentC_R3]
-      exact ContinuousLinearMap.coeFn_compLpL _ _
-    rw [hreal] at h1
-    have hpsi : ((ψ j).toLp 2 (volume : Measure Domain3) : Domain3 → ℝ) =ᵐ[volume] ⇑(ψ j) :=
-      SchwartzMap.coeFn_toLp (ψ j) 2 (volume : Measure Domain3)
-    have h2 : (g.toLp 2 (volume : Measure Domain3) : Domain3 → ℂ)
-        =ᵐ[volume] fun a => (RCLike.ofRealCLM (K := ℂ)) ((ψ j) a) := by
-      refine (SchwartzMap.coeFn_toLp g 2 (volume : Measure Domain3)).trans ?_
-      filter_upwards with a
-      rw [hg, SchwartzMap.postcompCLM_apply]
-    refine h1.trans (Filter.EventuallyEq.trans ?_ h2.symm)
-    filter_upwards [hpsi] with a ha
-    rw [ha]
-  -- the goal (after `intro j`) is `MemSobolev 1 2 (component : 𝓢')`; rewrite the component to
-  -- `g.toLp` and use that the two tempered-distribution coercions agree.
-  rw [hcomp, MeasureTheory.Lp.toTemperedDistribution_toLp_eq]
-  exact SchwartzMap.memSobolev (s := (1 : ℝ)) (p := 2) g
 
 /-! ### E1 — the energy identity (analytic core) -/
 
@@ -335,6 +341,7 @@ noncomputable def galerkinSolutionData_R3_of_input
       u_hasDeriv := I.u_hasDeriv
       u_ode := I.u_ode
       reg_mem := fun t => galerkinCurve_reg_mem 𝔊 n (I.u t : L2VF_R3) (I.u_inVn t)
+      viscous_curve_continuous := I.viscous_curve_continuous
       energy_bound := fun t ht => galerkin_energy_bound 𝔊 F ν hν u₀ n I t ht
       reg_bound := fun T hT => galerkin_reg_bound 𝔊 F ν hν u₀ n I T hT }
 

@@ -3,6 +3,7 @@ import LerayHopf.R3.Regularity
 import LerayHopf.R3.FrechetKolmogorov  -- frechetKolmogorov_holds : FrechetKolmogorovInput (sorry-free, kernel-axioms only)
 import LerayHopf.R3.RellichBall        -- localRellichInput_of_frechetKolmogorov : FrechetKolmogorovInput → LocalRellichInput
 import LerayHopf.R3.SpatialCompactness -- localCompactness_R3_of_ballCompact : LocalRellichInput → (spatial_compactness_R3 conclusion)
+import LerayHopf.R3.WeightedFourierCommute -- weightedFourierComponent (for the Galerkin curve's H¹/weighted-Fourier continuity field)
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 
 open MeasureTheory Filter Topology LineDeriv
@@ -377,6 +378,18 @@ structure GalerkinSolutionData_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     ν * stokesTestPairing_R3 (u t : L2VF_R3) (w : L2VF_R3) + F.b (u t) (u t) w = 0
   /-- H¹ regularity: the solution stays in H¹ (required for `spatial_compactness_R3`). -/
   reg_mem : ∀ t, memH1VF_R3 (u t : L2VF_R3)
+  /-- **Weighted-Fourier continuity (finite-dim-derived enrichment).** Each weighted-Fourier
+  component `s ↦ √W • 𝓕(projⱼ (u s))` (`W = (2π)²‖ξ‖²`, the `H¹`/Dirichlet-energy graph
+  norm) is continuous on forward time `Ici 0`, into `L²`.
+
+  This is NOT a new analytic assumption: on the finite-dimensional Galerkin subspace
+  `Vₙ = range (𝔊.P n)` all norms are equivalent, so the `L²`-continuous Galerkin curve is also
+  continuous in the (stronger) weighted/H¹ norm.  It is supplied because the abstract
+  `R3GalerkinScheme` interface does not expose `Vₙ`'s finite-dimensionality; the concrete producer
+  discharges it from `galerkinSpan B n` being finite-dimensional.  Consumed by the viscous/H¹
+  Steklov–Jensen bound (the `n`-uniform time regularity of the Steklov averages). -/
+  viscous_curve_continuous : ∀ j : Fin 3,
+    ContinuousOn (fun s => weightedFourierComponent (u s : L2VF_R3) (reg_mem s) j) (Set.Ici 0)
   /-- Uniform energy bound: `½‖u(t)‖² ≤ ½‖𝔊.P n u₀‖²`. -/
   energy_bound : ∀ t, 0 ≤ t →
     (1 / 2 : ℝ) * ‖(u t : L2VF_R3)‖ ^ 2 ≤
