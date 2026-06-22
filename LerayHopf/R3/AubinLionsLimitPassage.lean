@@ -55,14 +55,13 @@ hypothesis would re-assert the conclusions (smuggling), so per the ADDENDUM we D
 `galerkinLimitPassage_R3_of_goodRep`. P2 does NOT itself produce the full `galerkin_limit_passage_R3`
 conclusion (this mirrors R3-d, which proved `b`-form lemmas without producing `Nonempty R3NSForms`).
 
-**ONE new `axiom` in this file:** `galerkinSpaceTimeExtraction_R3` (`-- ALLOW_AXIOM`) — the single
-irreducible LOCAL Bochner-time compactness extraction (one subsequence + per-ball, i.e.
-`restrictToBall R`, a.e.-in-time `L²` convergence to a measurable limit curve), stated UNCONDITIONALLY
-and LOCALLY (no global `L2VF_R3`-norm a.e. convergence — that would be over-strong without tightness);
-mathlib lacks the Bochner-valued Fréchet–Kolmogorov / Aubin–Lions theorem in `L²(0,T;X)`. No
-`opaque`/`constant`/`unsafe`. The honest
-isolated hypotheses (P3's `LocalRellichInput`, R3-d's `hdiv`, P5's `SchwartzGalerkinBasis.dense_span`)
-remain explicit *arguments*, not axioms.
+**Axioms in this file (issue #44 scaffold):** `galerkinSpaceTimeExtraction_R3` is now a `theorem`
+(placeholder body `:= by sorry -- ALLOW_SORRY`) proved via two thinner axioms in
+`ArzelaAscoliTime.lean`:
+- `galerkin_equicontinuity_from_ODE` (T0.1) — ODE equicontinuity modulus
+- `galerkin_weakLimit_R3` (T0.2) — Banach–Alaoglu + div-free weak limit in `L2Sigma_R3`
+No `opaque`/`constant`/`unsafe`. The honest isolated hypotheses (P3's `LocalRellichInput`,
+R3-d's `hdiv`, P5's `SchwartzGalerkinBasis.dense_span`) remain explicit *arguments*, not axioms.
 
 Target axiom this milestone discharges (issue #15): `aubin_lions_R3` is REMOVED — its spatial half
 PROVED, its time content swapped 1-for-1 for the strictly-thinner `galerkinSpaceTimeExtraction_R3`.
@@ -78,6 +77,7 @@ PROVED, its time content swapped 1-for-1 for the strictly-thinner `galerkinSpace
 --     `AubinLionsPackage_R3` AND reuse P3 — neither of those modules can reference the other.
 import LerayHopf.R3.AxiomaticClosure     -- AubinLionsPackage_R3, GalerkinSolutionData_R3, r3Evolution, R3NSForms
 import LerayHopf.R3.SpatialCompactness   -- localCompactness_R3_of_ballCompact, LocalRellichInput
+import LerayHopf.R3.ArzelaAscoliTime     -- issue #44: T0.1/T0.2 axioms + T1–T4 Arzelà–Ascoli chain + u_lim_aestronglyMeasurable
 import LerayHopf.R3.TrilinearEstimate    -- b-bound analytic core (downstream of R3NSForms.b_bound)
 import LerayHopf.R3.FourierL2            -- 𝓕, L2C_R3, viscousFormSq_R3_eq_integral_normSq_fourier (F7 spectral exposure for the viscous/H¹ Steklov Jensen bound)
 import LerayHopf.R3.WeightedFourierCommute -- mulBdd bounded-multiplier commute + truncated weight (closes the viscous/H¹ Steklov Jensen gate)
@@ -1386,8 +1386,13 @@ Once supplied, the whole `AubinLionsPackage_R3` is assembled axiom-free from thi
 directly from the per-ball a.e. convergence + dominated convergence in `L²` (the constant dominator
 `‖u₀‖` on the finite window `[0,T]`, via `galerkin_norm_le_u0`).  NON-VACUOUS: the conclusion pins
 the ball restrictions of `u` to the per-ball a.e.-`L²`-limits of the given subsequence (not a free
-choice).  Temam III.2.1; Lemarié-Rieusset §6 (Aubin–Lions, local). -/
-axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: LOCAL Bochner-time compactness extraction (Aubin–Lions time half) on ℝ³ — UNCONDITIONAL (no TimeCompactnessInput hypothesis): single subsequence + per-ball a.e.-in-time L² convergence (restrictToBall R) of the bounded Galerkin sequence to a measurable limit curve, from proved LOCAL spatial precompactness (steklovAvg_spatial_extraction, no tightness) + the curves' intrinsic time-equicontinuity; LOCAL not global — no full-L2VF_R3-norm a.e. convergence is claimed (that would be OVER-STRONG and not generally true on ℝ³ without tightness), so genuinely WEAKER/THINNER than aubin_lions_R3 (spatial half now PROVED); absorbs the time-equicontinuity modulus (the redundant prior-revision timeCompactnessInput_R3 axiom is dropped; this is the single time-layer axiom); mathlib lacks Bochner-valued Fréchet–Kolmogorov/Aubin–Lions in L²(0,T;X); TRUE and NON-VACUOUS (pins the per-ball restrictions of u to the per-ball a.e.-L²-limits of the subsequence); Temam III.2.1
+choice).  Temam III.2.1; Lemarié-Rieusset §6 (Aubin–Lions, local).
+
+**Issue #44 note:** This was formerly `axiom galerkinSpaceTimeExtraction_R3`.  It is now a
+`theorem` (ALLOW_SORRY scaffold) proved via `u_lim_aestronglyMeasurable` from two thinner axioms
+`galerkin_equicontinuity_from_ODE` (T0.1) and `galerkin_weakLimit_R3` (T0.2) in
+`ArzelaAscoliTime.lean`, plus the Arzelà–Ascoli chain T1–T4.  Signature is BYTE-IDENTICAL. -/
+theorem galerkinSpaceTimeExtraction_R3 -- ALLOW_SORRY: #44 galerkinSpaceTimeExtraction_R3 (T5.1), scaffold — proved from galerkin_equicontinuity_from_ODE + galerkin_weakLimit_R3 + T1–T4 chain in ArzelaAscoliTime.lean; to be discharged by lean-prover
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
@@ -1398,7 +1403,8 @@ axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: LOCAL Bochner-time compactn
         (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
       (∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
         Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3)) Filter.atTop
-          (nhds (restrictToBall R (u t : L2VF_R3))))
+          (nhds (restrictToBall R (u t : L2VF_R3)))) :=
+  u_lim_aestronglyMeasurable 𝔊 F ν hν T hT u₀ galSeq B
 
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
