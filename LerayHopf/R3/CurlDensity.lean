@@ -64,31 +64,36 @@ Steps (1)–(3) are PROVED: the curl Fourier multiplier (`fourier_curlSchwartz_e
 cross-product fiberwise spanning (`cross_iξ_spans_transverse`), the full Plancherel /
 `divTestFunctional` pairing infrastructure, and the REVERSE spectral characterization
 (`mem_sigma_of_transverse_ae`).  The `(P1)` Lp-level Hermitian reflection identity
-(`fourier_ofReal_reflect_eq_conj`) — once feared to be addable only in `FourierL2` — is now
-also PROVED here, axiom-free.
+(`fourier_ofReal_reflect_eq_conj`) is PROVED here, axiom-free.
 
-**Correction to an earlier (stale) assessment.**  The pinned mathlib DOES provide the
-heavy L²-Fourier toolkit this density argument needs: `MeasureTheory.Lp.fourierTransformₗᵢ`
-(the L² Fourier transform as a `LinearIsometryEquiv`, with `Lp.inner_fourier_eq` Parseval and
-`Lp.norm_fourier_eq` Plancherel), the orthogonal-complement density criterion
-(`Submodule.orthogonal_orthogonal_eq_closure` / `topologicalClosure_eq_top_iff`), the
-du-Bois-Reymond lemma (`ae_eq_zero_of_integral_contDiff_smul_eq_zero`), and
-`Lp.compMeasurePreserving` + `Measure.measurePreserving_neg`.  What mathlib still lacks is
-narrowly the *Helmholtz/Leray-specific* content (no `curl`/`divergence` operator, no Helmholtz
-decomposition, no `closure(span curl) = L²_σ`), which this file builds.  The two remaining
-`sorry`s reduce to a SINGLE named missing sub-development:
+`(P2)` — Schwartz surjectivity of `φ ↦ testSymbol φ` onto anti-Hermitian symbols
+(`schwartz_antiHermitian_has_testSymbol_preimage`) — is now also PROVED, via the reality
+lemma `fourier_hermitian_real` (`𝓕` of a Hermitian Schwartz function is real-valued) plus
+`SchwartzMap.postcompCLM Complex.conjCLE` / `RCLike.reCLM` and `FourierInvPair`.  Consequently
+the FORWARD spectral characterization `mem_sigma_iff_fourier_transverse` is PROVED in full (the
+du-Bois-Reymond even/odd reduction `antiHermitianTest_integral_zero` +
+`ae_eq_zero_of_integral_contDiff_smul_eq_zero`), discharging two of the three former sorrys.
 
-* `(P2)` — Schwartz surjectivity of `φ ↦ testSymbol φ` onto anti-Hermitian symbols,
-  equivalently: `𝓕⁻` of a Hermitian Schwartz function is the complexification of a *real*
-  Schwartz function (Schwartz-space real-part extraction under Hermitian symmetry).  NOT in
-  mathlib, but constructible (weeks-class) from `SchwartzMap.postcompCLM Complex.conjCLE`
-  (Schwartz conjugation) + a real-valuedness argument + `Complex.reCLM` extraction.
+The pinned mathlib provides the heavy L²-Fourier toolkit: `MeasureTheory.Lp.fourierTransformₗᵢ`
+(with `Lp.inner_fourier_eq` Parseval, `Lp.norm_fourier_eq` Plancherel), the orthogonal-complement
+density criterion (`Submodule.orthogonal_orthogonal_eq_closure`), the du-Bois-Reymond lemma
+(`ae_eq_zero_of_integral_contDiff_smul_eq_zero`), and `Lp.compMeasurePreserving` +
+`Measure.measurePreserving_neg`.  What mathlib still lacks is narrowly the *Helmholtz/Leray-specific*
+content (no `curl`/`divergence` operator, no Helmholtz decomposition, no `closure(span curl) = L²_σ`).
 
-The forward spectral characterization (`mem_sigma_iff_fourier_transverse`, forward) bottoms out
-on `(P2)`; the density transfer (`l2sigma_le_closure_span_curl`) then follows from the
-orthogonal-complement route above once that characterization is available.  Each obligation that
-genuinely depends on `(P2)` is left as a `sorry` carrying an `ALLOW_SORRY` marker.  The TOP-LEVEL
-type stays exactly `CurlSchwartzDense` — a real discharge target, never weakened.
+The single remaining `sorry` is the isolated analytic core of the density transfer:
+
+* `l2sigma_inner_orthogonalCurl_eq_zero` — the *vector* Parseval bridge on `L2VF_R3`
+  (`⟪u,w⟫ = ∫ ∑_j conj(û_j) ŵ_j`, the three-component sum of `Lp.inner_fourier_eq`) plus the
+  extraction of longitudinality of `ŵ` from `w ⊥ all curls` (`fourier_curlSchwartz_eq_cross` +
+  `cross_iξ_spans_transverse` + the Fourier-side fundamental lemma), then the pointwise
+  transverse ⊥ longitudinal cancellation.  All its building blocks (Steps 1–3 + the now-proved
+  forward Step 2) are in place; this lemma is their assembly.
+
+The Step-4 orthogonal-complement reduction (`l2sigma_le_closure_span_curl`) is itself PROVED:
+it cleanly reduces to `l2sigma_inner_orthogonalCurl_eq_zero` via
+`Submodule.orthogonal_orthogonal_eq_closure`.  The TOP-LEVEL type stays exactly
+`CurlSchwartzDense` — a real discharge target, never weakened.
 
 This file introduces **no** `axiom`/`opaque`/`constant`/`unsafe`.
 
@@ -684,10 +689,11 @@ private theorem mem_sigma_of_transverse_ae (u : L2VF_R3)
   filter_upwards [h] with ξ hξ
   rw [hξ, mul_zero]
 
-/-! #### (P2) Schwartz Hermitian preimage — sole remaining sorry blocker
+/-! #### (P2) Schwartz Hermitian preimage — PROVED
 
-This lemma is the single analytic gap that blocks the two remaining `sorry`s in this file
-(`mem_sigma_iff_fourier_transverse` forward direction and `l2sigma_le_closure_span_curl`).
+This lemma (formerly the single analytic gap blocking the forward direction of
+`mem_sigma_iff_fourier_transverse`) is now PROVED, axiom-free, via the reality lemma
+`fourier_hermitian_real`.  The forward direction is consequently fully discharged.
 
 **Removal plan for `curlSchwartzDense_holds` (import-DAG note, issue #3).**
 `CurlDensity.lean` already imports `SchwartzDivFreeBasis.lean`, so once
@@ -1048,6 +1054,26 @@ theorem cross_iξ_spans_transverse
 
 /-! ### Step 4 — density transfer (the Helmholtz/Weyl analytic core) -/
 
+/-- **Isolated analytic core of Step 4 (longitudinal ⊥ transverse).**  If `u` is weakly
+divergence-free (`u ∈ L2Sigma_R3`, so `û` is transverse a.e. by the forward direction of
+`mem_sigma_iff_fourier_transverse`) and `w` is orthogonal to every curl
+(`w ∈ (span (range curlSchwartzL2))ᗮ`, which forces `ŵ` to be longitudinal a.e. — orthogonal
+to the plane `ξ^⊥` swept out by the curl symbols, `cross_iξ_spans_transverse`), then `u ⊥ w`.
+
+Pointwise on the Fourier side `⟪û(ξ), ŵ(ξ)⟫ = 0` (transverse ⊥ longitudinal), and vector
+Parseval (`Lp.inner_fourier_eq` summed over the three components) lifts this to `⟪u, w⟫ = 0`.
+
+This is the one remaining analytic frontier of the density transfer: assembling the
+vector-valued Parseval bridge `⟪u, w⟫ = ∫ ∑_j conj(û_j) ŵ_j` on `L2VF_R3` and extracting
+longitudinality of `ŵ` from `w ⊥ all curls` via `fourier_curlSchwartz_eq_cross` +
+`cross_iξ_spans_transverse` + the Fourier-side fundamental lemma. The building blocks
+(Steps 1–3 + the now-proved forward Step 2) are all in place; this lemma is their assembly. -/
+private theorem l2sigma_inner_orthogonalCurl_eq_zero
+    (u : L2VF_R3) (hu : u ∈ L2Sigma_R3)
+    (w : L2VF_R3) (hw : w ∈ (Submodule.span ℝ (Set.range curlSchwartzL2))ᗮ) :
+    (inner ℝ u w : ℝ) = 0 := by
+  sorry -- ALLOW_SORRY: #3 l2sigma_inner_orthogonalCurl_eq_zero — isolated analytic core of Step 4: vector Parseval on L2VF_R3 (∑_j Lp.inner_fourier_eq) + extraction of longitudinality of ŵ from w ⊥ all curls (fourier_curlSchwartz_eq_cross + cross_iξ_spans_transverse + Fourier-side fundamental lemma), then pointwise transverse ⊥ longitudinal. Steps 1-3 + forward Step 2 all proved; this is their assembly. NOT in mathlib (no vector Plancherel-component bridge / Helmholtz). lean-prover target (issue #3)
+
 /-- **Step 4 (density transfer).**  The full deliverable, stated as the closure containment.
 Given a transverse field `u ∈ L2Sigma_R3` (Step 2), the fiberwise spanning (Steps 1+3) lets us
 approximate `û` in L² by curl symbols `𝓕(curl ψ)`; transferring back through Plancherel places
@@ -1061,15 +1087,24 @@ curl symbol `iξ×ψ̂` (Step 1) and the fiberwise spanning (Step 3), `v ⊥ cur
 *longitudinal* (parallel to `ξ`); `v ∈ L2Sigma_R3` forces `v̂` a.e. *transverse* (Step 2 forward);
 the two meet only at `v̂ = 0`, whence `v = 0` by the L² Fourier isometry `Lp.fourierTransformₗᵢ`.
 
-Blocker: this route consumes the FORWARD spectral characterization
-`mem_sigma_iff_fourier_transverse` (transverse ⇒ membership and back), whose forward direction is
-the lone `sorry` blocked on `(P2)` (Schwartz Hermitian real-extraction; see that lemma and the
-file header).  So this density fact is NOT independently months-class — it reduces to `(P2)`.
-Left as a `sorry` until `(P2)` lands. -/
+Status: the orthogonal-complement reduction below is PROVED.  It reduces the goal, via
+`Submodule.orthogonal_orthogonal_eq_closure` and `Submodule.mem_orthogonal'`, to the isolated
+analytic core `l2sigma_inner_orthogonalCurl_eq_zero` (the lone remaining `sorry`): every
+`w ⊥ all curls` is orthogonal to every `u ∈ L2Sigma_R3`.  The FORWARD spectral characterization
+`mem_sigma_iff_fourier_transverse` it consumes is now fully proved (no longer P2-blocked). -/
 theorem l2sigma_le_closure_span_curl :
     (L2Sigma_R3 : Submodule ℝ L2VF_R3) ≤
       (Submodule.span ℝ (Set.range curlSchwartzL2)).topologicalClosure := by
-  sorry -- ALLOW_SORRY: #3 l2sigma_le_closure_span_curl — orthogonal-complement route (`Submodule.orthogonal_orthogonal_eq_closure` + `Lp.fourierTransformₗᵢ` Parseval + Steps 1–3) reduces to FORWARD `mem_sigma_iff_fourier_transverse`, itself blocked only on P2 (`schwartz_antiHermitian_has_testSymbol_preimage`, stub above). NOT independently months-class. lean-prover target once P2 lands (issue #3)
+  -- Orthogonal-complement criterion: `K.topologicalClosure = Kᗮᗮ`, so it suffices to show
+  -- every `u ∈ L2Sigma_R3` lies in `Kᗮᗮ`, i.e. `u ⊥ w` for every `w ⊥ all curls`.
+  set K : Submodule ℝ L2VF_R3 := Submodule.span ℝ (Set.range curlSchwartzL2) with hK
+  rw [← K.orthogonal_orthogonal_eq_closure]
+  intro u hu
+  rw [Kᗮ.mem_orthogonal']
+  -- the genuine analytic core, isolated as a precisely-stated sub-lemma below.
+  intro w hw
+  rw [hK] at hw
+  exact l2sigma_inner_orthogonalCurl_eq_zero u hu w hw
 
 /-! ### Deliverable -/
 
