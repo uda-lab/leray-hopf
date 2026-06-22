@@ -56,9 +56,11 @@ hypothesis would re-assert the conclusions (smuggling), so per the ADDENDUM we D
 conclusion (this mirrors R3-d, which proved `b`-form lemmas without producing `Nonempty R3NSForms`).
 
 **ONE new `axiom` in this file:** `galerkinSpaceTimeExtraction_R3` (`-- ALLOW_AXIOM`) — the single
-irreducible Bochner-time a.e.-L² compactness extraction (one subsequence + an a.e.-in-time L² limit
-curve for the bounded Galerkin sequence), stated UNCONDITIONALLY; mathlib lacks the Bochner-valued
-Fréchet–Kolmogorov / Aubin–Lions theorem in `L²(0,T;X)`. No `opaque`/`constant`/`unsafe`. The honest
+irreducible LOCAL Bochner-time compactness extraction (one subsequence + per-ball, i.e.
+`restrictToBall R`, a.e.-in-time `L²` convergence to a measurable limit curve), stated UNCONDITIONALLY
+and LOCALLY (no global `L2VF_R3`-norm a.e. convergence — that would be over-strong without tightness);
+mathlib lacks the Bochner-valued Fréchet–Kolmogorov / Aubin–Lions theorem in `L²(0,T;X)`. No
+`opaque`/`constant`/`unsafe`. The honest
 isolated hypotheses (P3's `LocalRellichInput`, R3-d's `hdiv`, P5's `SchwartzGalerkinBasis.dense_span`)
 remain explicit *arguments*, not axioms.
 
@@ -1344,35 +1346,48 @@ private theorem galerkin_curves_equicontinuous (𝔊 : R3GalerkinScheme) (F : R3
   Htime.uniform_time_modulus
 
 /-- **Bochner-time / space-time compactness extraction on ℝ³ (the isolated Aubin–Lions-time
-pillar) — stated UNCONDITIONALLY for the bounded Galerkin sequence.**  From the proved spatial
-precompactness at sample times (`steklovAvg_spatial_extraction`, fed by P3 via `B`) together with the
-intrinsic uniform-in-`n` time equicontinuity of the Galerkin curves (which the curves genuinely
-possess via their `W^{1,p}(0,T;X)` time-derivative estimate, but which mathlib cannot mechanize),
-the Galerkin curves admit a SINGLE strictly-monotone subsequence `φ` and a limit curve
-`u : Time → L2Sigma_R3` to which they converge in L² at a.e. time, with `u` time-measurable.
+pillar) — stated UNCONDITIONALLY and LOCALLY for the bounded Galerkin sequence.**  From the proved
+spatial precompactness at sample times (`steklovAvg_spatial_extraction`, fed by P3 via `B`) together
+with the intrinsic uniform-in-`n` time equicontinuity of the Galerkin curves (which the curves
+genuinely possess via their `W^{1,p}(0,T;X)` time-derivative estimate, but which mathlib cannot
+mechanize), the Galerkin curves admit a SINGLE strictly-monotone subsequence `φ` and a limit curve
+`u : Time → L2Sigma_R3` such that, **for every ball radius `R`**, the ball restrictions
+`restrictToBall R ((galSeq (φ n)).u t)` converge to `restrictToBall R (u t)` at a.e. time `t`, with
+`u` time-measurable.
 
-This is the genuine Aubin–Lions *time* content: the Arzelà–Ascoli diagonalization (countable dense
-times × `δ`-mesh → 0 × balls) that upgrades pointwise-in-time spatial precompactness + time
-equicontinuity into a single subsequence with a.e.-in-time L² convergence.  Mathlib lacks the
-Bochner-valued Fréchet–Kolmogorov / Aubin–Lions compactness theorem in `L²(0,T;X)`, so this single
-extraction step is isolated as an axiom.  It is STRICTLY THINNER than the former `aubin_lions_R3`:
-the spatial half is now genuinely PROVED (the `steklovAvg_spatial_extraction` chain, axiom-free), so
-this axiom carries ONLY the time-compactness extraction, not the spatial compactness.
+**LOCAL, not global (the load-bearing correction).**  The convergence is asserted ONLY per ball,
+through `restrictToBall R`, NOT in the full `L2VF_R3` norm.  On ℝ³ the available compactness is local:
+`spatial_compactness_R3` / the Fréchet–Kolmogorov–Rellich chain is ball-restricted with NO tightness,
+so the Galerkin sequence may lose mass at spatial infinity and local precompactness does NOT yield
+global `L²` a.e.-in-time convergence.  A global statement would therefore be OVER-STRONG (stronger
+than the removed `aubin_lions_R3`, and not generally true); the per-ball form is the honest content
+and is exactly what the package needs (its `strong_convergence` field is itself per-ball, over
+`L²(0,T; L²(B_R))`).
+
+This is the genuine Aubin–Lions *time* content, LOCALIZED: the Arzelà–Ascoli diagonalization
+(countable dense times × `δ`-mesh → 0 × balls) that upgrades pointwise-in-time LOCAL spatial
+precompactness + time equicontinuity into a single subsequence with per-ball a.e.-in-time `L²`
+convergence.  Mathlib lacks the Bochner-valued Fréchet–Kolmogorov / Aubin–Lions compactness theorem
+in `L²(0,T;X)`, so this single extraction step is isolated as an axiom.  It is STRICTLY THINNER /
+WEAKER than the former `aubin_lions_R3`: the spatial half is now genuinely PROVED (the
+`steklovAvg_spatial_extraction` chain, axiom-free), and this axiom carries ONLY the LOCAL
+time-compactness extraction — no spatial compactness, no tightness, no global-`L²` claim.
 
 The axiom is UNCONDITIONAL: it does NOT take a `TimeCompactnessInput`/modulus hypothesis.  The
 Galerkin curves' time-equicontinuity is a TRUE standalone consequence of their proved uniform bounds
 (`galerkin_norm_le_u0`) and ODE structure; the single irreducible fact mathlib cannot supply is the
-Bochner-time compactness *extraction* itself, which this axiom names directly.  By stating it
+Bochner-time-LOCAL compactness *extraction* itself, which this axiom names directly.  By stating it
 unconditionally we absorb the modulus, so the time layer rests on exactly THIS ONE axiom — the
 redundant `timeCompactnessInput_R3` axiom from the prior revision of this PR (which only ever fed
 this extraction) is dropped.
 
 Once supplied, the whole `AubinLionsPackage_R3` is assembled axiom-free from this conclusion:
-`u_aestronglyMeasurable` is the second conjunct; `strong_convergence` follows by ball-restriction
-continuity + dominated convergence in `L²` (the `2‖u₀‖` constant dominator on the finite window
-`[0,T]`, via `galerkin_norm_le_u0`).  NON-VACUOUS: the conclusion pins `u` to the a.e.-`L²`-limit of
-the given subsequence (not a free choice).  Temam III.2.1; Lemarié-Rieusset §6 (Aubin–Lions). -/
-axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: Bochner-time compactness extraction (Aubin–Lions time half) on ℝ³ — UNCONDITIONAL (no TimeCompactnessInput hypothesis): single subsequence + a.e.-in-time L² limit curve for the bounded Galerkin sequence, from proved spatial precompactness (steklovAvg_spatial_extraction) + the curves' intrinsic time-equicontinuity; STRICTLY THINNER than aubin_lions_R3 (spatial half now PROVED) and absorbs the time-equicontinuity modulus (the redundant prior-revision timeCompactnessInput_R3 axiom is dropped; this is the single time-layer axiom); mathlib lacks Bochner-valued Fréchet–Kolmogorov/Aubin–Lions in L²(0,T;X); TRUE and NON-VACUOUS (pins u to the a.e.-L²-limit of the subsequence); Temam III.2.1
+`u_aestronglyMeasurable` is the second conjunct; `strong_convergence` follows for each ball `R`
+directly from the per-ball a.e. convergence + dominated convergence in `L²` (the constant dominator
+`‖u₀‖` on the finite window `[0,T]`, via `galerkin_norm_le_u0`).  NON-VACUOUS: the conclusion pins
+the ball restrictions of `u` to the per-ball a.e.-`L²`-limits of the given subsequence (not a free
+choice).  Temam III.2.1; Lemarié-Rieusset §6 (Aubin–Lions, local). -/
+axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: LOCAL Bochner-time compactness extraction (Aubin–Lions time half) on ℝ³ — UNCONDITIONAL (no TimeCompactnessInput hypothesis): single subsequence + per-ball a.e.-in-time L² convergence (restrictToBall R) of the bounded Galerkin sequence to a measurable limit curve, from proved LOCAL spatial precompactness (steklovAvg_spatial_extraction, no tightness) + the curves' intrinsic time-equicontinuity; LOCAL not global — no full-L2VF_R3-norm a.e. convergence is claimed (that would be OVER-STRONG and not generally true on ℝ³ without tightness), so genuinely WEAKER/THINNER than aubin_lions_R3 (spatial half now PROVED); absorbs the time-equicontinuity modulus (the redundant prior-revision timeCompactnessInput_R3 axiom is dropped; this is the single time-layer axiom); mathlib lacks Bochner-valued Fréchet–Kolmogorov/Aubin–Lions in L²(0,T;X); TRUE and NON-VACUOUS (pins the per-ball restrictions of u to the per-ball a.e.-L²-limits of the subsequence); Temam III.2.1
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
@@ -1381,9 +1396,9 @@ axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: Bochner-time compactness ex
     ∃ (φ : ℕ → ℕ) (u : Time → L2Sigma_R3), StrictMono φ ∧
       AEStronglyMeasurable (fun t => (u t : L2VF_R3))
         (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
-      (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
-        Filter.Tendsto (fun n => ((galSeq (φ n)).u t : L2VF_R3)) Filter.atTop
-          (nhds (u t : L2VF_R3)))
+      (∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
+        Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3)) Filter.atTop
+          (nhds (restrictToBall R (u t : L2VF_R3))))
 
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
@@ -1398,14 +1413,15 @@ hypothesis — it is absorbed into that single axiom).  The conclusion type is e
 `AxiomaticClosure.lean:444–460`).
 
 ASSEMBLY: the genuine spatial half is PROVED axiom-free (the `steklovAvg_spatial_extraction`
-chain). The single irreducible Bochner-time compactness extraction (one subsequence `φ` + an
-a.e.-in-time `L²`-limit curve `u`) is supplied by `galerkinSpaceTimeExtraction_R3` (the isolated
-Aubin–Lions-time axiom, strictly thinner than `aubin_lions_R3`). From that extraction this
-constructor assembles every field axiom-free:
+chain). The single irreducible LOCAL Bochner-time compactness extraction (one subsequence `φ` + a
+measurable limit curve `u` with per-ball `restrictToBall R` a.e.-in-time `L²` convergence) is
+supplied by `galerkinSpaceTimeExtraction_R3` (the isolated Aubin–Lions-time axiom, genuinely
+weaker/thinner than `aubin_lions_R3` — local, no tightness, no global-`L²` claim). From that
+extraction this constructor assembles every field axiom-free:
 * `φ`, `φ_mono`, `u` — directly from the extraction;
 * `u_aestronglyMeasurable` — the extraction's measurability conjunct;
-* `strong_convergence` — for each ball `R`, ball-restriction is `1`-Lipschitz/continuous so the
-  ball-restricted differences converge to `0` a.e. in `t` and are dominated by the constant
+* `strong_convergence` — for each ball `R`, the extraction already delivers the per-ball
+  ball-restricted differences converging to `0` a.e. in `t`, dominated by the constant
   `2‖u₀‖` on the finite window `[0,T]` (via `galerkin_norm_le_u0`); dominated convergence in `L²`
   (`tendsto_Lp_of_tendsto_ae`) gives the `eLpNorm`-in-time convergence.
 
@@ -1419,7 +1435,8 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
     (B : LocalRellichInput) :
     AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq := by
   classical
-  -- The isolated Bochner-time extraction: one subsequence `φ` + an a.e.-`L²`-limit curve `u`.
+  -- The isolated LOCAL Bochner-time extraction: one subsequence `φ` + a measurable limit curve `u`
+  -- with per-ball (`restrictToBall R`) a.e.-in-time `L²` convergence.
   -- The axiom is a `Prop`-existential but the goal `AubinLionsPackage_R3` is a `Type` (a
   -- structure), so the existential witnesses are extracted via `Exists.choose`/`.choose_spec`
   -- (large elimination through `Classical.choice`) rather than `obtain`/`cases`.
@@ -1430,9 +1447,13 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
   have hmeas : AEStronglyMeasurable (fun t => (u t : L2VF_R3))
       (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) :=
     hex.choose_spec.choose_spec.2.1
-  have hae : ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
-      Filter.Tendsto (fun n => ((galSeq (φ n)).u t : L2VF_R3)) Filter.atTop
-        (nhds (u t : L2VF_R3)) :=
+  -- LOCAL (per-ball) a.e.-in-time convergence: for each radius `R`, the ball restrictions
+  -- `restrictToBall R (uₙ t)` converge to `restrictToBall R (u t)` a.e. in `t`.  This is the
+  -- honest content available on ℝ³ — only local compactness (no tightness), so NO global
+  -- `L2VF_R3`-norm a.e. convergence is claimed.
+  have hae : ∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
+      Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3)) Filter.atTop
+        (nhds (restrictToBall R (u t : L2VF_R3))) :=
     hex.choose_spec.choose_spec.2.2
   refine
     { φ := φ
@@ -1462,11 +1483,10 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
   -- `g` is a.e.-strongly-measurable (restrictToBall continuous ∘ measurable `u`)
   have hAESM_g : AEStronglyMeasurable g μ :=
     (continuous_restrictToBall R).comp_aestronglyMeasurable hmeas
-  -- a.e.-in-`t` convergence of the ball restrictions
+  -- a.e.-in-`t` convergence of the ball restrictions — this is exactly the axiom's per-ball
+  -- conjunct at radius `R` (`fSeq n t = restrictToBall R (uₙ t)`, `g t = restrictToBall R (u t)`).
   have hae_ball : ∀ᵐ t ∂μ, Filter.Tendsto (fun n => fSeq n t) Filter.atTop (nhds (g t)) := by
-    rw [hμ] at hae ⊢
-    filter_upwards [hae] with t ht
-    exact ((continuous_restrictToBall R).tendsto _).comp ht
+    rw [hμ, hfSeq, hg]; exact hae R
   -- uniform pointwise bound `‖fSeq n t‖ ≤ ‖u₀‖` on `[0,T]`
   have hbound : ∀ n, ∀ᵐ t ∂μ, ‖fSeq n t‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
     intro n
@@ -1476,19 +1496,12 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
     exact galerkin_norm_le_u0 𝔊 F ν u₀ (φ n) (galSeq (φ n)) ht.1
   -- `g ∈ MemLp 2 μ`: a.e.-bounded by the constant `‖u₀‖` on the finite measure.
   have hMemLp_g : MemLp g 2 μ := by
+    -- `‖g t‖ ≤ ‖u₀‖` a.e. by norm-lsc through the per-ball a.e. limit `hae_ball`: `g t` is the
+    -- limit of `fSeq n t` and each `‖fSeq n t‖ ≤ ‖u₀‖` (`hbound`).  No global `‖u t‖`-bound is
+    -- used, so this works directly from the LOCAL per-ball convergence.
     have hgbd : ∀ᵐ t ∂μ, ‖g t‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
-      -- Step 1: ‖u t‖ ≤ ‖u₀‖ a.e. in μ by norm-lsc through the a.e. pointwise limit `hae`.
-      have h2 : ∀ᵐ t ∂μ, ‖(u t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
-        have hbnd_all : ∀ n, ∀ᵐ t ∂μ, ‖((galSeq (φ n)).u t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
-          intro n
-          rw [hμ]
-          exact (ae_restrict_iff' measurableSet_Icc).mpr
-            (ae_of_all _ fun t ht => galerkin_norm_le_u0 𝔊 F ν u₀ (φ n) (galSeq (φ n)) ht.1)
-        filter_upwards [hae, ae_all_iff.mpr hbnd_all] with t ht hbnd_t
-        exact le_of_tendsto' ht.norm hbnd_t
-      -- Step 2: ‖g t‖ ≤ ‖u t‖ ≤ ‖u₀‖ via 1-Lipschitz `restrictToBall`.
-      filter_upwards [h2] with t ht
-      exact le_trans (norm_restrictToBall_le' R _) ht
+      filter_upwards [hae_ball, ae_all_iff.mpr hbound] with t ht hbnd_t
+      exact le_of_tendsto' ht.norm hbnd_t
     exact MemLp.of_bound hAESM_g _ hgbd
   -- `UnifIntegrable fSeq 2 μ`: from the uniform a.e. bound ‖fSeq n t‖ ≤ ‖u₀‖.
   -- For each ε > 0, pick δ so that for small-measure sets s, the indicator eLpNorm ≤ ε.

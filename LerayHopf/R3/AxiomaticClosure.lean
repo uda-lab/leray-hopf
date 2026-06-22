@@ -514,8 +514,9 @@ structure AubinLionsPackage_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
 
 The former `axiom aubin_lions_R3` is GONE.  Its spatial half is genuinely PROVED axiom-free
 (the `steklovAvg_spatial_extraction` chain, fed by P3), and its time half is isolated as the
-strictly-thinner `galerkinSpaceTimeExtraction_R3` (the Bochner-time compactness extraction,
-mathlib lacks the Bochner-valued Fréchet–Kolmogorov / Aubin–Lions theorem in `L²(0,T;X)`).
+strictly-thinner `galerkinSpaceTimeExtraction_R3` (the LOCAL Bochner-time compactness extraction —
+per-ball a.e.-in-time L² convergence, not global; mathlib lacks the Bochner-valued
+Fréchet–Kolmogorov / Aubin–Lions theorem in `L²(0,T;X)`).
 The `AubinLionsPackage_R3` is now produced by `aubinLionsPackage_R3_of_timeCompactness`
 (`LerayHopf/R3/AubinLionsLimitPassage.lean`), which is DOWNSTREAM of this file, so the package
 assembly (`build_galerkin_package_R3_of_galSeq`) is RELOCATED to the downstream

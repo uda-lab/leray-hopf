@@ -32,8 +32,8 @@
 #           through the axiom-free galerkinSolutionData_unconditional over schemeOfBasis B.
 #     NOTE: aubin_lions_R3 REMOVED (issue #15) — its spatial half PROVED (steklovAvg_spatial_extraction
 #           chain); its time content SWAPPED 1-for-1 for the single strictly-thinner UNCONDITIONAL
-#           axiom galerkinSpaceTimeExtraction_R3 (Bochner-time a.e.-L² extraction, which absorbs the
-#           time-equicontinuity modulus); net R3 project axioms 4.
+#           axiom galerkinSpaceTimeExtraction_R3 (LOCAL Bochner-time per-ball a.e.-L² extraction —
+#           not global; absorbs the time-equicontinuity modulus); net R3 project axioms 4.
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.
@@ -169,9 +169,10 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 #    galerkinSolutionData_unconditional over schemeOfBasis B)
 #   (aubin_lions_R3 REMOVED — issue #15 — its spatial half PROVED via the
 #    steklovAvg_spatial_extraction chain; its time content SWAPPED 1-for-1 for the single
-#    strictly-thinner UNCONDITIONAL axiom galerkinSpaceTimeExtraction_R3 (the Bochner-time a.e.-L²
-#    extraction, which absorbs the time-equicontinuity modulus, so no separate modulus axiom is
-#    needed; the redundant prior-revision timeCompactnessInput_R3 axiom is dropped); net R3 axioms 4)
+#    strictly-thinner UNCONDITIONAL axiom galerkinSpaceTimeExtraction_R3 (the LOCAL Bochner-time
+#    per-ball a.e.-L² extraction — not global, no tightness — which absorbs the time-equicontinuity
+#    modulus, so no separate modulus axiom is needed; the redundant prior-revision
+#    timeCompactnessInput_R3 axiom is dropped); net R3 axioms 4)
 # ---------------------------------------------------------------------------
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound

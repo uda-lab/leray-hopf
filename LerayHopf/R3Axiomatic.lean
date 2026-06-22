@@ -13,10 +13,11 @@ which depends on four project axioms:
   thin density `Prop`; it REPLACED the former 6-field `r3GalerkinScheme_exists` structure
   existential (now a discharged `theorem` resting on this density)
 - `r3_NSForms_exist` (AX-4): ℝ³ NS convection form exists
-- `galerkinSpaceTimeExtraction_R3` (issue #15): the single UNCONDITIONAL Bochner-time a.e.-L²
-  compactness extraction (the 1-for-1 thin replacement of `aubin_lions_R3`'s time content; it
-  absorbs the time-equicontinuity modulus, so no separate `timeCompactnessInput_R3` axiom is
-  needed; mathlib lacks Bochner Fréchet–Kolmogorov in L²(0,T;X))
+- `galerkinSpaceTimeExtraction_R3` (issue #15): the single UNCONDITIONAL, LOCAL Bochner-time
+  compactness extraction — per-ball (`restrictToBall R`) a.e.-in-time L² convergence, NOT global
+  (no tightness on ℝ³) — the 1-for-1 thin (genuinely weaker) replacement of `aubin_lions_R3`'s time
+  content; it absorbs the time-equicontinuity modulus, so no separate `timeCompactnessInput_R3` axiom
+  is needed; mathlib lacks Bochner Fréchet–Kolmogorov in L²(0,T;X)
 - `galerkin_limit_passage_R3` (AX-4): limit passage to weak NS solution on ℝ³
 
 `galerkin_ode_solution_R3` (former AX-2) is NO LONGER an axiom — it is discharged (issue #10)

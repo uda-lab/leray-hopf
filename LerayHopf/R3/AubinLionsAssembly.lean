@@ -20,7 +20,8 @@ lands here, one level below `AubinLionsLimitPassage`, mirroring the #10/#24 caps
 
 * REMOVED: `aubin_lions_R3` (its spatial half PROVED, its time half isolated thinner).
 * ADDED: `galerkinSpaceTimeExtraction_R3` (declared in `AubinLionsLimitPassage.lean`) — the single
-  UNCONDITIONAL Bochner-time compactness extraction, supplied to
+  UNCONDITIONAL, LOCAL Bochner-time compactness extraction (per-ball `restrictToBall R` a.e.-in-time
+  L² convergence, not global), supplied to
   `aubinLionsPackage_R3_of_timeCompactness`.  Stating it unconditionally absorbs the
   time-equicontinuity modulus, so the time layer rests on exactly THIS ONE axiom; the redundant
   `timeCompactnessInput_R3` axiom from the prior revision of this PR (which only fed this extraction)
