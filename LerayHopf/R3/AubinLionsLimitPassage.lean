@@ -1317,6 +1317,23 @@ private theorem steklovAvg_spatial_extraction (𝔊 : R3GalerkinScheme) (F : R3N
       _ ≤ M ^ 2 := by
           rw [hM]; exact pow_le_pow_left₀ (by positivity) (le_max_right _ _) 2
 
+/-- **Raw-curve time-equicontinuity, uniform in `n` (the Arzelà–Ascoli input).**  The
+`TimeCompactnessInput` modulus is stated directly on the raw Galerkin curves, so it already gives
+uniform-in-`n` L² equicontinuity of `t ↦ (galSeq n).u t` on `[0,T]`: for every `ε > 0` there is
+`δ > 0` such that for all `n` and all `s,t ∈ [0,T]` with `|s − t| < δ`,
+`‖(galSeq n).u s − (galSeq n).u t‖ < ε`.  This is a thin restatement of
+`Htime.uniform_time_modulus`, isolated as the named Arzelà–Ascoli equicontinuity hypothesis the C2
+assembly consumes (the spatial precompactness at sample times being supplied separately by the
+Steklov averages + `steklovAvg_spatial_extraction`). -/
+private theorem galerkin_curves_equicontinuous (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (T : ℝ) (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (Htime : TimeCompactnessInput 𝔊 F ν T u₀ galSeq) :
+    ∀ ε : ℝ, 0 < ε → ∃ δ : ℝ, 0 < δ ∧ ∀ (n : ℕ) (s t : ℝ),
+      s ∈ Set.Icc (0 : ℝ) T → t ∈ Set.Icc (0 : ℝ) T → |s - t| < δ →
+      ‖((galSeq n).u s : L2VF_R3) - ((galSeq n).u t : L2VF_R3)‖ < ε :=
+  Htime.uniform_time_modulus
+
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
 /-- **Aubin–Lions package on ℝ³ from the isolated time-compactness input (OPEN — `sorry`).**
