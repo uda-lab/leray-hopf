@@ -25,16 +25,21 @@
 --     LerayHopf.galerkin_limit_passage_R3
 --     LerayHopf.curlSchwartzDense_holds
 --     LerayHopf.r3_NSForms_exist
---     LerayHopf.galerkinSpaceTimeExtraction_R3
+--     LerayHopf.galerkin_spacetime_precompact_R3
+--     LerayHopf.galerkin_weakLimit_R3
 --     (spatial_compactness_R3 REMOVED — issue #2 — now a theorem via the FK chain)
 --     (r3GalerkinScheme_exists REMOVED — issue #21 — now a theorem, SWAPPED for the
 --      thinner curlSchwartzDense_holds density axiom)
 --     (galerkin_ode_solution_R3 REMOVED — issue #10 — discharged via the axiom-free
 --      galerkinSolutionData_unconditional over schemeOfBasis B)
---     (aubin_lions_R3 REMOVED — issue #15 — spatial half PROVED, time content SWAPPED 1-for-1 for the
---      single strictly-thinner UNCONDITIONAL galerkinSpaceTimeExtraction_R3 (it absorbs the
---      time-equicontinuity modulus, so no separate modulus axiom is needed; the redundant
---      prior-revision timeCompactnessInput_R3 axiom is dropped); net R3 4)
+--     (aubin_lions_R3 REMOVED — issue #15 — spatial half PROVED, time content SWAPPED for the
+--      single UNCONDITIONAL galerkinSpaceTimeExtraction_R3)
+--     (galerkinSpaceTimeExtraction_R3 REMOVED — issue #44 — now a THEOREM: the Aubin–Lions-in-time
+--      diagonalization is PROVED sorry-free (ArzelaAscoliTime.lean); irreducible content isolated into
+--      TWO strictly-thinner SOUND scheme-independent axioms galerkin_spacetime_precompact_R3
+--      (refine-capable local Aubin–Lions–Simon spacetime precompactness) + galerkin_weakLimit_R3
+--      (a.e.-t per-ball limits ⇒ measurable weak limit in L2Sigma_R3); the over-strong strong-L²
+--      time-modulus route flagged by codex P1 is NOT used; net R3 5)
 --
 --   lower_bound_from_inverse_square_lifespan (Core representative) — EXACTLY:
 --     propext  Classical.choice  Quot.sound  (no project axioms)

@@ -19,21 +19,27 @@
 #           the axiom-free galerkinSolutionData_torus (proved finite-dim Galerkin ODE over
 #           velocitySpan n); net torus project axioms now 3.
 #
-#   exists_lerayHopf_r3_axiomatic — exactly 7 axioms:
+#   exists_lerayHopf_r3_axiomatic — exactly 8 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
 #     LerayHopf.galerkin_limit_passage_R3
 #     LerayHopf.curlSchwartzDense_holds
 #     LerayHopf.r3_NSForms_exist
-#     LerayHopf.galerkinSpaceTimeExtraction_R3  (4 project)
+#     LerayHopf.galerkin_spacetime_precompact_R3
+#     LerayHopf.galerkin_weakLimit_R3  (5 project)
 #     NOTE: spatial_compactness_R3 REMOVED (issue #2) — now a theorem via the FK chain.
 #     NOTE: r3GalerkinScheme_exists REMOVED (issue #21) — now a theorem, SWAPPED for the
 #           thinner curlSchwartzDense_holds density axiom.
 #     NOTE: galerkin_ode_solution_R3 REMOVED (issue #10) — discharged by routing the capstone
 #           through the axiom-free galerkinSolutionData_unconditional over schemeOfBasis B.
 #     NOTE: aubin_lions_R3 REMOVED (issue #15) — its spatial half PROVED (steklovAvg_spatial_extraction
-#           chain); its time content SWAPPED 1-for-1 for the single strictly-thinner UNCONDITIONAL
-#           axiom galerkinSpaceTimeExtraction_R3 (LOCAL Bochner-time per-ball a.e.-L² extraction —
-#           not global; absorbs the time-equicontinuity modulus); net R3 project axioms 4.
+#           chain); its time content SWAPPED for the single UNCONDITIONAL galerkinSpaceTimeExtraction_R3.
+#     NOTE: galerkinSpaceTimeExtraction_R3 REMOVED (issue #44) — converted to a THEOREM; the
+#           Aubin–Lions-in-time diagonalization is PROVED sorry-free (ArzelaAscoliTime.lean), and the
+#           irreducible content is isolated into TWO strictly-thinner SOUND scheme-independent axioms:
+#           galerkin_spacetime_precompact_R3 (refine-capable LOCAL Aubin–Lions–Simon spacetime
+#           precompactness) and galerkin_weakLimit_R3 (a.e.-t per-ball limits ⇒ measurable weak limit
+#           in L2Sigma_R3). The over-strong strong-L² time-modulus route (codex P1) is NOT used.
+#           Net R3 project axioms 5.
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.
@@ -161,7 +167,7 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 
 # ---------------------------------------------------------------------------
 # Pin 2: exists_lerayHopf_r3_axiomatic
-#   4 project axioms + 3 kernel = 7 total
+#   5 project axioms + 3 kernel = 8 total
 #   (spatial_compactness_R3 removed — issue #2 — now a theorem via the FK chain)
 #   (r3GalerkinScheme_exists removed — issue #21 — now a theorem, SWAPPED for the
 #    thinner curlSchwartzDense_holds density axiom)
@@ -169,17 +175,27 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 #    galerkinSolutionData_unconditional over schemeOfBasis B)
 #   (aubin_lions_R3 REMOVED — issue #15 — its spatial half PROVED via the
 #    steklovAvg_spatial_extraction chain; its time content SWAPPED 1-for-1 for the single
-#    strictly-thinner UNCONDITIONAL axiom galerkinSpaceTimeExtraction_R3 (the LOCAL Bochner-time
-#    per-ball a.e.-L² extraction — not global, no tightness — which absorbs the time-equicontinuity
-#    modulus, so no separate modulus axiom is needed; the redundant prior-revision
-#    timeCompactnessInput_R3 axiom is dropped); net R3 axioms 4)
+#    UNCONDITIONAL axiom galerkinSpaceTimeExtraction_R3; net R3 axioms 4)
+#   (galerkinSpaceTimeExtraction_R3 REMOVED — issue #44 — converted to a THEOREM: the
+#    Aubin–Lions-in-time diagonalization (a.e.-t extraction via tendstoInMeasure +
+#    Cantor diagonal over balls + measurability) is now PROVED sorry-free in
+#    LerayHopf/R3/ArzelaAscoliTime.lean.  The irreducible content is isolated into TWO
+#    strictly-thinner, SOUND, scheme-independent residual axioms:
+#      - galerkin_spacetime_precompact_R3 (refine-capable LOCAL Aubin–Lions–Simon
+#        spacetime precompactness in L²(0,T;L²(B_k)) — no tightness, no global-L², no
+#        strong-norm time-equicontinuity; replaces the over-strong equicontinuity route
+#        flagged by codex P1), and
+#      - galerkin_weakLimit_R3 (a.e.-t per-ball limits ⇒ measurable weak limit in
+#        L2Sigma_R3; Banach–Alaoglu + div-free weak-closedness, not in mathlib).
+#    Net R3 project axioms 5; the over-strong strong-L² time-modulus axiom is NOT used.)
 # ---------------------------------------------------------------------------
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound
    LerayHopf.galerkin_limit_passage_R3
    LerayHopf.curlSchwartzDense_holds
    LerayHopf.r3_NSForms_exist
-   LerayHopf.galerkinSpaceTimeExtraction_R3"
+   LerayHopf.galerkin_spacetime_precompact_R3
+   LerayHopf.galerkin_weakLimit_R3"
 
 # ---------------------------------------------------------------------------
 # Pin 3: Core torus representative — no project axioms, no sorryAx

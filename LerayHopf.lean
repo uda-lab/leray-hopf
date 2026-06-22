@@ -64,6 +64,7 @@ import LerayHopf.R3.GalerkinODE
 import LerayHopf.R3.GalerkinODEExistence
 import LerayHopf.R3.GalerkinODESolve
 import LerayHopf.R3.GalerkinODECapstone
+import LerayHopf.R3.ArzelaAscoliTime      -- issue #44: T0.1/T0.2 axioms + T1–T4 scaffold
 import LerayHopf.R3.AubinLionsLimitPassage
 import LerayHopf.R3.CurlDensity
 import LerayHopf.R3.FrechetKolmogorov
