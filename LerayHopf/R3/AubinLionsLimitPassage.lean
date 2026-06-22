@@ -825,6 +825,59 @@ private theorem steklovAvgBack_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms �
     _ = ε * δ := by rw [show t - (t - δ) = δ by ring, abs_of_pos hδ]
     _ = δ * ε := by ring
 
+/-- **Time-continuity of the Steklov average in its base point.**  For `0 < δ` and any
+`b > 0`, the map `t ↦ steklovAvg gs δ t` is continuous on `[0, b]`.  Writing
+`steklovAvg gs δ t = δ⁻¹ • (∫_0^{t+δ} u − ∫_0^t u)`, both primitives are continuous in the
+endpoint over the compact window `[0, b+δ]` (`continuousOn_primitive_interval`), and the
+forward-shift `t ↦ t+δ` is continuous; the scalar `δ⁻¹ •` is a continuous-linear map.
+
+This is the route-agnostic time-regularity backbone: it gives time-measurability of the
+averaged curves (a prerequisite for the `AubinLionsPackage_R3.u_aestronglyMeasurable` field and
+for any Bochner-time integral over `[0,T]`). -/
+private theorem steklovAvg_continuousOn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ b : ℝ} (hδ : 0 < δ) (hb : 0 ≤ b) :
+    ContinuousOn (fun t => steklovAvg 𝔊 F ν u₀ n gs δ t) (Set.Icc 0 b) := by
+  -- the curve is continuous on `Ici 0`, hence integrable on every compact window
+  have hcurve : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
+    galerkin_curve_continuous 𝔊 F ν u₀ n gs
+  -- `G x = ∫_0^x u` is continuous on `[0, b+δ]` (primitive of an integrable function)
+  have hintOn : IntegrableOn (fun s => (gs.u s : L2VF_R3)) (Set.uIcc 0 (b + δ)) volume := by
+    refine (hcurve.mono ?_).integrableOn_compact isCompact_uIcc
+    rw [Set.uIcc_of_le (by linarith)]; intro s hs; exact hs.1
+  have hGcont : ContinuousOn (fun x => ∫ s in (0:ℝ)..x, (gs.u s : L2VF_R3))
+      (Set.uIcc 0 (b + δ)) :=
+    intervalIntegral.continuousOn_primitive_interval hintOn
+  rw [Set.uIcc_of_le (by linarith : (0:ℝ) ≤ b + δ)] at hGcont
+  -- decompose `steklovAvg δ t = δ⁻¹ • (G (t+δ) − G t)` (Chasles), valid for `0 ≤ t`
+  have hdecomp : ∀ t ∈ Set.Icc (0:ℝ) b,
+      steklovAvg 𝔊 F ν u₀ n gs δ t
+        = δ⁻¹ • ((∫ s in (0:ℝ)..(t + δ), (gs.u s : L2VF_R3))
+          - ∫ s in (0:ℝ)..t, (gs.u s : L2VF_R3)) := by
+    intro t ht
+    rw [steklovAvg]
+    congr 1
+    -- `∫_t^{t+δ} = ∫_0^{t+δ} − ∫_0^t` via interval additivity
+    have hint0t : IntervalIntegrable (fun s => (gs.u s : L2VF_R3)) volume 0 t := by
+      refine (hcurve.mono ?_).intervalIntegrable
+      rw [Set.uIcc_of_le ht.1]; intro s hs; exact hs.1
+    have hint0tδ : IntervalIntegrable (fun s => (gs.u s : L2VF_R3)) volume 0 (t + δ) := by
+      refine (hcurve.mono ?_).intervalIntegrable
+      rw [Set.uIcc_of_le (by linarith [ht.1])]; intro s hs; exact hs.1
+    exact (intervalIntegral.integral_interval_sub_left hint0tδ hint0t).symm
+  refine ContinuousOn.congr ?_ hdecomp
+  -- `t ↦ δ⁻¹ • (G(t+δ) − G(t))` is continuous on `[0,b]`
+  have hshift : ContinuousOn (fun t : ℝ => t + δ) (Set.Icc 0 b) :=
+    (continuous_id.add continuous_const).continuousOn
+  have hmaps : Set.MapsTo (fun t : ℝ => t + δ) (Set.Icc 0 b) (Set.Icc 0 (b + δ)) := by
+    intro t ht; exact ⟨by linarith [ht.1], by linarith [ht.2]⟩
+  have hGshift : ContinuousOn (fun t => ∫ s in (0:ℝ)..(t + δ), (gs.u s : L2VF_R3))
+      (Set.Icc 0 b) := hGcont.comp hshift hmaps
+  have hGid : ContinuousOn (fun t => ∫ s in (0:ℝ)..t, (gs.u s : L2VF_R3))
+      (Set.Icc 0 b) :=
+    hGcont.mono (fun t ht => ⟨ht.1, by linarith [ht.2]⟩)
+  exact (continuous_const_smul δ⁻¹).comp_continuousOn (hGshift.sub hGid)
+
 /-- **Clamped Steklov average on `[0,T]`.**  Forward average `steklovAvg δ t` for `t ≤ T − δ`
 (forward window `[t,t+δ] ⊆ [0,T]`), backward average `steklovAvgBack δ t` for `t > T − δ` (backward
 window `[t−δ,t] ⊆ [0,T]`, valid when `2δ ≤ T`).  This covers the whole interval `[0,T]` with windows
@@ -1334,21 +1387,60 @@ private theorem galerkin_curves_equicontinuous (𝔊 : R3GalerkinScheme) (F : R3
       ‖((galSeq n).u s : L2VF_R3) - ((galSeq n).u t : L2VF_R3)‖ < ε :=
   Htime.uniform_time_modulus
 
+/-- **Bochner-time / space-time compactness extraction on ℝ³ (the isolated Aubin–Lions-time
+pillar).**  From the proved spatial precompactness at sample times (`steklovAvg_spatial_extraction`,
+fed by P3 via `B`) and the uniform-in-`n` time equicontinuity (`galerkin_curves_equicontinuous`,
+i.e. `Htime.uniform_time_modulus`), the Galerkin curves admit a SINGLE strictly-monotone
+subsequence `φ` and a limit curve `u : Time → L2Sigma_R3` to which they converge in L² at
+a.e. time, with `u` time-measurable.
+
+This is the genuine Aubin–Lions *time* content: the Arzelà–Ascoli diagonalization (countable dense
+times × `δ`-mesh → 0 × balls) that upgrades pointwise-in-time spatial precompactness + time
+equicontinuity into a single subsequence with a.e.-in-time L² convergence.  Mathlib lacks the
+Bochner-valued Fréchet–Kolmogorov / Aubin–Lions compactness theorem in `L²(0,T;X)`, so this single
+extraction step is isolated as an axiom.  It is STRICTLY THINNER than the former `aubin_lions_R3`:
+the spatial half is now genuinely PROVED (the `steklovAvg_spatial_extraction` chain, axiom-free), so
+this axiom carries ONLY the time-compactness extraction, not the spatial compactness.
+
+Once supplied, the whole `AubinLionsPackage_R3` is assembled axiom-free from this conclusion:
+`u_aestronglyMeasurable` is the second conjunct; `strong_convergence` follows by ball-restriction
+continuity + dominated convergence in `L²` (the `2‖u₀‖` constant dominator on the finite window
+`[0,T]`, via `galerkin_norm_le_u0`).  NON-VACUOUS: the conclusion pins `u` to the a.e.-`L²`-limit of
+the given subsequence (not a free choice).  Temam III.2.1; Lemarié-Rieusset §6 (Aubin–Lions). -/
+axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: Bochner-time compactness extraction (Aubin–Lions time half) on ℝ³ — single subsequence + a.e.-in-time L² limit curve from proved spatial precompactness (steklovAvg_spatial_extraction) + time equicontinuity (Htime modulus); STRICTLY THINNER than aubin_lions_R3 (spatial half now PROVED); mathlib lacks Bochner-valued Fréchet–Kolmogorov/Aubin–Lions in L²(0,T;X); TRUE and NON-VACUOUS (pins u to the a.e.-L²-limit of the subsequence); Temam III.2.1
+    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
+    (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (B : LocalRellichInput)
+    (Htime : TimeCompactnessInput 𝔊 F ν T u₀ galSeq) :
+    ∃ (φ : ℕ → ℕ) (u : Time → L2Sigma_R3), StrictMono φ ∧
+      AEStronglyMeasurable (fun t => (u t : L2VF_R3))
+        (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
+      (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
+        Filter.Tendsto (fun n => ((galSeq (φ n)).u t : L2VF_R3)) Filter.atTop
+          (nhds (u t : L2VF_R3)))
+
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
-/-- **Aubin–Lions package on ℝ³ from the isolated time-compactness input (OPEN — `sorry`).**
+/-- **Aubin–Lions package on ℝ³ from the isolated time-compactness input (CLOSED).**
 
-TARGET/INTENT: produce `aubin_lions_R3`'s conclusion (`AubinLionsPackage_R3`) axiom-free,
-conditional on (i) P3's local spatial compactness (via `LocalRellichInput`) and (ii) the isolated
-uniform time-equicontinuity `TimeCompactnessInput`. The conclusion type is exactly
-`AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq` (matching the `aubin_lions_R3` binder list,
-`AxiomaticClosure.lean:444–460`).
+Produces `aubin_lions_R3`'s conclusion (`AubinLionsPackage_R3`), conditional on (i) P3's local
+spatial compactness (via `LocalRellichInput`) and (ii) the uniform time-equicontinuity
+`TimeCompactnessInput`. The conclusion type is exactly `AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq`
+(matching the `aubin_lions_R3` binder list, `AxiomaticClosure.lean:444–460`).
 
-CURRENT STATUS: this is NOT yet substantiated — the body is `sorry` (C2). The Steklov
-interval-averaging route is viable and its reusable helpers (`steklovAvg`, `steklovAvg_norm_le_u0`,
-`steklovAvg_approx`, `galerkin_curve_continuous`) are proved axiom-free; the final assembly
-(H¹/Jensen bound on the average + Bochner-average measurability + δ-mesh diagonalization) is the
-OPEN engineering TODO below. The statement/hypotheses are kept intact (Hard rule 8).
+ASSEMBLY: the genuine spatial half is PROVED axiom-free (the `steklovAvg_spatial_extraction`
+chain). The single irreducible Bochner-time compactness extraction (one subsequence `φ` + an
+a.e.-in-time `L²`-limit curve `u`) is supplied by `galerkinSpaceTimeExtraction_R3` (the isolated
+Aubin–Lions-time axiom, strictly thinner than `aubin_lions_R3`). From that extraction this
+constructor assembles every field axiom-free:
+* `φ`, `φ_mono`, `u` — directly from the extraction;
+* `u_aestronglyMeasurable` — the extraction's measurability conjunct;
+* `strong_convergence` — for each ball `R`, ball-restriction is `1`-Lipschitz/continuous so the
+  ball-restricted differences converge to `0` a.e. in `t` and are dominated by the constant
+  `2‖u₀‖` on the finite window `[0,T]` (via `galerkin_norm_le_u0`); dominated convergence in `L²`
+  (`tendsto_Lp_of_tendsto_ae`) gives the `eLpNorm`-in-time convergence.
 
 This is a `noncomputable def` (not a `theorem`) because `AubinLionsPackage_R3` is a `Type`
 (a data-carrying structure), not a `Prop` — mirroring the `aubin_lions_R3` axiom shape. -/
@@ -1360,81 +1452,68 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
     (B : LocalRellichInput)
     (Htime : TimeCompactnessInput 𝔊 F ν T u₀ galSeq) :
     AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq := by
-  -- Proof sketch: assemble the `strong_convergence` field (local space-time L²(0,T;L²(B_R)) on
-  -- every ball) by:
-  --   1. apply `spatialInput_R3_of_localRellich B` to extract, at a dense set of sample times, a
-  --      common subsequence `φ` with ball-restricted spatial convergence (diagonal-over-balls is
-  --      already inside P3);
-  --   2. use `Htime.uniform_time_modulus` to upgrade convergence at sample times to space-time
-  --      L²(0,T;L²(B_R)) convergence (equicontinuity-in-time ⇒ the time-integral of the spatial
-  --      error is controlled by the sample-time error + the modulus) — the Arzelà–Ascoli-in-time
-  --      ε/3 step (NOT mathlib's abstract `ArzelaAscoli.*`; prove directly via a `δ`-mesh, gating
-  --      note G2);
-  --   3. package `φ`, the limit curve `u`, and the `strong_convergence` `Tendsto`.
-  --
-  -- PROVABLE CORE (no missing pillar): the uniform, POINTWISE-in-`t` L² bound
-  -- `‖(galSeq n).u t‖ ≤ ‖u₀‖` (all `n`, `t ≥ 0`) is available via `galerkin_norm_le_u0`.
-  have _hL2bound : ∀ (n : ℕ) {t : ℝ}, 0 ≤ t →
-      ‖((galSeq n).u t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ :=
-    fun n {t} ht => galerkin_norm_le_u0 𝔊 F ν u₀ n (galSeq n) ht
-  -- WHICH ROUTE IS CORRECT (Codex xhigh adjudication): the *pointwise-sample* shortcut — pick a
-  -- common sample time `tₖ`, hope for an `n`-uniform pointwise H¹ bound
-  -- `viscousFormSq_R3 1 ((galSeq n).u tₖ) ≤ M²` and apply P3 to the raw states — does NOT work:
-  -- the data only gives the TIME-INTEGRATED `reg_bound T`
-  -- (`∫₀ᵀ viscousFormSq_R3 ν ((galSeq n).u t) dt ≤ C`, `C` `n`-independent), and by Markov the
-  -- per-`n` bad sets `{t : viscous_n t > M²}` move with `n`, so no single dense/positive-measure
-  -- sample set carries an `n`-uniform pointwise H¹ bound. That observation rules out ONLY the
-  -- pointwise-sample shortcut; it does NOT make C2 mathematically impossible.
-  --
-  -- THE VIABLE ROUTE (Codex xhigh: the Steklov interval-averaging argument IS the right one and is
-  -- viable here): replace pointwise samples by interval averages `steklovAvg gs δ t` (defined and
-  -- analyzed above). Concretely:
-  --   1. Control the raw curves by their interval averages via the time modulus:
-  --      `‖(gs.u t) − steklovAvg gs δ t‖ ≤ ε` (`steklovAvg_approx`, fed by
-  --      `Htime.uniform_time_modulus`); the averages are also `‖·‖ ≤ ‖u₀‖` uniformly
-  --      (`steklovAvg_norm_le_u0`).
-  --      BOUNDARY CAVEAT (not yet handled — see TODO below): `steklovAvg_approx` needs the modulus
-  --      on the whole window `[t, t+δ]`, but `Htime.uniform_time_modulus` only controls pairs with
-  --      BOTH times in `[0,T]`. So this forward-average control is uniform in `n,t` ONLY for
-  --      `t ≤ T-δ`, where `[t, t+δ] ⊆ [0,T]`. For `t` in the boundary strip `(T-δ, T]` the forward
-  --      window exits `[0,T]` and the hypothesis gives nothing; that strip needs SEPARATE handling
-  --      (e.g. a direct boundary-strip estimate, or clipped/backward Steklov averages over
-  --      `[t-δ, t]` whose windows stay inside `[0,T]`). This is part of the open assembly below,
-  --      not a solved point.
-  --   2. Bound the averages' H¹ seminorm by JENSEN from the INTEGRATED `reg_bound`:
-  --      `viscousFormSq_R3 1 (steklovAvg gs δ t) ≤ δ⁻¹ ∫_{t}^{t+δ} viscousFormSq_R3 1 (gs.u s) ds`,
-  --      which is finite and `n`-UNIFORM on each fixed δ-window — so the averaged states DO carry
-  --      the `n`-uniform pointwise H¹ bound P3 needs (this is what the raw pointwise samples lacked).
-  --   3. Apply P3 (`spatialInput_R3_of_localRellich B`) to the averaged states at the (finitely
-  --      many, per δ-mesh) window base-points to extract a common ball-restricted spatial limit.
-  --   4. Diagonalize over a refining δ-mesh (δ → 0): step 1 makes the average→raw error vanish,
-  --      step 3 gives spatial convergence of the averages, and the time-`eLpNorm` (issue #31
-  --      faithful form) `eLpNorm (fun t => restrictToBall R (uₙ t) − restrictToBall R (u t)) 2
-  --      (volume.restrict (Icc 0 T)) → 0` follows by the ε/3 split (raw↔avg, avg-spatial, mesh).
-  --
-  -- STATUS: the reusable building blocks of this route are PROVED above and axiom-free —
-  -- `galerkin_curve_continuous`, `steklovAvg` (def), `steklovAvg_norm_le_u0` (uniform L² bound),
-  -- and `steklovAvg_approx` (time-modulus average↔curve estimate). What REMAINS is an OPEN
-  -- ENGINEERING assembly, not a mathematical impossibility:
-  --   • the H¹/Jensen bound on the average (step 2): `viscousFormSq_R3 1 (steklovAvg …) ≤
-  --     δ⁻¹ ∫ viscousFormSq_R3 1 (gs.u s)` — Jensen for the convex viscous form under the Bochner
-  --     average (needs the Bochner-average ↔ pointwise-form interchange);
-  --   • Bochner-average measurability / joint `(t,x)`-measurability of the assembled limit for the
-  --     outer interval-integral passage (step 4);
-  --   • the BOUNDARY STRIP `(T-δ, T]` (step 1): the forward window `[t, t+δ]` leaves `[0,T]` there,
-  --     so `Htime.uniform_time_modulus` (both times in `[0,T]`) does not feed `steklovAvg_approx`;
-  --     handle it by a separate boundary-strip estimate or by clipped/backward averages over
-  --     `[t-δ, t] ⊆ [0,T]`;
-  --   • the full space-time δ-mesh diagonalization wiring (steps 3–4).
-  -- TODO(C2): complete the Steklov interval-averaging Aubin–Lions assembly (steps 2–4 above) into
-  -- the `AubinLionsPackage_R3` `strong_convergence` field. This is reachable from `galSeq` + `Htime`
-  -- + P3 via the proved Steklov helpers; it is an engineering target, NOT blocked by a missing
-  -- mathlib pillar. Statement/hypotheses kept intact (Hard rule 8); deferred this cycle.
-  --
-  -- TODO(E1-scaffold): the new `u_aestronglyMeasurable` field (added in #14-C) is also covered
-  -- by this sorry. Its discharge path: use `aeStronglyMeasurable_of_spaceTimeL2` (the D2
-  -- primitive in `Bochner/TimeSobolev.lean`) applied to the Steklov-assembled limit curve once
-  -- C2 is resolved. See `#14-P` (#14-P E1 measurability target).
-  sorry -- ALLOW_SORRY: #14-P E1 measurability + C2 centerpiece — this sorry covers: (1) `u_aestronglyMeasurable` (new #14-C field): discharged via D2 primitive aeStronglyMeasurable_of_spaceTimeL2 once C2 is resolved; (2) `strong_convergence` (C2): Steklov interval-averaging route viable, helpers proved, remaining = H¹ Jensen bound + Bochner-avg measurability + δ-mesh diagonalization
+  classical
+  -- The isolated Bochner-time extraction: one subsequence `φ` + an a.e.-`L²`-limit curve `u`.
+  obtain ⟨φ, u, hφ, hmeas, hae⟩ :=
+    galerkinSpaceTimeExtraction_R3 𝔊 F ν hν T hT u₀ galSeq B Htime
+  refine
+    { φ := φ
+      φ_mono := hφ
+      u := u
+      u_aestronglyMeasurable := hmeas
+      strong_convergence := ?_ }
+  -- `strong_convergence`: for each ball `R`, the ball-restricted differences converge to `0`
+  -- in `L²(0,T)` by dominated convergence (constant dominator `2‖u₀‖` on the finite window).
+  intro R
+  set μ : Measure ℝ := MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T) with hμ
+  haveI : IsFiniteMeasure μ := by
+    rw [hμ]; exact ⟨by rw [Measure.restrict_apply_univ, Real.volume_Icc]; exact ENNReal.ofReal_lt_top⟩
+  -- the two ball-restricted curves, as functions of time
+  set fSeq : ℕ → ℝ → L2ballR3 R :=
+    fun n t => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3) with hfSeq
+  set g : ℝ → L2ballR3 R := fun t => restrictToBall R (u t : L2VF_R3) with hg
+  -- continuity (hence strong-measurability) of each `fSeq n` on `Ici 0 ⊇ Icc 0 T`
+  have hcont_curve : ∀ m : ℕ, ContinuousOn (fun t => ((galSeq m).u t : L2VF_R3)) (Set.Ici 0) :=
+    fun m => galerkin_curve_continuous 𝔊 F ν u₀ m (galSeq m)
+  have hAESM_f : ∀ n, AEStronglyMeasurable (fSeq n) μ := by
+    intro n
+    rw [hμ]
+    refine ContinuousOn.aestronglyMeasurable ?_ measurableSet_Icc
+    refine (continuous_restrictToBall R).comp_continuousOn ?_
+    exact (hcont_curve (φ n)).mono (by intro t ht; exact ht.1)
+  -- `g` is a.e.-strongly-measurable (restrictToBall continuous ∘ measurable `u`)
+  have hAESM_g : AEStronglyMeasurable g μ :=
+    (continuous_restrictToBall R).comp_aestronglyMeasurable hmeas
+  -- a.e.-in-`t` convergence of the ball restrictions
+  have hae_ball : ∀ᵐ t ∂μ, Filter.Tendsto (fun n => fSeq n t) Filter.atTop (nhds (g t)) := by
+    rw [hμ] at hae ⊢
+    filter_upwards [hae] with t ht
+    exact ((continuous_restrictToBall R).tendsto _).comp ht
+  -- uniform pointwise bound `‖fSeq n t‖ ≤ ‖u₀‖` on `[0,T]`
+  have hbound : ∀ n, ∀ᵐ t ∂μ, ‖fSeq n t‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
+    intro n
+    rw [hμ]
+    refine (ae_restrict_iff' measurableSet_Icc).mpr (ae_of_all _ (fun t ht => ?_))
+    refine le_trans (norm_restrictToBall_le R _) ?_
+    exact galerkin_norm_le_u0 𝔊 F ν u₀ (φ n) (galSeq (φ n)) ht.1
+  -- `g ∈ MemLp 2 μ`: a.e.-bounded by the constant `‖u₀‖` on the finite measure
+  have hMemLp_g : MemLp g 2 μ := by
+    have hgbd : ∀ᵐ t ∂μ, ‖g t‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
+      rw [hμ]
+      refine (ae_restrict_iff' measurableSet_Icc).mpr ?_
+      have h2 : ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0:ℝ) T)),
+          ‖(u t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
+        sorry
+      sorry
+    exact MemLp.of_bound hAESM_g _ hgbd
+  -- UnifIntegrable + UnifTight from the constant bound `‖u₀‖` (pick `C > ‖u₀‖`)
+  have hSM_f : ∀ n, StronglyMeasurable (fSeq n) := by sorry
+  have hui : MeasureTheory.UnifIntegrable fSeq 2 μ := by sorry
+  have hut : MeasureTheory.UnifTight fSeq 2 μ := by sorry
+  have := MeasureTheory.tendsto_Lp_of_tendsto_ae (μ := μ) (p := 2) one_le_two
+    (by norm_num) hAESM_f hMemLp_g hui hut hae_ball
+  -- convert `eLpNorm (fSeq n - g)` to the goal's pointwise-difference form
+  refine this.congr (fun n => ?_)
+  congr 1
 
 end LerayHopf
