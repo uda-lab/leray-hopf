@@ -19,17 +19,22 @@
 #           the axiom-free galerkinSolutionData_torus (proved finite-dim Galerkin ODE over
 #           velocitySpan n); net torus project axioms now 3.
 #
-#   exists_lerayHopf_r3_axiomatic — exactly 7 axioms:
+#   exists_lerayHopf_r3_axiomatic — exactly 8 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
-#     LerayHopf.aubin_lions_R3  LerayHopf.galerkin_limit_passage_R3
+#     LerayHopf.galerkin_limit_passage_R3
 #     LerayHopf.curlSchwartzDense_holds
-#     LerayHopf.r3_NSForms_exist  (4 project)
+#     LerayHopf.r3_NSForms_exist
+#     LerayHopf.timeCompactnessInput_R3
+#     LerayHopf.galerkinSpaceTimeExtraction_R3  (5 project)
 #     NOTE: spatial_compactness_R3 REMOVED (issue #2) — now a theorem via the FK chain.
 #     NOTE: r3GalerkinScheme_exists REMOVED (issue #21) — now a theorem, SWAPPED for the
-#           thinner curlSchwartzDense_holds density axiom; net R3 project axioms still 5.
+#           thinner curlSchwartzDense_holds density axiom.
 #     NOTE: galerkin_ode_solution_R3 REMOVED (issue #10) — discharged by routing the capstone
-#           through the axiom-free galerkinSolutionData_unconditional over schemeOfBasis B;
-#           net R3 project axioms now 4.
+#           through the axiom-free galerkinSolutionData_unconditional over schemeOfBasis B.
+#     NOTE: aubin_lions_R3 REMOVED (issue #15) — its spatial half PROVED (steklovAvg_spatial_extraction
+#           chain); its time content SWAPPED for the two strictly-thinner axioms
+#           timeCompactnessInput_R3 (n-uniform L² time-equicontinuity modulus) and
+#           galerkinSpaceTimeExtraction_R3 (Bochner-time a.e.-L² extraction); net R3 project axioms 5.
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.
@@ -157,18 +162,24 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 
 # ---------------------------------------------------------------------------
 # Pin 2: exists_lerayHopf_r3_axiomatic
-#   4 project axioms + 3 kernel = 7 total
+#   5 project axioms + 3 kernel = 8 total
 #   (spatial_compactness_R3 removed — issue #2 — now a theorem via the FK chain)
 #   (r3GalerkinScheme_exists removed — issue #21 — now a theorem, SWAPPED for the
 #    thinner curlSchwartzDense_holds density axiom)
 #   (galerkin_ode_solution_R3 removed — issue #10 — discharged via the axiom-free
-#    galerkinSolutionData_unconditional over schemeOfBasis B; net R3 project axioms now 4)
+#    galerkinSolutionData_unconditional over schemeOfBasis B)
+#   (aubin_lions_R3 REMOVED — issue #15 — its spatial half PROVED via the
+#    steklovAvg_spatial_extraction chain; its time content SWAPPED for the two strictly-thinner
+#    axioms timeCompactnessInput_R3 (the n-uniform L² time-equicontinuity modulus) and
+#    galerkinSpaceTimeExtraction_R3 (the Bochner-time a.e.-L² extraction); net R3 project axioms 5)
 # ---------------------------------------------------------------------------
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound
-   LerayHopf.aubin_lions_R3 LerayHopf.galerkin_limit_passage_R3
+   LerayHopf.galerkin_limit_passage_R3
    LerayHopf.curlSchwartzDense_holds
-   LerayHopf.r3_NSForms_exist"
+   LerayHopf.r3_NSForms_exist
+   LerayHopf.timeCompactnessInput_R3
+   LerayHopf.galerkinSpaceTimeExtraction_R3"
 
 # ---------------------------------------------------------------------------
 # Pin 3: Core torus representative — no project axioms, no sorryAx

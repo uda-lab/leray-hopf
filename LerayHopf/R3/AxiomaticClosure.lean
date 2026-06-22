@@ -510,37 +510,17 @@ structure AubinLionsPackage_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
         2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)))
       Filter.atTop (nhds 0)
 
-/-! ### Axiom AX-2: Aubin–Lions on ℝ³ -/
+/-! ### AX-2: Aubin–Lions on ℝ³ — former axiom `aubin_lions_R3` REMOVED (issue #15)
 
-/-- **Axiom AX-2:** Aubin–Lions time compactness on ℝ³.
-
-Takes the Galerkin sequence `galSeq` (from AX-1) and an explicit LOCAL spatial-compactness
-hypothesis `spatial` whose type matches the new `spatial_compactness_R3` exactly
-(LOCAL ball-restricted convergence, no tightness), so the assembly can pass
-`spatial_compactness_R3` directly.
-
-This axiom covers ONLY the genuinely-missing Bochner-time compactness half.  The spatial
-half is supplied via the `spatial` hypothesis, which the assembly discharges using the
-LOCAL `spatial_compactness_R3`.
-
-Blocked in Lean by: missing Bochner-Sobolev time-derivative bounds.  Temam III.2.1. -/
-axiom aubin_lions_R3 -- ALLOW_AXIOM: Aubin–Lions time compactness on ℝ³; spatial half supplied as explicit LOCAL hypothesis (discharged by spatial_compactness_R3, ball-restricted, no tightness); axiom adds only Bochner-time half; TRUE and MINIMAL; Temam III.2.1
-    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
-    (u₀ : L2Sigma_R3)
-    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (spatial : ∀ (M : ℝ) (z : ℕ → L2VF_R3),
-      (∀ n, z n ∈ L2Sigma_R3) →
-      (∀ n, memH1VF_R3 (z n)) →
-      (∀ n, ‖z n‖ ≤ M) →
-      (∀ n, viscousFormSq_R3 1 (z n) ≤ M ^ 2) →
-      ∃ (ψ : ℕ → ℕ) (g : L2VF_R3), StrictMono ψ ∧ g ∈ L2Sigma_R3 ∧
-        ∀ R : ℝ, Filter.Tendsto
-          (fun n => ∫ x in Metric.closedBall (0 : Domain3) R,
-            ‖((z (ψ n)) x : EuclideanSpace ℝ (Fin 3)) - (g x : EuclideanSpace ℝ (Fin 3))‖ ^ 2
-            ∂(volume : Measure Domain3))
-          Filter.atTop (nhds 0)) :
-    AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq
+The former `axiom aubin_lions_R3` is GONE.  Its spatial half is genuinely PROVED axiom-free
+(the `steklovAvg_spatial_extraction` chain, fed by P3), and its time half is isolated as the
+strictly-thinner `galerkinSpaceTimeExtraction_R3` (the Bochner-time compactness extraction,
+mathlib lacks the Bochner-valued Fréchet–Kolmogorov / Aubin–Lions theorem in `L²(0,T;X)`).
+The `AubinLionsPackage_R3` is now produced by `aubinLionsPackage_R3_of_timeCompactness`
+(`LerayHopf/R3/AubinLionsLimitPassage.lean`), which is DOWNSTREAM of this file, so the package
+assembly (`build_galerkin_package_R3_of_galSeq`) is RELOCATED to the downstream
+`LerayHopf/R3/AubinLionsAssembly.lean` to stay acyclic (mirroring the #10/#24 capstone
+relocation pattern).  The package structure `AubinLionsPackage_R3` itself stays defined above. -/
 
 /-! ### Axiom AX-3: Galerkin limit passage on ℝ³ -/
 
@@ -649,44 +629,15 @@ structure GalerkinCompactnessPackageFull_R3 (𝔊 : R3GalerkinScheme) (F : R3NSF
     IntervalIntegrable (fun s => viscousFormSq_R3 ν (limit s : L2VF_R3))
       MeasureTheory.volume 0 T
 
-/-! ### Assembly theorems -/
+/-! ### Assembly theorems
 
-/-- **Assembly (axiom-free core).**  Build a `GalerkinCompactnessPackageFull_R3` from an
-EXPLICIT Galerkin sequence `galSeq`, chaining AX-2 (with LOCAL `spatial_compactness_R3`) → AX-3.
-
-This is the body of `build_galerkin_package_R3` factored from Step 1 onward (issue #10): it
-takes `galSeq` as a parameter instead of producing it via the `galerkin_ode_solution_R3` axiom,
-so it carries NO dependency on AX-1.  Every downstream consumer (`aubin_lions_R3`,
-`galerkin_limit_passage_R3`, the whole packing) is scheme-polymorphic and unchanged; only the
-source of `galSeq` is lifted out.  Routing the capstone through this builder with a concrete,
-axiom-free `galSeq` (over `schemeOfBasis B`) is what discharges `galerkin_ode_solution_R3`.
-
-The steps are:
-1. Apply `aubin_lions_R3` (AX-2) with `spatial := spatial_compactness_R3` (LOCAL form,
-   no tightness).
-2. Apply `galerkin_limit_passage_R3` (AX-3) to obtain the weak equation + energy + trace.
-3. Pack into `GalerkinCompactnessPackageFull_R3`. -/
-noncomputable def build_galerkin_package_R3_of_galSeq (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
-    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
-    GalerkinCompactnessPackageFull_R3 𝔊 F ν T u₀ := by
-  -- Step 1 (AX-2): Aubin–Lions, with the spatial half discharged by the LOCAL
-  -- `spatial_compactness_R3` (whose type matches the `spatial` parameter exactly).
-  have alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq :=
-    aubin_lions_R3 𝔊 F ν hν T hT u₀ galSeq spatial_compactness_R3
-  -- Step 2 (AX-3): limit passage to the good representative.  The goal is a `Type`
-  -- (a structure), so the existential is unpacked with `Exists.choose` rather than
-  -- `obtain` (which only eliminates into `Prop`).  The a.e.-link conjunct
-  -- (`hspec.1`) is intentionally discarded.
-  have hex := galerkin_limit_passage_R3 𝔊 F ν hν T hT u₀ galSeq alPkg
-  have hspec := hex.choose_spec
-  -- Step 3: pack into the proof-carrying structure.
-  exact
-    { limit := hex.choose
-      weak_eq_limit := hspec.2.1
-      energy_ineq_limit := hspec.2.2.1
-      initial_trace_limit := hspec.2.2.2.1
-      energy_class_limit := hspec.2.2.2.2 }
+The package builder `build_galerkin_package_R3_of_galSeq` (which produces a
+`GalerkinCompactnessPackageFull_R3` by chaining the Aubin–Lions package → AX-3 limit passage)
+is RELOCATED to `LerayHopf/R3/AubinLionsAssembly.lean` (issue #15): it now consumes the proved
+`aubinLionsPackage_R3_of_timeCompactness` (in `AubinLionsLimitPassage.lean`, DOWNSTREAM of this
+file) instead of the removed `aubin_lions_R3` axiom, so it must sit below this file in the DAG to
+stay acyclic.  `GalerkinCompactnessPackageFull_R3`, `galerkin_limit_passage_R3` (AX-3), and
+`exists_lerayHopf_from_package_full_R3` remain defined here and are visible downstream. -/
 
 /-- **Assembly:** A `GalerkinCompactnessPackageFull_R3` yields
 `Nonempty (LerayHopfSolutionFull_R3 …)`. -/
