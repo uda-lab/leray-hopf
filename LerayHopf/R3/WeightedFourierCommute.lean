@@ -86,6 +86,42 @@ theorem tendsto_sqrtViscousWeightTrunc (ξ : Domain3) :
   rw [sqrtViscousWeightTrunc, min_eq_left]
   exact (Nat.le_ceil _).trans (Nat.cast_le.mpr hk)
 
+/-! ### The (unbounded) weighted Fourier component of an `H¹` state -/
+
+/-- For `w ∈ H¹`, the weighted Fourier component `√W • 𝓕(projⱼ w)` lies in `L²`: its squared norm
+is the (finite) viscous spectral integrand. -/
+theorem memLp_sqrtWeight_smul_fourier (w : L2VF_R3) (hw : memH1VF_R3 w) (j : Fin 3) :
+    MemLp (fun ξ : Domain3 => (sqrtViscousWeight ξ : ℂ) • (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ)
+      2 (volume : Measure Domain3) := by
+  have haesm : AEStronglyMeasurable
+      (fun ξ : Domain3 => (sqrtViscousWeight ξ : ℂ) •
+        (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ) (volume : Measure Domain3) :=
+    (Complex.continuous_ofReal.comp continuous_sqrtViscousWeight).aestronglyMeasurable.smul
+      (Lp.aestronglyMeasurable _)
+  refine (memLp_two_iff_integrable_sq_norm haesm).mpr ?_
+  -- `‖√W • 𝓕(projⱼ w) ξ‖² = W ξ ‖𝓕(projⱼ w) ξ‖²`, integrable via `integrable_viscous_integrand_of_memH1`
+  refine (integrable_viscous_integrand_of_memH1 w hw j).congr ?_
+  filter_upwards with ξ
+  have hsw : sqrtViscousWeight ξ ^ 2 = (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 := by
+    rw [sqrtViscousWeight_sq]; rfl
+  conv_rhs => rw [norm_smul, Complex.norm_real, Real.norm_eq_abs, mul_pow, sq_abs, hsw]
+
+/-- The weighted Fourier component `√W • 𝓕(projⱼ w)` of an `H¹` state, as an `L²` element. -/
+noncomputable def weightedFourierComponent (w : L2VF_R3) (hw : memH1VF_R3 w) (j : Fin 3) : L2C_R3 :=
+  (memLp_sqrtWeight_smul_fourier w hw j).toLp _
+
+/-- Its squared `L²`-norm is the viscous spectral integrand `∫ W ‖𝓕(projⱼ w)‖²`. -/
+theorem norm_weightedFourierComponent_sq (w : L2VF_R3) (hw : memH1VF_R3 w) (j : Fin 3) :
+    ‖weightedFourierComponent w hw j‖ ^ 2
+      = ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
+          ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2 ∂(volume : Measure Domain3) := by
+  rw [weightedFourierComponent, FourierL2.normSq_eq_integral_normSq_C]
+  refine integral_congr_ae ?_
+  filter_upwards [MemLp.coeFn_toLp (memLp_sqrtWeight_smul_fourier w hw j)] with ξ hξ
+  have hsw : sqrtViscousWeight ξ ^ 2 = (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 := by
+    rw [sqrtViscousWeight_sq]; rfl
+  rw [hξ, norm_smul, Complex.norm_real, Real.norm_eq_abs, mul_pow, sq_abs, hsw]
+
 /-! ### Bounded multiplier on `L2C_R3` and its Bochner commute -/
 
 /-- `mulBdd m hm hC g` is the `L²`-class of `ξ ↦ (m ξ : ℂ) • g ξ`, for a bounded

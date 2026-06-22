@@ -397,7 +397,7 @@ of `smulLeftCLM` applied to an `Lp`-coerced distribution for an **unbounded** mu
 `MemLp`-bounded multipliers (and `weight ∉ Lᵖ`), so this a.e.-extraction-for-unbounded-weights
 is the missing piece.  Once it lands, `‖ξ‖² ≤ 1 + ‖ξ‖²` gives the claim by domination.
 Everything else in T0b is fully proved and consumes only this lemma. -/
-private theorem integrable_viscous_integrand_of_memH1 (w : L2VF_R3) (hw : memH1VF_R3 w)
+theorem integrable_viscous_integrand_of_memH1 (w : L2VF_R3) (hw : memH1VF_R3 w)
     (j : Fin 3) :
     Integrable (fun ξ : Domain3 =>
         (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2)
