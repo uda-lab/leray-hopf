@@ -129,6 +129,50 @@ axiom galerkin_weakLimit_R3 -- ALLOW_AXIOM: per-ball-L²-convergent bounded sequ
         Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3))
           Filter.atTop (nhds (restrictToBall R (u t : L2VF_R3)))
 
+/-! ### Local plumbing for the ball restriction (1-Lipschitz + continuity)
+
+The corresponding helpers in `AubinLionsLimitPassage.lean` (`restrictToBall_dist_le`,
+`norm_restrictToBall_le'`, `continuous_restrictToBall`) are `private` and live downstream of this
+file, so we reprove the small facts we need here. -/
+
+/-- `restrictToBall R` is `1`-Lipschitz on differences: the ball-restricted difference has L²-norm
+bounded by the global difference. Local copy (the P3 / passage versions are `private`). -/
+private theorem norm_restrictToBall_sub_le (R : ℝ) (u v : L2VF_R3) :
+    ‖restrictToBall R u - restrictToBall R v‖ ≤ ‖u - v‖ := by
+  rw [Lp.norm_def, Lp.norm_def]
+  have hle : volume.restrict (Metric.closedBall (0 : Domain3) R) ≤ (volume : Measure Domain3) :=
+    Measure.restrict_le_self
+  have hcongR : ⇑(restrictToBall R u - restrictToBall R v)
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+        (fun x => (u x : EuclideanSpace ℝ (Fin 3)) - (v x : EuclideanSpace ℝ (Fin 3))) := by
+    have hsub := Lp.coeFn_sub (restrictToBall R u) (restrictToBall R v)
+    have hu : ⇑(restrictToBall R u)
+        =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+          (u : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+    have hv : ⇑(restrictToBall R v)
+        =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+          (v : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+    filter_upwards [hsub, hu, hv] with x hx hxu hxv
+    simp only [hx, Pi.sub_apply, hxu, hxv]
+  have hcongG : ⇑(u - v)
+      =ᵐ[(volume : Measure Domain3)]
+        (fun x => (u x : EuclideanSpace ℝ (Fin 3)) - (v x : EuclideanSpace ℝ (Fin 3))) :=
+    Lp.coeFn_sub u v
+  rw [eLpNorm_congr_ae hcongR, eLpNorm_congr_ae hcongG]
+  refine ENNReal.toReal_mono ?_ (eLpNorm_mono_measure _ hle)
+  rw [← eLpNorm_congr_ae hcongG]
+  exact (Lp.memLp (u - v)).2.ne
+
+/-- `restrictToBall R : L2VF_R3 → L2ballR3 R` is continuous (it is `1`-Lipschitz). -/
+private theorem continuous_restrictToBall' (R : ℝ) :
+    Continuous (fun w : L2VF_R3 => restrictToBall R w) := by
+  refine Metric.continuous_iff.2 fun w ε hε => ⟨ε, hε, fun w' hw' => ?_⟩
+  calc dist (restrictToBall R w') (restrictToBall R w)
+      = ‖restrictToBall R w' - restrictToBall R w‖ := dist_eq_norm _ _
+    _ ≤ ‖w' - w‖ := norm_restrictToBall_sub_le R w' w
+    _ = dist w' w := (dist_eq_norm _ _).symm
+    _ < ε := hw'
+
 /-! ### Group T1 — Equicontinuity transfer -/
 
 /-- **T1.1 — Unconditional uniform equicontinuity on the ball restriction.**
@@ -150,7 +194,14 @@ theorem galerkin_curves_equicont_unconditional
       s ∈ Set.Icc (0 : ℝ) T → t ∈ Set.Icc (0 : ℝ) T → |s - t| < δ →
       ‖restrictToBall R ((galSeq n).u s : L2VF_R3) -
         restrictToBall R ((galSeq n).u t : L2VF_R3)‖ < ε := by
-  sorry -- ALLOW_SORRY: #44 galerkin_curves_equicont_unconditional, to be discharged by lean-prover
+  intro ε hε
+  obtain ⟨δ, hδ, hmod⟩ := galerkin_equicontinuity_from_ODE 𝔊 F ν hν T hT u₀ galSeq ε hε
+  refine ⟨δ, hδ, fun n s t hs ht hst => ?_⟩
+  calc ‖restrictToBall R ((galSeq n).u s : L2VF_R3) -
+          restrictToBall R ((galSeq n).u t : L2VF_R3)‖
+      ≤ ‖((galSeq n).u s : L2VF_R3) - ((galSeq n).u t : L2VF_R3)‖ :=
+        norm_restrictToBall_sub_le R _ _
+    _ < ε := hmod n s t hs ht hst
 
 /-- **T1.2 — Packaging Galerkin ball-curves as bounded continuous functions.**
 
@@ -167,7 +218,16 @@ theorem galerkin_curves_in_boundedContinuousFunctions
     ∃ f : Set.Icc (0 : ℝ) T →ᵇ L2ballR3 R,
       ∀ t : Set.Icc (0 : ℝ) T,
         f t = restrictToBall R ((galSeq n).u (t : ℝ) : L2VF_R3) := by
-  sorry -- ALLOW_SORRY: #44 galerkin_curves_in_boundedContinuousFunctions, to be discharged by lean-prover
+  -- The Galerkin curve is continuous on `Ici 0` (it is differentiable there).
+  have hIci : ContinuousOn (fun s => ((galSeq n).u s : L2VF_R3)) (Set.Ici 0) :=
+    fun t ht => (((galSeq n).u_hasDeriv t ht).continuousAt.continuousWithinAt)
+  have hIcc : ContinuousOn (fun s => ((galSeq n).u s : L2VF_R3)) (Set.Icc (0 : ℝ) T) :=
+    hIci.mono Set.Icc_subset_Ici_self
+  -- As a continuous map on the compact subtype `↥(Icc 0 T)`, composed with `restrictToBall R`.
+  let F0 : C(Set.Icc (0 : ℝ) T, L2ballR3 R) :=
+    ⟨fun t => restrictToBall R ((galSeq n).u (t : ℝ) : L2VF_R3),
+      (continuous_restrictToBall' R).comp hIcc.restrict⟩
+  refine ⟨BoundedContinuousFunction.mkOfCompact F0, fun t => rfl⟩
 
 /-! ### Group T2 — Per-ball Arzelà–Ascoli -/
 
@@ -203,7 +263,15 @@ theorem galSeq_ball_equicont
     (R : ℝ) :
     Equicontinuous (fun n => fun t : Set.Icc (0 : ℝ) T =>
       restrictToBall R ((galSeq n).u (t : ℝ) : L2VF_R3)) := by
-  sorry -- ALLOW_SORRY: #44 galSeq_ball_equicont, to be discharged by lean-prover
+  intro x₀
+  rw [Metric.equicontinuousAt_iff]
+  intro ε hε
+  obtain ⟨δ, hδ, hmod⟩ :=
+    galerkin_curves_equicont_unconditional 𝔊 F ν hν T hT u₀ galSeq R ε hε
+  refine ⟨δ, hδ, fun x hx n => ?_⟩
+  rw [dist_eq_norm]
+  rw [Subtype.dist_eq, Real.dist_eq] at hx
+  exact hmod n (x₀ : ℝ) (x : ℝ) x₀.2 x.2 (by rwa [abs_sub_comm] at hx)
 
 /-- **T2.3 — Per-ball subsequence existence (Arzelà–Ascoli).**
 
@@ -295,8 +363,8 @@ theorem perBallLimit_measurable
     (T : ℝ)
     (hf_k_cont : ContinuousOn f_k (Set.Icc (0 : ℝ) T)) :
     AEStronglyMeasurable f_k
-      (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) := by
-  sorry -- ALLOW_SORRY: #44 perBallLimit_measurable, to be discharged by lean-prover
+      (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) :=
+  hf_k_cont.aestronglyMeasurable measurableSet_Icc
 
 /-- **T4.2 — The assembled limit curve `u : Time → L2Sigma_R3` is AE strongly measurable.**
 
