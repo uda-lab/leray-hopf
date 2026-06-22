@@ -255,11 +255,27 @@ theorem perBall_ae_subseq
   -- Step 1: Axiom A gives L²-in-time Bochner convergence for some subsequence φ₀.
   obtain ⟨φ₀, g_k, hφ₀, hg_aesm, heLp⟩ :=
     galerkin_spacetime_precompact_R3 𝔊 F ν hν T hT u₀ galSeq k
-  -- Step 2–4: The L²-in-time convergence implies convergence in measure, then a.e. along a
-  -- further subsequence ρ (composed with φ₀ to give the final φ = φ₀ ∘ ρ).
-  -- Route: tendstoInMeasure_of_tendsto_eLpNorm + TendstoInMeasure.exists_seq_tendsto_ae
-  -- (both in Mathlib.MeasureTheory.Function.ConvergenceInMeasure).
-  sorry -- ALLOW_SORRY: #44 perBall_ae_subseq — proof route: (1) heLp gives eLpNorm → 0; (2) apply MeasureTheory.tendstoInMeasure_of_tendsto_eLpNorm (p=2, hp_ne_zero=by norm_num, hf = each term is AESM since Galerkin curve is continuous on Ici 0 hence measurable on Icc 0 T and restrictToBall is continuous, hg = hg_aesm) to get TendstoInMeasure; (3) apply TendstoInMeasure.exists_seq_tendsto_ae to get further StrictMono ρ with a.e. convergence; (4) set φ = φ₀ ∘ ρ, StrictMono φ from StrictMono.comp; (5) the a.e. limit is still g_k since the whole sequence g_k(t) is the same limit function.
+  -- Step 2: each ball-restricted Galerkin curve is a.e.-strongly-measurable on `[0,T]`
+  -- (the curve is continuous on `Ici 0` via `u_hasDeriv`, restrictToBall is continuous).
+  have hf_aesm : ∀ n, AEStronglyMeasurable
+      (fun t => restrictToBall (k : ℝ) ((galSeq (φ₀ n)).u t : L2VF_R3))
+      (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) := by
+    intro n
+    have hcurve : ContinuousOn (fun t => ((galSeq (φ₀ n)).u t : L2VF_R3)) (Set.Ici 0) :=
+      fun t ht => (((galSeq (φ₀ n)).u_hasDeriv t ht).continuousAt.continuousWithinAt)
+    have hcurve_aesm : AEStronglyMeasurable (fun t => ((galSeq (φ₀ n)).u t : L2VF_R3))
+        (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) :=
+      (hcurve.mono Set.Icc_subset_Ici_self).aestronglyMeasurable measurableSet_Icc
+    exact (continuous_restrictToBall' (k : ℝ)).comp_aestronglyMeasurable hcurve_aesm
+  -- Step 3: L²-in-time convergence ⇒ convergence in measure.
+  have hTIM : TendstoInMeasure (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T))
+      (fun n t => restrictToBall (k : ℝ) ((galSeq (φ₀ n)).u t : L2VF_R3)) atTop g_k :=
+    tendstoInMeasure_of_tendsto_eLpNorm (by norm_num) hf_aesm hg_aesm heLp
+  -- Step 4: a.e.-t convergent further subsequence `ρ`; final subsequence is `φ₀ ∘ ρ`.
+  obtain ⟨ρ, hρ, hae⟩ := hTIM.exists_seq_tendsto_ae
+  refine ⟨φ₀ ∘ ρ, g_k, hφ₀.comp hρ, hg_aesm, ?_⟩
+  filter_upwards [hae] with t ht
+  exact ht
 
 /-- **`diag_ae_subseq` — Diagonal subsequence converging a.e. in `t` for ALL ball radii `k : ℕ`.**
 
