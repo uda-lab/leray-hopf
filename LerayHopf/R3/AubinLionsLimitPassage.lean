@@ -1119,6 +1119,65 @@ private theorem viscousFormSq_steklovAvg_le_average (𝔊 : R3GalerkinScheme) (F
   refine Finset.sum_le_sum (fun j _ => ?_)
   exact viscousFourier_steklov_component_le 𝔊 F ν u₀ n gs hδ ht j
 
+/-- The viscous-form curve `s ↦ viscousFormSq_R3 1 (gs.u s)` is continuous on `Ici 0`
+(`= ∑_j ‖weightedFourierComponent (u s) j‖²`, a sum of norm² of the continuous weighted-Fourier
+curves — the new `viscous_curve_continuous` field). -/
+private theorem viscousFormSq_curve_continuousOn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ) (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
+    ContinuousOn (fun s => viscousFormSq_R3 1 (gs.u s : L2VF_R3)) (Set.Ici (0 : ℝ)) := by
+  have heq : ∀ s, viscousFormSq_R3 1 (gs.u s : L2VF_R3)
+      = ∑ j : Fin 3, ‖weightedFourierComponent (gs.u s : L2VF_R3) (gs.reg_mem s) j‖ ^ 2 := by
+    intro s
+    rw [FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier]
+    exact Finset.sum_congr rfl
+      (fun j _ => (norm_weightedFourierComponent_sq (gs.u s : L2VF_R3) (gs.reg_mem s) j).symm)
+  refine ContinuousOn.congr ?_ (fun s _ => heq s)
+  exact continuousOn_finset_sum _ (fun j _ => ((gs.viscous_curve_continuous j).norm.pow 2))
+
+/-- **n-uniform pointwise H¹ bound on the Steklov averages.**  For the forward window
+`[t,t+δ] ⊆ [0,T]` (i.e. `0 ≤ t`, `t+δ ≤ T`), the averaged state's viscous seminorm is bounded by
+`δ⁻¹ ν⁻¹ · ½‖u₀‖²` — finite and `n`-independent (this is the bound `spatialInput_R3_of_localRellich`
+consumes; the raw pointwise samples lacked it).  Combines the gate
+`viscousFormSq_steklovAvg_le_average` with the integrated `reg_bound`. -/
+private theorem viscousFormSq_steklovAvg_uniform_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma_R3) (n : ℕ) (T : ℝ) (hT : 0 < T)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t)
+    (htδT : t + δ ≤ T) :
+    viscousFormSq_R3 1 (steklovAvg 𝔊 F ν u₀ n gs δ t)
+      ≤ δ⁻¹ * (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) := by
+  have hle : t ≤ t + δ := by linarith
+  have hcont : ContinuousOn (fun s => viscousFormSq_R3 1 (gs.u s : L2VF_R3)) (Set.Ici (0 : ℝ)) :=
+    viscousFormSq_curve_continuousOn 𝔊 F ν u₀ n gs
+  have hnn : ∀ s, 0 ≤ viscousFormSq_R3 1 (gs.u s : L2VF_R3) :=
+    fun s => viscousFormSq_R3_nonneg (by norm_num) _
+  have hint0T : IntervalIntegrable (fun s => viscousFormSq_R3 1 (gs.u s : L2VF_R3)) volume 0 T := by
+    refine (hcont.mono ?_).intervalIntegrable
+    rw [Set.uIcc_of_le hT.le]; intro s hs; exact hs.1
+  -- window sub-integral ≤ full [0,T] integral (nonneg integrand, `Ioc t (t+δ) ⊆ Ioc 0 T`)
+  have hwindow : ∫ s in t..(t + δ), viscousFormSq_R3 1 (gs.u s : L2VF_R3)
+      ≤ ∫ s in (0:ℝ)..T, viscousFormSq_R3 1 (gs.u s : L2VF_R3) := by
+    rw [intervalIntegral.integral_of_le hle, intervalIntegral.integral_of_le hT.le]
+    refine setIntegral_mono_set hint0T.1 (ae_of_all _ (fun s => hnn s)) ?_
+    refine HasSubset.Subset.eventuallyLE (fun s hs => ?_)
+    exact ⟨lt_of_le_of_lt ht hs.1, le_trans hs.2 htδT⟩
+  -- full integral ≤ ν⁻¹ · ½‖u₀‖² via reg_bound (ν-scaling)
+  have hreg : ∫ s in (0:ℝ)..T, viscousFormSq_R3 1 (gs.u s : L2VF_R3)
+      ≤ ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2) := by
+    have hrb := gs.reg_bound T hT
+    have hscale : ∀ s, viscousFormSq_R3 ν (gs.u s : L2VF_R3)
+        = ν * viscousFormSq_R3 1 (gs.u s : L2VF_R3) := by
+      intro s; rw [viscousFormSq_R3_eq_smul, smul_eq_mul]
+    rw [intervalIntegral.integral_congr (g := fun s => ν * viscousFormSq_R3 1 (gs.u s : L2VF_R3))
+      (fun s _ => hscale s), intervalIntegral.integral_const_mul] at hrb
+    -- `ν * I ≤ ½‖u₀‖²` ⇒ `I ≤ ν⁻¹ ½‖u₀‖²`
+    rw [le_inv_mul_iff₀ hν]
+    exact hrb
+  calc viscousFormSq_R3 1 (steklovAvg 𝔊 F ν u₀ n gs δ t)
+      ≤ δ⁻¹ * ∫ s in t..(t + δ), viscousFormSq_R3 1 (gs.u s : L2VF_R3) :=
+        viscousFormSq_steklovAvg_le_average 𝔊 F ν u₀ n gs hδ ht
+    _ ≤ δ⁻¹ * (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) :=
+        mul_le_mul_of_nonneg_left (le_trans hwindow hreg) (by positivity)
+
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
 /-- **Aubin–Lions package on ℝ³ from the isolated time-compactness input (OPEN — `sorry`).**
