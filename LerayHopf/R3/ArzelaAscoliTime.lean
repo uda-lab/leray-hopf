@@ -291,7 +291,7 @@ theorem galSeq_ball_pointwisePrecompact
     (R : ℝ) (t : ℝ) (ht : t ∈ Set.Icc (0 : ℝ) T) :
     ∃ K : Set (L2ballR3 R), IsCompact K ∧
       ∀ n : ℕ, restrictToBall R ((galSeq n).u t : L2VF_R3) ∈ K := by
-  sorry -- ALLOW_SORRY: #44 galSeq_ball_pointwisePrecompact, to be discharged by lean-prover
+  sorry -- ALLOW_SORRY: #44 T2.1 BLOCKED (import architecture). `B.ballCompact M R` requires a uniform-in-n POINTWISE bound `viscousFormSq_R3 1 ((galSeq n).u t) ≤ M²`, which the raw Galerkin curve lacks at a fixed time (only the time-integral `reg_bound` is available in GalerkinSolutionData_R3). The contract's resolution is the Steklov-average bridge (`steklovAvg_spatial_extraction` + equicontinuity 2/3-ε), but `steklovAvg`/`steklovAvg_spatial_extraction` live in AubinLionsLimitPassage.lean which is DOWNSTREAM of this file (imports it), so cannot be used here without an import cycle. Requires lean-coder: relocate the Steklov spatial-precompactness atom into a module upstream of ArzelaAscoliTime, or move T2.1 downstream.
 
 /-- **T2.2 — Ball-restricted family is equicontinuous on `[0,T]`.**
 
@@ -338,7 +338,7 @@ theorem perBallSubseq_exists
         Filter.Tendsto
           (fun n => restrictToBall R ((galSeq (φ_R n)).u t : L2VF_R3))
           Filter.atTop (nhds (f_R t)) := by
-  sorry -- ALLOW_SORRY: #44 perBallSubseq_exists, to be discharged by lean-prover
+  sorry -- ALLOW_SORRY: #44 T2.3 BLOCKED downstream of T2.1. `BoundedContinuousFunction.arzela_ascoli₂` needs a SINGLE compact `s ⊆ L2ballR3 R` containing every `restrictToBall R ((galSeq n).u t)` (all n, all t∈[0,T]); the only source of such compactness is `galSeq_ball_pointwisePrecompact` (T2.1), which is itself blocked on the Steklov bridge (see T2.1 marker). Equicontinuity (T2.2) + BCF packaging (T1.2) are proved and ready; only the compact-range input is missing. Unblocks automatically once T2.1 is dischargeable.
 
 /-! ### Group T3 — Diagonal subsequence -/
 
@@ -364,7 +364,7 @@ theorem perBallSubseq_tower
           Filter.Tendsto
             (fun n => restrictToBall k ((galSeq (tower k n)).u t : L2VF_R3))
             Filter.atTop (nhds (f_k t))) := by
-  sorry -- ALLOW_SORRY: #44 perBallSubseq_tower, to be discharged by lean-prover
+  sorry -- ALLOW_SORRY: #44 T3.1 BLOCKED. The tower needs a REFINE-capable per-ball extraction (given a StrictMono input ψ, extract a sub-subsequence converging on ball k), analogous to SpatialCompactness.exists_subseq_tendsto_on_ball. T2.3 (perBallSubseq_exists) is one-shot (always extracts from the full galSeq, no input subsequence) so it cannot nest. A refine-capable variant reuses the SAME arzela_ascoli machinery as T2.3, hence inherits the T2.1 Steklov blocker. Unblocks once T2.1 is dischargeable and a refine-variant helper is added.
 
 /-- **T3.2 — Diagonal subsequence: converges for ALL ball radii simultaneously.**
 
@@ -387,7 +387,7 @@ theorem diagonalSubseq_exists
           Filter.Tendsto
             (fun n => restrictToBall k ((galSeq (φ n)).u t : L2VF_R3))
             Filter.atTop (nhds (f_k t)) := by
-  sorry -- ALLOW_SORRY: #44 diagonalSubseq_exists, to be discharged by lean-prover
+  sorry -- ALLOW_SORRY: #44 T3.2 BLOCKED. Depends on T3.1 (blocked). Additionally, the diagonal argument (φ n := tower n n) needs the COMPOSITIONAL tower form `tower (k+1) = tower k ∘ ρ k` (as in SpatialCompactness.nested_extraction_factor) to prove StrictMono of the diagonal and propagate per-level convergence; T3.1's stated interface only provides the weaker pointwise `∃ m, tower (k+1) n = tower k m` (non-monotone witness), which is insufficient. Requires lean-coder to strengthen the T3.1 interface to the compositional form, plus T2.1 discharge.
 
 /-! ### Group T4 — Gluing + measurability -/
 
