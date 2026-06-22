@@ -287,6 +287,67 @@ theorem fourier_curlSchwartz_eq_cross
     · exact hx2
   rw [hpotξ, hpotξ]
 
+/-! ### (P2) Schwartz Hermitian preimage — sole remaining sorry blocker
+
+This lemma is the single analytic gap that blocks the two remaining `sorry`s in this file
+(`mem_sigma_iff_fourier_transverse` forward direction and `l2sigma_le_closure_span_curl`).
+
+**Removal plan for `axiom curlSchwartzDense_holds` (import-DAG note).**
+`CurlDensity.lean` already imports `SchwartzDivFreeBasis.lean`, so once
+`curlSchwartzDense_provedRoute` is sorry-free it CANNOT be used in-place to retire the axiom
+— that would require `SchwartzDivFreeBasis` to import `CurlDensity`, creating a cycle.
+The clean one-step route (owner-approved scope, issue #3):
+
+  1. Prove P2 here → sorries in `mem_sigma_iff_fourier_transverse` and
+     `l2sigma_le_closure_span_curl` discharge → `curlSchwartzDense_provedRoute` becomes sorry-free.
+  2. In `SchwartzDivFreeBasis.lean`, replace
+       `axiom curlSchwartzDense_holds : CurlSchwartzDense`
+     with
+       `theorem curlSchwartzDense_holds : CurlSchwartzDense := curlSchwartzDense_provedRoute`
+     (The name is preserved so every downstream consumer — `nonempty_schwartzGalerkinBasis`,
+      `r3GalerkinScheme_exists` — is unchanged.)
+     This requires adding `import LerayHopf.R3.CurlDensity` to `SchwartzDivFreeBasis.lean`.
+     DAG check: `CurlDensity` imports `SchwartzDivFreeBasis`, so the reverse import would be
+     cyclic — FORBIDDEN.  Therefore step 2 must move the replacement into a NEW downstream
+     file (`CurlDensityCapstone.lean`) that imports BOTH, or relocate
+     `nonempty_schwartzGalerkinBasis` + `r3GalerkinScheme_exists` to such a file.
+
+  **Recommended route (lean-coder follow-up after P2 is proved):**
+  Create `LerayHopf/R3/CurlDensityCapstone.lean` that imports both `CurlDensity` and
+  `SchwartzDivFreeBasis`, re-exports `nonempty_schwartzGalerkinBasis` and
+  `r3GalerkinScheme_exists` routing through `curlSchwartzDense_provedRoute`, and removes the
+  axiom body from `SchwartzDivFreeBasis.lean` (keeping only the `Prop` definition
+  `CurlSchwartzDense` and the constructive content A1–C1).  The axiom line is then deleted.
+  `#print axioms nonempty_schwartzGalerkinBasis` should show no `curlSchwartzDense_holds`.
+-/
+
+/-- **(P2) Schwartz Hermitian preimage extraction (must-prove — item 11 in the plan).**
+
+If `h : 𝓢(ℝ³, ℂ)` is anti-Hermitian in the sense `h(-ξ) = -conj(h(ξ))` (i.e. `h` is an
+anti-Hermitian Schwartz symbol, exactly the kind produced by `testSymbol φ` for real `φ`),
+then there exists `φ : 𝓢(ℝ³, ℝ)` such that `testSymbol φ = h`.
+
+**Constructibility sketch** (no Mathlib PR needed — all primitives present):
+- Let `g = (2πi)⁻¹ • h` (Hermitian: `g(-ξ) = conj(g(ξ))`).
+- Let `Ψ : 𝓢(ℝ³, ℂ)` be the Schwartz inverse Fourier transform `𝓕⁻ g`
+  (`FourierTransform.fourierCLE.symm` applied to `g`).
+- Since `g` is Hermitian, `Ψ` is real-valued: use `fourier_ofReal_reflect_eq_conj` (proved,
+  P1 above) to establish `Ψ(-ξ) =ᵐ conj(Ψ(ξ))`, i.e. `Im Ψ = 0`.
+- Extract the real Schwartz function `φ := (Re ∘ Ψ)` via
+  `Ψ.postcompCLM (RCLike.reCLM : ℂ →L[ℝ] ℝ)` (`SchwartzMap.postcompCLM`).
+- Verify `testSymbol φ = h`:
+  `testSymbol φ ξ = conj((2πi) · 𝓕(schwartzC φ)(ξ))`.
+  Since `Ψ` is real-valued, `schwartzC φ = schwartzC (Re Ψ) = Ψ`.
+  Then `𝓕(Ψ) = 𝓕(𝓕⁻ g) = g` by `FourierInvPair`, and `conj((2πi)·g) = h` by definition.
+
+Key Mathlib decls: `SchwartzMap.postcompCLM`, `Complex.conjCLE`, `RCLike.reCLM`,
+`FourierTransform.fourierCLE` (symm), `FourierInvPair`, `fourier_ofReal_reflect_eq_conj` (item 9). -/
+private theorem schwartz_antiHermitian_has_testSymbol_preimage
+    (h : SchwartzMap Domain3 ℂ)
+    (hH : ∀ ξ : Domain3, h (-ξ) = -(starRingEnd ℂ) (h ξ)) :
+    ∃ φ : SchwartzMap Domain3 ℝ, testSymbol φ = h :=
+  sorry -- ALLOW_SORRY: #3 (P2) schwartz_antiHermitian_has_testSymbol_preimage — Schwartz Hermitian real-extraction; constructible from postcompCLM conjCLE + reCLM + fourierCLE.symm + FourierInvPair + fourier_ofReal_reflect_eq_conj; NOT in mathlib; weeks-class; lean-prover target (issue #3)
+
 /-! ### Step 2 — spectral characterization of weak divergence-freeness -/
 
 /-- **Fourier of a real function is Hermitian.**  For a real Schwartz `φ`, the Fourier
@@ -736,7 +797,7 @@ theorem mem_sigma_iff_fourier_transverse (u : L2VF_R3) :
     --        `SchwartzMap.postcompCLM Complex.conjCLE` (Schwartz conjugation) + a real-valuedness
     --        argument + `Complex.reCLM` extraction — but not available today.  This is the lone
     --        surviving analytic frontier of the forward direction; the REVERSE is fully proved.
-    sorry -- ALLOW_SORRY: forward du-Bois-Reymond — sole remaining blocker is (P2) Schwartz surjectivity of `φ ↦ testSymbol φ` onto anti-Hermitian symbols (= `𝓕⁻` of Hermitian Schwartz is a real Schwartz complexification; Schwartz-space real-part extraction under Hermitian symmetry). NOT in mathlib (weeks-class: postcompCLM conjCLE + real-valuedness + reCLM extraction). The (P1) reflection/conjugation identity it previously also required is now PROVED above (`fourier_ofReal_reflect_eq_conj`)
+    sorry -- ALLOW_SORRY: #3 mem_sigma_iff_fourier_transverse forward — gated on P2 (`schwartz_antiHermitian_has_testSymbol_preimage`, stub above); proof uses P2 to supply odd/even Schwartz witnesses for the du-Bois-Reymond argument; lean-prover target (issue #3)
   · -- Reverse (a.e. transverse ⇒ weakly divergence-free): fully proved.
     intro htr
     exact mem_sigma_of_transverse_ae u htr
@@ -826,11 +887,7 @@ Left as a `sorry` until `(P2)` lands. -/
 theorem l2sigma_le_closure_span_curl :
     (L2Sigma_R3 : Submodule ℝ L2VF_R3) ≤
       (Submodule.span ℝ (Set.range curlSchwartzL2)).topologicalClosure := by
-  sorry -- ALLOW_SORRY: curl/Helmholtz density — via the orthogonal-complement route
-  -- (`Submodule.orthogonal_orthogonal_eq_closure` + `Lp.fourierTransformₗᵢ` Parseval + Steps 1–3),
-  -- which reduces to the FORWARD `mem_sigma_iff_fourier_transverse`, itself blocked only on (P2)
-  -- (Schwartz Hermitian real-extraction; not in mathlib, weeks-class). NOT independently
-  -- months-class. lean-prover target once (P2) lands.
+  sorry -- ALLOW_SORRY: #3 l2sigma_le_closure_span_curl — orthogonal-complement route (`Submodule.orthogonal_orthogonal_eq_closure` + `Lp.fourierTransformₗᵢ` Parseval + Steps 1–3) reduces to FORWARD `mem_sigma_iff_fourier_transverse`, itself blocked only on P2 (`schwartz_antiHermitian_has_testSymbol_preimage`, stub above). NOT independently months-class. lean-prover target once P2 lands (issue #3)
 
 /-! ### Deliverable -/
 
