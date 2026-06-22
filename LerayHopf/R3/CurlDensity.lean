@@ -287,67 +287,6 @@ theorem fourier_curlSchwartz_eq_cross
     · exact hx2
   rw [hpotξ, hpotξ]
 
-/-! ### (P2) Schwartz Hermitian preimage — sole remaining sorry blocker
-
-This lemma is the single analytic gap that blocks the two remaining `sorry`s in this file
-(`mem_sigma_iff_fourier_transverse` forward direction and `l2sigma_le_closure_span_curl`).
-
-**Removal plan for `axiom curlSchwartzDense_holds` (import-DAG note).**
-`CurlDensity.lean` already imports `SchwartzDivFreeBasis.lean`, so once
-`curlSchwartzDense_provedRoute` is sorry-free it CANNOT be used in-place to retire the axiom
-— that would require `SchwartzDivFreeBasis` to import `CurlDensity`, creating a cycle.
-The clean one-step route (owner-approved scope, issue #3):
-
-  1. Prove P2 here → sorries in `mem_sigma_iff_fourier_transverse` and
-     `l2sigma_le_closure_span_curl` discharge → `curlSchwartzDense_provedRoute` becomes sorry-free.
-  2. In `SchwartzDivFreeBasis.lean`, replace
-       `axiom curlSchwartzDense_holds : CurlSchwartzDense`
-     with
-       `theorem curlSchwartzDense_holds : CurlSchwartzDense := curlSchwartzDense_provedRoute`
-     (The name is preserved so every downstream consumer — `nonempty_schwartzGalerkinBasis`,
-      `r3GalerkinScheme_exists` — is unchanged.)
-     This requires adding `import LerayHopf.R3.CurlDensity` to `SchwartzDivFreeBasis.lean`.
-     DAG check: `CurlDensity` imports `SchwartzDivFreeBasis`, so the reverse import would be
-     cyclic — FORBIDDEN.  Therefore step 2 must move the replacement into a NEW downstream
-     file (`CurlDensityCapstone.lean`) that imports BOTH, or relocate
-     `nonempty_schwartzGalerkinBasis` + `r3GalerkinScheme_exists` to such a file.
-
-  **Recommended route (lean-coder follow-up after P2 is proved):**
-  Create `LerayHopf/R3/CurlDensityCapstone.lean` that imports both `CurlDensity` and
-  `SchwartzDivFreeBasis`, re-exports `nonempty_schwartzGalerkinBasis` and
-  `r3GalerkinScheme_exists` routing through `curlSchwartzDense_provedRoute`, and removes the
-  axiom body from `SchwartzDivFreeBasis.lean` (keeping only the `Prop` definition
-  `CurlSchwartzDense` and the constructive content A1–C1).  The axiom line is then deleted.
-  `#print axioms nonempty_schwartzGalerkinBasis` should show no `curlSchwartzDense_holds`.
--/
-
-/-- **(P2) Schwartz Hermitian preimage extraction (must-prove — item 11 in the plan).**
-
-If `h : 𝓢(ℝ³, ℂ)` is anti-Hermitian in the sense `h(-ξ) = -conj(h(ξ))` (i.e. `h` is an
-anti-Hermitian Schwartz symbol, exactly the kind produced by `testSymbol φ` for real `φ`),
-then there exists `φ : 𝓢(ℝ³, ℝ)` such that `testSymbol φ = h`.
-
-**Constructibility sketch** (no Mathlib PR needed — all primitives present):
-- Let `g = (2πi)⁻¹ • h` (Hermitian: `g(-ξ) = conj(g(ξ))`).
-- Let `Ψ : 𝓢(ℝ³, ℂ)` be the Schwartz inverse Fourier transform `𝓕⁻ g`
-  (`FourierTransform.fourierCLE.symm` applied to `g`).
-- Since `g` is Hermitian, `Ψ` is real-valued: use `fourier_ofReal_reflect_eq_conj` (proved,
-  P1 above) to establish `Ψ(-ξ) =ᵐ conj(Ψ(ξ))`, i.e. `Im Ψ = 0`.
-- Extract the real Schwartz function `φ := (Re ∘ Ψ)` via
-  `Ψ.postcompCLM (RCLike.reCLM : ℂ →L[ℝ] ℝ)` (`SchwartzMap.postcompCLM`).
-- Verify `testSymbol φ = h`:
-  `testSymbol φ ξ = conj((2πi) · 𝓕(schwartzC φ)(ξ))`.
-  Since `Ψ` is real-valued, `schwartzC φ = schwartzC (Re Ψ) = Ψ`.
-  Then `𝓕(Ψ) = 𝓕(𝓕⁻ g) = g` by `FourierInvPair`, and `conj((2πi)·g) = h` by definition.
-
-Key Mathlib decls: `SchwartzMap.postcompCLM`, `Complex.conjCLE`, `RCLike.reCLM`,
-`FourierTransform.fourierCLE` (symm), `FourierInvPair`, `fourier_ofReal_reflect_eq_conj` (item 9). -/
-private theorem schwartz_antiHermitian_has_testSymbol_preimage
-    (h : SchwartzMap Domain3 ℂ)
-    (hH : ∀ ξ : Domain3, h (-ξ) = -(starRingEnd ℂ) (h ξ)) :
-    ∃ φ : SchwartzMap Domain3 ℝ, testSymbol φ = h :=
-  sorry -- ALLOW_SORRY: #3 (P2) schwartz_antiHermitian_has_testSymbol_preimage — Schwartz Hermitian real-extraction; constructible from postcompCLM conjCLE + reCLM + fourierCLE.symm + FourierInvPair + fourier_ofReal_reflect_eq_conj; NOT in mathlib; weeks-class; lean-prover target (issue #3)
-
 /-! ### Step 2 — spectral characterization of weak divergence-freeness -/
 
 /-- **Fourier of a real function is Hermitian.**  For a real Schwartz `φ`, the Fourier
@@ -744,6 +683,61 @@ private theorem mem_sigma_of_transverse_ae (u : L2VF_R3)
   refine integral_congr_ae ?_
   filter_upwards [h] with ξ hξ
   rw [hξ, mul_zero]
+
+/-! #### (P2) Schwartz Hermitian preimage — sole remaining sorry blocker
+
+This lemma is the single analytic gap that blocks the two remaining `sorry`s in this file
+(`mem_sigma_iff_fourier_transverse` forward direction and `l2sigma_le_closure_span_curl`).
+
+**Removal plan for `curlSchwartzDense_holds` (import-DAG note, issue #3).**
+`CurlDensity.lean` already imports `SchwartzDivFreeBasis.lean`, so once
+`curlSchwartzDense_provedRoute` is sorry-free it CANNOT be used in-place to retire the
+marked declaration — that would require `SchwartzDivFreeBasis` to import `CurlDensity`,
+creating a cycle.  The clean one-step route (owner-approved scope, issue #3):
+
+  1. Prove P2 here → sorries in `mem_sigma_iff_fourier_transverse` and
+     `l2sigma_le_closure_span_curl` discharge → `curlSchwartzDense_provedRoute` becomes sorry-free.
+  2. Create `LerayHopf/R3/CurlDensityCapstone.lean` that imports BOTH `CurlDensity` and
+     `SchwartzDivFreeBasis`, and in that file:
+       - provides `nonempty_schwartzGalerkinBasis` routed through `curlSchwartzDense_provedRoute`
+         (bypassing the marked declaration in `SchwartzDivFreeBasis`), and
+       - replaces `r3GalerkinScheme_exists` to route through the proved version.
+     Alternatively: in `SchwartzDivFreeBasis.lean`, change the body of
+     `curlSchwartzDense_holds` from `sorry / axiom` to
+     `curlSchwartzDense_provedRoute` — only valid if that file is restructured to NOT import
+     `CurlDensity` (reverse-DAG direction). The capstone-file route is cleaner and acyclic.
+
+  **Definition of done:** `#print axioms nonempty_schwartzGalerkinBasis` contains no
+  `curlSchwartzDense_holds`; `lake build` passes; `check-no-axiom` clean on both files.
+-/
+
+/-- **(P2) Schwartz Hermitian preimage extraction (must-prove — item 11 in the plan).**
+
+If `h : 𝓢(ℝ³, ℂ)` is anti-Hermitian in the sense `h(-ξ) = -conj(h(ξ))` (i.e. `h` is an
+anti-Hermitian Schwartz symbol, exactly the kind produced by `testSymbol φ` for real `φ`),
+then there exists `φ : 𝓢(ℝ³, ℝ)` such that `testSymbol φ = h`.
+
+**Constructibility sketch** (no Mathlib PR needed — all primitives present):
+- Let `g = (2πi)⁻¹ • h` (Hermitian: `g(-ξ) = conj(g(ξ))`).
+- Let `Ψ : 𝓢(ℝ³, ℂ)` be the Schwartz inverse Fourier transform `𝓕⁻ g`
+  (`FourierTransform.fourierCLE.symm` applied to `g`).
+- Since `g` is Hermitian, `Ψ` is real-valued: use `fourier_ofReal_reflect_eq_conj` (proved,
+  P1 above) to establish that `𝓕⁻ g` is real-valued, so `Im Ψ = 0`.
+- Extract the real Schwartz function `φ := Ψ.postcompCLM reCLM`
+  (via `SchwartzMap.postcompCLM (RCLike.reCLM : ℂ →L[ℝ] ℝ)`, which gives `φ ξ = Re(Ψ ξ)`).
+- Verify `testSymbol φ = h`:
+  `testSymbol φ ξ = conj((2πi) · 𝓕(schwartzC φ)(ξ))`.
+  Since `Ψ` is real-valued, `schwartzC φ = schwartzC (Re Ψ) = Ψ` (as Schwartz maps).
+  Then `𝓕(Ψ) = 𝓕(𝓕⁻ g) = g` by `FourierInvPair`, and `conj((2πi)·g) = h` by definition of `g`.
+
+Key Mathlib decls: `SchwartzMap.postcompCLM`, `Complex.conjCLE`, `RCLike.reCLM`,
+`FourierTransform.fourierCLE` (symm), `FourierInvPair`,
+`fourier_ofReal_reflect_eq_conj` (item 9, proved above). -/
+private theorem schwartz_antiHermitian_has_testSymbol_preimage
+    (h : SchwartzMap Domain3 ℂ)
+    (hH : ∀ ξ : Domain3, h (-ξ) = -(starRingEnd ℂ) (h ξ)) :
+    ∃ φ : SchwartzMap Domain3 ℝ, testSymbol φ = h :=
+  sorry -- ALLOW_SORRY: #3 schwartz_antiHermitian_has_testSymbol_preimage — (P2) Schwartz Hermitian real-extraction; constructible from postcompCLM conjCLE + reCLM + fourierCLE.symm + FourierInvPair + fourier_ofReal_reflect_eq_conj; NOT in mathlib; weeks-class; lean-prover target (issue #3)
 
 /-- **Step 2 (spectral div-free characterization).**  A field `u ∈ L2VF_R3` is weakly
 divergence-free (`u ∈ L2Sigma_R3`) iff its Fourier transform is a.e. transverse:
