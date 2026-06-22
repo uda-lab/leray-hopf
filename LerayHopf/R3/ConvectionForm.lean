@@ -344,7 +344,18 @@ and `L2VF_projComponent_R3` is linear. -/
 theorem isSchwartzDivFree_add (u v : L2Sigma_R3)
     (hu : IsSchwartzDivFree_R3 u) (hv : IsSchwartzDivFree_R3 v) :
     IsSchwartzDivFree_R3 (u + v) := by
-  sorry -- ALLOW_SORRY: #48 isSchwartzDivFree_add
+  obtain ⟨ψu, hψu⟩ := hu
+  obtain ⟨ψv, hψv⟩ := hv
+  -- Witness: component-wise sum of Schwartz representatives
+  refine ⟨fun j => ψu j + ψv j, fun j => ?_⟩
+  -- L2VF_projComponent_R3 is a CLM, hence additive
+  rw [Submodule.coe_add, map_add, hψu j, hψv j]
+  -- (ψu j + ψv j).toLp = ψu j .toLp + ψv j .toLp via toLpCLM (a CLM)
+  show (ψu j + ψv j).toLp 2 (volume : Measure Domain3) =
+    (ψu j).toLp 2 (volume : Measure Domain3) + (ψv j).toLp 2 (volume : Measure Domain3)
+  have := (SchwartzMap.toLpCLM ℝ ℝ 2 (volume : Measure Domain3)).map_add (ψu j) (ψv j)
+  simp only [SchwartzMap.toLpCLM_apply] at this
+  exact this
 
 /-! ### H2 — `IsSchwartzDivFree_R3` is closed under scalar multiplication -/
 
@@ -354,7 +365,15 @@ Proof: if `u` has witnesses `ψu` then `c • u` has witnesses `(fun j => c • 
 theorem isSchwartzDivFree_smul (c : ℝ) (u : L2Sigma_R3)
     (hu : IsSchwartzDivFree_R3 u) :
     IsSchwartzDivFree_R3 (c • u) := by
-  sorry -- ALLOW_SORRY: #48 isSchwartzDivFree_smul
+  obtain ⟨ψu, hψu⟩ := hu
+  -- Witness: scalar multiple of Schwartz representatives
+  refine ⟨fun j => c • ψu j, fun j => ?_⟩
+  rw [Submodule.coe_smul, map_smul, hψu j]
+  show (c • ψu j).toLp 2 (volume : Measure Domain3) =
+    c • (ψu j).toLp 2 (volume : Measure Domain3)
+  have := (SchwartzMap.toLpCLM ℝ ℝ 2 (volume : Measure Domain3)).map_smul c (ψu j)
+  simp only [SchwartzMap.toLpCLM_apply] at this
+  exact this
 
 /-! ### H3 — `IsSchwartzDivFree_R3` is closed under finite linear combinations -/
 
@@ -366,7 +385,18 @@ class is closed under addition). -/
 theorem isSchwartzDivFree_linearCombination {ι : Type*} (s : Finset ι) (f : ι → ℝ)
     (v : ι → L2Sigma_R3) (hv : ∀ i ∈ s, IsSchwartzDivFree_R3 (v i)) :
     IsSchwartzDivFree_R3 (∑ i ∈ s, f i • v i) := by
-  sorry -- ALLOW_SORRY: #48 isSchwartzDivFree_linearCombination
+  induction s using Finset.cons_induction_on with
+  | empty =>
+    simp only [Finset.sum_empty]
+    -- zero element: empty Schwartz witness
+    exact ⟨fun _ => 0, fun j => by
+      simp only [Submodule.coe_zero, map_zero]
+      exact (map_zero (SchwartzMap.toLpCLM ℝ ℝ 2 (volume : Measure Domain3))).symm⟩
+  | cons a s' ha ih =>
+    rw [Finset.sum_cons]
+    apply isSchwartzDivFree_add
+    · exact isSchwartzDivFree_smul _ _ (hv a (Finset.mem_cons_self a s'))
+    · exact ih (fun i hi => hv i (Finset.mem_cons.mpr (Or.inr hi)))
 
 /-! ### H4 — `curlSchwartzL2 ψ` packaged as `L2Sigma_R3` is `IsSchwartzDivFree_R3` -/
 
@@ -378,7 +408,8 @@ component, matching exactly the `L2VF_projComponent_R3` via `curlSchwartzL2_proj
 theorem curlSchwartzL2_isSchwartzDivFree_R3 (ψ : Fin 3 → SchwartzMap Domain3 ℝ) :
     IsSchwartzDivFree_R3
       (⟨curlSchwartzL2 ψ, curlSchwartzL2_mem_sigma ψ⟩ : L2Sigma_R3) := by
-  sorry -- ALLOW_SORRY: #48 curlSchwartzL2_isSchwartzDivFree_R3
+  -- Witness: curlSchwartz ψ provides Schwartz components
+  exact ⟨curlSchwartz ψ, fun j => curlSchwartzL2_projComponent ψ j⟩
 
 /-! ### P1 — Main density theorem: `IsSchwartzDivFree_R3` is dense in `L2Sigma_R3` -/
 
@@ -394,11 +425,89 @@ Proof route:
    `IsSchwartzDivFree_R3` by H3 + H4.
 5. Convergence in `L2Sigma_R3` (subspace topology = subtype topology) follows from
    convergence in `L2VF_R3`. -/
+-- Helper: the set-level Schwartz-components predicate, living on `L2VF_R3`.
+-- `IsSchwartzComp x` iff `x` has Schwartz component witnesses (no div-free condition needed).
+private def IsSchwartzComp (x : L2VF_R3) : Prop :=
+  ∃ ψ : Fin 3 → SchwartzMap Domain3 ℝ,
+    ∀ j : Fin 3, L2VF_projComponent_R3 j x = (ψ j).toLp 2 (volume : Measure Domain3)
+
+private theorem isSchwartzComp_curlSchwartzL2 (ψ : Fin 3 → SchwartzMap Domain3 ℝ) :
+    IsSchwartzComp (curlSchwartzL2 ψ) :=
+  ⟨curlSchwartz ψ, fun j => curlSchwartzL2_projComponent ψ j⟩
+
+private theorem isSchwartzComp_zero : IsSchwartzComp (0 : L2VF_R3) :=
+  ⟨fun _ => 0, fun j => by
+    simp only [map_zero]
+    exact (map_zero (SchwartzMap.toLpCLM ℝ ℝ 2 (volume : Measure Domain3))).symm⟩
+
+private theorem isSchwartzComp_add {x y : L2VF_R3}
+    (hx : IsSchwartzComp x) (hy : IsSchwartzComp y) : IsSchwartzComp (x + y) :=
+  let ⟨ψx, hψx⟩ := hx
+  let ⟨ψy, hψy⟩ := hy
+  ⟨fun j => ψx j + ψy j, fun j => by
+    rw [map_add, hψx j, hψy j]
+    have := (SchwartzMap.toLpCLM ℝ ℝ 2 (volume : Measure Domain3)).map_add (ψx j) (ψy j)
+    simp only [SchwartzMap.toLpCLM_apply] at this
+    exact this⟩
+
+private theorem isSchwartzComp_smul (c : ℝ) {x : L2VF_R3} (hx : IsSchwartzComp x) :
+    IsSchwartzComp (c • x) :=
+  let ⟨ψx, hψx⟩ := hx
+  ⟨fun j => c • ψx j, fun j => by
+    rw [map_smul, hψx j]
+    have := (SchwartzMap.toLpCLM ℝ ℝ 2 (volume : Measure Domain3)).map_smul c (ψx j)
+    simp only [SchwartzMap.toLpCLM_apply] at this
+    exact this⟩
+
+-- Every element of `Submodule.span ℝ (Set.range curlSchwartzL2)` has Schwartz components.
+private theorem isSchwartzComp_of_mem_span
+    {x : L2VF_R3} (hx : x ∈ Submodule.span ℝ (Set.range curlSchwartzL2)) :
+    IsSchwartzComp x := by
+  induction hx using Submodule.span_induction with
+  | mem x hx =>
+    obtain ⟨ψ, rfl⟩ := hx
+    exact isSchwartzComp_curlSchwartzL2 ψ
+  | zero => exact isSchwartzComp_zero
+  | add x y _ _ hx hy => exact isSchwartzComp_add hx hy
+  | smul c x _ hx => exact isSchwartzComp_smul c hx
+
+-- The span of curl fields is contained in `L2Sigma_R3`
+private theorem span_curlSchwartzL2_le_L2Sigma :
+    Submodule.span ℝ (Set.range curlSchwartzL2) ≤ L2Sigma_R3 := by
+  rw [Submodule.span_le]
+  rintro x ⟨ψ, rfl⟩
+  exact curlSchwartzL2_mem_sigma ψ
+
 theorem schwartzDivFree_dense_of_curlDense
     (h : CurlSchwartzDense) (u : L2Sigma_R3) :
     ∃ s : ℕ → L2Sigma_R3, (∀ n, IsSchwartzDivFree_R3 (s n)) ∧
       Filter.Tendsto s Filter.atTop (nhds u) := by
-  sorry -- ALLOW_SORRY: #48 schwartzDivFree_dense_of_curlDense
+  -- Step 1: u ∈ closure (Submodule.span ℝ (Set.range curlSchwartzL2)) in L2VF_R3
+  have hu_in_closure : (u : L2VF_R3) ∈
+      closure (↑(Submodule.span ℝ (Set.range curlSchwartzL2)) : Set L2VF_R3) := by
+    rw [← Submodule.topologicalClosure_coe]
+    exact h u.2
+  -- Step 2: L2VF_R3 is a metric space, hence FrechetUrysohnSpace
+  -- (NormedAddCommGroup → PseudoMetricSpace → FirstCountableTopology → FrechetUrysohnSpace)
+  haveI : FrechetUrysohnSpace L2VF_R3 :=
+    inferInstance  -- via NormedAddCommGroup → MetricSpace → FirstCountable → FrechetUrysohn
+  -- Step 3: Get a sequence in the span converging to u in L2VF_R3
+  rw [mem_closure_iff_seq_limit] at hu_in_closure
+  obtain ⟨sn, hsn_mem, hsn_lim⟩ := hu_in_closure
+  -- Step 4: Each sn n ∈ L2Sigma_R3 (since span ≤ L2Sigma_R3)
+  have hsn_sigma : ∀ n, (sn n : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3) :=
+    fun n => span_curlSchwartzL2_le_L2Sigma (hsn_mem n)
+  -- Step 5: Lift sn to L2Sigma_R3
+  let s : ℕ → L2Sigma_R3 := fun n => ⟨sn n, hsn_sigma n⟩
+  -- Step 6: Each s n is IsSchwartzDivFree_R3
+  have hs_sch : ∀ n, IsSchwartzDivFree_R3 (s n) := by
+    intro n
+    exact isSchwartzComp_of_mem_span (hsn_mem n)
+  -- Step 7: s n → u in L2Sigma_R3 (subtype topology)
+  have hs_lim : Filter.Tendsto s Filter.atTop (nhds u) := by
+    rw [tendsto_subtype_rng]
+    exact hsn_lim
+  exact ⟨s, hs_sch, hs_lim⟩
 
 /-! ### P2 — Scaffold packaging for future `ConvectionGap` construction -/
 
