@@ -11,12 +11,13 @@ deliberately standalone) it is unavoidable here. It also reuses P3
 (`localCompactness_R3_of_ballCompact`, `LocalRellichInput`) and R3-d's `b`-bound analytic core
 (via `F.b_bound` in `R3.TrilinearEstimate`'s downstream `R3NSForms`).
 
-**Refined scope (ADDENDUM — supersedes §3 Tier P / §9 where they conflict):** P2 targets the
-**Aubin–Lions reduction** (spatial+time ⇒ package) plus **two reusable analytic lemmas**,
-conditional only on the single isolated frontier hypothesis `TimeCompactnessInput` (the honest
-uniform-in-`n` L² time modulus that mathlib's absent `W^{1,p}(0,T;X)` / vector-valued weak time
-derivative / Aubin–Lions theory would supply). This is an **HONEST PARTIAL milestone**: part of
-the deliverables are proved axiom-free, two are still open (`sorry` with truthful TODOs).
+**Refined scope (ADDENDUM — supersedes §3 Tier P / §9 where they conflict; UPDATED post-#15):**
+P2 targets the **Aubin–Lions reduction** (spatial+time ⇒ package) plus **two reusable analytic
+lemmas**. As of issue #15 the centerpiece reduction `aubinLionsPackage_R3_of_timeCompactness` (C2)
+is **closed sorry-free**: its spatial half is PROVED axiom-free, and the single irreducible
+Bochner-time a.e.-L² extraction is isolated as ONE marked axiom `galerkinSpaceTimeExtraction_R3`
+(the content mathlib's absent `W^{1,p}(0,T;X)` / vector-valued weak time derivative / Aubin–Lions
+theory would supply). The deliverables are otherwise proved axiom-free.
 
 **PROVED, axiom-free (no `sorryAx`):**
 
@@ -35,28 +36,34 @@ the deliverables are proved axiom-free, two are still open (`sorry` with truthfu
   `AubinLionsPackage_R3.strong_convergence` to its faithful `eLpNorm`-form: the field now supplies
   the time-`L²` convergence directly, so `hconv` is exactly `strong_convergence R`.
 
-**OPEN / PARTIAL (currently `sorry` with truthful TODO — NOT impossible, NOT unsound):**
+**CLOSED (issue #15) — C2 is sorry-free:**
 
-* `aubinLionsPackage_R3_of_timeCompactness` (C2, ~line 417) — the centerpiece Aubin–Lions
-  assembly via the viable Steklov interval-averaging route. The building blocks above are proved;
-  the REMAINING work is an OPEN ENGINEERING target: δ-mesh diagonalization + H¹/Jensen bound on
-  the interval average + Bochner-average measurability. See the in-body TODO.
+* `aubinLionsPackage_R3_of_timeCompactness` (C2) — the centerpiece Aubin–Lions assembly. Its
+  spatial half is PROVED axiom-free (the `steklovAvg_spatial_extraction` chain over the FK-derived
+  `LocalRellichInput`); every package field is then assembled axiom-free from the conclusion of the
+  single isolated extraction axiom `galerkinSpaceTimeExtraction_R3`. The constructor no longer takes
+  a `TimeCompactnessInput` argument — that modulus is absorbed into the (now unconditional)
+  extraction axiom (see issue #15 collapse). The `TimeCompactnessInput` structure and the
+  `galerkin_curves_equicontinuous` helper are retained as legacy/unused scaffolding (referenced only
+  in docs), kept for the eventual discharge of the extraction axiom.
 
-**Documented residual frontier (NOT reconstructed here, axioms retained):** the limit-passage
+**Documented residual frontier (the limit-passage half stays axiomatic upstream):** the limit-passage
 conclusions (b) `WeakFormNS`, (d) initial trace, and (e) energy class require the absent
-vector-valued weak time-derivative / `W^{1,p}(0,T;X)` theory. Bundling them into a
-`GoodRepresentativeInput` hypothesis would re-assert the conclusions (smuggling), so per the
-ADDENDUM we DROP that and `galerkinLimitPassage_R3_of_goodRep`. P2 does NOT claim to produce the
-full `galerkin_limit_passage_R3` conclusion (this mirrors R3-d, which proved `b`-form lemmas
-without producing `Nonempty R3NSForms`).
+vector-valued weak time-derivative / `W^{1,p}(0,T;X)` theory and are carried by the upstream
+`galerkin_limit_passage_R3` axiom (not by this file). Bundling them into a `GoodRepresentativeInput`
+hypothesis would re-assert the conclusions (smuggling), so per the ADDENDUM we DROP that and
+`galerkinLimitPassage_R3_of_goodRep`. P2 does NOT itself produce the full `galerkin_limit_passage_R3`
+conclusion (this mirrors R3-d, which proved `b`-form lemmas without producing `Nonempty R3NSForms`).
 
-**Zero new `axiom`/`opaque`/`constant`.** Honest isolated hypotheses: `TimeCompactnessInput` is an
-explicit *argument* (not an axiom) — the intended time-frontier feeding the still-open C2 reduction,
-exactly as P3's `LocalRellichInput`, R3-d's `hdiv`, P5's `SchwartzGalerkinBasis.dense_span`. It is
-NOT the only non-proved item: E1 and C2 remain open `sorry`s as described above.
+**ONE new `axiom` in this file:** `galerkinSpaceTimeExtraction_R3` (`-- ALLOW_AXIOM`) — the single
+irreducible Bochner-time a.e.-L² compactness extraction (one subsequence + an a.e.-in-time L² limit
+curve for the bounded Galerkin sequence), stated UNCONDITIONALLY; mathlib lacks the Bochner-valued
+Fréchet–Kolmogorov / Aubin–Lions theorem in `L²(0,T;X)`. No `opaque`/`constant`/`unsafe`. The honest
+isolated hypotheses (P3's `LocalRellichInput`, R3-d's `hdiv`, P5's `SchwartzGalerkinBasis.dense_span`)
+remain explicit *arguments*, not axioms.
 
-Target axioms this milestone partially substantiates (NOT removed):
-`aubin_lions_R3` (`AxiomaticClosure.lean:444–460`, package `406–428`).
+Target axiom this milestone discharges (issue #15): `aubin_lions_R3` is REMOVED — its spatial half
+PROVED, its time content swapped 1-for-1 for the strictly-thinner `galerkinSpaceTimeExtraction_R3`.
 -/
 
 -- Import-cycle audit (REQUIRED — Hard rule 10). Verified against the actual import lines:
@@ -1355,16 +1362,17 @@ this axiom carries ONLY the time-compactness extraction, not the spatial compact
 The axiom is UNCONDITIONAL: it does NOT take a `TimeCompactnessInput`/modulus hypothesis.  The
 Galerkin curves' time-equicontinuity is a TRUE standalone consequence of their proved uniform bounds
 (`galerkin_norm_le_u0`) and ODE structure; the single irreducible fact mathlib cannot supply is the
-Bochner-time compactness *extraction* itself, which this axiom names directly.  This removes the
-former separate `timeCompactnessInput_R3` axiom (the modulus is absorbed here), so the time layer
-rests on exactly ONE axiom rather than two.
+Bochner-time compactness *extraction* itself, which this axiom names directly.  By stating it
+unconditionally we absorb the modulus, so the time layer rests on exactly THIS ONE axiom — the
+redundant `timeCompactnessInput_R3` axiom from the prior revision of this PR (which only ever fed
+this extraction) is dropped.
 
 Once supplied, the whole `AubinLionsPackage_R3` is assembled axiom-free from this conclusion:
 `u_aestronglyMeasurable` is the second conjunct; `strong_convergence` follows by ball-restriction
 continuity + dominated convergence in `L²` (the `2‖u₀‖` constant dominator on the finite window
 `[0,T]`, via `galerkin_norm_le_u0`).  NON-VACUOUS: the conclusion pins `u` to the a.e.-`L²`-limit of
 the given subsequence (not a free choice).  Temam III.2.1; Lemarié-Rieusset §6 (Aubin–Lions). -/
-axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: Bochner-time compactness extraction (Aubin–Lions time half) on ℝ³ — UNCONDITIONAL (no TimeCompactnessInput hypothesis): single subsequence + a.e.-in-time L² limit curve for the bounded Galerkin sequence, from proved spatial precompactness (steklovAvg_spatial_extraction) + the curves' intrinsic time-equicontinuity; STRICTLY THINNER than aubin_lions_R3 (spatial half now PROVED) and ABSORBS the former timeCompactnessInput_R3 modulus (one axiom not two); mathlib lacks Bochner-valued Fréchet–Kolmogorov/Aubin–Lions in L²(0,T;X); TRUE and NON-VACUOUS (pins u to the a.e.-L²-limit of the subsequence); Temam III.2.1
+axiom galerkinSpaceTimeExtraction_R3 -- ALLOW_AXIOM: Bochner-time compactness extraction (Aubin–Lions time half) on ℝ³ — UNCONDITIONAL (no TimeCompactnessInput hypothesis): single subsequence + a.e.-in-time L² limit curve for the bounded Galerkin sequence, from proved spatial precompactness (steklovAvg_spatial_extraction) + the curves' intrinsic time-equicontinuity; STRICTLY THINNER than aubin_lions_R3 (spatial half now PROVED) and absorbs the time-equicontinuity modulus (the redundant prior-revision timeCompactnessInput_R3 axiom is dropped; this is the single time-layer axiom); mathlib lacks Bochner-valued Fréchet–Kolmogorov/Aubin–Lions in L²(0,T;X); TRUE and NON-VACUOUS (pins u to the a.e.-L²-limit of the subsequence); Temam III.2.1
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)

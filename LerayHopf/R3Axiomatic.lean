@@ -40,8 +40,9 @@ PR #35 / issue #2).
 removed (issue #15).  Its spatial half is genuinely PROVED axiom-free (the
 `steklovAvg_spatial_extraction` chain over the FK-derived `LocalRellichInput`), and its time
 content is SWAPPED 1-for-1 for the single strictly-thinner UNCONDITIONAL axiom
-`galerkinSpaceTimeExtraction_R3` (which absorbs the time-equicontinuity modulus; the former
-separate `timeCompactnessInput_R3` axiom is REMOVED).  The package is assembled by the proved
+`galerkinSpaceTimeExtraction_R3` (which absorbs the time-equicontinuity modulus, so no separate
+modulus axiom is needed; the redundant prior-revision `timeCompactnessInput_R3` axiom is dropped).
+The package is assembled by the proved
 constructor
 `aubinLionsPackage_R3_of_timeCompactness` (`LerayHopf/R3/AubinLionsLimitPassage.lean`), wired
 through the relocated builder in `LerayHopf/R3/AubinLionsAssembly.lean`.

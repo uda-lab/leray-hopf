@@ -170,8 +170,8 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 #   (aubin_lions_R3 REMOVED — issue #15 — its spatial half PROVED via the
 #    steklovAvg_spatial_extraction chain; its time content SWAPPED 1-for-1 for the single
 #    strictly-thinner UNCONDITIONAL axiom galerkinSpaceTimeExtraction_R3 (the Bochner-time a.e.-L²
-#    extraction, which absorbs the time-equicontinuity modulus; the former separate
-#    timeCompactnessInput_R3 axiom is REMOVED); net R3 project axioms 4)
+#    extraction, which absorbs the time-equicontinuity modulus, so no separate modulus axiom is
+#    needed; the redundant prior-revision timeCompactnessInput_R3 axiom is dropped); net R3 axioms 4)
 # ---------------------------------------------------------------------------
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound

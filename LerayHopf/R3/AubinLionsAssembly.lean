@@ -21,9 +21,10 @@ lands here, one level below `AubinLionsLimitPassage`, mirroring the #10/#24 caps
 * REMOVED: `aubin_lions_R3` (its spatial half PROVED, its time half isolated thinner).
 * ADDED: `galerkinSpaceTimeExtraction_R3` (declared in `AubinLionsLimitPassage.lean`) — the single
   UNCONDITIONAL Bochner-time compactness extraction, supplied to
-  `aubinLionsPackage_R3_of_timeCompactness`.  The former separate `timeCompactnessInput_R3`
-  modulus axiom has been REMOVED: its content is absorbed into the unconditional extraction axiom,
-  so the time layer is exactly ONE axiom, not two.
+  `aubinLionsPackage_R3_of_timeCompactness`.  Stating it unconditionally absorbs the
+  time-equicontinuity modulus, so the time layer rests on exactly THIS ONE axiom; the redundant
+  `timeCompactnessInput_R3` axiom from the prior revision of this PR (which only fed this extraction)
+  is dropped.  `TimeCompactnessInput` remains a plain hypothesis *type*, never inherently an axiom.
 
 So the capstone `exists_lerayHopf_r3_axiomatic` swaps `aubin_lions_R3` →
 `galerkinSpaceTimeExtraction_R3` for the time-compactness layer (a 1-for-1 thin swap), with the
@@ -40,11 +41,13 @@ open MeasureTheory
 
 /-! ### Assembly (relocated from `AxiomaticClosure.lean`, issue #15)
 
-NOTE (axiom collapse): the former `timeCompactnessInput_R3` axiom (the separate `n`-uniform L²
-time-equicontinuity modulus) has been REMOVED.  Its content is now absorbed into the single
-UNCONDITIONAL `galerkinSpaceTimeExtraction_R3` axiom (`AubinLionsLimitPassage.lean`), so the time
-layer rests on exactly ONE axiom rather than two.  The proved constructor
-`aubinLionsPackage_R3_of_timeCompactness` no longer takes a `TimeCompactnessInput` argument. -/
+NOTE (axiom collapse): the prior revision of this PR introduced a redundant
+`timeCompactnessInput_R3` axiom (a separate `n`-uniform L² time-equicontinuity modulus); it has been
+DROPPED.  Its content is now absorbed into the single UNCONDITIONAL extraction axiom
+`galerkinSpaceTimeExtraction_R3` (`AubinLionsLimitPassage.lean`), so the time layer rests on exactly
+ONE axiom.  The proved
+constructor `aubinLionsPackage_R3_of_timeCompactness` no longer takes a `TimeCompactnessInput`
+argument (that structure stays a plain hypothesis type, not an axiom). -/
 
 /-- **Assembly (proved Aubin–Lions core → AX-3).**  Build a `GalerkinCompactnessPackageFull_R3`
 from an EXPLICIT Galerkin sequence `galSeq`, chaining the proved Aubin–Lions package

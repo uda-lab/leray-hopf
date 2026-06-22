@@ -86,7 +86,7 @@ The name `_axiomatic` advertises that this result depends on the FOUR remaining 
 `galerkin_ode_solution_R3` is NO LONGER among them — discharged here (issue #10).
 `aubin_lions_R3` is NO LONGER among them — removed (issue #15): its spatial half PROVED, its time
 content swapped 1-for-1 for the single strictly-thinner UNCONDITIONAL `galerkinSpaceTimeExtraction_R3`
-(the former separate `timeCompactnessInput_R3` axiom is removed; its modulus is absorbed here).
+(its modulus absorbed here; the redundant prior-revision `timeCompactnessInput_R3` axiom is dropped).
 `r3GalerkinScheme_exists` was discharged earlier (issue #21, `curlSchwartzDense_holds`);
 `spatial_compactness_R3` earlier still (issue #2, FK chain). -/
 theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
