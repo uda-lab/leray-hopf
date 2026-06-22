@@ -639,6 +639,24 @@ private noncomputable def steklovAvg (𝔊 : R3GalerkinScheme) (F : R3NSForms �
     (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (δ t : ℝ) : L2VF_R3 :=
   δ⁻¹ • ∫ s in t..(t + δ), (gs.u s : L2VF_R3)
 
+/-- **Backward Steklov interval-average** over `[t−δ, t]`: `δ⁻¹ • ∫_{t−δ}^{t} (gs.u s) ds`.
+This is the boundary-strip companion of `steklovAvg`: for `t` near `T` the forward window
+`[t, t+δ]` exits `[0,T]`, but the backward window `[t−δ, t]` stays inside `[0,T]` whenever
+`δ ≤ t ≤ T`, so the time modulus controls it.  Definitionally `steklovAvgBack δ t = steklovAvg δ (t−δ)`
+(the forward average based at `t−δ`), which lets every forward lemma transfer by a base-point shift. -/
+private noncomputable def steklovAvgBack (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (δ t : ℝ) : L2VF_R3 :=
+  δ⁻¹ • ∫ s in (t - δ)..t, (gs.u s : L2VF_R3)
+
+/-- The backward average is the forward average based at `t − δ`. -/
+private theorem steklovAvgBack_eq (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (δ t : ℝ) :
+    steklovAvgBack 𝔊 F ν u₀ n gs δ t = steklovAvg 𝔊 F ν u₀ n gs δ (t - δ) := by
+  rw [steklovAvgBack, steklovAvg]
+  rw [show t - δ + δ = t by ring]
+
 /-- **L² uniform bound on the Steklov average.** For `0 < δ` and `0 ≤ t`, the averaged
 state is bounded by `‖u₀‖`, uniformly in `n` and `t`.  This is the average of a curve all
 of whose values satisfy `‖(gs.u s)‖ ≤ ‖u₀‖` (via `galerkin_norm_le_u0`). -/
@@ -697,6 +715,22 @@ private theorem steklovAvg_memH1 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     memH1VF_R3 (steklovAvg 𝔊 F ν u₀ n gs δ t : L2VF_R3) :=
   galerkinCurve_reg_mem 𝔊 n _ (steklovAvg_inVn 𝔊 F ν u₀ n gs hδ ht)
 
+/-- L² uniform bound on the **backward** Steklov average (window `[t−δ,t] ⊆ Ici 0` when `δ ≤ t`). -/
+private theorem steklovAvgBack_norm_le_u0 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (hδt : δ ≤ t) :
+    ‖steklovAvgBack 𝔊 F ν u₀ n gs δ t‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
+  rw [steklovAvgBack_eq]
+  exact steklovAvg_norm_le_u0 𝔊 F ν u₀ n gs hδ (by linarith)
+
+/-- H¹ regularity of the **backward** Steklov average (window `[t−δ,t] ⊆ Ici 0` when `δ ≤ t`). -/
+private theorem steklovAvgBack_memH1 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (hδt : δ ≤ t) :
+    memH1VF_R3 (steklovAvgBack 𝔊 F ν u₀ n gs δ t : L2VF_R3) := by
+  rw [steklovAvgBack_eq]
+  exact steklovAvg_memH1 𝔊 F ν u₀ n gs hδ (by linarith)
+
 /-- **Steklov average approximates the original curve.** If, on the window
 `[t, t+δ]`, the curve varies by less than `ε` in L², then
 `‖(gs.u t) − steklovAvg δ t‖ ≤ ε`.  This is the key step-3 estimate of the Steklov route.
@@ -734,6 +768,36 @@ private theorem steklovAvg_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
         refine intervalIntegral.norm_integral_le_of_norm_le_const ?_
         intro s hs; exact hmod s hs
     _ = ε * δ := by rw [show (t + δ) - t = δ by ring, abs_of_pos hδ]
+    _ = δ * ε := by ring
+
+/-- **Backward Steklov average approximates the original curve at the right endpoint.** If, on the
+backward window `[t−δ, t]`, the curve varies from its value at `t` by less than `ε`, then
+`‖(gs.u t) − steklovAvgBack δ t‖ ≤ ε`.  Boundary-strip companion of `steklovAvg_approx`; the window
+`[t−δ,t]` stays in `[0,T]` for `δ ≤ t ≤ T`, so the time modulus supplies `hmod`. -/
+private theorem steklovAvgBack_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t ε : ℝ} (hδ : 0 < δ) (hδt : δ ≤ t)
+    (hmod : ∀ s ∈ Set.uIoc (t - δ) t, ‖(gs.u t : L2VF_R3) - (gs.u s : L2VF_R3)‖ ≤ ε) :
+    ‖(gs.u t : L2VF_R3) - steklovAvgBack 𝔊 F ν u₀ n gs δ t‖ ≤ ε := by
+  have hle : t - δ ≤ t := by linarith
+  have ht0 : (0 : ℝ) ≤ t - δ := by linarith
+  have hcont : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
+    galerkin_curve_continuous 𝔊 F ν u₀ n gs
+  have hwin : Set.uIcc (t - δ) t ⊆ Set.Ici (0 : ℝ) := by
+    rw [Set.uIcc_of_le hle]; intro s hs; exact le_trans ht0 hs.1
+  have hint : IntervalIntegrable (fun s => (gs.u s : L2VF_R3)) volume (t - δ) t :=
+    (hcont.mono hwin).intervalIntegrable
+  have hconst : (gs.u t : L2VF_R3) = δ⁻¹ • ∫ _s in (t - δ)..t, (gs.u t : L2VF_R3) := by
+    rw [intervalIntegral.integral_const, smul_smul]
+    rw [show t - (t - δ) = δ by ring, inv_mul_cancel₀ (ne_of_gt hδ), one_smul]
+  rw [hconst, steklovAvgBack, ← smul_sub,
+    ← intervalIntegral.integral_sub (intervalIntegrable_const) hint]
+  rw [norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hδ, inv_mul_le_iff₀ hδ]
+  calc ‖∫ s in (t - δ)..t, ((gs.u t : L2VF_R3) - (gs.u s : L2VF_R3))‖
+      ≤ ε * |t - (t - δ)| := by
+        refine intervalIntegral.norm_integral_le_of_norm_le_const ?_
+        intro s hs; exact hmod s hs
+    _ = ε * δ := by rw [show t - (t - δ) = δ by ring, abs_of_pos hδ]
     _ = δ * ε := by ring
 
 /-- **L² Jensen bound on the Steklov average (squared-norm form).** For `0 < δ` and `0 ≤ t`,
