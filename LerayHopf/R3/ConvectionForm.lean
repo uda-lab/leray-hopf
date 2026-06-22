@@ -1,5 +1,6 @@
 import LerayHopf.R3.ConvectionOperator
 import LerayHopf.R3.AxiomaticClosure
+import LerayHopf.R3.SchwartzDivFreeBasis
 
 /-!
 # Tier G — The isolated convection gap and the conditional concrete `R3NSForms` (ℝ³)
@@ -319,5 +320,100 @@ theorem R3NSForms_of_gap (𝔊 : R3GalerkinScheme) (g : ConvectionGap 𝔊) :
     -- Rewrite g.b to convFormSchwartz via b_extends, then use eq_witness
     rw [g.b_extends u v w hu hv hw,
         convFormSchwartz_eq_witness u v w hu hv hw ψu ψv ψw hpu hpv hpw]
+
+/-! ### Issue #48 — Partial discharge of `schwartz_dense` in `ConvectionGap`
+
+The five fields `b`, `b_extends`, `b_multilinear`, `b_antisymm_gap`, `b_cont_fixedTest`
+of `ConvectionGap` are genuine Mathlib-absent residuals (the weak convection operator on
+`L²_σ`).  The ONE provable sub-claim is `schwartz_dense`: density of `IsSchwartzDivFree_R3`
+in `L2Sigma_R3`, derivable from the existing axiom `curlSchwartzDense_holds`.
+
+The declarations here (H1–H4, P1, P2) formally prove that density.
+
+**Axiom delta:** No new `axiom` is added.  `r3_NSForms_exist` is NOT removed (the five
+`ConvectionGap` fields remain; see plan `docs/scratch/r3-48-nsforms-plan.md`).
+-/
+
+/-! ### H1 — `IsSchwartzDivFree_R3` is closed under addition -/
+
+/-- **H1.** The sum of two `IsSchwartzDivFree_R3` fields is again `IsSchwartzDivFree_R3`.
+
+Proof: if `u` has Schwartz witnesses `ψu` and `v` has witnesses `ψv`, then
+`u + v` has witnesses `(fun j => ψu j + ψv j)`, because `toLp` is additive a.e.
+and `L2VF_projComponent_R3` is linear. -/
+theorem isSchwartzDivFree_add (u v : L2Sigma_R3)
+    (hu : IsSchwartzDivFree_R3 u) (hv : IsSchwartzDivFree_R3 v) :
+    IsSchwartzDivFree_R3 (u + v) := by
+  sorry -- ALLOW_SORRY: #48 isSchwartzDivFree_add
+
+/-! ### H2 — `IsSchwartzDivFree_R3` is closed under scalar multiplication -/
+
+/-- **H2.** A scalar multiple of an `IsSchwartzDivFree_R3` field is again `IsSchwartzDivFree_R3`.
+
+Proof: if `u` has witnesses `ψu` then `c • u` has witnesses `(fun j => c • ψu j)`. -/
+theorem isSchwartzDivFree_smul (c : ℝ) (u : L2Sigma_R3)
+    (hu : IsSchwartzDivFree_R3 u) :
+    IsSchwartzDivFree_R3 (c • u) := by
+  sorry -- ALLOW_SORRY: #48 isSchwartzDivFree_smul
+
+/-! ### H3 — `IsSchwartzDivFree_R3` is closed under finite linear combinations -/
+
+/-- **H3.** A finite ℝ-linear combination of `IsSchwartzDivFree_R3` fields is
+`IsSchwartzDivFree_R3`.
+
+Follows by induction from H1 and H2 (scalar multiplication preserves the class, and the
+class is closed under addition). -/
+theorem isSchwartzDivFree_linearCombination {ι : Type*} (s : Finset ι) (f : ι → ℝ)
+    (v : ι → L2Sigma_R3) (hv : ∀ i ∈ s, IsSchwartzDivFree_R3 (v i)) :
+    IsSchwartzDivFree_R3 (∑ i ∈ s, f i • v i) := by
+  sorry -- ALLOW_SORRY: #48 isSchwartzDivFree_linearCombination
+
+/-! ### H4 — `curlSchwartzL2 ψ` packaged as `L2Sigma_R3` is `IsSchwartzDivFree_R3` -/
+
+/-- **H4.** For any Schwartz potential `ψ : Fin 3 → 𝓢(Domain3, ℝ)`, the curl field
+`⟨curlSchwartzL2 ψ, curlSchwartzL2_mem_sigma ψ⟩ : L2Sigma_R3` is `IsSchwartzDivFree_R3`.
+
+Proof: `curlSchwartz_isSchwartz ψ` supplies Schwartz witnesses `curlSchwartz ψ j` for each
+component, matching exactly the `L2VF_projComponent_R3` via `curlSchwartzL2_projComponent`. -/
+theorem curlSchwartzL2_isSchwartzDivFree_R3 (ψ : Fin 3 → SchwartzMap Domain3 ℝ) :
+    IsSchwartzDivFree_R3
+      (⟨curlSchwartzL2 ψ, curlSchwartzL2_mem_sigma ψ⟩ : L2Sigma_R3) := by
+  sorry -- ALLOW_SORRY: #48 curlSchwartzL2_isSchwartzDivFree_R3
+
+/-! ### P1 — Main density theorem: `IsSchwartzDivFree_R3` is dense in `L2Sigma_R3` -/
+
+/-- **P1 (main deliverable).** Given `CurlSchwartzDense`, every element of `L2Sigma_R3` is
+an L²-limit of `IsSchwartzDivFree_R3` fields.
+
+Proof route:
+1. `CurlSchwartzDense` says `L2Sigma_R3 ≤ closure (span (range curlSchwartzL2))` (in `L2VF_R3`).
+2. Any `u ∈ L2Sigma_R3` lies in the `topologicalClosure` of `span (range curlSchwartzL2)`.
+3. By `mem_closure_iff_seq_limit`, there exist finite linear combinations of
+   `curlSchwartzL2` fields converging to `u` in `L2VF_R3`.
+4. Each such combination, lifted to `L2Sigma_R3` via the submodule's closedness, is
+   `IsSchwartzDivFree_R3` by H3 + H4.
+5. Convergence in `L2Sigma_R3` (subspace topology = subtype topology) follows from
+   convergence in `L2VF_R3`. -/
+theorem schwartzDivFree_dense_of_curlDense
+    (h : CurlSchwartzDense) (u : L2Sigma_R3) :
+    ∃ s : ℕ → L2Sigma_R3, (∀ n, IsSchwartzDivFree_R3 (s n)) ∧
+      Filter.Tendsto s Filter.atTop (nhds u) := by
+  sorry -- ALLOW_SORRY: #48 schwartzDivFree_dense_of_curlDense
+
+/-! ### P2 — Scaffold packaging for future `ConvectionGap` construction -/
+
+/-- **P2 (scaffold-only).** Packaging of the density result as the `schwartz_dense`
+field shape used by `ConvectionGap`.
+
+This is a definitional wrapper around P1; useful as a named entry point for future
+`ConvectionGap` instance construction once the five operator-extension fields are available.
+
+Used as: `convectionGap_schwartz_dense curlSchwartzDense_holds` gives the density
+needed for `ConvectionGap.schwartz_dense`. -/
+lemma convectionGap_schwartz_dense (h : CurlSchwartzDense) :
+    ∀ (u : L2Sigma_R3),
+    ∃ s : ℕ → L2Sigma_R3, (∀ n, IsSchwartzDivFree_R3 (s n)) ∧
+      Filter.Tendsto s Filter.atTop (nhds u) :=
+  fun u => schwartzDivFree_dense_of_curlDense h u
 
 end LerayHopf
