@@ -173,6 +173,47 @@ private theorem continuous_restrictToBall' (R : ℝ) :
     _ = dist w' w := (dist_eq_norm _ _).symm
     _ < ε := hw'
 
+/-- Restriction to a smaller ball `B_R` is distance-nonincreasing relative to the larger ball
+`B_k` (`R ≤ k`): the difference's `L²(B_R)`-norm is bounded by its `L²(B_k)`-norm, because the
+integrand is nonnegative and `B_R ⊆ B_k`. Local copy of the content of P3's
+`furtherRestrict_dist_le` (which is `private`). -/
+private theorem restrictToBall_sub_norm_mono (R k : ℝ) (hRk : R ≤ k) (w w' : L2VF_R3) :
+    ‖restrictToBall R w - restrictToBall R w'‖ ≤ ‖restrictToBall k w - restrictToBall k w'‖ := by
+  rw [Lp.norm_def, Lp.norm_def]
+  have hsub : Metric.closedBall (0 : Domain3) R ⊆ Metric.closedBall (0 : Domain3) k :=
+    Metric.closedBall_subset_closedBall hRk
+  have hle : volume.restrict (Metric.closedBall (0 : Domain3) R)
+      ≤ volume.restrict (Metric.closedBall (0 : Domain3) k) :=
+    Measure.restrict_mono hsub le_rfl
+  have hcongR : ⇑(restrictToBall R w - restrictToBall R w')
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+        (fun x => (w x : EuclideanSpace ℝ (Fin 3)) - (w' x : EuclideanSpace ℝ (Fin 3))) := by
+    have hsub2 := Lp.coeFn_sub (restrictToBall R w) (restrictToBall R w')
+    have hu : ⇑(restrictToBall R w)
+        =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+          (w : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+    have hv : ⇑(restrictToBall R w')
+        =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
+          (w' : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+    filter_upwards [hsub2, hu, hv] with x hx hxu hxv
+    simp only [hx, Pi.sub_apply, hxu, hxv]
+  have hcongK : ⇑(restrictToBall k w - restrictToBall k w')
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) k)]
+        (fun x => (w x : EuclideanSpace ℝ (Fin 3)) - (w' x : EuclideanSpace ℝ (Fin 3))) := by
+    have hsub2 := Lp.coeFn_sub (restrictToBall k w) (restrictToBall k w')
+    have hu : ⇑(restrictToBall k w)
+        =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) k)]
+          (w : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+    have hv : ⇑(restrictToBall k w')
+        =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) k)]
+          (w' : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
+    filter_upwards [hsub2, hu, hv] with x hx hxu hxv
+    simp only [hx, Pi.sub_apply, hxu, hxv]
+  rw [eLpNorm_congr_ae hcongR, eLpNorm_congr_ae hcongK]
+  refine ENNReal.toReal_mono ?_ (eLpNorm_mono_measure _ hle)
+  rw [← eLpNorm_congr_ae hcongK]
+  exact (Lp.memLp (restrictToBall k w - restrictToBall k w')).2.ne
+
 /-! ### Group T1 — Equicontinuity transfer -/
 
 /-- **T1.1 — Unconditional uniform equicontinuity on the ball restriction.**
@@ -386,6 +427,45 @@ theorem u_lim_aestronglyMeasurable
       ∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
         Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3))
           Filter.atTop (nhds (restrictToBall R (u t : L2VF_R3))) := by
-  sorry -- ALLOW_SORRY: #44 u_lim_aestronglyMeasurable, to be discharged by lean-prover
+  -- The diagonal subsequence converges per-ball-radius-`k` (over `ℕ`) at every `t ∈ [0,T]`.
+  obtain ⟨φ, hφ, hk⟩ := diagonalSubseq_exists 𝔊 F ν hν T hT u₀ galSeq B
+  -- Promote ℕ-radius convergence to ℝ-radius convergence (existence of a per-ball limit), which
+  -- is the hypothesis `galerkin_weakLimit_R3` (T0.2) consumes.  For real `R`, the ball-`R`
+  -- restriction is a `1`-Lipschitz contraction of the convergent ball-`⌈R⌉₊` sequence, hence
+  -- Cauchy, hence convergent in the complete space `L2ballR3 R`.
+  have hball : ∀ R : ℝ, ∀ t ∈ Set.Icc (0 : ℝ) T, ∃ g_R : L2ballR3 R,
+      Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3))
+        Filter.atTop (nhds g_R) := by
+    intro R t ht
+    set k : ℕ := ⌈R⌉₊ with hk_def
+    have hRk : R ≤ (k : ℝ) := Nat.le_ceil R
+    obtain ⟨f_k, _hf_cont, hf_conv⟩ := hk k
+    -- ball-`k` convergence ⇒ Cauchy.
+    have hbCauchy : CauchySeq
+        (fun n => restrictToBall (k : ℝ) ((galSeq (φ n)).u t : L2VF_R3)) :=
+      (hf_conv t ht).cauchySeq
+    -- ball-`R` sequence is Cauchy by the contraction bound.
+    have haCauchy : CauchySeq
+        (fun n => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3)) := by
+      rw [Metric.cauchySeq_iff] at hbCauchy ⊢
+      intro ε hε
+      obtain ⟨N, hN⟩ := hbCauchy ε hε
+      refine ⟨N, fun m hm n hn => ?_⟩
+      calc dist (restrictToBall R ((galSeq (φ m)).u t : L2VF_R3))
+              (restrictToBall R ((galSeq (φ n)).u t : L2VF_R3))
+          = ‖restrictToBall R ((galSeq (φ m)).u t : L2VF_R3)
+              - restrictToBall R ((galSeq (φ n)).u t : L2VF_R3)‖ := dist_eq_norm _ _
+        _ ≤ ‖restrictToBall (k : ℝ) ((galSeq (φ m)).u t : L2VF_R3)
+              - restrictToBall (k : ℝ) ((galSeq (φ n)).u t : L2VF_R3)‖ :=
+            restrictToBall_sub_norm_mono R (k : ℝ) hRk _ _
+        _ = dist (restrictToBall (k : ℝ) ((galSeq (φ m)).u t : L2VF_R3))
+              (restrictToBall (k : ℝ) ((galSeq (φ n)).u t : L2VF_R3)) := (dist_eq_norm _ _).symm
+        _ < ε := hN m hm n hn
+    obtain ⟨g, hg⟩ := cauchySeq_tendsto_of_complete haCauchy
+    exact ⟨g, hg⟩
+  -- Apply T0.2 (`galerkin_weakLimit_R3`) to obtain the measurable limit curve.
+  obtain ⟨u, hmeas, hconv⟩ :=
+    galerkin_weakLimit_R3 𝔊 F ν u₀ galSeq φ hφ T hT hball
+  exact ⟨φ, u, hφ, hmeas, hconv⟩
 
 end LerayHopf
