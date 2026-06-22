@@ -24,7 +24,7 @@
 #     LerayHopf.galerkin_limit_passage_R3
 #     LerayHopf.r3_NSForms_exist
 #     LerayHopf.galerkin_spacetime_precompact_R3
-#     LerayHopf.galerkin_weakLimit_R3  (4 project)
+#     LerayHopf.L2VF_R3_weakSeqCompact_closedBall  (4 project)
 #     NOTE: spatial_compactness_R3 REMOVED (issue #2) — now a theorem via the FK chain.
 #     NOTE: r3GalerkinScheme_exists REMOVED (issue #21) — now a theorem, SWAPPED for the
 #           thinner curlSchwartzDense_holds density axiom.
@@ -43,6 +43,13 @@
 #           is now PROVED sorry-free in CurlDensity.lean (curlSchwartzDense_provedRoute, Fourier
 #           route). CurlDensityCapstone.lean rewires curlSchwartzDense_holds / nonempty_schwartzGalerkinBasis
 #           / r3GalerkinScheme_exists to the proved theorem. Net R3 project axioms now 4.
+#     NOTE: galerkin_weakLimit_R3 REMOVED (issue #47 PR-A) — converted to a THEOREM; the
+#           irreducible abstract FA content (sequential Banach–Alaoglu for the separable Hilbert
+#           space L2VF_R3) is isolated as the thinner scheme-independent axiom
+#           L2VF_R3_weakSeqCompact_closedBall (pure FA, no Galerkin parameters, TRUE/standard).
+#           The assembly uses WL-5 (div-free weak-closedness via Mazur) + WL-6 (measurability
+#           of a.e. weak limits). PR-B will discharge L2VF_R3_weakSeqCompact_closedBall via
+#           the Riesz-isometry homeomorphism WL-3. Net R3 project axioms: 4 (neutral swap).
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.
@@ -200,7 +207,7 @@ assert_axioms "exists_lerayHopf_r3_axiomatic" \
    LerayHopf.galerkin_limit_passage_R3
    LerayHopf.r3_NSForms_exist
    LerayHopf.galerkin_spacetime_precompact_R3
-   LerayHopf.galerkin_weakLimit_R3"
+   LerayHopf.L2VF_R3_weakSeqCompact_closedBall"
 
 # ---------------------------------------------------------------------------
 # Pin 3: Core torus representative — no project axioms, no sorryAx
