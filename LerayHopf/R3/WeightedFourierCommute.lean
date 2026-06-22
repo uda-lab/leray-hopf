@@ -122,6 +122,51 @@ theorem norm_weightedFourierComponent_sq (w : L2VF_R3) (hw : memH1VF_R3 w) (j : 
     rw [sqrtViscousWeight_sq]; rfl
   rw [hξ, norm_smul, Complex.norm_real, Real.norm_eq_abs, mul_pow, sq_abs, hsw]
 
+/-- coeFn of the weighted Fourier component: `√W • 𝓕(projⱼ w)` a.e. -/
+theorem weightedFourierComponent_coeFn (w : L2VF_R3) (hw : memH1VF_R3 w) (j : Fin 3) :
+    (weightedFourierComponent w hw j : Domain3 → ℂ)
+      =ᵐ[volume] fun ξ => (sqrtViscousWeight ξ : ℂ) • (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ :=
+  MemLp.coeFn_toLp _
+
+/-- **Additivity of the weighted Fourier component** (in its `H¹` argument). -/
+theorem weightedFourierComponent_add (w₁ w₂ : L2VF_R3) (hw₁ : memH1VF_R3 w₁) (hw₂ : memH1VF_R3 w₂)
+    (hw : memH1VF_R3 (w₁ + w₂)) (j : Fin 3) :
+    weightedFourierComponent (w₁ + w₂) hw j
+      = weightedFourierComponent w₁ hw₁ j + weightedFourierComponent w₂ hw₂ j := by
+  apply Lp.ext
+  have hFeq : (𝓕 (L2VF_projComponentC_R3 j (w₁ + w₂)) : L2C_R3)
+      = (𝓕 (L2VF_projComponentC_R3 j w₁) : L2C_R3) + 𝓕 (L2VF_projComponentC_R3 j w₂) := by
+    rw [map_add (L2VF_projComponentC_R3 j), FourierTransform.fourier_add]
+  have hfeq : ((𝓕 (L2VF_projComponentC_R3 j (w₁ + w₂)) : L2C_R3) : Domain3 → ℂ)
+      =ᵐ[volume] fun ξ => (𝓕 (L2VF_projComponentC_R3 j w₁) : L2C_R3) ξ
+        + (𝓕 (L2VF_projComponentC_R3 j w₂) : L2C_R3) ξ := by
+    rw [hFeq]; exact Lp.coeFn_add _ _
+  filter_upwards [weightedFourierComponent_coeFn (w₁ + w₂) hw j,
+    Lp.coeFn_add (weightedFourierComponent w₁ hw₁ j) (weightedFourierComponent w₂ hw₂ j),
+    weightedFourierComponent_coeFn w₁ hw₁ j, weightedFourierComponent_coeFn w₂ hw₂ j, hfeq]
+    with ξ h1 h2 h3 h4 h5
+  rw [h1, h2, Pi.add_apply, h3, h4, h5, smul_add]
+
+/-- **ℝ-homogeneity of the weighted Fourier component.** -/
+theorem weightedFourierComponent_smul (r : ℝ) (w : L2VF_R3) (hw : memH1VF_R3 w)
+    (hrw : memH1VF_R3 (r • w)) (j : Fin 3) :
+    weightedFourierComponent (r • w) hrw j = r • weightedFourierComponent w hw j := by
+  apply Lp.ext
+  have hFeq : (𝓕 (L2VF_projComponentC_R3 j (r • w)) : L2C_R3)
+      = r • (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) := by
+    rw [map_smul (L2VF_projComponentC_R3 j)]
+    rw [RCLike.real_smul_eq_coe_smul (K := ℂ), FourierTransform.fourier_smul,
+      ← RCLike.real_smul_eq_coe_smul (K := ℂ)]
+  have hfeq : ((𝓕 (L2VF_projComponentC_R3 j (r • w)) : L2C_R3) : Domain3 → ℂ)
+      =ᵐ[volume] fun ξ => r • (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ := by
+    rw [hFeq]; exact Lp.coeFn_smul r _
+  filter_upwards [weightedFourierComponent_coeFn (r • w) hrw j,
+    Lp.coeFn_smul r (weightedFourierComponent w hw j), weightedFourierComponent_coeFn w hw j, hfeq]
+    with ξ h1 h2 h3 h4
+  rw [h1, h2, Pi.smul_apply, h3, h4]
+  simp only [Complex.real_smul, smul_eq_mul]
+  ring
+
 /-! ### Bounded multiplier on `L2C_R3` and its Bochner commute -/
 
 /-- `mulBdd m hm hC g` is the `L²`-class of `ξ ↦ (m ξ : ℂ) • g ξ`, for a bounded
