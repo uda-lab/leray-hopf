@@ -707,6 +707,31 @@ private theorem steklovAvg_inVn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
   refine intervalIntegral.integral_congr (fun s _ => ?_)
   exact gs.u_inVn s
 
+/-- **The Steklov average is divergence-free** (`∈ L2Sigma_R3`).  The integrand `s ↦ gs.u s` is
+valued in the closed subspace `L2Sigma_R3`, which therefore contains the (scaled) Bochner integral:
+`steklovAvg = (L2Sigma_R3).subtypeL (δ⁻¹ • ∫_s gs.u s)`. -/
+private theorem steklovAvg_mem_sigma (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ t : ℝ} (hδ : 0 < δ) (ht : 0 ≤ t) :
+    (steklovAvg 𝔊 F ν u₀ n gs δ t : L2VF_R3) ∈ L2Sigma_R3 := by
+  have hle : t ≤ t + δ := by linarith
+  -- continuity of the L2Sigma-valued curve `s ↦ gs.u s` on the window
+  have hcontσ : ContinuousOn (fun s => gs.u s) (Set.uIcc t (t + δ)) := by
+    rw [Topology.IsInducing.subtypeVal.continuousOn_iff]
+    refine (galerkin_curve_continuous 𝔊 F ν u₀ n gs).mono ?_
+    rw [Set.uIcc_of_le hle]; intro s hs; exact le_trans ht hs.1
+  have hintσ : IntervalIntegrable (fun s => gs.u s) volume t (t + δ) :=
+    hcontσ.intervalIntegrable
+  -- `steklovAvg = subtypeL (δ⁻¹ • ∫ gs.u s)`, hence in `L2Sigma_R3 = range subtypeL`.
+  have hpush : (steklovAvg 𝔊 F ν u₀ n gs δ t : L2VF_R3)
+      = (L2Sigma_R3.subtypeL) (δ⁻¹ • ∫ s in t..(t + δ), gs.u s) := by
+    rw [steklovAvg, map_smul]
+    congr 1
+    rw [← ContinuousLinearMap.intervalIntegral_comp_comm _ hintσ]
+    rfl
+  rw [hpush]
+  exact (δ⁻¹ • ∫ s in t..(t + δ), gs.u s).2
+
 /-- **H¹ regularity of the Steklov average.**  The averaged state is in `H¹`, since it stays in the
 Schwartz Galerkin subspace `Vₙ` (`steklovAvg_inVn`). -/
 private theorem steklovAvg_memH1 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
