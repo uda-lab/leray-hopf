@@ -1203,6 +1203,44 @@ private theorem viscousFormSq_steklovAvg_uniform_bound (𝔊 : R3GalerkinScheme)
     _ ≤ δ⁻¹ * (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) :=
         mul_le_mul_of_nonneg_left (le_trans hwindow hreg) (by positivity)
 
+/-- **Single-`(δ, t₀)` spatial extraction for the Steklov averages.**  For a fixed mesh `δ > 0`
+and base time `t₀` with `[t₀, t₀+δ] ⊆ [0,T]`, P3 (`spatialInput_R3_of_localRellich B`) applied to the
+sequence `n ↦ steklovAvg (galSeq n) δ t₀` extracts a strictly-monotone subsequence `ψ` and a
+ball-restricted spatial limit `g ∈ L2Sigma_R3`.  The required uniform `L²`+`H¹` bounds are exactly
+`steklovAvg_norm_le_u0`, `steklovAvg_mem_sigma`, `steklovAvg_memH1`, and the proved gate-derived
+`viscousFormSq_steklovAvg_uniform_bound` — all `n`-uniform on the fixed window.
+
+This is the atomic extraction the `δ`-mesh diagonalization iterates. -/
+private theorem steklovAvg_spatial_extraction (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (B : LocalRellichInput) {δ t₀ : ℝ} (hδ : 0 < δ) (ht₀ : 0 ≤ t₀) (htδT : t₀ + δ ≤ T) :
+    ∃ (ψ : ℕ → ℕ) (g : L2VF_R3), StrictMono ψ ∧ g ∈ L2Sigma_R3 ∧
+      ∀ R : ℝ, Filter.Tendsto
+        (fun n => ∫ x in Metric.closedBall (0 : Domain3) R,
+          ‖((steklovAvg 𝔊 F ν u₀ (ψ n) (galSeq (ψ n)) δ t₀) x : EuclideanSpace ℝ (Fin 3))
+            - (g x : EuclideanSpace ℝ (Fin 3))‖ ^ 2 ∂(volume : Measure Domain3))
+        Filter.atTop (nhds 0) := by
+  -- common `n`-uniform bound `M` dominating both `‖steklovAvg‖` and `√(viscous bound)`.
+  set Mb : ℝ := Real.sqrt (δ⁻¹ * (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2))) with hMb
+  set M : ℝ := max ‖(u₀ : L2VF_R3)‖ Mb with hM
+  refine spatialInput_R3_of_localRellich B M
+    (fun n => steklovAvg 𝔊 F ν u₀ n (galSeq n) δ t₀) ?_ ?_ ?_ ?_
+  · exact fun n => steklovAvg_mem_sigma 𝔊 F ν u₀ n (galSeq n) hδ ht₀
+  · exact fun n => steklovAvg_memH1 𝔊 F ν u₀ n (galSeq n) hδ ht₀
+  · intro n
+    exact le_trans (steklovAvg_norm_le_u0 𝔊 F ν u₀ n (galSeq n) hδ ht₀) (le_max_left _ _)
+  · intro n
+    -- `viscousFormSq (steklovAvg) ≤ δ⁻¹ν⁻¹½‖u₀‖² = Mb² ≤ M²`.
+    have hb := viscousFormSq_steklovAvg_uniform_bound 𝔊 F ν hν u₀ n T hT (galSeq n) hδ ht₀ htδT
+    have hMbsq : Mb ^ 2 = δ⁻¹ * (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) := by
+      rw [hMb, Real.sq_sqrt (by positivity)]
+    calc viscousFormSq_R3 1 (steklovAvg 𝔊 F ν u₀ n (galSeq n) δ t₀)
+        ≤ δ⁻¹ * (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) := hb
+      _ = Mb ^ 2 := hMbsq.symm
+      _ ≤ M ^ 2 := by
+          rw [hM]; exact pow_le_pow_left₀ (by positivity) (le_max_right _ _) 2
+
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
 /-- **Aubin–Lions package on ℝ³ from the isolated time-compactness input (OPEN — `sorry`).**
