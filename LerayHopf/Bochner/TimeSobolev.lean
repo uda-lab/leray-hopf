@@ -221,14 +221,14 @@ end WeakTimeDeriv
 
 namespace GelfandTriple
 
-/-- The embedding `ι : V → H` bundled as a `ContinuousLinearMap`, using the `ι_linear`
-and `ι_continuous` fields of the triple. -/
+/-- The embedding `ι : V →L[ℝ] H` as a `ContinuousLinearMap`. Now that `GelfandTriple.ι` is
+itself a `ContinuousLinearMap`, this is a trivial alias for `GT.ι`. Kept for backward
+compatibility with downstream call sites in this file. -/
 noncomputable def ιCLM (GT : GelfandTriple) :
     letI := GT.instNACG_V; letI := GT.instIPS_V; letI := GT.instNACG_H; letI := GT.instIPS_H;
     GT.V →L[ℝ] GT.H :=
   letI := GT.instNACG_V; letI := GT.instIPS_V; letI := GT.instNACG_H; letI := GT.instIPS_H
-  { toLinearMap := IsLinearMap.mk' GT.ι GT.ι_linear
-    cont := GT.ι_continuous }
+  GT.ι
 
 /-- The **continuous dual** `V' := V →L[ℝ] ℝ` (= `StrongDual ℝ V`) of the regularity
 space, the codomain of the Lions–Magenes time derivative `u' ∈ L^q(0,T;V')`. -/
@@ -246,7 +246,7 @@ noncomputable def hToVprime (GT : GelfandTriple) :
     letI := GT.instNACG_H; GT.H → GT.Vprime :=
   letI := GT.instNACG_V; letI := GT.instIPS_V
   letI := GT.instNACG_H; letI := GT.instIPS_H; letI := GT.instCS_H
-  fun h => (InnerProductSpace.toDual ℝ GT.H h).comp GT.ιCLM
+  fun h => (InnerProductSpace.toDual ℝ GT.H h).comp GT.ι
 
 end GelfandTriple
 
@@ -289,6 +289,7 @@ structure W1pTime (GT : GelfandTriple) (p q : ℝ≥0∞) (T : ℝ)
   /-- `u'` is the weak time derivative, in `V'`, of the `V'`-image of `u`, namely
   `t ↦ hToVprime (ι (uV t))`. -/
   weakDeriv : letI := GT.instNACG_V; letI := GT.instIPS_V;
+    letI := GT.instNACG_H; letI := GT.instIPS_H;
     IsWeakTimeDeriv (X := GT.Vprime) T (fun t => GT.hToVprime (GT.ι (uV t))) u'
 
 /-- The canonical embedding `H ↪ V'` as a genuine `ContinuousLinearMap` (the bundled form
@@ -302,7 +303,7 @@ noncomputable def GelfandTriple.hToVprimeCLM (GT : GelfandTriple) :
     letI := GT.instNACG_H; letI := GT.instIPS_H; GT.H →L[ℝ] GT.Vprime :=
   letI := GT.instNACG_V; letI := GT.instIPS_V
   letI := GT.instNACG_H; letI := GT.instIPS_H; letI := GT.instCS_H
-  ((ContinuousLinearMap.compL ℝ GT.V GT.H ℝ).flip GT.ιCLM).comp
+  ((ContinuousLinearMap.compL ℝ GT.V GT.H ℝ).flip GT.ι).comp
     (innerSL ℝ : GT.H →L[ℝ] (GT.H →L[ℝ] ℝ))
 
 @[simp] theorem GelfandTriple.hToVprimeCLM_apply (GT : GelfandTriple) :
@@ -404,7 +405,8 @@ theorem W1pTime.ofHValuedDeriv (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ}
     (mem_p : letI := GT.instNACG_V; MemLp uV p (volume.restrict (Set.Icc 0 T)))
     (mem_q : letI := GT.instNACG_H; MemLp u'H q (volume.restrict (Set.Icc 0 T)))
     (hp : 1 ≤ p) (hq : 1 ≤ q)
-    (weakDeriv : letI := GT.instNACG_H; letI := GT.instIPS_H;
+    (weakDeriv : letI := GT.instNACG_V; letI := GT.instIPS_V;
+      letI := GT.instNACG_H; letI := GT.instIPS_H;
       IsWeakTimeDeriv (X := GT.H) T (fun t => GT.ι (uV t)) u'H) :
     Nonempty (W1pTime GT p q T uV) := by
   letI := GT.instNACG_V; letI := GT.instIPS_V
@@ -434,9 +436,8 @@ theorem W1pTime.ofHValuedDeriv (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ}
         -- `MemLp uV p` (finite measure, `1 ≤ p`) ⇒ `Integrable (ι ∘ uV)`; `deriv ψ` is
         -- continuous, compactly supported in `Ioo 0 T`, hence bounded, so the `smul` is `L¹`.
         have hg : Integrable (fun t => GT.ι (uV t)) (volume.restrict (Set.Icc 0 T)) := by
-          have h := (GT.ιCLM.comp_memLp' mem_p).integrable hp
-          simpa only [Function.comp_def, GelfandTriple.ιCLM, IsLinearMap.mk'_apply,
-            ContinuousLinearMap.coe_mk', LinearMap.coe_mk, AddHom.coe_mk] using h
+          have h := (GT.ι.comp_memLp' mem_p).integrable hp
+          simpa only [Function.comp_def, ContinuousLinearMap.coe_coe] using h
         exact intervalIntegrable_smul_of_integrableOn_Icc hg
           hψC1.continuous_deriv_one (HasCompactSupport.deriv hψcs)
           (tsupport_deriv_subset.trans hψsupp))
@@ -468,7 +469,8 @@ FULL strength of the Gelfand triple: `u ∈ L^p(·;V)` and `u' ∈ L^q(·;V')` (
 **Scaffold-only this cycle** (months-class). -/
 theorem w1pTime_continuous_in_H (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ} (hT : 0 < T)
     (hpq : 1 ≤ p ∧ 1 ≤ q) {uV : ℝ → GT.V} (W : W1pTime GT p q T uV) :
-    letI := GT.instNACG_H;
+    letI := GT.instNACG_V; letI := GT.instIPS_V;
+    letI := GT.instNACG_H; letI := GT.instIPS_H;
     ∃ ũ : ℝ → GT.H, ContinuousOn ũ (Set.Icc 0 T) ∧
       ũ =ᵐ[volume.restrict (Set.Icc 0 T)] (fun t => GT.ι (uV t)) := by
   -- TODO: Lions–Magenes embedding `W^{1,p}(0,T;V) ∩ L^q(0,T;V') ↪ C([0,T];H)`.

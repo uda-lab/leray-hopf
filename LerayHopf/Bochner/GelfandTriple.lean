@@ -75,7 +75,8 @@ library:
 - a real Hilbert "regularity" space `V` (the role of `H¹_σ`; its squared norm is the
   regularity functional),
 - a real Hilbert "pivot" space `H` (the role of `L²_σ`; identified with its own dual),
-- a continuous linear embedding `ι : V →L[ℝ] H`,
+- a bundled continuous linear embedding `ι : V →L[ℝ] H` (linearity and continuity are part
+  of the type, not separate `Prop` fields),
 - **injectivity** of `ι` (so `V` is genuinely a subspace of `H`),
 - **dense range** of `ι` (so `H ↪ V'` is injective on the dual side — the defining
   property that makes `(V, H, V')` a Gelfand triple rather than an arbitrary pair).
@@ -102,27 +103,20 @@ structure GelfandTriple where
   instIPS_H : InnerProductSpace ℝ H
   /-- Completeness of `H`. -/
   instCS_H : CompleteSpace H
-  /-- The underlying embedding map `V → H`. Its linearity and continuity are the
-  `ι_linear` / `ι_continuous` fields; bundling it as a bare function (with Prop fields)
-  rather than a `ContinuousLinearMap` keeps the structure free of fragile inline instance
-  synthesis while still asserting the full continuous-linear-injective-dense embedding. -/
-  ι : V → H
-  /-- `ι` is `ℝ`-linear. -/
-  ι_linear :
-    letI := instNACG_V; letI := instIPS_V; letI := instNACG_H; letI := instIPS_H
-    IsLinearMap ℝ ι
-  /-- `ι` is continuous (the `V ↪ H` embedding is bounded). -/
-  ι_continuous :
-    letI := instNACG_V; letI := instNACG_H
-    Continuous ι
+  /-- The continuous linear embedding `V →L[ℝ] H`. Linearity and continuity are bundled in the
+  `ContinuousLinearMap` type, eliminating the former `ι_linear` / `ι_continuous` Prop fields. -/
+  ι :
+    letI := instNACG_V; letI := instIPS_V; letI := instNACG_H; letI := instIPS_H;
+    V →L[ℝ] H
   /-- The embedding is injective: `V` is a genuine subspace of `H`. -/
   ι_injective :
-    Function.Injective ι
+    letI := instNACG_V; letI := instIPS_V; letI := instNACG_H; letI := instIPS_H;
+    Function.Injective (ι : V → H)
   /-- The embedding has dense range: `V` is dense in `H` (equivalently, `H ↪ V'` is
   injective — the Gelfand-triple defining property). -/
   ι_denseRange :
-    letI := instNACG_H
-    DenseRange ι
+    letI := instNACG_V; letI := instIPS_V; letI := instNACG_H; letI := instIPS_H;
+    DenseRange (ι : V → H)
 
 /-! ### Bridge: `DissipativeEvolution → GelfandTriple` -/
 
@@ -221,7 +215,7 @@ noncomputable def GelfandTriple.ofDissipativeEvolution
     letI := E.instNACG; letI := E.instIPS;
     Σ' GT : GelfandTriple, GT.IsOfDissipativeEvolution E (LinearMap.range (ι : V →ₗ[ℝ] E.H)) := by
   letI := E.instNACG; letI := E.instIPS; letI := E.instCS
-  -- Build the `GelfandTriple` with `V`, `H := E.H`, embedding the CLM `ι` (as a bare function).
+  -- Build the `GelfandTriple` with `V`, `H := E.H`, embedding the CLM `ι` directly.
   refine ⟨{
       V := V
       H := E.H
@@ -231,15 +225,9 @@ noncomputable def GelfandTriple.ofDissipativeEvolution
       instNACG_H := E.instNACG
       instIPS_H := E.instIPS
       instCS_H := E.instCS
-      ι := fun v => ι v
-      ι_linear := ?_
-      ι_continuous := ?_
+      ι := ι
       ι_injective := hinj
       ι_denseRange := hdense }, ?_⟩
-  · -- linearity: the CLM's underlying linear map is linear.
-    exact (ι : V →ₗ[ℝ] E.H).isLinear
-  · -- continuity: the CLM's own continuity.
-    exact ι.continuous
   · -- the `IsOfDissipativeEvolution` faithfulness contract.
     refine ⟨rfl, HEq.rfl, HEq.rfl, ?_, ?_⟩
     · -- range of `cast rfl ∘ ι` is exactly `Vsub := LinearMap.range ι` (by `coe_range`).
