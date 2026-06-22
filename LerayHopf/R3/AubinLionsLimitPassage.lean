@@ -825,6 +825,51 @@ private theorem steklovAvgBack_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms �
     _ = ε * δ := by rw [show t - (t - δ) = δ by ring, abs_of_pos hδ]
     _ = δ * ε := by ring
 
+/-- **Clamped Steklov average on `[0,T]`.**  Forward average `steklovAvg δ t` for `t ≤ T − δ`
+(forward window `[t,t+δ] ⊆ [0,T]`), backward average `steklovAvgBack δ t` for `t > T − δ` (backward
+window `[t−δ,t] ⊆ [0,T]`, valid when `2δ ≤ T`).  This covers the whole interval `[0,T]` with windows
+that stay inside `[0,T]`, so the time modulus controls the raw↔avg error uniformly in `n` and `t`. -/
+private noncomputable def clampedAvg (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (δ T t : ℝ) : L2VF_R3 :=
+  if t ≤ T - δ then steklovAvg 𝔊 F ν u₀ n gs δ t
+  else steklovAvgBack 𝔊 F ν u₀ n gs δ t
+
+/-- **Uniform raw↔clamped-average approximation on `[0,T]`.**  If the `n`-uniform time modulus gives
+`‖(gs.u s) − (gs.u s')‖ < ε` for `|s − s'| < δ` with both in `[0,T]`, then
+`‖(gs.u t) − clampedAvg δ T t‖ ≤ ε` for every `t ∈ [0,T]` — uniformly in `n` (the hypothesis is the
+modulus instance for this `gs`).  Requires `2δ ≤ T` so the backward window on `(T−δ,T]` stays in
+`[0,T]`. -/
+private theorem clampedAvg_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ T t ε : ℝ} (hδ : 0 < δ) (hδT : 2 * δ ≤ T)
+    (ht : t ∈ Set.Icc (0 : ℝ) T)
+    (hmod : ∀ s s' : ℝ, s ∈ Set.Icc (0 : ℝ) T → s' ∈ Set.Icc (0 : ℝ) T → |s - s'| ≤ δ →
+      ‖((gs.u s) : L2VF_R3) - ((gs.u s') : L2VF_R3)‖ ≤ ε) :
+    ‖(gs.u t : L2VF_R3) - clampedAvg 𝔊 F ν u₀ n gs δ T t‖ ≤ ε := by
+  obtain ⟨ht0, htT⟩ := ht
+  rw [clampedAvg]
+  by_cases hcase : t ≤ T - δ
+  · -- forward branch: window `[t, t+δ] ⊆ [0,T]`
+    rw [if_pos hcase]
+    refine steklovAvg_approx 𝔊 F ν u₀ n gs hδ ht0 (fun s hs => ?_)
+    rw [Set.uIoc_of_le (by linarith : t ≤ t + δ)] at hs
+    have hsIcc : s ∈ Set.Icc (0 : ℝ) T := ⟨by linarith [hs.1], by linarith [hs.2]⟩
+    have htIcc : t ∈ Set.Icc (0 : ℝ) T := ⟨ht0, htT⟩
+    have habs : |t - s| ≤ δ := by
+      rw [abs_sub_comm, abs_of_pos (by linarith [hs.1] : (0:ℝ) < s - t)]; linarith [hs.2]
+    exact hmod t s htIcc hsIcc habs
+  · -- backward branch: window `[t−δ, t] ⊆ [0,T]` (since `t > T−δ ≥ δ` as `2δ ≤ T`)
+    rw [if_neg hcase]
+    have hδt : δ ≤ t := by push_neg at hcase; linarith
+    refine steklovAvgBack_approx 𝔊 F ν u₀ n gs hδ hδt (fun s hs => ?_)
+    rw [Set.uIoc_of_le (by linarith : t - δ ≤ t)] at hs
+    have hsIcc : s ∈ Set.Icc (0 : ℝ) T := ⟨by linarith [hs.1], by linarith [hs.2]⟩
+    have htIcc : t ∈ Set.Icc (0 : ℝ) T := ⟨ht0, htT⟩
+    have habs : |t - s| ≤ δ := by
+      rw [abs_of_nonneg (by linarith [hs.2] : (0:ℝ) ≤ t - s)]; linarith [hs.1]
+    exact hmod t s htIcc hsIcc habs
+
 /-- **L² Jensen bound on the Steklov average (squared-norm form).** For `0 < δ` and `0 ≤ t`,
 the squared L² norm of the Steklov average is bounded by the average of the squared norms over
 the forward window:
