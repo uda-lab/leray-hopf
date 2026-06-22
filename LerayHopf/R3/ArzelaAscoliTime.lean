@@ -49,12 +49,14 @@ pointwise-in-time strong equicontinuity. The Mathlib extraction chain is:
 
 ## Assumptions (new axioms introduced here)
 
-1. `galerkin_spacetime_precompact_R3` — ALLOW_AXIOM: LOCAL Aubin–Lions–Simon spacetime
-   precompactness on ℝ³ — for each ball radius `k : ℕ`, the per-ball Galerkin curve sequence
-   has a subsequence converging to zero in the L²(0,T; L²(B_k)) Bochner norm. SOUND/LOCAL: no
-   tightness, no strong-norm pointwise equicontinuity, no global-L² claim (strictly weaker than
-   a pointwise time-modulus). Mathlib lacks the Bochner-valued Aubin–Lions/Fréchet–Kolmogorov
-   theorem in L²(0,T;X); scheme-independent; reusable for torus #23.
+1. `galerkin_spacetime_precompact_R3` — ALLOW_AXIOM (REFINE-CAPABLE): LOCAL Aubin–Lions–Simon
+   spacetime precompactness on ℝ³ — for EVERY input subsequence ψ and every ball radius k:ℕ,
+   the per-ball Galerkin curve sequence along ψ has a FURTHER subsequence ρ converging to zero
+   in the L²(0,T; L²(B_k)) Bochner norm (eLpNorm of (restrictToBall k ∘ galSeq ∘ ψ ∘ ρ - g_k)
+   → 0). SOUND/LOCAL: no tightness, no pointwise equicontinuity, no global-L² claim. Refine-
+   capability (ψ input) is essential for the Cantor-diagonal tower. Mathlib lacks the Bochner-
+   valued Aubin–Lions/Fréchet–Kolmogorov theorem in L²(0,T;X); scheme-independent; reusable
+   for torus #23.
 
 2. `galerkin_weakLimit_R3` — ALLOW_AXIOM: per-ball-L²-a.e.-t-convergent bounded Galerkin
    subsequence has a measurable weak limit `u : Time → L2Sigma_R3`; requires Banach–Alaoglu
@@ -79,34 +81,40 @@ open MeasureTheory Filter Topology Metric
 
 /-! ### Group A — Two sound residual axioms -/
 
-/-- **Axiom A — LOCAL Aubin–Lions–Simon spacetime precompactness on ℝ³.**
+/-- **Axiom A — LOCAL Aubin–Lions–Simon spacetime precompactness on ℝ³ (REFINE-CAPABLE).**
 
-For each ball radius `k : ℕ` (natural number, for the diagonalization), there is a
-strictly-monotone subsequence `φ_k : ℕ → ℕ` and a measurable limit curve
+For every input subsequence `ψ : ℕ → ℕ` (strictly monotone) and every ball radius `k : ℕ`,
+there is a FURTHER strictly-monotone `ρ : ℕ → ℕ` and a measurable limit curve
 `g_k : ℝ → L2ballR3 k` such that the Bochner L²-in-time norm of the difference
-`restrictToBall k ((galSeq (φ_k n)).u t) - g_k t` converges to `0` as `n → ∞`.
+`restrictToBall k ((galSeq (ψ (ρ n))).u t) - g_k t` converges to `0` as `n → ∞`.
 
-**Mathematical content:** This is the Aubin–Lions–Simon compactness theorem in
-`L²(0,T; L²(B_k))`: uniform bounds on `‖u_n(t)‖_{L²}` (energy bound, `galerkin_norm_le_u0`)
-and on `∫₀ᵀ ‖∇u_n(t)‖²_{L²} dt` (regularity bound, `reg_bound`) plus the ODE structure
-imply L²-in-time precompactness in L²(B_k). The L²-in-time norm topology is the natural
-one for this bound — it does NOT require pointwise-in-time control of the derivative.
+**Why refine-capable?** The Cantor-diagonal construction in `diag_ae_subseq` builds the tower
+`φ_0 = ρ_0`, `φ_{k+1} = φ_k ∘ ρ_{k+1}` inductively, where at each step we extract a FURTHER
+subsequence of the CURRENT one. This requires applying the compactness axiom to the composition
+`galSeq ∘ φ_k` — but `galSeq n : GalerkinSolutionData_R3 … n` has the level `n` baked into
+its dependent type, making reindexing `n ↦ galSeq (φ_k n)` type-incorrect as a new `galSeq`.
+The refine-capable form avoids reindexing by keeping `galSeq` fixed and instead taking the
+current subsequence `ψ = φ_k` as input, returning a further `ρ` such that `φ_k ∘ ρ` is the
+next level.
 
-**Soundness:** This axiom is STRICTLY WEAKER than the deleted `galerkin_equicontinuity_from_ODE`:
-it asserts only L²-in-time convergence, NOT pointwise-in-time strong-norm equicontinuity.
-The strong-norm time modulus was UNSOUND (n-uniform dual-norm bound on B(u_n,u_n) is not
-derivable from L²-energy alone). The present L²-in-time statement is TRUE and derivable from
-the Aubin–Lions–Simon theorem (Temam III.2.1; Simon 1987), which Mathlib lacks. -/
-axiom galerkin_spacetime_precompact_R3 -- ALLOW_AXIOM: LOCAL Aubin–Lions–Simon spacetime precompactness on ℝ³ — for each ball radius k:ℕ, the per-ball Galerkin curve sequence has a subsequence converging to zero in the L²(0,T;L²(B_k)) Bochner norm (eLpNorm of the difference → 0). SOUND/LOCAL: no tightness, no pointwise-in-time strong equicontinuity, no global-L² claim. Mathlib lacks Bochner-valued Aubin–Lions/Fréchet–Kolmogorov in L²(0,T;X); scheme-independent; reusable for torus #23.
+**Soundness:** Any subsequence of a sequence satisfying the hypotheses of the Aubin–Lions–Simon
+theorem also satisfies the same hypotheses (the energy bound `galerkin_norm_le_u0` and
+`reg_bound` are uniform in `n`, so they hold uniformly along any `ψ`). Hence the conclusion
+holds for every input `ψ`.
+
+**Mathematical content:** Aubin–Lions–Simon compactness theorem in `L²(0,T; L²(B_k))`.
+SOUND/LOCAL: no tightness, no pointwise-in-time equicontinuity, no global-L² claim.
+Mathlib lacks the Bochner-valued Aubin–Lions/Fréchet–Kolmogorov theorem in L²(0,T;X). -/
+axiom galerkin_spacetime_precompact_R3 -- ALLOW_AXIOM: LOCAL Aubin–Lions–Simon spacetime precompactness on ℝ³, REFINE-CAPABLE form — for EVERY subsequence ψ and every ball radius k:ℕ, the per-ball Galerkin curve sequence (along ψ) has a FURTHER subsequence ρ converging to zero in the L²(0,T;L²(B_k)) Bochner norm. SOUND/LOCAL (any subseq of the bounded Galerkin sequence is still per-ball precompact ⇒ has a convergent sub-subseq): no tightness, no strong-norm time-equicontinuity, no global-L² claim. Refine-capability (the ψ input) is what enables the Cantor-diagonal nesting across balls. Mathlib lacks Bochner Aubin–Lions/Fréchet–Kolmogorov in L²(0,T;X); scheme-independent; reusable for torus #23.
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (k : ℕ) :
-    ∃ (φ_k : ℕ → ℕ) (g_k : ℝ → L2ballR3 k), StrictMono φ_k ∧
+    (ψ : ℕ → ℕ) (hψ : StrictMono ψ) (k : ℕ) :
+    ∃ (ρ : ℕ → ℕ) (g_k : ℝ → L2ballR3 k), StrictMono ρ ∧
       AEStronglyMeasurable g_k (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
       Filter.Tendsto
         (fun n => eLpNorm
-          (fun t => restrictToBall k ((galSeq (φ_k n)).u t : L2VF_R3) - g_k t)
+          (fun t => restrictToBall k ((galSeq (ψ (ρ n))).u t : L2VF_R3) - g_k t)
           2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)))
         Filter.atTop (nhds 0)
 
@@ -227,76 +235,57 @@ private theorem restrictToBall_sub_norm_mono (R k : ℝ) (hRk : R ≤ k) (w w' :
 
 /-! ### Per-ball a.e. subsequence extraction -/
 
-/-- **`perBall_ae_subseq` — From L²-in-time Bochner convergence, extract a further
-subsequence converging a.e. in `t` in the `L2ballR3 k` norm.**
+/-- **`perBall_ae_subseq` — From L²-in-time Bochner convergence (refine-capable),
+extract a FURTHER subsequence converging a.e. in `t` in the `L2ballR3 k` norm.**
+
+Given an input subsequence `ψ`, applies refine-capable axiom A to get `ρ` (further
+subsequence of `ψ`) with eLpNorm → 0 along `ψ ∘ ρ`, then converts to a.e.-t convergence
+via `tendstoInMeasure_of_tendsto_eLpNorm` + `TendstoInMeasure.exists_seq_tendsto_ae`.
 
 **Proof route (for lean-prover):**
-1. Axiom A gives `φ_k` and `g_k` with `eLpNorm (fun t => f_n t - g_k t) 2 μ → 0`.
-2. Each function `fun t => restrictToBall k ((galSeq (φ_k n)).u t) - g_k t` is
-   `AEStronglyMeasurable` on `[0,T]` (difference of AESM functions, since the Galerkin curve is
-   continuous hence measurable, and `g_k` is AESM from the axiom's conclusion).
-3. Apply `MeasureTheory.tendstoInMeasure_of_tendsto_eLpNorm` (Mathlib: `ConvergenceInMeasure`,
-   with `p = 2 ≠ 0`, `hp_ne_top = by norm_num`, `hf = AEStronglyMeasurable_of_each_n`,
-   `hg = hg_k_aesm`) to get `TendstoInMeasure μ (fun n t => ...) atTop (g_k)`.
-4. Apply `TendstoInMeasure.exists_seq_tendsto_ae` to get a further strictly-monotone
-   `ρ_k : ℕ → ℕ` and a.e.-t convergence of the composed subsequence. -/
+1. Apply refine-capable axiom A with input `ψ` at radius `k` to get `ρ₀` and `g_k` with
+   `eLpNorm (fun t => restrictToBall k ((galSeq (ψ (ρ₀ n))).u t) - g_k t) 2 μ → 0`.
+2. Each `fun t => restrictToBall k ((galSeq (ψ (ρ₀ n))).u t) - g_k t` is AESM on `[0,T]`
+   (Galerkin curve continuous on Ici 0 via `u_hasDeriv`, composed with continuous
+   `restrictToBall`, minus AESM `g_k`).
+3. Apply `MeasureTheory.tendstoInMeasure_of_tendsto_eLpNorm` (p=2, hp_ne_zero=by norm_num)
+   to get `TendstoInMeasure μ (fun n t => restrictToBall k ((galSeq (ψ (ρ₀ n))).u t)) atTop g_k`.
+4. Apply `TendstoInMeasure.exists_seq_tendsto_ae` to get FURTHER `σ : ℕ → ℕ` StrictMono
+   with a.e.-t convergence of `ψ ∘ ρ₀ ∘ σ`.
+5. Set the output `ρ := ρ₀ ∘ σ` (StrictMono by composition); conclusion uses `ψ (ρ n) = ψ (ρ₀ (σ n))`. -/
 theorem perBall_ae_subseq
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (k : ℕ) :
-    ∃ (φ : ℕ → ℕ) (g_k : ℝ → L2ballR3 k),
-      StrictMono φ ∧
+    (ψ : ℕ → ℕ) (hψ : StrictMono ψ) (k : ℕ) :
+    ∃ (ρ : ℕ → ℕ) (g_k : ℝ → L2ballR3 k),
+      StrictMono ρ ∧
       AEStronglyMeasurable g_k (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
       ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
         Filter.Tendsto
-          (fun n => restrictToBall k ((galSeq (φ n)).u t : L2VF_R3))
+          (fun n => restrictToBall k ((galSeq (ψ (ρ n))).u t : L2VF_R3))
           Filter.atTop (nhds (g_k t)) := by
-  -- Step 1: Axiom A gives L²-in-time Bochner convergence for some subsequence φ₀.
-  obtain ⟨φ₀, g_k, hφ₀, hg_aesm, heLp⟩ :=
-    galerkin_spacetime_precompact_R3 𝔊 F ν hν T hT u₀ galSeq k
-  -- Step 2: each ball-restricted Galerkin curve is a.e.-strongly-measurable on `[0,T]`
-  -- (the curve is continuous on `Ici 0` via `u_hasDeriv`, restrictToBall is continuous).
-  have hf_aesm : ∀ n, AEStronglyMeasurable
-      (fun t => restrictToBall (k : ℝ) ((galSeq (φ₀ n)).u t : L2VF_R3))
-      (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) := by
-    intro n
-    have hcurve : ContinuousOn (fun t => ((galSeq (φ₀ n)).u t : L2VF_R3)) (Set.Ici 0) :=
-      fun t ht => (((galSeq (φ₀ n)).u_hasDeriv t ht).continuousAt.continuousWithinAt)
-    have hcurve_aesm : AEStronglyMeasurable (fun t => ((galSeq (φ₀ n)).u t : L2VF_R3))
-        (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) :=
-      (hcurve.mono Set.Icc_subset_Ici_self).aestronglyMeasurable measurableSet_Icc
-    exact (continuous_restrictToBall' (k : ℝ)).comp_aestronglyMeasurable hcurve_aesm
-  -- Step 3: L²-in-time convergence ⇒ convergence in measure.
-  have hTIM : TendstoInMeasure (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T))
-      (fun n t => restrictToBall (k : ℝ) ((galSeq (φ₀ n)).u t : L2VF_R3)) atTop g_k :=
-    tendstoInMeasure_of_tendsto_eLpNorm (by norm_num) hf_aesm hg_aesm heLp
-  -- Step 4: a.e.-t convergent further subsequence `ρ`; final subsequence is `φ₀ ∘ ρ`.
-  obtain ⟨ρ, hρ, hae⟩ := hTIM.exists_seq_tendsto_ae
-  refine ⟨φ₀ ∘ ρ, g_k, hφ₀.comp hρ, hg_aesm, ?_⟩
-  filter_upwards [hae] with t ht
-  exact ht
+  sorry -- ALLOW_SORRY: #44 perBall_ae_subseq (refine-capable) — proof route: (1) apply galerkin_spacetime_precompact_R3 with input ψ hψ k to get ρ₀ g_k hρ₀ hg_aesm heLp; (2) show AESM of each fun t => restrictToBall k ((galSeq (ψ (ρ₀ n))).u t) via u_hasDeriv + ContinuousOn + continuous_restrictToBall'; (3) apply tendstoInMeasure_of_tendsto_eLpNorm (by norm_num) hf_aesm hg_aesm heLp; (4) apply TendstoInMeasure.exists_seq_tendsto_ae to get further σ StrictMono + a.e. convergence; (5) set ρ := ρ₀ ∘ σ, StrictMono ρ from StrictMono.comp hρ₀ hσ; output is ψ (ρ n) = ψ (ρ₀ (σ n)). (Adaptation of the previously-proved non-refine-capable version: thread ψ through, replace φ₀ with ρ₀ and ψ with the outer composition.)
 
 /-- **`diag_ae_subseq` — Diagonal subsequence converging a.e. in `t` for ALL ball radii `k : ℕ`.**
 
-From `perBall_ae_subseq` applied at each radius `k`, construct a single strictly-monotone
-subsequence `φ : ℕ → ℕ` such that for every `k : ℕ` and a.e. `t ∈ [0,T]`,
-`restrictToBall k ((galSeq (φ n)).u t) → g_k t` in `L2ballR3 k`.
+From refine-capable `perBall_ae_subseq`, construct by induction a Cantor tower
+`φ_0, φ_1, φ_2, …` where `φ_0 = id` and `φ_{k+1} = φ_k ∘ ρ_{k+1}` with `ρ_{k+1}` from
+`perBall_ae_subseq (ψ := φ_k)` at radius `k+1`. The diagonal `φ n := φ_n n` is a single
+strictly-monotone subsequence converging for every ball radius k : ℕ and a.e. t.
 
 **Proof route (for lean-prover):**
-The standard Cantor diagonal argument:
-1. By induction, build a tower `φ_0, φ_1, φ_2, …` with:
-   - `φ_0` from `perBall_ae_subseq` at `k = 0`,
-   - `φ_{k+1}` from `perBall_ae_subseq` applied to the reindexed Galerkin sequence
-     `n ↦ galSeq (φ_k n)` at radius `k+1` (giving a further subsequence `ρ_{k+1}` with
-     `φ_{k+1} = φ_k ∘ ρ_{k+1}`).
-2. The diagonal `φ n := φ_n n` (where `φ_n` is the `n`-th level of the tower) is strictly
-   monotone (standard argument: each level is strictly monotone and refines the previous).
-3. For each fixed `k`, for all `n ≥ k`, `φ n = φ_k (something ≥ n)`, so the diagonal is
-   eventually a subsequence of `φ_k`. Therefore for a.e. `t`, convergence of `φ_k` carries
-   over to convergence of the diagonal subsequence at the same a.e. full-measure set for level `k`.
-4. The full-measure set for the diagonal is `⋂_{k : ℕ} S_k` where each `S_k` has full measure;
-   a countable intersection of full-measure sets in a finite measure space has full measure. -/
+1. Base: `φ_0 = id` (StrictMono). Apply `perBall_ae_subseq id strictMono_id 0` to get `ρ_0`,
+   `g_0`, and a.e.-t convergence. Set `φ_1 = ρ_0`.
+2. Inductive step: given `φ_k` StrictMono converging on balls `0..k`, apply
+   `perBall_ae_subseq φ_k hφ_k (k+1)` to get `ρ_{k+1}` StrictMono with a.e.-t convergence
+   of `fun n => restrictToBall (k+1) ((galSeq (φ_k (ρ_{k+1} n))).u t)`. Set `φ_{k+1} = φ_k ∘ ρ_{k+1}`.
+3. Diagonal: `φ n := φ_n n`. StrictMono: `φ_{n+1} (n+1) = φ_n (ρ_n (n+1)) > φ_n n = φ n`
+   since `ρ_n (n+1) > n` and `φ_n` StrictMono (standard Cantor argument).
+4. For fixed `k`, for `n ≥ k`, `φ n` is a value in the range of `φ_k`, so the a.e.-t
+   convergence for `φ_k` (established at step k of the tower) transfers.
+5. A.e. set: `⋂_{k : ℕ} S_k` is full measure by `MeasureTheory.ae_all_iff.mpr` (each `S_k`
+   has full measure). -/
 theorem diag_ae_subseq
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
@@ -309,7 +298,7 @@ theorem diag_ae_subseq
           Filter.Tendsto
             (fun n => restrictToBall k ((galSeq (φ n)).u t : L2VF_R3))
             Filter.atTop (nhds (g_k t)) := by
-  sorry -- ALLOW_SORRY: #44 diag_ae_subseq BLOCKED by the non-refine-capable axiom A. The Cantor tower step needs ball-(k+1) convergence along a SUB-subsequence of the level-k subsequence φ_k, i.e. `perBall_ae_subseq` applied to the reindexed sequence `n ↦ galSeq (φ_k n)`. That reindex is TYPE-INCORRECT: `galSeq (φ_k n) : GalerkinSolutionData_R3 𝔊 F ν u₀ (φ_k n)` but `perBall_ae_subseq`/axiom A require the n-th entry to be level-`n` data `GalerkinSolutionData_R3 𝔊 F ν u₀ n` (the Galerkin level is baked into the dependent type). Mathematically too: axiom A gives, per k, an INDEPENDENT subsequence; "∀ k, ∃ subseq converging on ball k" does NOT imply "∃ one subseq for all k" (the per-k subsequences can be mutually incompatible — e.g. evens for ball 0, odds for ball 1 — admitting no common subsequence). FIX REQUIRED (lean-coder, axiom signature): make axiom A refine-capable — add an input `(ψ : ℕ → ℕ) (hψ : StrictMono ψ)` and conclude a further `ρ` with convergence along `ψ ∘ ρ` (keeping galSeq fixed, no dependent reindex) — OR have axiom A directly conclude the single all-k diagonal. perBall_ae_subseq (above) is PROVED; only this diagonalization is gated on the axiom shape.
+  sorry -- ALLOW_SORRY: #44 diag_ae_subseq — proof route (now UNBLOCKED by refine-capable axiom A): Cantor diagonal tower. By induction on k, build tower (φ_k : ℕ → ℕ) with φ_0 = id and φ_{k+1} = φ_k ∘ ρ_{k+1} where ρ_{k+1} comes from perBall_ae_subseq with input ψ := φ_k hψ := hφ_k at radius k+1 (no dependent reindex — galSeq stays fixed; ψ carries the current level). This gives g_{k+1} : ℝ → L2ballR3 (k+1) and StrictMono ρ_{k+1}. The diagonal φ n := φ_n n is StrictMono (standard argument: each level is strictly monotone and refines; φ_{k+1} n ≥ φ_k (ρ_{k+1} n) ≥ φ_k n + 1 by StrictMono). For fixed k, for n ≥ k, φ n = φ_k (something monotone in n ≥ n), so the a.e.-t convergence for φ_k transfers to the diagonal. The full-measure a.e. set is the countable intersection ⋂_k S_k of full-measure sets (use MeasureTheory.ae_all_iff.mpr). Claim: perBall_ae_subseq applied at each step with input φ_k produces the tower; standard diagonal StrictMono argument via φ_{k+1} n > φ_{k+1} (n-1) > ... > φ_k n.
 
 /-! ### T4 — Assembly: measurable limit curve -/
 
