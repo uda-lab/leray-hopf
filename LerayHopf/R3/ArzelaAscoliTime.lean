@@ -175,7 +175,22 @@ theorem weakLimit_mem_L2Sigma_R3
     (htend : Filter.Tendsto (fun n => (toWeakSpace ℝ L2VF_R3) (vn n))
         Filter.atTop (𝓝 ((toWeakSpace ℝ L2VF_R3) v))) :
     v ∈ L2Sigma_R3 := by
-  sorry -- ALLOW_SORRY: #47 WL-5 — follows from L2Sigma_R3_weaklyClosed (WL-4) + sequential characterization of IsClosed; prover to fill
+  -- WL-4: the weak image of L2Sigma_R3 is closed in `WeakSpace ℝ L2VF_R3`.
+  have hclose : IsClosed ((toWeakSpace ℝ L2VF_R3) '' (L2Sigma_R3 : Set L2VF_R3)) :=
+    L2Sigma_R3_weaklyClosed
+  -- The sequence `toWeakSpace ℝ L2VF_R3 (vn n)` lies in the closed set.
+  have hmem' : ∀ n, (toWeakSpace ℝ L2VF_R3) (vn n) ∈
+      (toWeakSpace ℝ L2VF_R3) '' (L2Sigma_R3 : Set L2VF_R3) :=
+    fun n => Set.mem_image_of_mem _ (hmem n)
+  -- By `IsClosed.mem_of_tendsto`, the limit lies in the closed set.
+  have hlimit_mem : (toWeakSpace ℝ L2VF_R3) v ∈
+      (toWeakSpace ℝ L2VF_R3) '' (L2Sigma_R3 : Set L2VF_R3) :=
+    hclose.mem_of_tendsto htend (Filter.Eventually.of_forall hmem')
+  -- Extract the preimage: there exists `w ∈ L2Sigma_R3` with `toWeakSpace ℝ L2VF_R3 w = toWeakSpace ℝ L2VF_R3 v`.
+  obtain ⟨w, hwmem, hwv⟩ := hlimit_mem
+  -- `toWeakSpace` is injective, so `w = v`, hence `v ∈ L2Sigma_R3`.
+  have heq : w = v := (toWeakSpace ℝ L2VF_R3).injective hwv
+  rwa [← heq]
 
 /-- **WL-6 — A.e. pointwise weak limit of AEStronglyMeasurable curves is AEStronglyMeasurable.**
 
@@ -233,13 +248,27 @@ theorem galerkin_weakLimit_R3
       ∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
         Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3))
           Filter.atTop (nhds (restrictToBall R (u t : L2VF_R3))) := by
-  -- Chain: WL-A (weak compactness) + WL-5 (div-free closure) + WL-6 (measurability)
-  -- For a.e. t, the energy bound on galSeq gives ‖(galSeq (φ n)).u t‖ ≤ C for some C.
-  -- WL-A extracts a weakly convergent subsequence at each t; WL-5 shows the limit is in L2Sigma_R3;
-  -- WL-6 gives AEStronglyMeasurability of the limit curve.
-  -- The per-ball convergence is recovered from weak convergence + per-ball norm convergence
-  -- (norm convergence on each restricted ball follows from the g_k hypothesis via uniqueness of limits).
-  sorry -- ALLOW_SORRY: #47 galerkin_weakLimit_R3 assembly — chains WL-A+WL-5+WL-6; prover to fill using L2VF_R3_weakSeqCompact_closedBall + weakLimit_mem_L2Sigma_R3 + weakLimit_aestronglyMeasurable + GalerkinSolutionData_R3 energy bound
+  -- Chain: per-ball STRONG convergence + spatial assembly → AESM limit curve in L2Sigma_R3.
+  -- Proof route (sorry-tracked):
+  --   (A) Extract g_k from hball; energy bound C = ‖u₀‖ gives ‖g_k t‖ ≤ C for a.e. t.
+  --   (B) Define liftToGlobal k : L2ballR3 k → L2VF_R3 (extend by zero = indicator extension);
+  --       this is an isometry, hence continuous.
+  --   (C) U_k := liftToGlobal k ∘ g_k : ℝ → L2VF_R3 is AESM (composition with continuous).
+  --   (D) Consistency (a.e. t, j ≤ k): g_j t = restrictToBall j (liftToGlobal k (g_k t));
+  --       follows from: (1) identity restrictToBall j ∘ liftToGlobal k ∘ restrictToBall k = restrictToBall j
+  --       (provable: underlying fn is v on B_j ⊆ B_k); (2) continuity; (3) uniqueness of limits.
+  --   (E) Norm monotone a.e.: ‖g_j t‖ ≤ ‖g_k t‖ for j ≤ k (from (D) + non-expanding of restrictToBall j).
+  --   (F) Cauchy a.e.: ‖U_k t - U_j t‖² = ‖g_k t‖² - ‖g_j t‖² → 0 (non-decreasing bounded sequence);
+  --       norm identity uses (D) + indicator-norm identity eLpNorm_indicator_eq_eLpNorm_restrict.
+  --   (G) u_func t = lim_k U_k t exists strongly (L2VF_R3 complete, Cauchy from (F)).
+  --   (H) u_func AESM via aestronglyMeasurable_of_tendsto_ae (U_k AESM + ae strong convergence).
+  --   (I) u_func t ∈ L2Sigma_R3 a.e.: apply WL-5 (weakLimit_mem_L2Sigma_R3) — (galSeq(φn).u t ∈ L2Sigma_R3
+  --       for all n; weak convergence from per-ball strong convergence + energy bound ε/3 argument).
+  --   (J) Per-R convergence: restrictToBall R (galSeq(φn).u t) → restrictToBall R (u_func t)
+  --       follows from continuous restrictToBall R + per-ball strong convergence for R ≤ k.
+  -- ALL steps are mathematically sound; the sorry below marks the ~80 LOC Lean formalization gap
+  -- (private-lemma duplication from SpatialCompactness, ae-intersection management, Cauchy/isometry bookkeeping).
+  sorry -- ALLOW_SORRY: #47 galerkin_weakLimit_R3 SPATIAL ASSEMBLY — complete proof route documented above; blocked by ~80 LOC formalization: (B) liftToGlobal isometry/continuity; (D) consistency via indicator-coeFn ae identity; (F) Cauchy criterion via eLpNorm_indicator_eq_eLpNorm_restrict + non-decreasing bounded norm; (H) aestronglyMeasurable_of_tendsto_ae; (I) WL-5 + ε/3 weak-convergence argument; requires duplicating private lemmas furtherRestrict/furtherRestrict_coeFn from SpatialCompactness or making them public — lean-coder structural change needed
 
 /-! ### Local plumbing helpers -/
 
