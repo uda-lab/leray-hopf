@@ -19,12 +19,11 @@
 #           the axiom-free galerkinSolutionData_torus (proved finite-dim Galerkin ODE over
 #           velocitySpan n); net torus project axioms now 3.
 #
-#   exists_lerayHopf_r3_axiomatic — exactly 7 axioms:
+#   exists_lerayHopf_r3_axiomatic — exactly 6 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
 #     LerayHopf.galerkin_limit_passage_R3
 #     LerayHopf.r3_NSForms_exist
-#     LerayHopf.galerkin_spacetime_precompact_R3
-#     LerayHopf.L2VF_R3_weakSeqCompact_closedBall  (4 project)
+#     LerayHopf.galerkin_spacetime_precompact_R3  (3 project)
 #     NOTE: spatial_compactness_R3 REMOVED (issue #2) — now a theorem via the FK chain.
 #     NOTE: r3GalerkinScheme_exists REMOVED (issue #21) — now a theorem, SWAPPED for the
 #           thinner curlSchwartzDense_holds density axiom.
@@ -43,13 +42,13 @@
 #           is now PROVED sorry-free in CurlDensity.lean (curlSchwartzDense_provedRoute, Fourier
 #           route). CurlDensityCapstone.lean rewires curlSchwartzDense_holds / nonempty_schwartzGalerkinBasis
 #           / r3GalerkinScheme_exists to the proved theorem. Net R3 project axioms now 4.
-#     NOTE: galerkin_weakLimit_R3 REMOVED (issue #47 PR-A) — converted to a THEOREM; the
-#           irreducible abstract FA content (sequential Banach–Alaoglu for the separable Hilbert
-#           space L2VF_R3) is isolated as the thinner scheme-independent axiom
-#           L2VF_R3_weakSeqCompact_closedBall (pure FA, no Galerkin parameters, TRUE/standard).
-#           The assembly uses WL-5 (div-free weak-closedness via Mazur) + WL-6 (measurability
-#           of a.e. weak limits). PR-B will discharge L2VF_R3_weakSeqCompact_closedBall via
-#           the Riesz-isometry homeomorphism WL-3. Net R3 project axioms: 4 (neutral swap).
+#     NOTE: galerkin_weakLimit_R3 REMOVED (issue #47 PR-A) — converted to a THEOREM via the
+#           strong ball-exhaustion + Mazur route (Cauchy diagonal +
+#           exists_stronglyMeasurable_limit_of_tendsto_ae + WL-5). Does NOT use
+#           L2VF_R3_weakSeqCompact_closedBall. Net R3 project axioms: 3 (4→3).
+#     NOTE: L2VF_R3_weakSeqCompact_closedBall DELETED (issue #47 PR-A cleanup) — introduced as
+#           a scaffold but never called by galerkin_weakLimit_R3's actual proof body. Removed as
+#           dead code. Net R3 project axioms: 3.
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.
@@ -177,7 +176,7 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 
 # ---------------------------------------------------------------------------
 # Pin 2: exists_lerayHopf_r3_axiomatic
-#   5 project axioms + 3 kernel = 8 total
+#   3 project axioms + 3 kernel = 6 total
 #   (spatial_compactness_R3 removed — issue #2 — now a theorem via the FK chain)
 #   (r3GalerkinScheme_exists removed — issue #21 — now a theorem, SWAPPED for the
 #    thinner curlSchwartzDense_holds density axiom)
@@ -201,13 +200,15 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 #   (curlSchwartzDense_holds REMOVED — issue #3 / #21 — proved sorry-free via the Fourier
 #    route in LerayHopf/R3/CurlDensity.lean (curlSchwartzDense_provedRoute); wired in
 #    CurlDensityCapstone.lean as a theorem. Net R3 project axioms now 4.)
+#   (galerkin_weakLimit_R3 REMOVED — issue #47 PR-A — proved as a theorem via the strong
+#    ball-exhaustion + Mazur route; L2VF_R3_weakSeqCompact_closedBall deleted as dead code.
+#    Net R3 project axioms now 3.)
 # ---------------------------------------------------------------------------
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound
    LerayHopf.galerkin_limit_passage_R3
    LerayHopf.r3_NSForms_exist
-   LerayHopf.galerkin_spacetime_precompact_R3
-   LerayHopf.L2VF_R3_weakSeqCompact_closedBall"
+   LerayHopf.galerkin_spacetime_precompact_R3"
 
 # ---------------------------------------------------------------------------
 # Pin 3: Core torus representative — no project axioms, no sorryAx
@@ -225,4 +226,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets."
+echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets (R3: 3 project axioms)."

@@ -1,8 +1,14 @@
 /-
-# LerayHopf.R3.ArzelaAscoliTime — Issue #44 (SOUND restructure)
+# LerayHopf.R3.ArzelaAscoliTime — Issue #44 (SOUND restructure) + #47 PR-A cleanup
 
 **Goal (issue #44):** Replace the axiom `galerkinSpaceTimeExtraction_R3` with a proof
 built from two SOUND thin axioms plus Mathlib-reachable plumbing lemmas.
+
+**Issue #47 PR-A (cleanup):** `galerkin_weakLimit_R3` was converted from axiom → THEOREM via a
+strong ball-exhaustion + Mazur route (Cauchy diagonal + `exists_stronglyMeasurable_limit_of_tendsto_ae`).
+It does NOT use `L2VF_R3_weakSeqCompact_closedBall` (the thin Banach–Alaoglu axiom introduced as a
+scaffold in PR-A round 1). That axiom has been DELETED as unused dead code; `weakLimit_aestronglyMeasurable`
+(WL-6, an orphan sorry with no capstone-path consumer) has also been deleted.
 
 **Codex P1 soundness fix (2026-06-22):** The original T0.1 axiom
 `galerkin_equicontinuity_from_ODE` was UNSOUND: the Galerkin ODE controls the time
@@ -17,7 +23,8 @@ pointwise-in-time strong equicontinuity. The Mathlib extraction chain is:
   ⟹ `TendstoInMeasure.exists_seq_tendsto_ae`  (Mathlib)
   ⟹ per-ball a.e.-in-time subsequence convergence
   ⟹ diagonalize over `R : ℕ`
-  ⟹ feed into axiom B to get `u : Time → L2Sigma_R3`
+  ⟹ Cauchy diagonal + `exists_stronglyMeasurable_limit_of_tendsto_ae` for STRONG limit
+  ⟹ Mazur (WL-5) to confirm limit is in L2Sigma_R3
 
 **Architecture (import-cycle safety):**
   R3.SpatialCompactness  ← (LocalRellichInput, L2ballR3, restrictToBall)
@@ -27,10 +34,9 @@ pointwise-in-time strong equicontinuity. The Mathlib extraction chain is:
 
 ## Declarations (dependency order)
 
-### Group A — Two sound residual axioms
+### Group A — One sound residual axiom
 
 - `galerkin_spacetime_precompact_R3`  (axiom A)  — Aubin–Lions–Simon L²-in-time precompactness
-- `galerkin_weakLimit_R3`             (axiom B)  — Banach–Alaoglu + div-free weak limit
 
 ### Local plumbing helpers (proved)
 
@@ -38,16 +44,23 @@ pointwise-in-time strong equicontinuity. The Mathlib extraction chain is:
 - `continuous_restrictToBall'`        — continuity of `restrictToBall R`
 - `restrictToBall_sub_norm_mono`      — monotonicity of ball restriction norm in R
 
-### New provable plumbing (sorries for lean-prover)
+### Proved lemmas (no sorry)
+
+- `weakLimit_mem_L2Sigma_R3` (WL-5)  — Mazur: weak limits of L2Sigma_R3 sequences stay in L2Sigma_R3
+- `galerkin_weakLimit_R3`             — THEOREM (converted from axiom): per-ball a.e.-t limits
+                                        ⇒ measurable weak limit in L2Sigma_R3; proved via Cauchy diagonal
+                                        + `exists_stronglyMeasurable_limit_of_tendsto_ae` + WL-5.
+
+### Sorried lemmas (for lean-prover)
 
 - `perBall_ae_subseq`    — from axiom A: a.e.-t convergent subseq on a single ball
 - `diag_ae_subseq`       — diagonalize `perBall_ae_subseq` over `R : ℕ`
 
 ### T4 — Assembly
 
-- `u_lim_aestronglyMeasurable`   — calls diag_ae_subseq + axiom B
+- `u_lim_aestronglyMeasurable`   — calls diag_ae_subseq + galerkin_weakLimit_R3
 
-## Assumptions (new axioms introduced here — issue #47 PR-A)
+## Assumptions (axioms introduced here — issue #47 PR-A after cleanup)
 
 1. `galerkin_spacetime_precompact_R3` — ALLOW_AXIOM (REFINE-CAPABLE): LOCAL Aubin–Lions–Simon
    spacetime precompactness on ℝ³ — for EVERY input subsequence ψ and every ball radius k:ℕ,
@@ -58,23 +71,8 @@ pointwise-in-time strong equicontinuity. The Mathlib extraction chain is:
    valued Aubin–Lions/Fréchet–Kolmogorov theorem in L²(0,T;X); scheme-independent; reusable
    for torus #23.
 
-2. `L2VF_R3_weakSeqCompact_closedBall` — ALLOW_AXIOM: sequential weak compactness of bounded
-   closed balls in the separable Hilbert space L2VF_R3 = L²(ℝ³; ℝ³). Standard theorem
-   (Eberlein–Šmulian / sequential Banach–Alaoglu for reflexive separable Hilbert space), TRUE
-   and NOT over-strong. Mathlib has `WeakDual.isSeqCompact_closedBall` for the DUAL side but
-   lacks the primal-space version (requires the Riesz-isometry homeomorphism between WeakSpace
-   and WeakDual, WL-3 — the single missing piece, to be supplied in PR-B). Scheme-independent;
-   reusable for torus #23. Replaces the former `galerkin_weakLimit_R3` axiom (which carried
-   Galerkin parameters); this axiom is ABSTRACT (no PDE parameters).
-
-   Net axiom count: `galerkin_weakLimit_R3` (axiom, 6-param) → `L2VF_R3_weakSeqCompact_closedBall`
-   (axiom, 4-param, abstract FA) — SAME COUNT (4→4 R3 project axioms, net neutral). PR-B
-   discharges this via WL-3 (`weakSpace_toDual_homeomorph`).
-
-**Note:** `galerkin_weakLimit_R3` is now a THEOREM (not an axiom), proved using
-`L2VF_R3_weakSeqCompact_closedBall` + WL-5 (`weakLimit_mem_L2Sigma_R3`) + WL-6
-(`weakLimit_aestronglyMeasurable`). The proof bodies carry ALLOW_SORRY markers pending
-PR-B prover work.
+Net R3 project axioms from this file: 1 (galerkin_spacetime_precompact_R3).
+Combined with galerkin_limit_passage_R3 and r3_NSForms_exist (from AxiomaticClosure): 3 total.
 -/
 
 import LerayHopf.R3.AxiomaticClosure   -- GalerkinSolutionData_R3, R3GalerkinScheme, R3NSForms
@@ -85,11 +83,9 @@ import LerayHopf.R3.DivergenceFree     -- L2VF_R3_separable, L2Sigma_R3_weaklyCl
 import Mathlib.MeasureTheory.Function.ConvergenceInMeasure
 -- aestronglyMeasurable_of_tendsto_ae
 import Mathlib.MeasureTheory.Function.StronglyMeasurable.AEStronglyMeasurable
--- IsCompact.isSeqCompact, IsSeqCompact.subseq_of_frequently_in
-import Mathlib.Topology.Sequences
--- toWeakSpace, WeakSpace (for L2VF_R3_weakSeqCompact_closedBall, WL-5, WL-6)
+-- toWeakSpace, WeakSpace (for WL-5 weakLimit_mem_L2Sigma_R3 + the weak-convergence step in galerkin_weakLimit_R3)
 import Mathlib.Analysis.LocallyConvex.WeakSpace
--- InnerProductSpace.toDual_symm_apply (Riesz representation, for WL-5 weak-convergence proof)
+-- InnerProductSpace.toDual_symm_apply (Riesz representation, for WL-5 weak-convergence proof in galerkin_weakLimit_R3)
 import Mathlib.Analysis.InnerProductSpace.Dual
 -- aecover_closedBall, AECover.integral_tendsto_of_countably_generated (for ball exhaustion MCT)
 import Mathlib.MeasureTheory.Integral.IntegralEqImproper
@@ -137,32 +133,6 @@ axiom galerkin_spacetime_precompact_R3 -- ALLOW_AXIOM: LOCAL Aubin–Lions–Sim
           2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)))
         Filter.atTop (nhds 0)
 
-/-- **Thin Axiom WL-A — Sequential weak compactness of bounded balls in `L2VF_R3`.**
-
-Every norm-bounded sequence in `L2VF_R3 = L²(ℝ³; ℝ³)` (viewed as `WeakSpace ℝ L2VF_R3`)
-has a weakly convergent subsequence.
-
-**Mathematical content:** Eberlein–Šmulian theorem / sequential Banach–Alaoglu for the
-separable reflexive Hilbert space `L2VF_R3`. This is a **TRUE, standard theorem** — NOT
-over-strong. It states exactly the sequential form of Banach–Alaoglu on the primal space
-and does NOT claim anything about the limit being in `L2Sigma_R3` (that is proved by Mazur,
-WL-5) or about measurability (that is WL-6).
-
-**Why axiom (pending PR-B):** Mathlib has `WeakDual.isSeqCompact_closedBall` for the DUAL
-of a separable normed space, but the primal version requires:
-(a) `L2VF_R3` is separable (WL-1, proved in `DivergenceFree.lean`), and
-(b) the Fréchet–Riesz isometry induces a homeomorphism `WeakSpace ℝ L2VF_R3 ≃ₜ WeakDual ℝ L2VF_R3`
-    (WL-3 — NOT yet in Mathlib; the single missing bridge).
-PR-B will discharge this axiom by establishing WL-3 and pulling back `WeakDual.isSeqCompact_closedBall`.
-
-**Scheme-independent:** no Galerkin parameters; pure abstract functional analysis.
-Reusable for torus #23. -/
-axiom L2VF_R3_weakSeqCompact_closedBall -- ALLOW_AXIOM: sequential weak compactness of bounded balls in L2VF_R3 = L²(ℝ³;ℝ³); TRUE standard theorem (Eberlein–Šmulian / Banach–Alaoglu for separable reflexive Hilbert space); NOT over-strong (no claim about L2Sigma_R3 membership or measurability); Mathlib has WeakDual.isSeqCompact_closedBall for dual side but lacks the primal version (requires Riesz-isometry homeomorphism WeakSpace≃WeakDual, WL-3, pending PR-B); scheme-independent; reusable for torus #23
-    (C : ℝ) (hC : 0 ≤ C) (f : ℕ → L2VF_R3) (hf : ∀ n, ‖f n‖ ≤ C) :
-    ∃ (φ : ℕ → ℕ) (v : L2VF_R3), StrictMono φ ∧
-      Filter.Tendsto (fun n => (toWeakSpace ℝ L2VF_R3) (f (φ n)))
-        Filter.atTop (𝓝 ((toWeakSpace ℝ L2VF_R3) v))
-
 /-- **WL-5 — Weak limits of sequences in `L2Sigma_R3` remain in `L2Sigma_R3`.**
 
 If `vₙ : L2VF_R3` with `vₙ ∈ L2Sigma_R3` for all `n`, and `vₙ` converges weakly to `v : L2VF_R3`
@@ -195,28 +165,6 @@ theorem weakLimit_mem_L2Sigma_R3
   -- `toWeakSpace` is injective, so `w = v`, hence `v ∈ L2Sigma_R3`.
   have heq : w = v := (toWeakSpace ℝ L2VF_R3).injective hwv
   rwa [← heq]
-
-/-- **WL-6 — A.e. pointwise weak limit of AEStronglyMeasurable curves is AEStronglyMeasurable.**
-
-If `fₙ : α → L2VF_R3` are `AEStronglyMeasurable` and for a.e. `t`, `fₙ t` converges weakly
-to `g t` in `WeakSpace ℝ L2VF_R3`, then `g : α → L2VF_R3` is `AEStronglyMeasurable`.
-
-**Proof route:** In the separable Hilbert space `L2VF_R3` (WL-1), the weak Borel σ-algebra
-coincides with the strong Borel σ-algebra (the Borel σ-algebra of a separable metrizable
-topological vector space is generated by the continuous linear functionals, which is the same
-as the weak σ-algebra). Therefore:
-- For each `e : L2VF_R3`, the function `t ↦ ⟪e, g t⟫` is measurable
-  (pointwise limit of the measurable functions `t ↦ ⟪e, fₙ t⟫`).
-- By separability of `L2VF_R3`, measurability of all inner products against a countable
-  dense subset implies strong AEStronglyMeasurability. -/
-theorem weakLimit_aestronglyMeasurable
-    {α : Type*} [MeasurableSpace α] {μ : MeasureTheory.Measure α}
-    (fn : ℕ → α → L2VF_R3) (g : α → L2VF_R3)
-    (hfn : ∀ n, MeasureTheory.AEStronglyMeasurable (fn n) μ)
-    (htend : ∀ᵐ t ∂μ, Filter.Tendsto (fun n => (toWeakSpace ℝ L2VF_R3) (fn n t))
-        Filter.atTop (𝓝 ((toWeakSpace ℝ L2VF_R3) (g t)))) :
-    MeasureTheory.AEStronglyMeasurable g μ := by
-  sorry -- ALLOW_SORRY: #47 WL-6 — Pettis measurability gap. The hypothesis gives only WEAK pointwise convergence (toWeakSpace), so the strong-limit route used by `galerkin_weakLimit_R3` does NOT apply here (that capstone builds `u_func` as a STRONG ball-exhaustion limit and gets AESM directly from `exists_stronglyMeasurable_limit_of_tendsto_ae`, NOT via this lemma — WL-6 is an ORPHAN, not on the capstone/axiom-pin path). The honest proof needs the weak-Borel = strong-Borel coincidence in a separable Hilbert space (Pettis), which Mathlib LACKS: there is no theorem deriving strong (AE)measurability from measurability of all coordinate maps t↦⟪e,g t⟫. `aestronglyMeasurable_of_tendsto_ae`/`aemeasurable_of_tendsto_metrizable_ae` require STRONG-topology convergence, unavailable here. A first-principles proof (countable dense D, ‖y‖=⨆_{e∈D}⟪e,y⟫, sup-of-measurable, balls→Borel via stronglyMeasurable_iff_measurable_separable) is a sizable standalone development; deferred. Does NOT affect exists_lerayHopf_r3_axiomatic.
 
 /-! ### Local plumbing helpers -/
 
@@ -307,9 +255,12 @@ curve `u : Time → L2Sigma_R3` such that:
 - `u` is `AEStronglyMeasurable` on `[0,T]`, and
 - for every `R : ℝ`, for a.e. `t ∈ [0,T]`, `restrictToBall R ((galSeq (φ n)).u t) → restrictToBall R (u t)`.
 
-**Proof (PR-A scaffold):** The body chains through the thin abstract axiom
-`L2VF_R3_weakSeqCompact_closedBall` (WL-A) plus lemmas WL-5 and WL-6.
-The proof body is `sorry`-marked pending the prover's work in PR-B / issue #47.
+**Proof (#47 PR-A — sorry-free):** Uses a STRONG ball-exhaustion + Mazur route:
+Cauchy diagonal over the liftG-extended per-ball limits (sections A–K), computes
+the strong limit via `exists_stronglyMeasurable_limit_of_tendsto_ae` (section L),
+confirms membership in `L2Sigma_R3` via `weakLimit_mem_L2Sigma_R3` (WL-5, Mazur),
+and establishes per-R a.e.-t convergence by norm monotonicity (sections M–O).
+This route does NOT use `L2VF_R3_weakSeqCompact_closedBall` (that axiom is DELETED).
 
 **SAME signature as the former axiom:** all downstream consumers (`u_lim_aestronglyMeasurable`,
 `AubinLionsLimitPassage`, the capstone) continue to see this by the SAME name and type. -/
