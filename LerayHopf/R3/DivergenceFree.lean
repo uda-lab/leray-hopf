@@ -3,8 +3,13 @@ import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 import Mathlib.Analysis.InnerProductSpace.LinearMap
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Algebra.Module.Submodule.Lattice
+-- WL-1: SeparableSpace L2VF_R3 — via Lp.SecondCountableTopology
+--   (IsSeparable volume from CountablyGenerated+SFinite; SeparableSpace EuclideanSpace from SecondCountableTopology)
+import Mathlib.MeasureTheory.Measure.SeparableMeasure
+-- WL-4: L2Sigma_R3_weaklyClosed — Mazur: closed convex set is weakly closed
+import Mathlib.Analysis.LocallyConvex.WeakSpace
 
-open MeasureTheory LineDeriv
+open MeasureTheory LineDeriv Topology
 
 /-!
 # L²_σ(ℝ³): weak-divergence-free subspace on ℝ³
@@ -89,6 +94,75 @@ noncomputable def L2Sigma_R3 : Submodule ℝ L2VF_R3 :=
 theorem isClosed_L2Sigma_R3 : IsClosed (L2Sigma_R3 : Set L2VF_R3) := by
   simp only [L2Sigma_R3, Submodule.coe_iInf]
   exact isClosed_iInter fun φ => ContinuousLinearMap.isClosed_ker (divTestFunctional φ)
+
+/-! ### WL-1 — Separability of L2VF_R3 -/
+
+/-- **WL-1.** `L2VF_R3 = Lp (EuclideanSpace ℝ (Fin 3)) 2 (volume : Measure Domain3)` is a
+separable topological space.
+
+**Proof route** (all via Mathlib instances):
+1. `Domain3 = EuclideanSpace ℝ (Fin 3)` is a `BorelSpace` with `SecondCountableTopology`,
+   so `CountablyGenerated Domain3` fires (`borelSpace_isSeparable_of_secondCountable`).
+2. Lebesgue measure on ℝ³ is σ-finite, hence `SFinite (volume : Measure Domain3)`.
+3. `MeasureTheory.IsSeparable (volume : Measure Domain3)` fires from steps 1–2
+   via the instance `[CountablyGenerated X] [SFinite μ] : IsSeparable μ`.
+4. `EuclideanSpace ℝ (Fin 3)` is finite-dimensional, hence has `SecondCountableTopology`,
+   hence `SeparableSpace (EuclideanSpace ℝ (Fin 3))` by `SecondCountableTopology.to_separableSpace`.
+5. `MeasureTheory.Lp.SecondCountableTopology [IsSeparable μ] [SeparableSpace E]` gives
+   `SecondCountableTopology L2VF_R3`.
+6. `SecondCountableTopology.to_separableSpace` gives `SeparableSpace L2VF_R3`. -/
+theorem L2VF_R3_separable : TopologicalSpace.SeparableSpace L2VF_R3 := by
+  -- Step 1: `Domain3` has `BorelSpace` and `SecondCountableTopology` (finite-dimensional
+  -- Euclidean space), so `CountablyGenerated Domain3` fires via
+  -- `BorelSpace.countablyGenerated`.
+  haveI : MeasurableSpace.CountablyGenerated Domain3 := inferInstance
+  -- Step 2: `volume : Measure Domain3` is the Haar measure on a finite-dimensional real
+  -- inner product space; it equals `b.addHaar` for the standard ONB `b`, which is
+  -- σ-finite (via `SigmaFinite b.addHaar`), hence `SFinite`.
+  haveI : SFinite (volume : Measure Domain3) := inferInstance
+  -- Step 3: `[CountablyGenerated Domain3] [SFinite volume] : IsSeparable volume`
+  -- fires via `MeasureTheory.instIsSeparable`.
+  haveI : MeasureTheory.IsSeparable (volume : Measure Domain3) := inferInstance
+  -- Step 4: `EuclideanSpace ℝ (Fin 3)` is finite-dimensional, hence has
+  -- `SecondCountableTopology`, hence `SeparableSpace`.
+  haveI : TopologicalSpace.SeparableSpace (EuclideanSpace ℝ (Fin 3)) := inferInstance
+  -- Step 5: `Lp.SecondCountableTopology [IsSeparable μ] [SeparableSpace E]` gives
+  -- `SecondCountableTopology L2VF_R3`.  We must provide the `Fact` instances for `p = 2`.
+  haveI : Fact ((1 : ENNReal) ≤ 2) := inferInstance
+  haveI : Fact ((2 : ENNReal) ≠ ⊤) := ⟨ENNReal.ofNat_ne_top⟩
+  haveI : SecondCountableTopology L2VF_R3 := inferInstance
+  -- Step 6: `SecondCountableTopology → SeparableSpace`.
+  exact inferInstance
+
+/-! ### WL-4 — Weak closedness of L2Sigma_R3 -/
+
+/-- **WL-4.** `L2Sigma_R3` is closed in `WeakSpace ℝ L2VF_R3`.
+
+**Proof route** (via Mazur's lemma, present in Mathlib as `Convex.toWeakSpace_closure`):
+- `L2Sigma_R3` is a `Submodule ℝ L2VF_R3`, hence convex.
+- `isClosed_L2Sigma_R3` gives strong closure.
+- `Convex.toWeakSpace_closure` (Mazur's lemma) says that for a convex set `s`,
+  `(toWeakSpace ℝ E) '' (closure s) = closure ((toWeakSpace ℝ E) '' s)`.
+- Since `L2Sigma_R3` is already strongly closed, `(toWeakSpace ℝ L2VF_R3) '' L2Sigma_R3`
+  is closed in `WeakSpace ℝ L2VF_R3`.
+- As `toWeakSpace ℝ L2VF_R3` is a bijection, this translates to `IsClosed` of the
+  image (which is identified with `L2Sigma_R3` via the linear equivalence). -/
+theorem L2Sigma_R3_weaklyClosed :
+    IsClosed ((toWeakSpace ℝ L2VF_R3) '' (L2Sigma_R3 : Set L2VF_R3)) := by
+  -- `L2Sigma_R3` is convex (it is a submodule over ℝ).
+  have hconvex : Convex ℝ (L2Sigma_R3 : Set L2VF_R3) := L2Sigma_R3.convex
+  -- `L2Sigma_R3` is strongly closed.
+  have hclosed : IsClosed (L2Sigma_R3 : Set L2VF_R3) := isClosed_L2Sigma_R3
+  -- Mazur's lemma (`Convex.toWeakSpace_closure`):
+  --   `toWeakSpace ℝ L2VF_R3 '' (closure L2Sigma_R3)
+  --      = closure (toWeakSpace ℝ L2VF_R3 '' L2Sigma_R3)`.
+  -- Since `L2Sigma_R3` is already strongly closed, `closure L2Sigma_R3 = L2Sigma_R3`.
+  have hmaz := hconvex.toWeakSpace_closure (𝕜 := ℝ) (E := L2VF_R3)
+  rw [hclosed.closure_eq] at hmaz
+  -- Now `hmaz : toWeakSpace ℝ L2VF_R3 '' L2Sigma_R3
+  --               = closure (toWeakSpace ℝ L2VF_R3 '' L2Sigma_R3)`.
+  -- Rewrite the goal using `hmaz` and close with `isClosed_closure`.
+  exact hmaz ▸ isClosed_closure
 
 /-! ### Completeness and orthogonal projection -/
 
