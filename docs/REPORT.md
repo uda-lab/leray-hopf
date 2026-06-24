@@ -1,5 +1,10 @@
 # Autonomous run — final report
 
+> **Historical snapshot.** This report describes the original autonomous run (T³, branch
+> `autorun/leray-hopf-torus3`). For the *current* axiom frontier and status see
+> [`STATUS.md`](STATUS.md) and the repo [`README`](../README.md). As of 2026-06-24 both
+> the ℝ³ and 𝕋³ capstones rest on **3 project axioms** each.
+
 Leray–Hopf weak existence on the real 3-torus, built bottom-up on mathlib.
 Branch `autorun/leray-hopf-torus3`, 10 milestone commits on top of `9232c05`.
 
