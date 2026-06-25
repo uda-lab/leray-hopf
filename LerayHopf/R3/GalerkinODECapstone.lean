@@ -31,11 +31,11 @@ Routing the capstone through `galSeq_R3_of_basis` (axiom-free, concrete scheme) 
 the `galerkin_ode_solution_R3` axiom drops EXACTLY that axiom from
 `exists_lerayHopf_r3_axiomatic`'s `#print axioms`.  After issue #15 (which removed `aubin_lions_R3` — proving its spatial half and swapping its
 time content 1-for-1 for the single strictly-thinner UNCONDITIONAL
-`galerkinSpaceTimeExtraction_R3`) and issue #48 (which replaced the fat `r3_NSForms_exist`
-with the strictly-thinner `r3ConvectionGapOp_exists` via the proved `R3NSForms_of_gap`),
+`galerkinSpaceTimeExtraction_R3`) and issue #48 (which reorganized the named axiom `r3_NSForms_exist` into the operator-gap
+form `r3ConvectionGapOp_exists` + the proved theorem `r3_NSForms_exists` via `R3NSForms_of_gap`),
 the capstone rests on the THREE project axioms: `r3ConvectionGapOp_exists`,
 `galerkin_limit_passage_R3`, `galerkin_spacetime_precompact_R3`.
-`r3_NSForms_exist` is NO LONGER among them — discharged here (issue #48) via `r3_NSForms_exists`.
+`r3_NSForms_exist` is NO LONGER among them — replaced (issue #48) via `r3_NSForms_exists`.
 
 ## Declarations added
 
@@ -91,10 +91,11 @@ content swapped 1-for-1 for the single strictly-thinner UNCONDITIONAL `galerkinS
 (its modulus absorbed here; the redundant prior-revision `timeCompactnessInput_R3` axiom is dropped).
 `r3GalerkinScheme_exists` was discharged earlier (issue #21, `curlSchwartzDense_holds`);
 `spatial_compactness_R3` earlier still (issue #2, FK chain).
-`r3_NSForms_exist` is NO LONGER among them — discharged (issue #48) via the thin-swap:
-  the fat structure-existence axiom is replaced by `r3ConvectionGapOp_exists` (strictly thinner,
-  in `ConvectionForm.lean`) and the proved theorem `r3_NSForms_exists` (same conclusion,
-  proved via `R3NSForms_of_gap` which is sorry-free).  Net project axioms: 3. -/
+`r3_NSForms_exist` is NO LONGER among them — replaced (issue #48, reorganization):
+  the named axiom is replaced by `r3ConvectionGapOp_exists` (operator core, in `ConvectionForm.lean`)
+  and the proved theorem `r3_NSForms_exists` (same conclusion, proved via `R3NSForms_of_gap`).
+  Note: `b_cont_fixedTest` ≡ `b_bound`, so the fixed-test bound is still assumed; what becomes
+  theorem content is multilinear algebra + density.  Net project axioms: 3. -/
 theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),

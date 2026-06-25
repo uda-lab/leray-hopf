@@ -49,12 +49,13 @@
 #     NOTE: L2VF_R3_weakSeqCompact_closedBall DELETED (issue #47 PR-A cleanup) — introduced as
 #           a scaffold but never called by galerkin_weakLimit_R3's actual proof body. Removed as
 #           dead code. Net R3 project axioms: 3.
-#     NOTE: r3_NSForms_exist DISCHARGED (issue #48, refined) — proved as theorem r3_NSForms_exists
-#           via the sorry-free R3NSForms_of_gap (ConvectionForm.lean); SWAPPED for the strictly-thinner
-#           r3ConvectionGapOp_exists (OPERATOR-ONLY: 5 fields b/b_extends/b_multilinear/b_antisymm_gap/
-#           b_cont_fixedTest; density schwartz_dense is NOT assumed — proved via
-#           convectionGap_schwartz_dense curlSchwartzDense_holds; bound + galerkin pin PROVED).
-#           Net R3 project axioms still 3 (fat→thin swap, count unchanged).
+#     NOTE: r3_NSForms_exist REORGANIZED (issue #48) — the named axiom is replaced by
+#           r3ConvectionGapOp_exists (operator core: b/b_extends/b_multilinear/b_antisymm_gap/
+#           b_cont_fixedTest) + proved theorem r3_NSForms_exists (via R3NSForms_of_gap).
+#           Density (schwartz_dense) NOT assumed — proved via curlSchwartzDense_holds.
+#           Note: b_cont_fixedTest ≡ b_bound (bounded/continuous-bilinear equivalence) so the
+#           fixed-test bound is still assumed, not proved.  What genuinely becomes theorem content:
+#           multilinear algebra (b_add/b_smul) + density.  Net R3 project axioms still 3.
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.

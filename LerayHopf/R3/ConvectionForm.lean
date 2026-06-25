@@ -75,39 +75,54 @@ extension**; it carries no `LerayHopfSolution` / `WeakFormNS` / energy-inequalit
 - `ConvectionGap`        : the isolated frontier — the weak-convection-operator extension
                            (`b` total + `b_extends` + `b_multilinear` + `b_antisymm_gap`
                            + `b_cont_fixedTest` + `schwartz_dense`).
-- `ConvectionGapOp`      : the OPERATOR-ONLY sub-structure (issue #48 thin-swap refinement) —
-                           exactly `ConvectionGap` minus `schwartz_dense`; the five genuine
-                           operator-extension fields only; density is proved, not bundled.
+- `ConvectionGapOp`      : the operator-core sub-structure (issue #48 reorganization) —
+                           exactly `ConvectionGap` minus `schwartz_dense`; the five operator
+                           fields including the fixed-test bound (as `b_cont_fixedTest`);
+                           density is proved separately and assembled in `r3_NSForms_exists`.
 - `R3NSForms_of_gap`     : the conditional `ConvectionGap 𝔊 → Nonempty (R3NSForms 𝔊)`,
                            a genuine derivation of every `R3NSForms` field from Tier-S.
 
 ## Scaffold status
 
 All proof bodies of `R3NSForms_of_gap` are now discharged (Tier G).  The H1–H4 / P1 / P2
-density chain is sorry-free.  **Issue #48 thin-swap (refined):** one new residual `axiom`
-(`r3ConvectionGapOp_exists`, see `## Assumptions` below) replaces the fat `r3_NSForms_exist`;
-`r3_NSForms_exists` is a proved theorem (sorry-free, two lines).  `AxiomaticClosure.lean` is
-NOT edited (the fat axiom is deleted there, not here).
-Density (`schwartz_dense`) is NOT bundled in the axiom — it is the proved lemma
-`convectionGap_schwartz_dense curlSchwartzDense_holds` and is assembled in `r3_NSForms_exists`.
+density chain is sorry-free.
+
+**Issue #48 reorganization:** The named axiom `r3_NSForms_exist` is REPLACED by
+`r3ConvectionGapOp_exists` (see `## Assumptions` below), mirroring the accepted torus #22
+pattern (`torusConvectionGap_exists`).  `r3_NSForms_exists` is a proved theorem (sorry-free).
+`AxiomaticClosure.lean` is NOT edited.
+
+What becomes THEOREM content (no longer assumed):
+- The multilinear ALGEBRA: `b_add_{1,2,3}` and `b_smul_{1,2,3}` are derived from `b_multilinear`.
+- DENSITY: `schwartz_dense` is the proved lemma `convectionGap_schwartz_dense curlSchwartzDense_holds`,
+  assembled in `r3_NSForms_exists` — not bundled in the axiom.
+
+What REMAINS ASSUMED (the irreducible weak `(u·∇)v` operator core):
+- The total form `b` and its existence, `b_multilinear`, `b_antisymm_gap`, the
+  `convFormSchwartz` pin (`b_extends`), and the fixed-test bound — which is assumed in the
+  equivalent continuity form `b_cont_fixedTest`.  Note: bounded bilinear ↔ continuous bilinear,
+  so `b_cont_fixedTest` is analytically EQUIVALENT to `R3NSForms.b_bound`; the bound is
+  assumed, not proved, just rephrased.
+
+This is a reorganization of AX-4 into the operator-gap form, NOT a strict analytic thinning
+of the bound content.
 
 ## Assumptions
 
 One axiom is added in THIS file.
 
-1. `r3ConvectionGapOp_exists` — ℝ³ weak convection-operator gap, OPERATOR-ONLY (issue #48 thin-swap, refined).
+1. `r3ConvectionGapOp_exists` — ℝ³ weak `(u·∇)v` operator core (issue #48 reorganization).
    For any `R3GalerkinScheme 𝔊`, a `ConvectionGapOp 𝔊` exists.  `ConvectionGapOp` carries
-   ONLY the five genuine operator-extension fields: `b`, `b_extends`, `b_multilinear`,
-   `b_antisymm_gap`, `b_cont_fixedTest` — the total form on `L²_σ`, its restriction to the
-   Schwartz class, algebraic trilinearity, antisymmetry in the last two slots, and bilinear
-   continuity in slots 1,2 at fixed Schwartz `w`.  These are the irreducible IBP/divergence-
-   theorem content Mathlib lacks for the weak `(u·∇)v` operator.
-   DENSITY IS NOT ASSUMED: `schwartz_dense` is NOT a field of `ConvectionGapOp`; it is the
-   proved lemma `convectionGap_schwartz_dense curlSchwartzDense_holds` (both proved sorry-free).
-   STRICTLY THINNER than the discharged `r3_NSForms_exist`: `b_bound` and the `b_galerkin`
-   Schwartz pin are NOT assumed — proved as theorem content in `R3NSForms_of_gap`.
-   STRICTLY THINNER than the intermediate `r3ConvectionGap_exists` (which bundled `schwartz_dense`):
-   density is proved, not assumed.
+   the five operator-core fields: `b`, `b_extends`, `b_multilinear`, `b_antisymm_gap`,
+   `b_cont_fixedTest`.  These are the irreducible IBP/divergence-theorem content Mathlib lacks
+   for the weak `(u·∇)v` operator on `L²_σ(ℝ³)`.
+   DENSITY NOT BUNDLED: `schwartz_dense` is NOT a field of `ConvectionGapOp`; it is the
+   proved lemma `convectionGap_schwartz_dense curlSchwartzDense_holds` (sorry-free).
+   ANALYTIC STRENGTH: `b_cont_fixedTest` (joint L²-continuity of `(u,v)↦b u v w` at fixed
+   Schwartz `w`) is EQUIVALENT to `R3NSForms.b_bound` by the bounded/continuous-bilinear
+   equivalence.  The fixed-test bound is therefore still ASSUMED (in continuous form), not
+   proved.  What genuinely becomes theorem content is (a) the multilinear algebra (`b_add`,
+   `b_smul` from `b_multilinear`) and (b) density (`schwartz_dense`, proved separately).
    NON-VACUOUS: `b_extends` + `convFormSchwartz_eq_witness` pin `b` to `convIntegralSchwartz`
    on Schwartz triples, excluding `b = 0`.
    Temam II.§1; Lemarié-Rieusset §5; mirrors torus `torusConvectionGap_exists` (issue #22).
@@ -226,18 +241,26 @@ structure ConvectionGap (𝔊 : R3GalerkinScheme) where
     ∃ s : ℕ → L2Sigma_R3, (∀ n, IsSchwartzDivFree_R3 (s n)) ∧
       Filter.Tendsto s Filter.atTop (nhds u)
 
-/-! ### G1b — `ConvectionGapOp`: operator-only sub-structure (no density field) -/
+/-! ### G1b — `ConvectionGapOp`: operator-core sub-structure (no density field) -/
 
-/-- **G1b. The genuine weak `(u·∇)v` operator gap — density is NOT bundled.**
+/-- **G1b. The weak `(u·∇)v` operator core — density is NOT bundled (issue #48 reorganization).**
 
 `ConvectionGapOp 𝔊` is exactly `ConvectionGap 𝔊` minus the `schwartz_dense` field.
-It carries the five genuine Mathlib-absent operator-extension fields for the weak convection
-operator on `L²_σ(ℝ³)`.  The missing `schwartz_dense` field is the PROVED lemma
-`convectionGap_schwartz_dense curlSchwartzDense_holds` — density is not an operator residual
-and must not be bundled into the axiom.
+It carries the five Mathlib-absent operator-core fields for the weak convection operator on
+`L²_σ(ℝ³)`: `b`, `b_extends`, `b_multilinear`, `b_antisymm_gap`, `b_cont_fixedTest`.
 
-This is the structure used by the residual axiom `r3ConvectionGapOp_exists` (issue #48
-thin-swap refinement).  To obtain a full `ConvectionGap 𝔊`, supply the proved density:
+The `schwartz_dense` field is the PROVED lemma `convectionGap_schwartz_dense curlSchwartzDense_holds`
+— density is a property of the function space (not of `b`) and is proved separately.
+
+Analytic note: `b_cont_fixedTest` (joint L²-continuity of `(u,v)↦b u v w` at fixed Schwartz `w`)
+is analytically EQUIVALENT to `R3NSForms.b_bound` by the bounded/continuous-bilinear equivalence.
+The fixed-test bound is therefore still ASSUMED in this structure (in continuity form), not proved.
+What genuinely becomes theorem content in `R3NSForms_of_gap` is: (a) the multilinear algebra
+(`b_add_{1,2,3}`, `b_smul_{1,2,3}` from `b_multilinear`) and (b) density (from `schwartz_dense`
+which is assembled from the proved `curlSchwartzDense_holds`).
+
+This is used by the axiom `r3ConvectionGapOp_exists` (issue #48, mirrors torus #22).
+To obtain a full `ConvectionGap 𝔊`, supply the proved density:
 ```
 ConvectionGap.mk g.b g.b_extends g.b_multilinear g.b_antisymm_gap g.b_cont_fixedTest
   (convectionGap_schwartz_dense curlSchwartzDense_holds)
@@ -275,7 +298,9 @@ structure ConvectionGapOp (𝔊 : R3GalerkinScheme) where
   /-- **Joint L²-continuity of the extension in slots 1,2 at a fixed Schwartz test `w`.**
   For a fixed `IsSchwartzDivFree_R3 w`, the bilinear map `(u,v) ↦ b u v w` is jointly
   L²-continuous.  This is the **genuine, TRUE** continuity (all-three-slot continuity is
-  false).  It drives the *derivation* of `b_bound` in `R3NSForms_of_gap`. -/
+  false).  Note: this field is analytically EQUIVALENT to `R3NSForms.b_bound` via the
+  bounded/continuous-bilinear equivalence; the bound is ASSUMED here (in continuity form),
+  not derived. -/
   b_cont_fixedTest : ∀ (w : L2Sigma_R3), IsSchwartzDivFree_R3 w →
     Continuous (fun p : L2Sigma_R3 × L2Sigma_R3 => b p.1 p.2 w)
 
@@ -613,34 +638,40 @@ lemma convectionGap_schwartz_dense (h : CurlSchwartzDense) :
       Filter.Tendsto s Filter.atTop (nhds u) :=
   fun u => schwartzDivFree_dense_of_curlDense h u
 
-/-! ### Issue #48 — Thin-swap (refined): operator-only residual axiom + discharged capstone theorem
+/-! ### Issue #48 — Reorganization of AX-4: operator-core axiom + proved capstone theorem
 
-The axiom carries ONLY the five operator-extension fields (`ConvectionGapOp`); density
-(`schwartz_dense`) is NOT bundled — it is the proved lemma `convectionGap_schwartz_dense`.
-`r3_NSForms_exists` assembles the full `ConvectionGap` from `ConvectionGapOp` + proved density,
-then applies `R3NSForms_of_gap`. -/
+The named axiom `r3_NSForms_exist` is REPLACED by `r3ConvectionGapOp_exists` which holds
+the operator core (`ConvectionGapOp`).  Density (`schwartz_dense`) is NOT bundled — it is
+the proved lemma `convectionGap_schwartz_dense`.  `r3_NSForms_exists` assembles the full
+`ConvectionGap` from `ConvectionGapOp` + proved density, then applies `R3NSForms_of_gap`.
 
-/-- **Residual axiom (AX-4'', OPERATOR-ONLY — strictly thinner than both `r3_NSForms_exist`
-and the intermediate `r3ConvectionGap_exists`).**
+What becomes theorem content: multilinear algebra (`b_add`, `b_smul`) and density.
+What remains assumed: the operator core including `b_cont_fixedTest` (equivalent to `b_bound`). -/
 
-For any `R3GalerkinScheme 𝔊`, the five operator-extension fields exist.
-Density (`schwartz_dense`) is NOT assumed here — it is the proved lemma
-`convectionGap_schwartz_dense curlSchwartzDense_holds`.
-The bound (`b_bound`) and the `convIntegralSchwartz` pin (`b_galerkin`) are NOT assumed —
-they are derived as theorem content by `R3NSForms_of_gap`.
+/-- **Operator-core axiom (AX-4 reorganized, issue #48).**
+
+For any `R3GalerkinScheme 𝔊`, the five operator-core fields exist (`ConvectionGapOp 𝔊`):
+`b`, `b_extends`, `b_multilinear`, `b_antisymm_gap`, `b_cont_fixedTest`.
+
+Density (`schwartz_dense`) is NOT assumed — it is the proved lemma
+`convectionGap_schwartz_dense curlSchwartzDense_holds` assembled in `r3_NSForms_exists`.
+
+Note: `b_cont_fixedTest` (joint L²-continuity of `(u,v)↦b u v w` at fixed Schwartz `w`)
+is analytically equivalent to `R3NSForms.b_bound` (bounded bilinear ↔ continuous bilinear),
+so the fixed-test bound is still ASSUMED, not proved.  What genuinely becomes theorem content
+is the multilinear algebra (from `b_multilinear`) and density (from `curlSchwartzDense_holds`).
 Mirrors the torus `torusConvectionGap_exists` (issue #22). -/
-axiom r3ConvectionGapOp_exists (𝔊 : R3GalerkinScheme) : Nonempty (ConvectionGapOp 𝔊) -- ALLOW_AXIOM: ℝ³ weak (u·∇)v convection-operator gap, OPERATOR-ONLY (5 fields: b + b_extends + b_multilinear + b_antisymm_gap + b_cont_fixedTest); carries ONLY the genuine operator residual — multilinearity + arbitrary-L²_σ antisymmetry + fixed-test bilinear continuity; IBP/divergence content Mathlib lacks; DENSITY IS NOT ASSUMED (schwartz_dense is the proved convectionGap_schwartz_dense curlSchwartzDense_holds); strictly THINNER than r3_NSForms_exist (b_bound + b_galerkin pin now PROVED) and than the intermediate r3ConvectionGap_exists (which incorrectly bundled proved density); NON-VACUOUS (b_extends + convFormSchwartz_eq_witness pin to convIntegralSchwartz excludes b=0); Temam II.§1; Lemarié-Rieusset §5; mirrors torus torusConvectionGap_exists (issue #22)
+axiom r3ConvectionGapOp_exists (𝔊 : R3GalerkinScheme) : Nonempty (ConvectionGapOp 𝔊) -- ALLOW_AXIOM: ℝ³ weak (u·∇)v operator core (AX-4 reorganized, issue #48); 5 fields: b + b_extends + b_multilinear + b_antisymm_gap + b_cont_fixedTest; density (schwartz_dense) NOT assumed — proved via convectionGap_schwartz_dense curlSchwartzDense_holds; b_cont_fixedTest is equivalent to b_bound (bounded bilinear ↔ continuous bilinear) so the fixed-test bound is still assumed, not proved; what genuinely becomes theorem content: multilinear algebra (b_add/b_smul from b_multilinear) + density; NON-VACUOUS (b_extends + convFormSchwartz_eq_witness pin to convIntegralSchwartz excludes b=0); Temam II.§1; Lemarié-Rieusset §5; mirrors torus torusConvectionGap_exists (issue #22)
 
-/-- The ℝ³ NS convection form exists — now a THEOREM (was axiom `r3_NSForms_exist`, issue #48),
-proved from the operator-only `r3ConvectionGapOp_exists` + proved density, via `R3NSForms_of_gap`.
+/-- The ℝ³ NS convection form exists — THEOREM (was named axiom `r3_NSForms_exist`, issue #48),
+proved from `r3ConvectionGapOp_exists` + proved density, via the sorry-free `R3NSForms_of_gap`.
 
-Route: obtain `g : ConvectionGapOp 𝔊` from the axiom; supply the proved density
-(`convectionGap_schwartz_dense curlSchwartzDense_holds`) as the `schwartz_dense` field;
-assemble a full `ConvectionGap 𝔊`; apply the sorry-free `R3NSForms_of_gap`.
+Route: obtain `g : ConvectionGapOp 𝔊` from the axiom; supply proved density
+(`convectionGap_schwartz_dense curlSchwartzDense_holds`) as `schwartz_dense`; assemble a
+full `ConvectionGap 𝔊`; apply `R3NSForms_of_gap`.
 
-The conclusion `Nonempty (R3NSForms 𝔊)` is IDENTICAL to what the fat axiom asserted —
-no statement weakening; this is a conclusion-preserving swap.  Mirrors the torus
-`torus3_NSForms_exists` (issue #22). -/
+The conclusion `Nonempty (R3NSForms 𝔊)` is IDENTICAL to what `r3_NSForms_exist` asserted —
+no statement weakening.  Mirrors the torus `torus3_NSForms_exists` (issue #22). -/
 theorem r3_NSForms_exists (𝔊 : R3GalerkinScheme) : Nonempty (R3NSForms 𝔊) :=
   (r3ConvectionGapOp_exists 𝔊).elim fun g =>
     R3NSForms_of_gap 𝔊
