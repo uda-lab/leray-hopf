@@ -9,10 +9,11 @@ existence argument.  The capstone declaration is:
     `LerayHopf.exists_lerayHopf_r3_axiomatic`
 
 which depends on three project axioms:
-- `r3ConvectionGap_exists` (issue #48): strictly-thinner residual axiom replacing the fat
-  `r3_NSForms_exist` (AX-4); isolates the genuine weak `(u·∇)v` operator frontier
-  (multilinearity + arbitrary-L²_σ antisymmetry = the IBP/divergence content Mathlib lacks);
-  all trilinear/bound/pin algebra is now THEOREM content via the proved `R3NSForms_of_gap`;
+- `r3ConvectionGapOp_exists` (issue #48, refined): OPERATOR-ONLY strictly-thinner residual
+  replacing the fat `r3_NSForms_exist` (AX-4); carries only the five operator-extension
+  fields (`b`, `b_extends`, `b_multilinear`, `b_antisymm_gap`, `b_cont_fixedTest`); density
+  (`schwartz_dense`) is NOT assumed — proved via `convectionGap_schwartz_dense`; all
+  trilinear/bound/pin algebra is now THEOREM content via the proved `R3NSForms_of_gap`;
   mirrors torus `torusConvectionGap_exists` (issue #22)
 - `galerkin_spacetime_precompact_R3` (issue #44): refine-capable LOCAL Aubin–Lions–Simon
   spacetime precompactness in L²(0,T;L²(B_k)); no tightness on ℝ³ required

@@ -40,7 +40,7 @@ The remaining three axioms mirror the T³ ones (AX-1 below is discharged, issue 
 AX-4 below is DISCHARGED issue #48):
 
 - **AX-4 `r3_NSForms_exist`** — DISCHARGED (issue #48) via thin-swap.  Replaced by the
-  strictly-thinner `r3ConvectionGap_exists` (declared in `ConvectionForm.lean`) +
+  strictly-thinner `r3ConvectionGapOp_exists` (declared in `ConvectionForm.lean`) +
   the proved theorem `r3_NSForms_exists` (same conclusion, no axiom).  `R3NSForms` itself
   is still the target type (defined below), but its existence is now a proved theorem, not
   an axiom.
@@ -52,7 +52,7 @@ AX-4 below is DISCHARGED issue #48):
 `𝔊 : R3GalerkinScheme` is threaded as a parameter throughout (cleaner than
 `.some` noise).
 
-**Non-vacuity (issue #48):** Preserved via `r3ConvectionGap_exists`.  The field
+**Non-vacuity (issue #48):** Preserved via `r3ConvectionGapOp_exists`.  The field
 `b_extends` + `convFormSchwartz_eq_witness` force `b = convIntegralSchwartz` on Schwartz
 triples, excluding `b = 0`.  The non-vacuity pin is inherited by `R3NSForms_of_gap`
 through its `b_galerkin` field derivation (`b_galerkin ← b_extends +
@@ -69,7 +69,7 @@ convFormSchwartz_eq_witness`), so `r3_NSForms_exists` still excludes the trivial
 - `convIntegralSchwartz`             : genuine `∑_{i,a} ∫ u_a (∂_a v_i) w_i` convection integral on Schwartz fields (defined in `DivergenceFree.lean`)
 - `R3NSForms`                        : structure bundling the ℝ³ NS convection form
 - `r3_NSForms_exist`                 : DISCHARGED (issue #48) — was axiom, now DEAD (no code consumers);
-                                       replaced by `r3ConvectionGap_exists` + `r3_NSForms_exists` in `ConvectionForm.lean`
+                                       replaced by `r3ConvectionGapOp_exists` + `r3_NSForms_exists` in `ConvectionForm.lean`
 - `R3NSForms.b_self_zero`            : proved lemma — `b u u u = 0` from antisymmetry
 - `r3Evolution`                      : `DissipativeEvolution` built from `R3GalerkinScheme` + `R3NSForms`
 - `GalerkinSolutionData_R3`          : structure for the n-th Galerkin ODE solution on ℝ³
@@ -108,12 +108,12 @@ swapped for.
 
 2. `r3_NSForms_exist` — NO LONGER AN AXIOM (DISCHARGED, issue #48).  The fat
    structure-existence axiom is replaced by:
-   - `r3ConvectionGap_exists` (strictly-thinner residual axiom, in `ConvectionForm.lean`):
+   - `r3ConvectionGapOp_exists` (strictly-thinner residual axiom, in `ConvectionForm.lean`):
      isolates the genuine weak `(u·∇)v` operator frontier (multilinearity + arbitrary-L²_σ
      antisymmetry); the bound and `convIntegralSchwartz` pin are now THEOREM content via
      `R3NSForms_of_gap`.  Temam II.§1; Lemarié-Rieusset §5.
    - `r3_NSForms_exists` (proved theorem, in `ConvectionForm.lean`): the identical conclusion
-     `Nonempty (R3NSForms 𝔊)`, proved via `r3ConvectionGap_exists` + `R3NSForms_of_gap`.
+     `Nonempty (R3NSForms 𝔊)`, proved via `r3ConvectionGapOp_exists` + `R3NSForms_of_gap`.
      No statement weakening; this is a conclusion-preserving discharge.
 
 3. `galerkin_ode_solution_R3` — NO LONGER AN AXIOM (DISCHARGED, issue #10).  Picard–Lindelöf
@@ -288,19 +288,19 @@ structure R3NSForms (𝔊 : R3GalerkinScheme) where
         (ψw j).toLp 2 (volume : Measure Domain3)) →
     b u v w = convIntegralSchwartz ψu ψv ψw
 
-/-! ### AX-4 DISCHARGED (issue #48) — `r3_NSForms_exist` replaced by the thinner `r3ConvectionGap_exists`
+/-! ### AX-4 DISCHARGED (issue #48) — `r3_NSForms_exist` replaced by the thinner `r3ConvectionGapOp_exists`
 
 The fat axiom `r3_NSForms_exist` has been DISCHARGED (issue #48) via the thin-swap route
 mirroring torus issue #22.  It is NO LONGER declared here.
 
-- The residual axiom `r3ConvectionGap_exists` (strictly thinner) and the proved theorem
+- The residual axiom `r3ConvectionGapOp_exists` (strictly thinner) and the proved theorem
   `r3_NSForms_exists` (the conclusion-preserving reroute) are declared in
   `LerayHopf/R3/ConvectionForm.lean`.
 - The capstone `exists_lerayHopf_r3_axiomatic` (`GalerkinODECapstone.lean`) is rerouted
   from `r3_NSForms_exist` to `r3_NSForms_exists`.
 - `R3NSForms` (the structure) remains intact — it is still the target type.
 - Net project axioms for the R3 capstone: still 3, but AX-4 content replaced by the
-  strictly-thinner `r3ConvectionGap_exists` (all trilinear/bound/pin algebra now PROVED
+  strictly-thinner `r3ConvectionGapOp_exists` (all trilinear/bound/pin algebra now PROVED
   via `R3NSForms_of_gap`; only the weak-(u·∇)v operator frontier remains asserted). -/
 
 /-! ### Proved lemma: b u u u = 0 -/

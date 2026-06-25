@@ -22,7 +22,7 @@
 #   exists_lerayHopf_r3_axiomatic — exactly 6 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
 #     LerayHopf.galerkin_limit_passage_R3
-#     LerayHopf.r3ConvectionGap_exists
+#     LerayHopf.r3ConvectionGapOp_exists
 #     LerayHopf.galerkin_spacetime_precompact_R3  (3 project)
 #     NOTE: spatial_compactness_R3 REMOVED (issue #2) — now a theorem via the FK chain.
 #     NOTE: r3GalerkinScheme_exists REMOVED (issue #21) — now a theorem, SWAPPED for the
@@ -49,11 +49,12 @@
 #     NOTE: L2VF_R3_weakSeqCompact_closedBall DELETED (issue #47 PR-A cleanup) — introduced as
 #           a scaffold but never called by galerkin_weakLimit_R3's actual proof body. Removed as
 #           dead code. Net R3 project axioms: 3.
-#     NOTE: r3_NSForms_exist DISCHARGED (issue #48) — proved as theorem r3_NSForms_exists via
-#           the sorry-free R3NSForms_of_gap (ConvectionForm.lean); SWAPPED for the strictly-thinner
-#           r3ConvectionGap_exists (the genuine weak (u·∇)v operator gap; multilinearity +
-#           arbitrary-L²_σ antisymmetry = the IBP content Mathlib lacks; bound + galerkin pin now
-#           PROVED). Net R3 project axioms still 3 (fat→thin swap, count unchanged).
+#     NOTE: r3_NSForms_exist DISCHARGED (issue #48, refined) — proved as theorem r3_NSForms_exists
+#           via the sorry-free R3NSForms_of_gap (ConvectionForm.lean); SWAPPED for the strictly-thinner
+#           r3ConvectionGapOp_exists (OPERATOR-ONLY: 5 fields b/b_extends/b_multilinear/b_antisymm_gap/
+#           b_cont_fixedTest; density schwartz_dense is NOT assumed — proved via
+#           convectionGap_schwartz_dense curlSchwartzDense_holds; bound + galerkin pin PROVED).
+#           Net R3 project axioms still 3 (fat→thin swap, count unchanged).
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.
@@ -212,7 +213,7 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound
    LerayHopf.galerkin_limit_passage_R3
-   LerayHopf.r3ConvectionGap_exists
+   LerayHopf.r3ConvectionGapOp_exists
    LerayHopf.galerkin_spacetime_precompact_R3"
 
 # ---------------------------------------------------------------------------

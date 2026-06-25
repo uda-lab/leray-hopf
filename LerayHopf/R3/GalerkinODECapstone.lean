@@ -32,8 +32,8 @@ the `galerkin_ode_solution_R3` axiom drops EXACTLY that axiom from
 `exists_lerayHopf_r3_axiomatic`'s `#print axioms`.  After issue #15 (which removed `aubin_lions_R3` — proving its spatial half and swapping its
 time content 1-for-1 for the single strictly-thinner UNCONDITIONAL
 `galerkinSpaceTimeExtraction_R3`) and issue #48 (which replaced the fat `r3_NSForms_exist`
-with the strictly-thinner `r3ConvectionGap_exists` via the proved `R3NSForms_of_gap`),
-the capstone rests on the THREE project axioms: `r3ConvectionGap_exists`,
+with the strictly-thinner `r3ConvectionGapOp_exists` via the proved `R3NSForms_of_gap`),
+the capstone rests on the THREE project axioms: `r3ConvectionGapOp_exists`,
 `galerkin_limit_passage_R3`, `galerkin_spacetime_precompact_R3`.
 `r3_NSForms_exist` is NO LONGER among them — discharged here (issue #48) via `r3_NSForms_exists`.
 
@@ -84,7 +84,7 @@ The witness scheme is the CONCRETE `schemeOfBasis B`, with `B` drawn from
 basis via `Nonempty.elim` and reintroduce the need for the per-scheme ODE axiom).
 
 The name `_axiomatic` advertises that this result depends on the THREE remaining project axioms
-(`r3ConvectionGap_exists`, `galerkin_limit_passage_R3`, `galerkin_spacetime_precompact_R3`).
+(`r3ConvectionGapOp_exists`, `galerkin_limit_passage_R3`, `galerkin_spacetime_precompact_R3`).
 `galerkin_ode_solution_R3` is NO LONGER among them — discharged here (issue #10).
 `aubin_lions_R3` is NO LONGER among them — removed (issue #15): its spatial half PROVED, its time
 content swapped 1-for-1 for the single strictly-thinner UNCONDITIONAL `galerkinSpaceTimeExtraction_R3`
@@ -92,7 +92,7 @@ content swapped 1-for-1 for the single strictly-thinner UNCONDITIONAL `galerkinS
 `r3GalerkinScheme_exists` was discharged earlier (issue #21, `curlSchwartzDense_holds`);
 `spatial_compactness_R3` earlier still (issue #2, FK chain).
 `r3_NSForms_exist` is NO LONGER among them — discharged (issue #48) via the thin-swap:
-  the fat structure-existence axiom is replaced by `r3ConvectionGap_exists` (strictly thinner,
+  the fat structure-existence axiom is replaced by `r3ConvectionGapOp_exists` (strictly thinner,
   in `ConvectionForm.lean`) and the proved theorem `r3_NSForms_exists` (same conclusion,
   proved via `R3NSForms_of_gap` which is sorry-free).  Net project axioms: 3. -/
 theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
