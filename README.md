@@ -28,7 +28,7 @@ Each capstone currently rests on **3 project axioms**, pinned exactly by
 unexpected or missing axiom, or any `sorryAx`):
 
 - **𝕋³:** `aubin_lions`, `galerkin_limit_passage`, `torusConvectionGap_exists`
-- **ℝ³:** `galerkin_spacetime_precompact_R3`, `galerkin_limit_passage_R3`, `r3_NSForms_exist`
+- **ℝ³:** `galerkin_spacetime_precompact_R3`, `galerkin_limit_passage_R3`, `r3ConvectionGapOp_exists`
 
 Everything else in the Galerkin construction — the functional-analytic backbone, the
 finite-dimensional ODE solver, spatial Rellich–Kondrachov compactness, the
