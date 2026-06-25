@@ -326,12 +326,15 @@ theorem R3NSForms_of_gap (𝔊 : R3GalerkinScheme) (g : ConvectionGap 𝔊) :
 The five fields `b`, `b_extends`, `b_multilinear`, `b_antisymm_gap`, `b_cont_fixedTest`
 of `ConvectionGap` are genuine Mathlib-absent residuals (the weak convection operator on
 `L²_σ`).  The ONE provable sub-claim is `schwartz_dense`: density of `IsSchwartzDivFree_R3`
-in `L2Sigma_R3`, derivable from the existing axiom `curlSchwartzDense_holds`.
+in `L2Sigma_R3`, derivable from the proved theorem `curlSchwartzDense_holds`.
 
-The declarations here (H1–H4, P1, P2) formally prove that density.
+The declarations H1–H4, P1, P2 formally prove that density.
 
-**Axiom delta:** No new `axiom` is added.  `r3_NSForms_exist` is NOT removed (the five
-`ConvectionGap` fields remain; see plan `docs/scratch/r3-48-nsforms-plan.md`).
+**Axiom delta (issue #48 thin-swap):** The fat axiom `r3_NSForms_exist` is DISCHARGED and
+replaced by the strictly-thinner residual axiom `r3ConvectionGap_exists` (below).  All
+trilinear/bound/pin algebra that `r3_NSForms_exist` formerly assumed is now THEOREM content
+via `R3NSForms_of_gap` (above).  The capstone `exists_lerayHopf_r3_axiomatic` is rerouted
+from `r3_NSForms_exist` to the proved theorem `r3_NSForms_exists` (below).
 -/
 
 /-! ### H1 — `IsSchwartzDivFree_R3` is closed under addition -/
@@ -524,5 +527,26 @@ lemma convectionGap_schwartz_dense (h : CurlSchwartzDense) :
     ∃ s : ℕ → L2Sigma_R3, (∀ n, IsSchwartzDivFree_R3 (s n)) ∧
       Filter.Tendsto s Filter.atTop (nhds u) :=
   fun u => schwartzDivFree_dense_of_curlDense h u
+
+/-! ### Issue #48 — Thin-swap: residual axiom + discharged capstone theorem -/
+
+/-- **Residual axiom (AX-4', strictly thinner than the former `r3_NSForms_exist`).**
+The ℝ³ weak convection-operator gap: for any scheme, the `ConvectionGap` data exists.
+This isolates the GENUINE Mathlib-absent pillar — the weak `(u·∇)v` operator on `L²_σ(ℝ³)`
+(its multilinearity `b_multilinear` and arbitrary-`L²_σ` antisymmetry `b_antisymm_gap` over
+the unbounded test slot are the irreducible IBP/divergence content). The bound and the
+`convIntegralSchwartz` non-vacuity pin are NO LONGER assumed — they are derived as theorem
+content by `R3NSForms_of_gap` from the proved `convFormSchwartz_*` lemmas and the proved
+`CurlSchwartzDense` density. Mirrors the torus `torusConvectionGap_exists` (issue #22). -/
+axiom r3ConvectionGap_exists (𝔊 : R3GalerkinScheme) : Nonempty (ConvectionGap 𝔊) -- ALLOW_AXIOM: ℝ³ weak (u·∇)v convection-operator gap (multilinearity + arbitrary-L²_σ antisymmetry = the IBP content Mathlib lacks); strictly THINNER than the former r3_NSForms_exist (b_bound + b_galerkin pin now PROVED via R3NSForms_of_gap, not assumed); NON-VACUOUS (b_extends + convFormSchwartz_eq_witness pin to convIntegralSchwartz excludes b=0); schwartz_dense provable from curlSchwartzDense_holds; Temam II.§1; Lemarié-Rieusset §5; mirrors torus torusConvectionGap_exists (issue #22)
+
+/-- The ℝ³ NS convection form exists — now a THEOREM (was axiom `r3_NSForms_exist`, issue #48),
+proved from the strictly-thinner `r3ConvectionGap_exists` via the sorry-free `R3NSForms_of_gap`.
+
+The conclusion `Nonempty (R3NSForms 𝔊)` is IDENTICAL to what the fat axiom asserted —
+no statement weakening; this is a conclusion-preserving swap.  Mirrors the torus
+`torus3_NSForms_exists` (issue #22). -/
+theorem r3_NSForms_exists (𝔊 : R3GalerkinScheme) : Nonempty (R3NSForms 𝔊) :=
+  (r3ConvectionGap_exists 𝔊).elim fun g => R3NSForms_of_gap 𝔊 g
 
 end LerayHopf

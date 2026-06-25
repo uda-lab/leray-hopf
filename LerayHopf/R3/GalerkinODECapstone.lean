@@ -1,6 +1,7 @@
 import LerayHopf.R3.CurlDensityCapstone   -- nonempty_schwartzGalerkinBasis (proved, issue #3 / #21)
 import LerayHopf.R3.GalerkinODESolve
 import LerayHopf.R3.AubinLionsAssembly   -- build_galerkin_package_R3_of_galSeq (relocated, issue #15)
+import LerayHopf.R3.ConvectionForm        -- r3_NSForms_exists (proved theorem, issue #48 thin-swap)
 
 /-!
 # LerayHopf.R3.GalerkinODECapstone — discharge `galerkin_ode_solution_R3` (issue #10)
@@ -28,11 +29,13 @@ cycle; it lands here, one level below `GalerkinODESolve`.
 
 Routing the capstone through `galSeq_R3_of_basis` (axiom-free, concrete scheme) instead of
 the `galerkin_ode_solution_R3` axiom drops EXACTLY that axiom from
-`exists_lerayHopf_r3_axiomatic`'s `#print axioms`.  After issue #15 (which removed
-`aubin_lions_R3` — proving its spatial half and swapping its time content 1-for-1 for the single
-strictly-thinner UNCONDITIONAL `galerkinSpaceTimeExtraction_R3`), the capstone rests
-on the FOUR project axioms: `curlSchwartzDense_holds`, `r3_NSForms_exist`,
-`galerkin_limit_passage_R3`, `galerkinSpaceTimeExtraction_R3`.
+`exists_lerayHopf_r3_axiomatic`'s `#print axioms`.  After issue #15 (which removed `aubin_lions_R3` — proving its spatial half and swapping its
+time content 1-for-1 for the single strictly-thinner UNCONDITIONAL
+`galerkinSpaceTimeExtraction_R3`) and issue #48 (which replaced the fat `r3_NSForms_exist`
+with the strictly-thinner `r3ConvectionGap_exists` via the proved `R3NSForms_of_gap`),
+the capstone rests on the THREE project axioms: `r3ConvectionGap_exists`,
+`galerkin_limit_passage_R3`, `galerkin_spacetime_precompact_R3`.
+`r3_NSForms_exist` is NO LONGER among them — discharged here (issue #48) via `r3_NSForms_exists`.
 
 ## Declarations added
 
@@ -80,21 +83,24 @@ The witness scheme is the CONCRETE `schemeOfBasis B`, with `B` drawn from
 `nonempty_schwartzGalerkinBasis` (NOT from `r3GalerkinScheme_exists`, which would discard the
 basis via `Nonempty.elim` and reintroduce the need for the per-scheme ODE axiom).
 
-The name `_axiomatic` advertises that this result depends on the FOUR remaining project axioms
-(`curlSchwartzDense_holds`, `r3_NSForms_exist`, `galerkin_limit_passage_R3`,
-`galerkinSpaceTimeExtraction_R3`).
+The name `_axiomatic` advertises that this result depends on the THREE remaining project axioms
+(`r3ConvectionGap_exists`, `galerkin_limit_passage_R3`, `galerkin_spacetime_precompact_R3`).
 `galerkin_ode_solution_R3` is NO LONGER among them — discharged here (issue #10).
 `aubin_lions_R3` is NO LONGER among them — removed (issue #15): its spatial half PROVED, its time
 content swapped 1-for-1 for the single strictly-thinner UNCONDITIONAL `galerkinSpaceTimeExtraction_R3`
 (its modulus absorbed here; the redundant prior-revision `timeCompactnessInput_R3` axiom is dropped).
 `r3GalerkinScheme_exists` was discharged earlier (issue #21, `curlSchwartzDense_holds`);
-`spatial_compactness_R3` earlier still (issue #2, FK chain). -/
+`spatial_compactness_R3` earlier still (issue #2, FK chain).
+`r3_NSForms_exist` is NO LONGER among them — discharged (issue #48) via the thin-swap:
+  the fat structure-existence axiom is replaced by `r3ConvectionGap_exists` (strictly thinner,
+  in `ConvectionForm.lean`) and the proved theorem `r3_NSForms_exists` (same conclusion,
+  proved via `R3NSForms_of_gap` which is sorry-free).  Net project axioms: 3. -/
 theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),
     Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀) := by
   obtain ⟨B⟩ := nonempty_schwartzGalerkinBasis
-  obtain ⟨F⟩ := r3_NSForms_exist (schemeOfBasis B)
+  obtain ⟨F⟩ := r3_NSForms_exists (schemeOfBasis B)
   exact ⟨schemeOfBasis B, F, exists_lerayHopf_from_package_full_R3 (schemeOfBasis B) F ν T u₀
     (build_galerkin_package_R3_of_basis B F ν hν T hT u₀)⟩
 

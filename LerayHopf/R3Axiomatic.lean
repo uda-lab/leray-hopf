@@ -8,17 +8,15 @@ existence argument.  The capstone declaration is:
 
     `LerayHopf.exists_lerayHopf_r3_axiomatic`
 
-which depends on four project axioms:
-- `curlSchwartzDense_holds` (issue #21): Helmholtz/Weyl curl-density on L²_σ(ℝ³) — a single
-  thin density `Prop`; it REPLACED the former 6-field `r3GalerkinScheme_exists` structure
-  existential (now a discharged `theorem` resting on this density)
-- `r3_NSForms_exist` (AX-4): ℝ³ NS convection form exists
-- `galerkinSpaceTimeExtraction_R3` (issue #15): the single UNCONDITIONAL, LOCAL Bochner-time
-  compactness extraction — per-ball (`restrictToBall R`) a.e.-in-time L² convergence, NOT global
-  (no tightness on ℝ³) — the 1-for-1 thin (genuinely weaker) replacement of `aubin_lions_R3`'s time
-  content; it absorbs the time-equicontinuity modulus, so no separate `timeCompactnessInput_R3` axiom
-  is needed; mathlib lacks Bochner Fréchet–Kolmogorov in L²(0,T;X)
-- `galerkin_limit_passage_R3` (AX-4): limit passage to weak NS solution on ℝ³
+which depends on three project axioms:
+- `r3ConvectionGap_exists` (issue #48): strictly-thinner residual axiom replacing the fat
+  `r3_NSForms_exist` (AX-4); isolates the genuine weak `(u·∇)v` operator frontier
+  (multilinearity + arbitrary-L²_σ antisymmetry = the IBP/divergence content Mathlib lacks);
+  all trilinear/bound/pin algebra is now THEOREM content via the proved `R3NSForms_of_gap`;
+  mirrors torus `torusConvectionGap_exists` (issue #22)
+- `galerkin_spacetime_precompact_R3` (issue #44): refine-capable LOCAL Aubin–Lions–Simon
+  spacetime precompactness in L²(0,T;L²(B_k)); no tightness on ℝ³ required
+- `galerkin_limit_passage_R3` (AX-3): limit passage to weak NS solution on ℝ³
 
 `galerkin_ode_solution_R3` (former AX-2) is NO LONGER an axiom — it is discharged (issue #10)
 by routing the capstone's per-`n` Galerkin sequence through the axiom-free
