@@ -30,7 +30,7 @@ equation (`WeakFormNS`, over canonical Schwartz/smooth div-free tests), the ener
 - The entire **spatial+regularity layer** on both domains is built **axiom-free**.
 - Each axiom set passed a **Codex `--effort xhigh` adversarial soundness audit** (T³: 8 rounds;
   ℝ³: 2 rounds + a final faithfulness fix) → **approve**.
-- **R3-d:** the `r3_NSForms_exist` axiom's analytic content is **proved axiom-free** in
+- **R3-d:** the `r3ConvectionGapOp_exists` axiom's analytic content is **proved axiom-free** in
   `LerayHopf/R3/TrilinearEstimate.lean` — 11 lemmas on `convIntegralSchwartz` (multilinearity, integrability,
   IBP, antisymmetry under div-free, and the genuine `b_bound` shape `|b(u,v,w)| ≤ C(w)·‖u‖₂·‖v‖₂`), each
   `#print axioms`-clean. The axiom itself remains (defining `b` on **all** of L²_σ still needs the `(u·∇)v`
@@ -83,7 +83,7 @@ concrete convection integral so `b=0` (secretly-Stokes) is excluded.
 
 | Role | T³ | ℝ³ | Underlying gap |
 |---|---|---|---|
-| Convection form `b` exists (pinned to concrete `∫(u·∇)v·w`) | `torusConvectionGap_exists` | `r3_NSForms_exist` | no `(u·∇)v` operator / IBP for `Lp` fields |
+| Convection form `b` exists (pinned to concrete `∫(u·∇)v·w`) | `torusConvectionGap_exists` | `r3ConvectionGapOp_exists` | no `(u·∇)v` operator / IBP for `Lp` fields |
 | Spacetime precompactness / Aubin–Lions (time half; spatial half **proved** on both) | `aubin_lions` | `galerkin_spacetime_precompact_R3` | Bochner–Sobolev in time + Aubin–Lions lemma |
 | Limit passage (existential good representative, a.e.-linked) | `galerkin_limit_passage` | `galerkin_limit_passage_R3` | nonlinear passage + weak-in-time continuity |
 

@@ -7,7 +7,7 @@ debt**, never merged sibling files.
 ## Current capstone footprint
 
 `#print axioms exists_lerayHopf_r3_axiomatic` = **3 project axioms + 3 kernel** (no sorryAx).
-Live R3 axioms: `galerkin_spacetime_precompact_R3`, `galerkin_limit_passage_R3`, `r3_NSForms_exist`.
+Live R3 axioms: `galerkin_spacetime_precompact_R3`, `galerkin_limit_passage_R3`, `r3ConvectionGapOp_exists`.
 Live T³ axioms: `aubin_lions`, `galerkin_limit_passage`, `torusConvectionGap_exists`.
 
 **Removed so far (original 6 → current 3):**
@@ -32,7 +32,7 @@ requires discharging every pillar below — the full missing PDE sub-chapter of 
 | ~~`r3GalerkinScheme_exists`~~ **REMOVED (#21)** | **P-α** `CurlSchwartzDense` — DONE (issue #3 Fourier route) | P5 `…_of_basis` + D `…_of_curlDense` + A CurlDensity |
 | ~~`spatial_compactness_R3`~~ **REMOVED (#2/PR #35)** | **P-β** Fréchet–Kolmogorov criterion + H¹⇒wtd-integrability — DONE, now a theorem | P3 reduction + B (T0b proved), wired in |
 | ~~`galerkin_ode_solution_R3`~~ **REMOVED (#10)** | concrete scheme + concrete `F` + ODE existence — DONE (track 3 / #10) | ODE energy algebra + E Riesz + track 3 |
-| `r3_NSForms_exist` (**live**) | **P-γ** `(u·∇)v` weak-derivative convection operator on Lp | R3-d Schwartz-level estimates |
+| `r3ConvectionGapOp_exists` (**live**) | **P-γ** `(u·∇)v` weak-derivative convection operator on Lp | R3-d Schwartz-level estimates |
 | ~~`aubin_lions_R3`~~ **REMOVED (#15)** → split → `galerkinSpaceTimeExtraction_R3` → **PROVED (#44)** | **P-δ** isolates to `galerkin_spacetime_precompact_R3` | P2 partial (spatial reuse + b-passage) |
 | ~~`galerkin_weakLimit_R3`~~ **REMOVED (#47)** | strong ball-exhaustion + Mazur weak-closedness — PROVED | — |
 | `galerkin_spacetime_precompact_R3` (**live**) | **P-δ** Bochner–Sobolev-in-time / Aubin–Lions–Simon spacetime precompactness | P2 partial |
@@ -85,7 +85,7 @@ only shared read-only base is `FourierL2`. **All four can run concurrently.** Th
 - **aubin_lions_R3 → split → galerkinSpaceTimeExtraction_R3 → PROVED** — **DONE (#15/#44)** → isolates
   `galerkin_spacetime_precompact_R3` as the remaining time-compactness axiom.
 - **`galerkin_weakLimit_R3` PROVED** — **DONE (#47)** → strong ball-exhaustion + Mazur.
-- **C3 (remaining): remove `r3_NSForms_exist`** once Stream C (`(u·∇)v` operator) lands → 3→2.
+- **C3 (remaining): remove `r3ConvectionGapOp_exists`** once Stream C (`(u·∇)v` operator) lands → 3→2.
 - **C4 (remaining): remove `galerkin_spacetime_precompact_R3` + `galerkin_limit_passage_R3`** once
   Stream D (Bochner-time / Aubin–Lions) lands → 2→0 (ℝ³ unconditional).
 Each Ci edits the core and re-pins `#print axioms`; strictly sequential among themselves, but
@@ -98,4 +98,4 @@ interleavable with ongoing streams.
   Aubin–Lions–Simon). They gate the remaining 3 axioms. Full axiom-free completion ⟺ C **and** D
   done = the multi-person-year mathlib PDE sub-chapter.
 - Realistic dent of a sustained push from the current frontier: **3 → 1 or 0 axioms** (Stream C
-  removes `r3_NSForms_exist`; Stream D removes the time-compactness + limit-passage pair).
+  removes `r3ConvectionGapOp_exists`; Stream D removes the time-compactness + limit-passage pair).
