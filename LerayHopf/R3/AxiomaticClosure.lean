@@ -36,9 +36,16 @@ The former AX-SC `spatial_compactness_R3` (local Rellich H¹(B_R)↪↪L²(B_R);
 proved `rellich_L2Sigma`; Rellich FAILS globally on ℝ³ but LOCAL convergence on every ball
 is TRUE without tightness) is now PROVED here, not assumed.
 
-The remaining three axioms mirror the T³ ones (AX-1 below is discharged, issue #10):
+The remaining three axioms mirror the T³ ones (AX-1 below is discharged, issue #10;
+AX-4 below is REORGANIZED issue #48):
 
-- **AX-4 `r3_NSForms_exist`** — the ℝ³ convection form.
+- **AX-4 `r3_NSForms_exist`** — REPLACED (issue #48) by reorganization.  The named axiom
+  `r3_NSForms_exist` is gone; the operator core is now carried by `r3ConvectionGapOp_exists`
+  (declared in `ConvectionForm.lean`).  `r3_NSForms_exists` is a proved theorem (same
+  conclusion).  Analytic note: `b_cont_fixedTest` ≡ `b_bound` (bounded/continuous-bilinear
+  equivalence), so the fixed-test bound is still assumed.  What genuinely becomes theorem
+  content: multilinear algebra + density (`schwartz_dense` proved via `curlSchwartzDense_holds`).
+  `R3NSForms` itself is still the target type (defined below).  Mirrors torus #22.
 - **AX-1 `galerkin_ode_solution_R3`** — Galerkin ODE global solution; DISCHARGED (issue #10),
   no longer an axiom — see `LerayHopf/R3/GalerkinODECapstone.lean`.
 - **AX-2 `aubin_lions_R3`** — Aubin–Lions time compactness.
@@ -47,11 +54,11 @@ The remaining three axioms mirror the T³ ones (AX-1 below is discharged, issue 
 `𝔊 : R3GalerkinScheme` is threaded as a parameter throughout (cleaner than
 `.some` noise).
 
-**Non-vacuity:** `r3_NSForms_exist.b_galerkin` pins `b` to `convIntegralSchwartz`
-(the genuine `∑_{i,a} ∫ u_a (∂_a v_i) w_i` Schwartz convection integral, sorry-free)
-on fields that have component-wise Schwartz representatives.  This is a faithful pin:
-`b = 0` fails since `convIntegralSchwartz` is the genuine convection form, not a
-calibration constant, and does not vanish on all Schwartz triples.
+**Non-vacuity (issue #48):** Preserved via `r3ConvectionGapOp_exists`.  The field
+`b_extends` + `convFormSchwartz_eq_witness` force `b = convIntegralSchwartz` on Schwartz
+triples, excluding `b = 0`.  The non-vacuity pin is inherited by `R3NSForms_of_gap`
+through its `b_galerkin` field derivation (`b_galerkin ← b_extends +
+convFormSchwartz_eq_witness`), so `r3_NSForms_exists` still excludes the trivial form.
 
 **v4 de-axiomatization lesson applied:** The viscous (Stokes) form is the concrete
 `stokesTestPairing_R3` — NOT axiomatized — for all `u : L2VF_R3`.
@@ -63,7 +70,8 @@ calibration constant, and does not vanish on all Schwartz triples.
 - `IsGalerkinTest_R3`                : test-function predicate for ℝ³
 - `convIntegralSchwartz`             : genuine `∑_{i,a} ∫ u_a (∂_a v_i) w_i` convection integral on Schwartz fields (defined in `DivergenceFree.lean`)
 - `R3NSForms`                        : structure bundling the ℝ³ NS convection form
-- `r3_NSForms_exist`                 : axiom — existence of `R3NSForms`
+- `r3_NSForms_exist`                 : REPLACED (issue #48, reorganization) — the named axiom is DEAD (no code consumers);
+                                       replaced by `r3ConvectionGapOp_exists` (operator core) + proved theorem `r3_NSForms_exists` in `ConvectionForm.lean`
 - `R3NSForms.b_self_zero`            : proved lemma — `b u u u = 0` from antisymmetry
 - `r3Evolution`                      : `DissipativeEvolution` built from `R3GalerkinScheme` + `R3NSForms`
 - `GalerkinSolutionData_R3`          : structure for the n-th Galerkin ODE solution on ℝ³
@@ -100,13 +108,18 @@ swapped for.
    structure axiom with a thin `Submodule` density `Prop` (net project-axiom count unchanged).
    Lemarié-Rieusset §2.
 
-2. `r3_NSForms_exist` — existence of the ℝ³ NS convection form `b`. The genuine
-   `∫(u·∇)v·w` form witnesses it; non-vacuity pinned via `b_galerkin` to
-   `convIntegralSchwartz` (the genuine `∑_{i,a} ∫ u_a (∂_a v_i) w_i`, sorry-free).
-   The `b_bound` field is over the **canonical `IsSchwartzDivFree_R3` test class**
-   (‖∇w‖_∞ < ∞ for Schwartz w), matching the test predicate in `r3Evolution`.
-   Blocked by missing `(u·∇)v` operator on L²(ℝ³) and integration by parts on ℝ³.
-   Temam II.§1; Lemarié-Rieusset §5.
+2. `r3_NSForms_exist` — NO LONGER A NAMED AXIOM (REORGANIZED, issue #48).  This named
+   declaration is replaced by:
+   - `r3ConvectionGapOp_exists` (operator-core, in `ConvectionForm.lean`): carries the
+     five operator-core fields (`b`, `b_extends`, `b_multilinear`, `b_antisymm_gap`,
+     `b_cont_fixedTest`).  Density is NOT assumed here (proved separately).  Note: `b_cont_fixedTest`
+     is analytically equivalent to `R3NSForms.b_bound` (bounded/continuous-bilinear equivalence),
+     so the fixed-test bound is still assumed.  What genuinely becomes theorem content:
+     multilinear algebra (`b_add`, `b_smul` from `b_multilinear`) and density (`schwartz_dense`
+     from the proved `curlSchwartzDense_holds`).  Temam II.§1; Lemarié-Rieusset §5.
+   - `r3_NSForms_exists` (proved theorem, in `ConvectionForm.lean`): the identical conclusion
+     `Nonempty (R3NSForms 𝔊)`, proved via `r3ConvectionGapOp_exists` + `R3NSForms_of_gap`.
+     No statement weakening; this is a conclusion-preserving reorganization.
 
 3. `galerkin_ode_solution_R3` — NO LONGER AN AXIOM (DISCHARGED, issue #10).  Picard–Lindelöf
    on the finite-dimensional approximation subspace + uniform energy and regularity bounds.
@@ -280,24 +293,21 @@ structure R3NSForms (𝔊 : R3GalerkinScheme) where
         (ψw j).toLp 2 (volume : Measure Domain3)) →
     b u v w = convIntegralSchwartz ψu ψv ψw
 
-/-! ### Axiom AX-4: ℝ³ NS forms exist -/
+/-! ### AX-4 REORGANIZED (issue #48) — `r3_NSForms_exist` replaced by `r3ConvectionGapOp_exists`
 
-/-- **Axiom AX-4:** The ℝ³ Navier–Stokes convection form exists.
+The named axiom `r3_NSForms_exist` has been REPLACED (issue #48) via the operator-gap
+reorganization mirroring torus issue #22.  It is NO LONGER declared here.
 
-The genuine convection form `b(u,v,w) = ∫_{ℝ³} ((u·∇)v)·w` is a witness:
-- Antisymmetry: integration by parts + `div u = 0` gives `b u v w = -b u w v`.
-- Trilinearity: the genuine form is multilinear.
-- Smooth-test bound: `b(u,v,w) = -∫(u·∇)w·v`, so `|b| ≤ ‖∇w‖_∞ ‖u‖_{L²} ‖v‖_{L²}`
-  with `‖∇w‖_∞ < ∞` for any `IsSchwartzDivFree_R3 w` (Schwartz functions have bounded
-  derivatives).
-- Schwartz pin: `b` equals `convIntegralSchwartz ψu ψv ψw` on fields with Schwartz
-  component representatives (the genuine `∑_{i,a} ∫ u_a (∂_a v_i) w_i` form).
-
-NOTE: The viscous form is NOT axiomatized — it is the concrete `stokesTestPairing_R3`.
-
-Blocked in Lean by: missing `(u·∇)v` operator on L²(ℝ³) + integration by parts on ℝ³.
-Temam II.§1; Lemarié-Rieusset §5. -/
-axiom r3_NSForms_exist (𝔊 : R3GalerkinScheme) : Nonempty (R3NSForms 𝔊) -- ALLOW_AXIOM: ℝ³ NS convection form b exists (b=convIntegralSchwartz on Schwartz-component fields, trilinear, b_bound over canonical IsSchwartzDivFree_R3 test class via b=-∫(u·∇)w·v, ‖∇w‖_∞<∞ for Schwartz w); viscous form is concrete stokesTestPairing_R3 (NOT axiomatized); TRUE (genuine (u·∇)v form witnesses); NON-VACUOUS (b=0 fails b_galerkin since convIntegralSchwartz is genuine convection ≢ 0); Temam II.§1; Lemarié-Rieusset §5
+- The operator-core axiom `r3ConvectionGapOp_exists` and the proved theorem
+  `r3_NSForms_exists` (the conclusion-preserving reroute) are declared in
+  `LerayHopf/R3/ConvectionForm.lean`.
+- The capstone `exists_lerayHopf_r3_axiomatic` (`GalerkinODECapstone.lean`) is rerouted
+  from `r3_NSForms_exist` to `r3_NSForms_exists`.
+- `R3NSForms` (the structure) remains intact — it is still the target type.
+- Net project axioms for the R3 capstone: still 3.  Note: `b_cont_fixedTest` in
+  `r3ConvectionGapOp_exists` is equivalent to `R3NSForms.b_bound`; the fixed-test bound is
+  still assumed.  What genuinely becomes theorem content: multilinear algebra (`b_add`,
+  `b_smul`) and density (`schwartz_dense`). -/
 
 /-! ### Proved lemma: b u u u = 0 -/
 
@@ -661,9 +671,10 @@ downstream of this file.  The relocation is forced by the issue-#10 discharge of
 axiom-free `galerkinSolutionData_unconditional` (`GalerkinODESolve.lean`) over the concrete
 scheme `schemeOfBasis B` (with `B` from `nonempty_schwartzGalerkinBasis`).  That ODE chain
 imports this file, so the capstone must sit below it in the DAG to stay acyclic.  The building
-blocks it uses (`r3_NSForms_exist`, `build_galerkin_package_R3_of_galSeq`,
-`exists_lerayHopf_from_package_full_R3`) remain defined here and are visible downstream through
-the import.  See `LerayHopf/Core.lean` for the axiom-free layer; `LerayHopf/R3Axiomatic.lean`
+blocks it uses (`r3_NSForms_exists` — now a THEOREM in `ConvectionForm.lean` via the
+thin-swap (issue #48), `build_galerkin_package_R3_of_galSeq`,
+`exists_lerayHopf_from_package_full_R3`) remain defined here or in upstream imports and are
+visible downstream through the import.  See `LerayHopf/Core.lean` for the axiom-free layer; `LerayHopf/R3Axiomatic.lean`
 re-exports the relocated capstone. -/
 
 end LerayHopf

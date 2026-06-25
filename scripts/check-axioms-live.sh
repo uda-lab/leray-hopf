@@ -22,7 +22,7 @@
 #   exists_lerayHopf_r3_axiomatic — exactly 6 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
 #     LerayHopf.galerkin_limit_passage_R3
-#     LerayHopf.r3_NSForms_exist
+#     LerayHopf.r3ConvectionGapOp_exists
 #     LerayHopf.galerkin_spacetime_precompact_R3  (3 project)
 #     NOTE: spatial_compactness_R3 REMOVED (issue #2) — now a theorem via the FK chain.
 #     NOTE: r3GalerkinScheme_exists REMOVED (issue #21) — now a theorem, SWAPPED for the
@@ -49,6 +49,13 @@
 #     NOTE: L2VF_R3_weakSeqCompact_closedBall DELETED (issue #47 PR-A cleanup) — introduced as
 #           a scaffold but never called by galerkin_weakLimit_R3's actual proof body. Removed as
 #           dead code. Net R3 project axioms: 3.
+#     NOTE: r3_NSForms_exist REORGANIZED (issue #48) — the named axiom is replaced by
+#           r3ConvectionGapOp_exists (operator core: b/b_extends/b_multilinear/b_antisymm_gap/
+#           b_cont_fixedTest) + proved theorem r3_NSForms_exists (via R3NSForms_of_gap).
+#           Density (schwartz_dense) NOT assumed — proved via curlSchwartzDense_holds.
+#           Note: b_cont_fixedTest ≡ b_bound (bounded/continuous-bilinear equivalence) so the
+#           fixed-test bound is still assumed, not proved.  What genuinely becomes theorem content:
+#           multilinear algebra (b_add/b_smul) + density.  Net R3 project axioms still 3.
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.
@@ -207,7 +214,7 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound
    LerayHopf.galerkin_limit_passage_R3
-   LerayHopf.r3_NSForms_exist
+   LerayHopf.r3ConvectionGapOp_exists
    LerayHopf.galerkin_spacetime_precompact_R3"
 
 # ---------------------------------------------------------------------------

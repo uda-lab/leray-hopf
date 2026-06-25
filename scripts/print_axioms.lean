@@ -23,7 +23,7 @@
 --   exists_lerayHopf_r3_axiomatic — EXACTLY:
 --     propext  Classical.choice  Quot.sound
 --     LerayHopf.galerkin_limit_passage_R3
---     LerayHopf.r3_NSForms_exist
+--     LerayHopf.r3ConvectionGapOp_exists
 --     LerayHopf.galerkin_spacetime_precompact_R3
 --     (spatial_compactness_R3 REMOVED — issue #2 — now a theorem via the FK chain)
 --     (r3GalerkinScheme_exists REMOVED — issue #21 — now a theorem, SWAPPED for the
@@ -44,6 +44,12 @@
 --     (galerkin_weakLimit_R3 REMOVED — issue #47 PR-A — proved as THEOREM via strong
 --      ball-exhaustion + Mazur route; L2VF_R3_weakSeqCompact_closedBall deleted as dead code;
 --      net R3 project axioms now 3)
+--     (r3_NSForms_exist REORGANIZED — issue #48 — the named axiom replaced by
+--      r3ConvectionGapOp_exists (operator core, 5 fields) + proved theorem r3_NSForms_exists;
+--      density (schwartz_dense) NOT assumed — proved via curlSchwartzDense_holds;
+--      b_cont_fixedTest ≡ b_bound so the fixed-test bound is still assumed, not proved;
+--      what genuinely becomes theorem content: multilinear algebra + density;
+--      net R3 project axioms still 3)
 --
 --   lower_bound_from_inverse_square_lifespan (Core representative) — EXACTLY:
 --     propext  Classical.choice  Quot.sound  (no project axioms)
