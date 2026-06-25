@@ -1,5 +1,20 @@
 # Task Contract: Issue #48 — Remove the fat axiom `r3_NSForms_exist` (thin-swap, mirroring torus #22)
 
+> **⚠️ SUPERSEDED BY IMPLEMENTATION (2026-06-26, PR #55).** The body below was the
+> initial scoping. The actual landed design DIVERGED after codex review — do NOT follow
+> the body verbatim. Authoritative final design:
+> - The residual axiom is **`r3ConvectionGapOp_exists : ∀ 𝔊, Nonempty (ConvectionGapOp 𝔊)`**
+>   (NOT `r3ConvectionGap_exists : Nonempty (ConvectionGap 𝔊)`). `ConvectionGapOp` is the
+>   thinner structure carrying only the five operator fields; **`schwartz_dense` is deliberately
+>   kept OUT of the axiom** and supplied in `r3_NSForms_exists` from the proved
+>   `convectionGap_schwartz_dense curlSchwartzDense_holds` (codex P2: never re-assume the
+>   proved density).
+> - This is a **reorganization** of AX-4, **not** a strict thinning: `b_cont_fixedTest` is
+>   analytically EQUIVALENT to `R3NSForms.b_bound`, so the bound remains assumed (codex P1).
+>   What genuinely becomes theorem content is the multilinear algebra + the density. Net R3
+>   project-axiom count stays **3**. Genuine full removal (3→2) is the months-class
+>   `(u·∇)v` Sobolev-operator build (tracked as the #48-residual / torus #53 follow-up).
+
 **Plan author:** lean-planner
 **Date:** 2026-06-26
 **Scope:** READ-ONLY planning (this file only). Produces the task contract for `lean-coder` / `lean-prover`.
