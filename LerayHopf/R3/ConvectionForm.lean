@@ -79,8 +79,32 @@ extension**; it carries no `LerayHopfSolution` / `WeakFormNS` / energy-inequalit
 
 ## Scaffold status
 
-All proof bodies of `R3NSForms_of_gap` are now discharged. **No new `axiom`/`opaque`/`constant`.
-`AxiomaticClosure.lean` is not edited.**
+All proof bodies of `R3NSForms_of_gap` are now discharged (Tier G).  The H1–H4 / P1 / P2
+density chain is sorry-free.  **Issue #48 thin-swap:** one new residual `axiom`
+(`r3ConvectionGap_exists`, see `## Assumptions` below) replaces the fat `r3_NSForms_exist`;
+`r3_NSForms_exists` is a proved theorem (sorry-free, one line).  `AxiomaticClosure.lean` is
+NOT edited (the fat axiom is deleted there, not here).
+
+## Assumptions
+
+One axiom is added in THIS file.
+
+1. `r3ConvectionGap_exists` — ℝ³ weak convection-operator gap (issue #48 thin-swap).
+   For any `R3GalerkinScheme 𝔊`, a `ConvectionGap 𝔊` exists.  The `ConvectionGap` structure
+   isolates the genuine Mathlib-absent residual behind the former fat axiom `r3_NSForms_exist`:
+   a total `b` extending `convFormSchwartz` on the Schwartz class (`b_extends`), with algebraic
+   trilinearity over arbitrary `L²_σ` (`b_multilinear`) and arbitrary-`L²_σ` antisymmetry in
+   the last two slots (`b_antisymm_gap`) — the IBP/divergence-theorem content Mathlib lacks —
+   plus joint slot-1,2 continuity at fixed Schwartz `w` (`b_cont_fixedTest`) and density of the
+   Schwartz-div-free class in `L²_σ(ℝ³)` (`schwartz_dense`).
+   STRICTLY THINNER than the discharged `r3_NSForms_exist`: the `b_bound` field and the
+   `b_galerkin` Schwartz pin are NO LONGER assumed — they are PROVED as theorem content in
+   `R3NSForms_of_gap` (via `convFormSchwartz_bound` + `b_cont_fixedTest` + `schwartz_dense`,
+   and via `b_extends` + `convFormSchwartz_eq_witness`, respectively).
+   NON-VACUOUS: `b_extends` + `convFormSchwartz_eq_witness` pin `b` to `convIntegralSchwartz`
+   on Schwartz triples, excluding `b = 0`.  The `schwartz_dense` field is independently
+   provable from `curlSchwartzDense_holds` (proved theorem), so it is not a genuine residual.
+   Temam II.§1; Lemarié-Rieusset §5; mirrors torus `torusConvectionGap_exists` (issue #22).
 -/
 
 namespace LerayHopf
