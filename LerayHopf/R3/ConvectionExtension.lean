@@ -86,6 +86,9 @@ with `-- ALLOW_SORRY: PR-4` for the prover.  No new `axiom`/`opaque`.
 
 open MeasureTheory TemperedDistribution SchwartzMap LineDeriv TensorProduct
 
+set_option synthInstance.maxHeartbeats 400000
+set_option maxHeartbeats 1000000
+
 namespace LerayHopf.R3.ConvectionExtension
 
 /-! ### C0 — `H1Sigma'` (re-typing of H¹_σ inside `L2Sigma_R3`) -/
@@ -124,7 +127,31 @@ theorem subset_schwartzSpan {x : L2Sigma_R3} (hx : IsSchwartzDivFree_R3 x) :
 Mirrors the private `memH1VF_R3_of_isSchwartzDivFree` in `SobolevEmbedding.lean`. -/
 private theorem memH1VF_R3_of_schwartz {u : L2Sigma_R3}
     (hu : IsSchwartzDivFree_R3 u) : memH1VF_R3 (u : L2VF_R3) := by
-  sorry -- ALLOW_SORRY: PR-4 (SchwartzMap.memSobolev on (ψ j).postcompCLM ofRealCLM; matches memH1VF_R3 = ∀ j, MemSobolev 1 2 (L2VF_projComponentC_R3 j u))
+  obtain ⟨ψ, hψ⟩ := hu
+  intro j
+  set φ : SchwartzMap Domain3 ℂ := (ψ j).postcompCLM (RCLike.ofRealCLM (K := ℂ)) with hφ
+  -- The complex component equals `φ.toLp` as an `L²`-class.
+  have hgeq : (L2VF_projComponentC_R3 j (u : L2VF_R3))
+      = φ.toLp 2 (volume : Measure Domain3) := by
+    apply MeasureTheory.Lp.ext_iff.mpr
+    have hLHS : (⇑(L2VF_projComponentC_R3 j (u : L2VF_R3)) : Domain3 → ℂ)
+        =ᵐ[volume] fun a => RCLike.ofRealCLM (K := ℂ) (L2VF_projComponent_R3 j (u : L2VF_R3) a) := by
+      simpa [L2VF_projComponentC_R3] using
+        (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL (L2VF_projComponent_R3 j (u : L2VF_R3))
+    have hcomp : (⇑(L2VF_projComponent_R3 j (u : L2VF_R3)) : Domain3 → ℝ)
+        =ᵐ[volume] ⇑(ψ j) := by
+      rw [hψ j]; exact (ψ j).coeFn_toLp 2 (volume : Measure Domain3)
+    have hRHS : (⇑(φ.toLp 2 (volume : Measure Domain3)) : Domain3 → ℂ) =ᵐ[volume] ⇑φ :=
+      φ.coeFn_toLp 2 (volume : Measure Domain3)
+    filter_upwards [hLHS, hcomp, hRHS] with a hL hc hR
+    rw [hL, hc, hR, hφ, SchwartzMap.postcompCLM_apply]
+  -- Schwartz ⊂ H¹: `((φ.toLp) : 𝓢') = (φ : 𝓢')` is in every Sobolev space.
+  have hcoe : ((L2VF_projComponentC_R3 j (u : L2VF_R3)) : 𝓢'(Domain3, ℂ))
+      = (φ : 𝓢'(Domain3, ℂ)) := by
+    rw [hgeq]; exact MeasureTheory.Lp.toTemperedDistribution_toLp_eq φ
+  rw [show (L2VF_projComponentC_R3 j (u : L2VF_R3) : 𝓢'(Domain3, ℂ))
+      = (φ : 𝓢'(Domain3, ℂ)) from hcoe]
+  exact φ.memSobolev
 
 theorem schwartz_mem_H1Sigma' {u : L2Sigma_R3} (hu : IsSchwartzDivFree_R3 u) :
     u ∈ H1Sigma' :=
@@ -149,7 +176,13 @@ theorem convFormH1_bound_slot2_schwartz
         (hu_sigma : u ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
         (hv_sigma : v ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
         |convFormH1 u w v hu hw_H1 hv| ≤ C_w * ‖u‖ * ‖v‖ := by
-  sorry -- ALLOW_SORRY: PR-4 (B6 convFormH1_antisymm + abs_neg + B7 convFormH1_bound_Schwartz)
+  obtain ⟨C_w, hC_nonneg, hbound⟩ :=
+    convFormH1_bound_Schwartz w hw_H1 hw_sigma hw_sch
+  refine ⟨C_w, hC_nonneg, ?_⟩
+  intro u v hu hv hu_sigma hv_sigma
+  -- B6: convFormH1 u w v = -convFormH1 u v w; |·| is preserved by negation.
+  rw [convFormH1_antisymm u w v hu hw_H1 hv hu_sigma hw_sigma hv_sigma, abs_neg]
+  exact hbound u v hu hv hu_sigma hv_sigma
 
 /-! ### C3 — `convDetSlot3` : the determined `L²`-slot bilinear on the Schwartz slice
 
@@ -158,15 +191,289 @@ arguments (B7), so it BLT-extends to a continuous bilinear form on all of
 `L2Sigma_R3 × L2Sigma_R3`.  This is the genuine, determined value the construction reads
 off on the slice `L²_σ ⊗ 𝒮` (and its B6-flip on `𝒮 ⊗ L²_σ`). -/
 
-/-- **C3 `convBLT_fixedTest` [PR-4].** Jointly continuous bilinear
+/-! #### C3 infrastructure — `H1Sigma'` density and the double-BLT helpers -/
+
+/-- `H1Sigma'.subtype : H1Sigma' →ₗ[ℝ] L2Sigma_R3` has dense range
+(`h1Sigma_dense_in_L2Sigma`). -/
+theorem denseRange_H1Sigma'_subtype :
+    DenseRange (H1Sigma'.subtype : H1Sigma' → L2Sigma_R3) := by
+  rw [denseRange_iff_closure_range]
+  rw [Set.eq_univ_iff_forall]
+  intro u
+  -- Every `u : L2Sigma_R3` is a sequential limit of `H1Sigma'` elements.
+  obtain ⟨s, hs_h1, hs_lim⟩ := h1Sigma_dense_in_L2Sigma u
+  refine mem_closure_of_tendsto hs_lim ?_
+  refine Filter.Eventually.of_forall (fun n => ?_)
+  exact ⟨⟨s n, (mem_H1Sigma'_iff (s n)).mpr ⟨hs_h1 n, (s n).2⟩⟩, rfl⟩
+
+/-- The `L2VF_R3` representative of an `H1Sigma'` element. -/
+private noncomputable def vfOf (u : H1Sigma') : L2VF_R3 := ((u : L2Sigma_R3) : L2VF_R3)
+
+private theorem vfOf_mem (u : H1Sigma') : memH1VF_R3 (vfOf u) := H1Sigma'_memH1 u.2
+
+private theorem vfOf_add (u u' : H1Sigma') : vfOf (u + u') = vfOf u + vfOf u' := by
+  simp only [vfOf, Submodule.coe_add]
+
+private theorem vfOf_smul (c : ℝ) (u : H1Sigma') : vfOf (c • u) = c • vfOf u := by
+  simp only [vfOf, Submodule.coe_smul]
+
+/-- The value of `convFormH1` on the `H1Sigma'` subtype, with the `H¹` proofs supplied. -/
+private noncomputable def valH1
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w) (u v : H1Sigma') : ℝ :=
+  convFormH1 (vfOf u) (vfOf v) w (vfOf_mem u) (vfOf_mem v) hw_H1
+
+private theorem valH1_add_2
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w) (u v v' : H1Sigma') :
+    valH1 w hw_H1 u (v + v') = valH1 w hw_H1 u v + valH1 w hw_H1 u v' := by
+  unfold valH1
+  exact convFormH1_add_2 (vfOf u) (vfOf v) (vfOf v') w
+    (vfOf_mem u) (vfOf_mem v) (vfOf_mem v') hw_H1
+
+private theorem valH1_smul_2
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w) (u : H1Sigma') (c : ℝ) (v : H1Sigma') :
+    valH1 w hw_H1 u (c • v) = c * valH1 w hw_H1 u v := by
+  unfold valH1
+  exact convFormH1_smul_2 c (vfOf u) (vfOf v) w (vfOf_mem u) (vfOf_mem v) hw_H1
+
+private theorem valH1_add_1
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w) (u u' v : H1Sigma') :
+    valH1 w hw_H1 (u + u') v = valH1 w hw_H1 u v + valH1 w hw_H1 u' v := by
+  unfold valH1
+  exact convFormH1_add_1 (vfOf u) (vfOf u') (vfOf v) w
+    (vfOf_mem u) (vfOf_mem u') (vfOf_mem v) hw_H1
+
+private theorem valH1_smul_1
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w) (c : ℝ) (u v : H1Sigma') :
+    valH1 w hw_H1 (c • u) v = c * valH1 w hw_H1 u v := by
+  unfold valH1
+  exact convFormH1_smul_1 c (vfOf u) (vfOf v) w (vfOf_mem u) (vfOf_mem v) hw_H1
+
+/-- The inner linear functional `v ↦ convFormH1 u v w` on `H1Sigma'`, for fixed
+H¹ `u` and Schwartz test `w`. -/
+private noncomputable def innerLin
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w) (u : H1Sigma') : H1Sigma' →ₗ[ℝ] ℝ where
+  toFun v := valH1 w hw_H1 u v
+  map_add' v v' := valH1_add_2 w hw_H1 u v v'
+  map_smul' c v := by simpa using valH1_smul_2 w hw_H1 u c v
+
+/-- `H1Sigma'` carries the `L2VF_R3` norm: `‖u‖ = ‖vfOf u‖`. -/
+private theorem norm_eq_vfOf (u : H1Sigma') : ‖u‖ = ‖vfOf u‖ := rfl
+
+private theorem innerLin_add_1 (w : L2VF_R3) (hw_H1 : memH1VF_R3 w) (u u' : H1Sigma') :
+    innerLin w hw_H1 (u + u') = innerLin w hw_H1 u + innerLin w hw_H1 u' := by
+  refine LinearMap.ext (fun v => ?_)
+  simp only [innerLin, LinearMap.coe_mk, AddHom.coe_mk, LinearMap.add_apply]
+  exact valH1_add_1 w hw_H1 u u' v
+
+private theorem innerLin_smul_1 (w : L2VF_R3) (hw_H1 : memH1VF_R3 w) (c : ℝ) (u : H1Sigma') :
+    innerLin w hw_H1 (c • u) = c • innerLin w hw_H1 u := by
+  refine LinearMap.ext (fun v => ?_)
+  simp only [innerLin, LinearMap.coe_mk, AddHom.coe_mk, LinearMap.smul_apply, smul_eq_mul]
+  exact valH1_smul_1 w hw_H1 c u v
+
+/-- The inner B7 bound at fixed `u`: `‖innerLin w u v‖ ≤ (C_w ‖u‖) ‖v‖`. -/
+private theorem innerLin_bound
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩)
+    {C_w : ℝ}
+    (hbound : ∀ (u v : L2VF_R3) (hu : memH1VF_R3 u) (hv : memH1VF_R3 v)
+      (hu_sigma : u ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+      (hv_sigma : v ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
+      |convFormH1 u v w hu hv hw_H1| ≤ C_w * ‖u‖ * ‖v‖)
+    (u v : H1Sigma') :
+    ‖innerLin w hw_H1 u v‖ ≤ C_w * ‖u‖ * ‖v‖ := by
+  have hu_sigma : (vfOf u) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3) := (u : L2Sigma_R3).2
+  have hv_sigma : (vfOf v) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3) := (v : L2Sigma_R3).2
+  have := hbound (vfOf u) (vfOf v) (vfOf_mem u) (vfOf_mem v) hu_sigma hv_sigma
+  rw [Real.norm_eq_abs, norm_eq_vfOf u, norm_eq_vfOf v]
+  exact this
+
+/-- The dense `H1Sigma' → L2Sigma_R3` inclusion as a bare `LinearMap` (for `extendOfNorm`). -/
+private noncomputable def eH1 : H1Sigma' →ₗ[ℝ] L2Sigma_R3 := H1Sigma'.subtype
+
+private theorem denseRange_eH1 : DenseRange (eH1 : H1Sigma' → L2Sigma_R3) :=
+  denseRange_H1Sigma'_subtype
+
+private theorem eH1_norm (v : H1Sigma') : ‖eH1 v‖ = ‖v‖ := rfl
+
+/-- Additivity of `extendOfNorm` along `eH1` (via uniqueness of the bounded extension). -/
+private theorem extendOfNorm_eH1_add
+    (f f' : H1Sigma' →ₗ[ℝ] ℝ) {C C' : ℝ}
+    (hf : ∀ x, ‖f x‖ ≤ C * ‖eH1 x‖) (hf' : ∀ x, ‖f' x‖ ≤ C' * ‖eH1 x‖) :
+    (f + f').extendOfNorm eH1 = f.extendOfNorm eH1 + f'.extendOfNorm eH1 := by
+  refine LinearMap.extendOfNorm_unique denseRange_eH1 (C + C')
+    (fun x => ?_) (f.extendOfNorm eH1 + f'.extendOfNorm eH1) ?_
+  · calc ‖(f + f') x‖ = ‖f x + f' x‖ := rfl
+      _ ≤ ‖f x‖ + ‖f' x‖ := norm_add_le _ _
+      _ ≤ C * ‖eH1 x‖ + C' * ‖eH1 x‖ := add_le_add (hf x) (hf' x)
+      _ = (C + C') * ‖eH1 x‖ := by ring
+  · refine LinearMap.ext (fun x => ?_)
+    simp only [LinearMap.comp_apply, ContinuousLinearMap.coe_coe,
+      ContinuousLinearMap.add_apply, LinearMap.add_apply,
+      LinearMap.extendOfNorm_eq denseRange_eH1 ⟨C, hf⟩ x,
+      LinearMap.extendOfNorm_eq denseRange_eH1 ⟨C', hf'⟩ x]
+
+/-- Homogeneity of `extendOfNorm` along `eH1`. -/
+private theorem extendOfNorm_eH1_smul
+    (c : ℝ) (f : H1Sigma' →ₗ[ℝ] ℝ) {C : ℝ} (hf : ∀ x, ‖f x‖ ≤ C * ‖eH1 x‖) :
+    (c • f).extendOfNorm eH1 = c • f.extendOfNorm eH1 := by
+  refine LinearMap.extendOfNorm_unique denseRange_eH1 (|c| * C)
+    (fun x => ?_) (c • f.extendOfNorm eH1) ?_
+  · calc ‖(c • f) x‖ = |c| * ‖f x‖ := by
+            simp [LinearMap.smul_apply, norm_smul, Real.norm_eq_abs]
+      _ ≤ |c| * (C * ‖eH1 x‖) := by
+            apply mul_le_mul_of_nonneg_left (hf x) (abs_nonneg c)
+      _ = |c| * C * ‖eH1 x‖ := by ring
+  · refine LinearMap.ext (fun x => ?_)
+    simp only [LinearMap.comp_apply, ContinuousLinearMap.coe_coe,
+      ContinuousLinearMap.smul_apply, LinearMap.smul_apply, Pi.smul_apply,
+      LinearMap.extendOfNorm_eq denseRange_eH1 ⟨C, hf⟩ x, smul_eq_mul]
+
+/-- The chosen B7 constant for the fixed Schwartz `w`. -/
+private noncomputable def cwConst
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) : ℝ :=
+  (convFormH1_bound_Schwartz w hw_H1 hw_sigma hw_sch).choose
+
+/-- The uniform B7 bound packaged in terms of `innerLin` and the constant `cwConst`. -/
+private theorem innerLin_bound'
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩)
+    (u v : H1Sigma') :
+    ‖innerLin w hw_H1 u v‖
+      ≤ cwConst w hw_H1 hw_sigma hw_sch * ‖u‖ * ‖eH1 v‖ := by
+  have hbound := (convFormH1_bound_Schwartz w hw_H1 hw_sigma hw_sch).choose_spec.2
+  rw [eH1_norm]
+  exact innerLin_bound w hw_H1 hw_sigma hw_sch hbound u v
+
+/-- The inner extension `Φ u : L2Sigma_R3 →L ℝ` of `innerLin u` (slot-2 extension). -/
+private noncomputable def convInnerCLM
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) (u : H1Sigma') :
+    L2Sigma_R3 →L[ℝ] ℝ :=
+  (innerLin w hw_H1 u).extendOfNorm eH1
+
+private theorem convInnerCLM_add
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) (u u' : H1Sigma') :
+    convInnerCLM w hw_H1 hw_sigma hw_sch (u + u')
+      = convInnerCLM w hw_H1 hw_sigma hw_sch u + convInnerCLM w hw_H1 hw_sigma hw_sch u' := by
+  unfold convInnerCLM
+  rw [innerLin_add_1 w hw_H1 u u']
+  exact extendOfNorm_eH1_add (innerLin w hw_H1 u) (innerLin w hw_H1 u')
+    (fun v => innerLin_bound' w hw_H1 hw_sigma hw_sch u v)
+    (fun v => innerLin_bound' w hw_H1 hw_sigma hw_sch u' v)
+
+private theorem convInnerCLM_smul
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) (c : ℝ) (u : H1Sigma') :
+    convInnerCLM w hw_H1 hw_sigma hw_sch (c • u)
+      = c • convInnerCLM w hw_H1 hw_sigma hw_sch u := by
+  unfold convInnerCLM
+  rw [innerLin_smul_1 w hw_H1 c u]
+  exact extendOfNorm_eH1_smul c (innerLin w hw_H1 u)
+    (fun v => innerLin_bound' w hw_H1 hw_sigma hw_sch u v)
+
+/-- The slot-2 inner extension is the genuine `convFormH1` value on H¹ arguments. -/
+private theorem convInnerCLM_apply_eH1
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) (u v : H1Sigma') :
+    convInnerCLM w hw_H1 hw_sigma hw_sch u (eH1 v) = valH1 w hw_H1 u v := by
+  unfold convInnerCLM
+  exact LinearMap.extendOfNorm_eq denseRange_eH1
+    ⟨cwConst w hw_H1 hw_sigma hw_sch * ‖u‖,
+      fun v => innerLin_bound' w hw_H1 hw_sigma hw_sch u v⟩ v
+
+private theorem convInnerCLM_bound
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) (u : H1Sigma') :
+    ‖convInnerCLM w hw_H1 hw_sigma hw_sch u‖
+      ≤ cwConst w hw_H1 hw_sigma hw_sch * ‖eH1 u‖ := by
+  rw [eH1_norm]
+  have hCu : 0 ≤ cwConst w hw_H1 hw_sigma hw_sch * ‖u‖ :=
+    mul_nonneg (convFormH1_bound_Schwartz w hw_H1 hw_sigma hw_sch).choose_spec.1 (norm_nonneg u)
+  refine ContinuousLinearMap.opNorm_le_bound _ hCu (fun x => ?_)
+  unfold convInnerCLM
+  exact LinearMap.norm_extendOfNorm_apply_le denseRange_eH1 _
+    (fun v => innerLin_bound' w hw_H1 hw_sigma hw_sch u v) x
+
+/-- The slot-1 outer linear map `u ↦ Φ u`, before its `L²`-extension. -/
+private noncomputable def convOuterLM
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) :
+    H1Sigma' →ₗ[ℝ] (L2Sigma_R3 →L[ℝ] ℝ) where
+  toFun u := convInnerCLM w hw_H1 hw_sigma hw_sch u
+  map_add' u u' := convInnerCLM_add w hw_H1 hw_sigma hw_sch u u'
+  map_smul' c u := convInnerCLM_smul w hw_H1 hw_sigma hw_sch c u
+
+/-- The slot-1 outer map as a **continuous** linear map (bound `convInnerCLM_bound`). -/
+private noncomputable def convOuterCLM
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) :
+    H1Sigma' →L[ℝ] (L2Sigma_R3 →L[ℝ] ℝ) :=
+  LinearMap.mkContinuous
+    (E := H1Sigma') (F := (L2Sigma_R3 →L[ℝ] ℝ)) (𝕜 := ℝ)
+    (convOuterLM w hw_H1 hw_sigma hw_sch)
+    (cwConst w hw_H1 hw_sigma hw_sch)
+    (fun u => by
+      have h := convInnerCLM_bound w hw_H1 hw_sigma hw_sch u
+      rw [eH1_norm] at h
+      exact h)
+
+private theorem convOuterCLM_apply
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) (u : H1Sigma') :
+    convOuterCLM w hw_H1 hw_sigma hw_sch u = convInnerCLM w hw_H1 hw_sigma hw_sch u := by
+  rw [convOuterCLM, LinearMap.mkContinuous_apply]
+  rfl
+
+/-- The continuous inclusion `H1Sigma' →L[ℝ] L2Sigma_R3`. -/
+private noncomputable def eH1L : H1Sigma' →L[ℝ] L2Sigma_R3 := H1Sigma'.subtypeL
+
+private theorem eH1L_apply (u : H1Sigma') : eH1L u = (u : L2Sigma_R3) := rfl
+
+private theorem denseRange_eH1L : DenseRange (eH1L : H1Sigma' → L2Sigma_R3) :=
+  denseRange_H1Sigma'_subtype
+
+private theorem isUniformInducing_eH1L : IsUniformInducing (eH1L : H1Sigma' → L2Sigma_R3) :=
+  (isUniformEmbedding_subtype_val (p := fun x => x ∈ H1Sigma')).isUniformInducing
+
+/-- **C3 `convBLT_fixedTest` [PR-4 — PROVED].** Jointly continuous bilinear
 `L2Sigma_R3 →L[ℝ] L2Sigma_R3 →L[ℝ] ℝ` extending `(u, v) ↦ convFormH1 u v w` for Schwartz
-`w`, via `LinearMap.extendOfNorm` ×2 with the B7 bound and `H1Sigma'`-density. -/
+`w`: the slot-2 inner `extendOfNorm` packaged as `convOuterCLM`, then the slot-1
+`ContinuousLinearMap.extend` along the dense `H1Sigma' ↪ L2Sigma_R3`. -/
 noncomputable def convBLT_fixedTest
     (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
     (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
     (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) :
     L2Sigma_R3 →L[ℝ] L2Sigma_R3 →L[ℝ] ℝ :=
-  sorry -- ALLOW_SORRY: PR-4 (LinearMap.extendOfNorm ×2; B7 bound; H1Sigma' dense)
+  (convOuterCLM w hw_H1 hw_sigma hw_sch).extend eH1L
+
+/-- **The determined-value identity on the H¹ slice.** For H¹ `u, v` (as `H1Sigma'`
+elements), `convBLT_fixedTest w u v` is the genuine `convFormH1 u v w`. -/
+theorem convBLT_fixedTest_eH1
+    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+    (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) (u v : H1Sigma') :
+    convBLT_fixedTest w hw_H1 hw_sigma hw_sch (eH1L u) (eH1L v) = valH1 w hw_H1 u v := by
+  unfold convBLT_fixedTest
+  rw [ContinuousLinearMap.extend_eq _ denseRange_eH1L isUniformInducing_eH1L u,
+    convOuterCLM_apply w hw_H1 hw_sigma hw_sch u]
+  -- `eH1L v = eH1 v` and `convInnerCLM u (eH1 v) = valH1 u v`.
+  have hev : (eH1L v : L2Sigma_R3) = eH1 v := rfl
+  rw [hev]
+  exact convInnerCLM_apply_eH1 w hw_H1 hw_sigma hw_sch u v
 
 /-! ### C4 — the two edge bilinears on the tensor product
 
@@ -216,7 +523,7 @@ This is the single object the trilinear `b` reads.  Its construction
 is the structural core deferred to PR-4; the statement here pins the contract. -/
 noncomputable def detExtend :
     L2Sigma_R3 →ₗ[ℝ] (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) →ₗ[ℝ] ℝ := by
-  sorry -- ALLOW_SORRY: PR-4 (per-u: TensorProduct.lift the two edge bilinears (convFormH1 u s l on 𝒮⊗L², its B6-flip on L²⊗𝒮); glue with LinearPMap.sup using edge_inf_eq_schwartz_tensor for overlap agreement; Hamel-extend β_u to L²⊗L² via LinearMap.exists_extend (letI : Semiring ℝ := inferInstance); assemble u-linearly from convFormH1_add_1/smul_1)
+  sorry -- ALLOW_SORRY: PR-4 BLOCKED on slot-3/slot-2 edge bilinear `L²_σ ⊗ 𝒮 →ₗ ℝ`. The determined value `(v ⊗ s) ↦ convBLT_fixedTest s u v` (Schwartz s) is well-defined for ALL u,v BUT extending linearly over s ∈ 𝒮 = span{Schwartz-div-free} needs representation-independence (∑cᵢsᵢ=0 ⟹ ∑cᵢ convBLT sᵢ u v=0), which holds by density (= convFormH1 u v (∑cᵢsᵢ)=0 on the H¹ (u,v) slice + convBLT continuity) but has NO off-the-shelf mathlib lifter — needs a Finsupp.lift/span-quotient construction with the density well-definedness woven in. Once that edge bilinear exists: LinearPMap.sup glue (overlap agreement on 𝒮⊗𝒮 via edge_inf_eq_schwartz_tensor + B6), then u-linearity is FREE via a fixed left-inverse `gInv` of detDomain.subtype (LinearMap.exists_leftInverse_of_injective): detExtend u := (Ψ u) ∘ₗ gInv with Ψ : L²_σ →ₗ (D →ₗ ℝ) linear in u, so the Hamel extension is a SINGLE linear operator `· ∘ₗ gInv`, not a per-u choice. C3 convBLT_fixedTest (the analytic crux) + convBLT_fixedTest_eH1 are PROVED; this remaining gap is the span-rep-independence lifter only.
 
 /-- **C5b `detExtend_on_edgeSlot3` [PR-4 — the determined identity].**
 On the slot-3-Schwartz edge `L²_σ ⊗ 𝒮`, `detExtend u` is the genuine determined value:
