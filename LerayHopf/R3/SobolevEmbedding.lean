@@ -1386,4 +1386,32 @@ theorem schwartz_h1_gradConv (f : L2C_R3) (m : Domain3)
     exact tendsto_nhds_unique hDf hgrad𝓢''
   exact ⟨g, hg, φ, htoLp, hgradtend⟩
 
+/-! **B6 export: `schwartz_h1_gradConv_multi`.**
+For `f : L2C_R3` in the `H^{1,2}` Sobolev space, there exists a SINGLE Schwartz sequence
+`φ : ℕ → SchwartzMap Domain3 ℂ` that simultaneously:
+- converges in L² to `f` (value convergence), and
+- for EVERY direction `m : Domain3`, the sequence of directional derivatives `(∂_{m} φₙ).toLp 2`
+  converges in L² to the weak derivative `∂_m (f : 𝓢')`.
+
+The outer `∃ φ` and inner `∀ m` ordering is the key distinction from `schwartz_h1_gradConv`,
+which provides only a per-direction sequence (one per `m`). Here the SAME sequence works for all
+directions simultaneously (the `φₙ = 𝓕⁻¹(smulLeftCLM wInv ηₙ)` construction is m-independent).
+
+**Proof plan (prover pass):** Take the same `φₙ = 𝓕⁻¹(smulLeftCLM wInv ηₙ)` built in
+`schwartz_h1_gradConv`. The value convergence `φₙ.toLp → f` is identical. For each `m`,
+the gradient convergence `(∂_{m} φₙ).toLp → g` and the identity `∂_m (f : 𝓢') = (g : 𝓢')`
+follow from the same multiplier argument as in `schwartz_h1_gradConv` — the construction of `φₙ`
+never depended on `m`, so the conclusion holds for all `m` uniformly. -/
+theorem schwartz_h1_gradConv_multi (f : L2C_R3)
+    (hf : MemSobolev 1 2 (f : 𝓢'(Domain3, ℂ))) :
+    ∃ φ : ℕ → SchwartzMap Domain3 ℂ,
+      Filter.Tendsto (fun n => (φ n).toLp 2 (volume : Measure Domain3))
+          Filter.atTop (nhds f) ∧
+      ∀ m : Domain3, ∃ (g : L2C_R3)
+          (hg : (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ))),
+        Filter.Tendsto
+          (fun n => (∂_{m} (φ n)).toLp 2 (volume : Measure Domain3))
+          Filter.atTop (nhds g) := by
+  sorry -- ALLOW_SORRY: PR-2 Brick-1 multi-direction export (prover pass) — same φₙ = 𝓕⁻¹(smulLeftCLM wInv ηₙ) as schwartz_h1_gradConv (m-independent construction); apply the per-direction multiplier argument for each m
+
 end LerayHopf
