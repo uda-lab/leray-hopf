@@ -86,9 +86,14 @@ B1, B2 (`gradComponent_weakDeriv`), B3a, B3b, B4 (all six trilinearity lemmas), 
 Three targets remain marked `-- ALLOW_SORRY`:
 
 - **B6a** (`convFormH1_ibp`), **B6** (`convFormH1_antisymm`), **B7** (`convFormH1_bound_Schwartz`)
-  — gated on the weak Leibniz product rule `∂ₐ(uₐ·wᵢ) = (∂ₐuₐ)wᵢ + uₐ(∂ₐwᵢ)` plus IBP against
-  H¹ (non-Schwartz) test functions, which is absent from mathlib and is a substantial
-  analytic development. B6 ⇒ B7 (CODEX route), and B6 ⇒ B6a.
+  — gated on the weak Leibniz product rule `∂ₐ(uₐ·wᵢ) = (∂ₐuₐ)wᵢ + uₐ(∂ₐwᵢ)` (a distributional
+  identity for **two** H¹ factors), which is absent from mathlib (only the Schwartz×Schwartz IBP
+  `integral_bilinear_lineDerivOp_right_eq_neg_left` and no smooth-multiplier-×-distribution
+  Leibniz exist) and is a substantial analytic development (mollification + H¹-limit + L⁶·L²·L³
+  Hölder). B6 ⇒ B7 (CODEX route), and B6 ⇒ B6a. The PR-2 Brick-1 export
+  `LerayHopf.schwartz_h1_gradConv` (SobolevEmbedding.lean, simultaneous L² value- and
+  gradient-convergence of Schwartz approximants; axiom-clean) is now landed and is the smoothing
+  tool the eventual B6a proof will use; the remaining gap is exactly the Leibniz lemma itself.
 -/
 
 namespace LerayHopf
@@ -872,7 +877,7 @@ theorem convFormH1_ibp (u v w : L2VF_R3)
         (L2VF_projComponentC_R3 i v x).re *
         (gradComp_of_memH1 w hw a i x).re
       ∂(volume : Measure Domain3) := by
-  sorry -- ALLOW_SORRY: PR-2 must-prove (B6a); proof via Leibniz product rule + B2 IBP; with positive convFormH1 def, IBP gives two negative sums
+  sorry -- ALLOW_SORRY: PR-2 (B6a) BLOCKED on the H¹·H¹ weak Leibniz product rule ∂ₐ(uₐ·wᵢ)=(∂ₐuₐ)wᵢ+uₐ(∂ₐwᵢ) as a distributional identity for two H¹ factors (uₐ, wᵢ). Mathlib has NO weak-derivative product rule for an H¹·H¹ product (only the Schwartz `integral_bilinear_lineDerivOp_right_eq_neg_left` for two Schwartz factors); the smooth-multiplier × distribution Leibniz (`lineDerivOp` ∘ `smulLeftCLM`) is also absent. Sound discharge needs a from-scratch mollification development (smooth-approx uₐ,wᵢ via Brick-1 `schwartz_h1_gradConv`, classical Leibniz, then H¹-limit + L⁶·L²·L³ Hölder continuity). Brick-1 (schwartz_h1_gradConv) is now available and axiom-clean; the remaining gap is exactly this Leibniz lemma.
 
 /-- **B6b `convFormH1_divFree` [must-prove].** The weak div-free identity for `H¹_σ` elements:
 for `u ∈ L2Sigma_R3 ∩ H1Sigma_R3`, the weak divergence vanishes:
@@ -955,7 +960,7 @@ theorem convFormH1_antisymm (u v w : L2VF_R3)
     (hv_sigma : (v : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
     (hw_sigma : (w : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)) :
     convFormH1 u v w hu hv hw = -convFormH1 u w v hu hw hv := by
-  sorry -- ALLOW_SORRY: PR-2 must-prove (B6); proof via B6a (IBP) + B6b (div-free kills ∑_a ∂_a uₐ) + reindex
+  sorry -- ALLOW_SORRY: PR-2 (B6) DEPENDS ON B6a; transitively blocked on the same H¹·H¹ weak Leibniz product rule (see convFormH1_ibp). Given B6a + B6b (proved), B6 closes by reindexing and the div-free cancellation of ∑ₐ(∂ₐuₐ)vᵢwᵢ; the only missing pillar is B6a.
 
 /-! ### B7 — L²-norm bound for fixed Schwartz test (CODEX CORRECTION route) -/
 
@@ -990,6 +995,6 @@ theorem convFormH1_bound_Schwartz (u v w : L2VF_R3)
     (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) :
     ∃ C_w : ℝ, 0 ≤ C_w ∧
       |convFormH1 u v w hu hv hw_H1| ≤ C_w * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖ := by
-  sorry -- ALLOW_SORRY: PR-2 must-prove (B7); proof via B6 (antisymmetry, move ∂ onto Schwartz w) + Cauchy–Schwarz + Schwartz sup-norm bound on ∇w; GNS/A3 NOT needed (CODEX CORRECTION)
+  sorry -- ALLOW_SORRY: PR-2 (B7) DEPENDS ON B6 (and hence B6a). The L²·L² bound REQUIRES moving the derivative off v onto the Schwartz test w (antisymmetry/IBP): a direct estimate only yields C_w·‖u‖₂·‖v‖_{H¹} (the ∂ₐvᵢ factor is bounded by ‖v‖_{H¹}, not ‖v‖₂), so the ‖v‖₂ conclusion genuinely needs B6. Transitively blocked on the same H¹·H¹ weak Leibniz pillar (see convFormH1_ibp).
 
 end LerayHopf
