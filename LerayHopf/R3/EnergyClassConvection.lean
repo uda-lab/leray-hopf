@@ -21,7 +21,7 @@ open MeasureTheory TemperedDistribution SchwartzMap LineDeriv
 
 This file constructs the genuine energy-class trilinear convection form
 
-  `convFormH1 u v w = -∑_{i,a} ∫ (uₐ)(∂ₐvᵢ)(wᵢ)`
+  `convFormH1 u v w = ∑_{i,a} ∫ (uₐ)(∂ₐvᵢ)(wᵢ)`
 
 on `H¹_σ(ℝ³)`, defined as the submodule `H1Sigma_R3 ≤ L2VF_R3` of elements satisfying
 `memH1VF_R3`. The form is proved integrable (B3b via Sobolev embedding A3 + Hölder),
@@ -81,15 +81,10 @@ None — this file introduces no `axiom`/`opaque`. All sorry bodies are
 
 ## Scaffold status
 
-B1, B2 (`gradComponent_weakDeriv`), B3a, B3b, B4 (all six trilinearity lemmas) and B6b
-(`convFormH1_divFree`) are proved sorry-free. Four targets remain marked `-- ALLOW_SORRY`:
+B1, B2 (`gradComponent_weakDeriv`), B3a, B3b, B4 (all six trilinearity lemmas), B5
+(`convFormH1_eq_convFormSchwartz`) and B6b (`convFormH1_divFree`) are proved sorry-free.
+Three targets remain marked `-- ALLOW_SORRY`:
 
-- **B5** (`convFormH1_eq_convFormSchwartz`) — FALSE as stated: with the fixed `convFormH1`
-  definition (leading minus) and the proven B2 weak-derivative sign (`gradComp = +∂ₐvᵢ`),
-  the goal reduces to `-(∑∑∫ ψu·∂ψv·ψw) = +(∑∑∫ ψu·∂ψv·ψw)`, i.e. `-X = X` with `X ≠ 0`.
-  The genuine identity is `convFormH1 u v w = -convFormSchwartz u v w`. A `lean-coder` fix
-  (drop the leading minus in the `convFormH1` def — B4 is sign-agnostic, B6a/B6/B7 stay
-  consistent) is required; it cannot be discharged in a proof body.
 - **B6a** (`convFormH1_ibp`), **B6** (`convFormH1_antisymm`), **B7** (`convFormH1_bound_Schwartz`)
   — gated on the weak Leibniz product rule `∂ₐ(uₐ·wᵢ) = (∂ₐuₐ)wᵢ + uₐ(∂ₐwᵢ)` plus IBP against
   H¹ (non-Schwartz) test functions, which is absent from mathlib and is a substantial
@@ -556,25 +551,24 @@ theorem convFormH1_integrable (u v w : L2VF_R3)
 /-- **B4 `convFormH1` [must-prove def + trilinearity].** The energy-class trilinear
 convection form on `H¹_σ(ℝ³)`:
 
-  `convFormH1 u v w hu hv hw = -∑_{i : Fin 3} ∑_{a : Fin 3} ∫ (uₐ)(∂ₐvᵢ)(wᵢ) dx`
+  `convFormH1 u v w hu hv hw = ∑_{i : Fin 3} ∑_{a : Fin 3} ∫ (uₐ)(∂ₐvᵢ)(wᵢ) dx`
 
 where:
 - `uₐ = L2VF_projComponentC_R3 a u` (a-th component of u, in L²(ℝ³; ℂ)),
 - `∂ₐvᵢ = gradComp_of_memH1 v hv a i` (the L² weak partial derivative),
 - `wᵢ = L2VF_projComponentC_R3 i w` (i-th component of w).
 
-We take real parts and negate to match the IBP sign convention
-`b(u,v,w) = -∑ ∫ uₐ (∂ₐvᵢ) wᵢ` (with the derivative on v, matching convIntegralSchwartz).
-
-The integrability of each summand is B3b. The definition is noncomputable (Bochner integral). -/
+The sign matches `convIntegralSchwartz` (positive sum), agreeing with `convFormSchwartz` on
+Schwartz triples (B5). The integrability of each summand is B3b.
+The definition is noncomputable (Bochner integral). -/
 noncomputable def convFormH1 (u v w : L2VF_R3)
     (hu : memH1VF_R3 u) (hv : memH1VF_R3 v) (hw : memH1VF_R3 w) : ℝ :=
-  -(∑ i : Fin 3, ∑ a : Fin 3,
+  ∑ i : Fin 3, ∑ a : Fin 3,
     ∫ x : Domain3,
       (L2VF_projComponentC_R3 a u x).re *
       (gradComp_of_memH1 v hv a i x).re *
       (L2VF_projComponentC_R3 i w x).re
-    ∂(volume : Measure Domain3))
+    ∂(volume : Measure Domain3)
 
 /-- A.e. pointwise additivity of the real component of `componentC` under field addition. -/
 private theorem componentRe_add_ae (u u' : L2VF_R3) (j : Fin 3) :
@@ -623,7 +617,7 @@ theorem convFormH1_add_1 (u u' v w : L2VF_R3)
     convFormH1 (u + u') v w (memH1VF_R3_add hu hu') hv hw =
     convFormH1 u v w hu hv hw + convFormH1 u' v w hu' hv hw := by
   unfold convFormH1
-  rw [← neg_add, neg_inj, ← Finset.sum_add_distrib]
+  rw [← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun a _ => ?_
@@ -648,7 +642,7 @@ theorem convFormH1_add_2 (u v v' w : L2VF_R3)
     convFormH1 u (v + v') w hu (memH1VF_R3_add hv hv') hw =
     convFormH1 u v w hu hv hw + convFormH1 u v' w hu hv' hw := by
   unfold convFormH1
-  rw [← neg_add, neg_inj, ← Finset.sum_add_distrib]
+  rw [← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun a _ => ?_
@@ -672,7 +666,7 @@ theorem convFormH1_add_3 (u v w w' : L2VF_R3)
     convFormH1 u v (w + w') hu hv (memH1VF_R3_add hw hw') =
     convFormH1 u v w hu hv hw + convFormH1 u v w' hu hv hw' := by
   unfold convFormH1
-  rw [← neg_add, neg_inj, ← Finset.sum_add_distrib]
+  rw [← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun a _ => ?_
@@ -694,7 +688,7 @@ theorem convFormH1_smul_1 (c : ℝ) (u v w : L2VF_R3)
     convFormH1 (c • u) v w (memH1VF_R3_smul c hu) hv hw =
     c * convFormH1 u v w hu hv hw := by
   unfold convFormH1
-  rw [mul_neg, neg_inj, Finset.mul_sum]
+  rw [Finset.mul_sum]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [Finset.mul_sum]
   refine Finset.sum_congr rfl fun a _ => ?_
@@ -712,7 +706,7 @@ theorem convFormH1_smul_2 (c : ℝ) (u v w : L2VF_R3)
     convFormH1 u (c • v) w hu (memH1VF_R3_smul c hv) hw =
     c * convFormH1 u v w hu hv hw := by
   unfold convFormH1
-  rw [mul_neg, neg_inj, Finset.mul_sum]
+  rw [Finset.mul_sum]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [Finset.mul_sum]
   refine Finset.sum_congr rfl fun a _ => ?_
@@ -731,7 +725,7 @@ theorem convFormH1_smul_3 (c : ℝ) (u v w : L2VF_R3)
     convFormH1 u v (c • w) hu hv (memH1VF_R3_smul c hw) =
     c * convFormH1 u v w hu hv hw := by
   unfold convFormH1
-  rw [mul_neg, neg_inj, Finset.mul_sum]
+  rw [Finset.mul_sum]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [Finset.mul_sum]
   refine Finset.sum_congr rfl fun a _ => ?_
@@ -845,45 +839,40 @@ theorem convFormH1_eq_convFormSchwartz
       rw [hx, cxify_apply, Complex.ofReal_re]
     filter_upwards [huae, hwae, hgae] with x hux hwx hgx
     rw [hux, hwx, hgx]
-  -- Sum the (i,a) identities. convIntegralSchwartz has no leading minus; convFormH1 does.
+  -- Sum the (i,a) identities. Both convFormH1 and convIntegralSchwartz are positive sums;
+  -- after simp_rw the goal is definitionally equal.
   unfold convFormH1 convIntegralSchwartz
   simp_rw [hsummand]
-  -- ALLOW_SORRY: PR-2 (B5) — SIGN MISMATCH in the scaffold: with the FIXED `convFormH1` def
-  -- (leading minus) and the proven B2 weak-derivative sign (gradComp = +∂ₐvᵢ), the goal reduces
-  -- to `-(∑∑∫ ψu·∂ψv·ψw) = +(∑∑∫ ψu·∂ψv·ψw)`, i.e. `-X = X`, which is FALSE (X ≠ 0 in general).
-  -- The genuine identity is `convFormH1 u v w = -convFormSchwartz u v w`. Resolving B5 as stated
-  -- requires a lean-coder fix: drop the leading minus in the `convFormH1` def (B4 is sign-agnostic;
-  -- B6/B7 stay consistent). Not fixable in a proof body without changing the def/statement.
-  sorry -- ALLOW_SORRY: PR-2 (B5) scaffold SIGN MISMATCH (convFormH1 = -convFormSchwartz); needs lean-coder to drop the leading minus in the convFormH1 def. Not provable as stated in a proof body.
 
 /-! ### B6 — Antisymmetry in slots 2,3 -/
 
 /-- **B6a `convFormH1_ibp` [must-prove].** Integration by parts for `convFormH1`:
 moving the derivative from slot 2 to slots 1 and 3 using the weak IBP identity B2.
 
-For `u, v, w ∈ H1Sigma_R3`:
-  `convFormH1 u v w hu hv hw = ∑_{i,a} ∫ (∂ₐuₐ · vᵢ · wᵢ) + ∑_{i,a} ∫ (uₐ · vᵢ · ∂ₐwᵢ)`
+With the positive-sum definition `convFormH1 u v w = ∑_{i,a} ∫ uₐ·∂ₐvᵢ·wᵢ`, IBP via the
+Leibniz product rule `∂ₐ(vᵢ) = ∂ₐ(vᵢ·1)` gives:
+  `∫ uₐ·(∂ₐvᵢ)·wᵢ = -∫ (∂ₐuₐ)·vᵢ·wᵢ - ∫ uₐ·vᵢ·(∂ₐwᵢ)`
 
-(or equivalently, moving ∂ₐ from v to u or w). This is the first step in B6:
-after IBP, the div-free condition kills `∑_a ∂_a uₐ = 0` (B6b). -/
+so that `convFormH1 u v w = -∑_{i,a} ∫ (∂ₐuₐ · vᵢ · wᵢ) - ∑_{i,a} ∫ (uₐ · vᵢ · ∂ₐwᵢ)`.
+After IBP, the div-free condition kills the first sum via B6b. -/
 theorem convFormH1_ibp (u v w : L2VF_R3)
     (hu : memH1VF_R3 u) (hv : memH1VF_R3 v) (hw : memH1VF_R3 w)
     (hu_sigma : (u : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
     (hw_sigma : (w : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)) :
     convFormH1 u v w hu hv hw =
-    ∑ i : Fin 3, ∑ a : Fin 3,
+    -(∑ i : Fin 3, ∑ a : Fin 3,
       ∫ x : Domain3,
         (gradComp_of_memH1 u hu a a x).re *
         (L2VF_projComponentC_R3 i v x).re *
         (L2VF_projComponentC_R3 i w x).re
-      ∂(volume : Measure Domain3) +
+      ∂(volume : Measure Domain3)) -
     ∑ i : Fin 3, ∑ a : Fin 3,
       ∫ x : Domain3,
         (L2VF_projComponentC_R3 a u x).re *
         (L2VF_projComponentC_R3 i v x).re *
         (gradComp_of_memH1 w hw a i x).re
       ∂(volume : Measure Domain3) := by
-  sorry -- ALLOW_SORRY: PR-2 must-prove (B6a); proof via Leibniz product rule + B2 IBP identity applied to slot 2 of convFormH1
+  sorry -- ALLOW_SORRY: PR-2 must-prove (B6a); proof via Leibniz product rule + B2 IBP; with positive convFormH1 def, IBP gives two negative sums
 
 /-- **B6b `convFormH1_divFree` [must-prove].** The weak div-free identity for `H¹_σ` elements:
 for `u ∈ L2Sigma_R3 ∩ H1Sigma_R3`, the weak divergence vanishes:
@@ -949,13 +938,17 @@ theorem convFormH1_divFree (u : L2VF_R3) (hu : memH1VF_R3 u)
 
 for `u, v, w ∈ H1Sigma_R3` with `u, v, w ∈ L2Sigma_R3`.
 
-**Proof route (per CODEX CORRECTION §5 B6):**
-1. Apply B6a (IBP) to both `convFormH1 u v w` and `convFormH1 u w v`.
-2. In both, the first sum vanishes by B6b (div-free of u kills `∑_a ∂_a uₐ`).
-3. The second sum of `convFormH1 u v w` is `∑_{i,a} ∫ uₐ · vᵢ · ∂ₐwᵢ`.
-4. The second sum of `convFormH1 u w v` is `∑_{i,a} ∫ uₐ · wᵢ · ∂ₐvᵢ`.
-5. These are negatives by relabeling `i ↔ roles` + using `convFormH1 u v w hu hv hw = -(step 3)`.
-This gives `convFormH1 u v w = -(sum_{i,a} ∫ uₐ vᵢ ∂ₐwᵢ) = convFormH1 u w v` with sign flip. -/
+**Proof route:**
+1. Apply B6a (IBP) to `convFormH1 u v w`: gives `= -(∑∑∫ ∂uₐ·vᵢ·wᵢ) - ∑∑∫ uₐ·vᵢ·∂wᵢ`.
+2. The first term vanishes by B6b (div-free of u kills `∑_a ∂_a uₐ`).
+   So `convFormH1 u v w = -∑_{i,a} ∫ uₐ · vᵢ · ∂ₐwᵢ`.
+3. Similarly `convFormH1 u w v = -∑_{i,a} ∫ uₐ · wᵢ · ∂ₐvᵢ`.
+4. Note `∑_{i,a} ∫ uₐ · vᵢ · ∂ₐwᵢ = -convFormH1 u w v`
+   (because `convFormH1 u w v = ∑_{i,a} ∫ uₐ · ∂ₐwᵢ · vᵢ` before IBP, and after IBP equals
+   `-∑∑∫ uₐ·wᵢ·∂ₐvᵢ` ... actually the symmetric argument gives `b(u,v,w) + b(u,w,v) = 0`).
+   Concretely: B6a on `convFormH1 u v w` after div-free gives `-∑∑∫ uₐ·vᵢ·∂wᵢ`;
+   and B6a on `convFormH1 u w v` after div-free gives `-∑∑∫ uₐ·wᵢ·∂vᵢ = -convFormH1 u v w`
+   (by B6a + div-free), establishing `convFormH1 u v w = -convFormH1 u w v`. -/
 theorem convFormH1_antisymm (u v w : L2VF_R3)
     (hu : memH1VF_R3 u) (hv : memH1VF_R3 v) (hw : memH1VF_R3 w)
     (hu_sigma : (u : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
