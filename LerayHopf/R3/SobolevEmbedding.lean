@@ -1109,4 +1109,49 @@ theorem h1Sigma_dense_in_L2Sigma (u : L2Sigma_R3) :
     schwartzDivFree_dense_of_curlDense curlSchwartzDense_holds u
   exact ⟨s, fun n => memH1VF_R3_of_isSchwartzDivFree (hsdiv n), hstendsto⟩
 
+/-! ### B6 export — Schwartz `H¹`-approximants with gradient convergence
+
+This lemma packages the A3 approximant machinery as a public fact for use in
+`EnergyClassConvection.lean` (PR-2, B6a/B6/B7). It exposes that every `MemSobolev 1 2`
+element of `L2C_R3` admits Schwartz approximants converging simultaneously in L² to the
+function AND to its L² weak directional derivative.
+
+**No import cycle:** `SobolevEmbedding.lean` does NOT import `EnergyClassConvection.lean`;
+the statement uses only types available here (`L2C_R3`, `SchwartzMap`, `lineDerivOpCLM`,
+`MemSobolev`, `TemperedDistribution.lineDerivOp`/`memSobolev_zero_iff`) and the A3
+private machinery already in this file. -/
+
+/-- **B6 export: `schwartz_h1_gradConv`.**
+For `f : L2C_R3` in the `H^{1,2}` Sobolev space and any direction `m : Domain3`,
+there exists an L² weak directional derivative `g : L2C_R3` of `f` in direction `m`
+(i.e. `∂_m (f : 𝓢') = (g : 𝓢')` as tempered distributions) and a Schwartz sequence
+`φ : ℕ → SchwartzMap Domain3 ℂ` such that:
+- `φₙ.toLp 2 → f` in L² (Schwartz approximation of `f`), and
+- `(∂_m φₙ).toLp 2 → g` in L² (gradient convergence to the weak derivative).
+
+This makes the `private` A3 Fourier-approximant `φₙ = 𝓕⁻¹(smulLeftCLM wInv ηₙ)` and the
+`mulBdd wInv` multiplier publicly available for the B6a IBP argument in
+`EnergyClassConvection.lean`, which needs to pass from Schwartz IBP to H¹ IBP via approximation.
+
+**Proof plan (for prover pass):** The A3 proof of `gns_L6_of_memH1_R3` already builds the
+Schwartz sequence `φₙ = 𝓕⁻¹(smulLeftCLM wInv ηₙ)` with `φₙ.toLp 2 → f` (Step 6 of A3).
+For gradient convergence: `∂_m φₙ = 𝓕⁻¹(smulLeftCLM wInv (∂_m ηₙ))` (Fourier–lineDeriv
+commutation), and `(∂_m ηₙ).toLp → ∂_m f'` via `lineDerivOpCLM`-continuity + `hη`;
+then `mulBdd wInv` is a bounded multiplier sending `∂_m f'` to `g = mulBdd wInv (∂_m f')`,
+which is the L² representative of `∂_m (f : 𝓢')` by the spectral identity
+`TemperedDistribution.smulLeftCLM` + `fourier_ae_eq_wInv_smul`.  Alternatively, use
+`(hf.lineDerivOp).memSobolev_zero_iff.mp` directly to extract `g` then build `φₙ` via
+`denseRange_toLpCLM` applied to `g`, verifying gradient convergence via Fourier isometry. -/
+theorem schwartz_h1_gradConv (f : L2C_R3) (m : Domain3)
+    (hf : MemSobolev 1 2 (f : 𝓢'(Domain3, ℂ))) :
+    ∃ (g : L2C_R3)
+      (hg : (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ)))
+      (φ : ℕ → SchwartzMap Domain3 ℂ),
+      Filter.Tendsto (fun n => (φ n).toLp 2 (volume : Measure Domain3))
+          Filter.atTop (nhds f) ∧
+      Filter.Tendsto
+          (fun n => (∂_{m} (φ n)).toLp 2 (volume : Measure Domain3))
+          Filter.atTop (nhds g) := by
+  sorry -- ALLOW_SORRY: PR-2 Brick-1 export (prover pass) — assemble from A3's wInv/mulBdd/fourier_ae_eq_wInv_smul machinery; extract g via hf.lineDerivOp + memSobolev_zero_iff; build φₙ = 𝓕⁻¹(smulLeftCLM wInv ηₙ) as in gns_L6_of_memH1_R3 Step 6; gradient convergence via Fourier isometry + lineDerivOpCLM continuity
+
 end LerayHopf
