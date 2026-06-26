@@ -83,17 +83,28 @@ None — this file introduces no `axiom`/`opaque`. All sorry bodies are
 
 B1, B2 (`gradComponent_weakDeriv`), B3a, B3b, B4 (all six trilinearity lemmas), B5
 (`convFormH1_eq_convFormSchwartz`) and B6b (`convFormH1_divFree`) are proved sorry-free.
+
+The **H¹·H¹ weak Leibniz product rule** `∂ₐ(f·g) = (∂ₐf)g + f(∂ₐg)` (tested against a Schwartz
+function) — the stated remaining Brick — is now PROVED sorry-free as the `private` lemma
+`h1Leibniz2`, via the supporting infrastructure built in this file:
+- `reLp`/`mulRBdd`/`tendsto_mulRBdd`/`tendsto_integral_mul_mul` — the L²-inner-product limit engine;
+- `prodS`/`lineDerivOp_prodS`/`schwartzLeibniz2` — the classical Schwartz Leibniz IBP;
+- `reS`/`lineDerivOp_reS`/`reSchwartz_approx` — real-Schwartz approximants from `schwartz_h1_gradConv`
+  with simultaneous L²-value and one-direction L²-gradient convergence.
+
 Three targets remain marked `-- ALLOW_SORRY`:
 
 - **B6a** (`convFormH1_ibp`), **B6** (`convFormH1_antisymm`), **B7** (`convFormH1_bound_Schwartz`)
-  — gated on the weak Leibniz product rule `∂ₐ(uₐ·wᵢ) = (∂ₐuₐ)wᵢ + uₐ(∂ₐwᵢ)` (a distributional
-  identity for **two** H¹ factors), which is absent from mathlib (only the Schwartz×Schwartz IBP
-  `integral_bilinear_lineDerivOp_right_eq_neg_left` and no smooth-multiplier-×-distribution
-  Leibniz exist) and is a substantial analytic development (mollification + H¹-limit + L⁶·L²·L³
-  Hölder). B6 ⇒ B7 (CODEX route), and B6 ⇒ B6a. The PR-2 Brick-1 export
-  `LerayHopf.schwartz_h1_gradConv` (SobolevEmbedding.lean, simultaneous L² value- and
-  gradient-convergence of Schwartz approximants; axiom-clean) is now landed and is the smoothing
-  tool the eventual B6a proof will use; the remaining gap is exactly the Leibniz lemma itself.
+  — all reduce (via `h1Leibniz2` + B6b) to the **H¹-test extension**: extending the Schwartz-test
+  Leibniz/div-free identities to an H¹ test (the un-differentiated middle factor `vᵢ`). The single
+  open analytic sub-step is the **L³-convergence** of the single-direction Schwartz approximants:
+  the RHS term `∫(∂ₐuₐ·wᵢ)·vₙ` pairs `L^{3/2} = L²·L⁶` against `vₙ`, so it needs `vₙ → vᵢ` in `L³`,
+  while `schwartz_h1_gradConv` (single direction) yields only L²-value + one-direction-L²-gradient
+  convergence. L³-convergence follows from a uniform L⁶ bound (`‖ψₙ‖₆ ≤ C‖∇ψₙ‖₂` via GNS/A3, needing
+  the FULL gradient of a single approximant sequence) + interpolation `‖h‖₃ ≤ ‖h‖₂^{1/2}‖h‖₆^{1/2}`.
+  The full-gradient control requires a multi-direction variant of the `schwartz_h1_gradConv` export
+  (one `φₙ` converging in every direction) — a `lean-coder` signature change. After that, B6a/B6/B7
+  close mechanically from `h1Leibniz2`, B6b, and the interpolation.
 -/
 
 namespace LerayHopf
@@ -849,6 +860,361 @@ theorem convFormH1_eq_convFormSchwartz
   unfold convFormH1 convIntegralSchwartz
   simp_rw [hsummand]
 
+/-! ### B6 IBP infrastructure — H¹·H¹ weak Leibniz via Schwartz approximation
+
+The B6a integration-by-parts identity needs the distributional Leibniz rule
+`∂ₐ(f·g) = (∂ₐf)·g + f·(∂ₐg)` for two H¹ factors, tested against a Schwartz function.
+Mathlib has no such two-H¹-factor product rule, so we build it here by
+smooth-approximation: approximate both `f` and `g` (with their weak derivatives) by Schwartz
+sequences via `schwartz_h1_gradConv`, apply the classical Schwartz IBP
+`SchwartzMap.integral_bilinear_lineDerivOp_right_eq_neg_left`, and pass to the L²-limit.
+
+The limit passage rests on a single clean fact: if `aₙ → a` and `bₙ → b` in `L²(ℝ³)` and
+`h` is essentially bounded, then `∫ aₙ·bₙ·h → ∫ a·b·h`, proved by writing the integral as
+the real `L²` inner product `⟪aₙ, (h·bₙ)⟫` and using joint continuity of `inner`. -/
+
+/-- The real-part map `L²(ℝ³;ℂ) → L²(ℝ³;ℝ)` as a continuous linear map (via `Complex.reCLM`). -/
+private noncomputable def reLp : L2C_R3 →L[ℝ] Lp ℝ 2 (volume : Measure Domain3) :=
+  Complex.reCLM.compLpL 2 (volume : Measure Domain3)
+
+private theorem reLp_coeFn (f : L2C_R3) :
+    (reLp f : Domain3 → ℝ) =ᵐ[volume] fun x => (f x).re := by
+  filter_upwards [ContinuousLinearMap.coeFn_compLpL Complex.reCLM f] with x hx
+  rw [reLp]; rw [hx]; rfl
+
+/-- Multiplication of a real `L²` element by an essentially bounded real function, landing in
+`L²`. Built directly (not as a CLM) — we only need its `coeFn` and an `L²`-Lipschitz bound. -/
+private noncomputable def mulRBdd (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3)) (a : Lp ℝ 2 (volume : Measure Domain3)) :
+    Lp ℝ 2 (volume : Measure Domain3) :=
+  (((Lp.memLp a).smul (p := ⊤) (q := 2) (r := 2) hh)).toLp
+
+private theorem mulRBdd_coeFn (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3)) (a : Lp ℝ 2 (volume : Measure Domain3)) :
+    (mulRBdd h hh a : Domain3 → ℝ) =ᵐ[volume] fun x => h x * a x := by
+  filter_upwards [MemLp.coeFn_toLp (((Lp.memLp a).smul (p := ⊤) (q := 2) (r := 2) hh))]
+    with x hx
+  rw [mulRBdd]; rw [hx]; rfl
+
+/-- `mulRBdd` is additive (used to express the difference of two multiplier images). -/
+private theorem mulRBdd_sub (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3)) (a b : Lp ℝ 2 (volume : Measure Domain3)) :
+    mulRBdd h hh a - mulRBdd h hh b = mulRBdd h hh (a - b) := by
+  apply Lp.ext
+  filter_upwards [Lp.coeFn_sub (mulRBdd h hh a) (mulRBdd h hh b), mulRBdd_coeFn h hh a,
+    mulRBdd_coeFn h hh b, mulRBdd_coeFn h hh (a - b), Lp.coeFn_sub a b] with x h1 h2 h3 h4 h5
+  rw [h1, Pi.sub_apply, h2, h3, h4, h5, Pi.sub_apply, mul_sub]
+
+/-- `L²`-norm bound for the multiplier: `‖mulRBdd h c‖ ≤ ‖h‖_∞ · ‖c‖`. -/
+private theorem norm_mulRBdd_le (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3)) (c : Lp ℝ 2 (volume : Measure Domain3)) :
+    ‖mulRBdd h hh c‖ ≤ (eLpNorm h ⊤ (volume : Measure Domain3)).toReal * ‖c‖ := by
+  have hnorm : ‖mulRBdd h hh c‖
+      = (eLpNorm (h • (c : Domain3 → ℝ)) 2 (volume : Measure Domain3)).toReal :=
+    Lp.norm_toLp _ _
+  have hcnorm : ‖c‖ = (eLpNorm c 2 (volume : Measure Domain3)).toReal := Lp.norm_def c
+  rw [hnorm, hcnorm, ← ENNReal.toReal_mul]
+  refine ENNReal.toReal_mono
+    (ENNReal.mul_ne_top hh.eLpNorm_lt_top.ne (Lp.memLp c).eLpNorm_lt_top.ne) ?_
+  exact eLpNorm_smul_le_mul_eLpNorm (Lp.aestronglyMeasurable _) hh.aestronglyMeasurable
+
+/-- The bounded multiplier sends an `L²`-convergent sequence to an `L²`-convergent sequence. -/
+private theorem tendsto_mulRBdd (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3))
+    {a : ℕ → Lp ℝ 2 (volume : Measure Domain3)} {a₀ : Lp ℝ 2 (volume : Measure Domain3)}
+    (ha : Filter.Tendsto a Filter.atTop (nhds a₀)) :
+    Filter.Tendsto (fun n => mulRBdd h hh (a n)) Filter.atTop (nhds (mulRBdd h hh a₀)) := by
+  rw [tendsto_iff_norm_sub_tendsto_zero] at ha ⊢
+  set C : ℝ := (eLpNorm h ⊤ (volume : Measure Domain3)).toReal with hC
+  have hbound : ∀ n, ‖mulRBdd h hh (a n) - mulRBdd h hh a₀‖ ≤ C * ‖a n - a₀‖ := by
+    intro n; rw [mulRBdd_sub]; exact norm_mulRBdd_le h hh (a n - a₀)
+  refine squeeze_zero (fun n => norm_nonneg _) hbound ?_
+  simpa using ha.const_mul C
+
+/-- The integral `∫ a·b·h` over `ℝ³` for real `L²` elements `a, b` and bounded `h` equals the
+real `L²` inner product `⟪a, mulRBdd h b⟫`. -/
+private theorem integral_mul_mul_eq_inner (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3))
+    (a b : Lp ℝ 2 (volume : Measure Domain3)) :
+    ∫ x : Domain3, (a x) * (b x) * (h x) ∂(volume : Measure Domain3)
+      = (inner ℝ a (mulRBdd h hh b) : ℝ) := by
+  rw [MeasureTheory.L2.inner_def]
+  refine MeasureTheory.integral_congr_ae ?_
+  filter_upwards [mulRBdd_coeFn h hh b] with x hx
+  rw [RCLike.inner_apply, hx, conj_trivial]; ring
+
+/-- **Core limit lemma.** If `aₙ → a` and `bₙ → b` in `L²(ℝ³;ℝ)` and `h` is essentially bounded,
+then `∫ aₙ·bₙ·h → ∫ a·b·h`. (Real `L²` inner product is jointly continuous.) -/
+private theorem tendsto_integral_mul_mul (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3))
+    {a b : ℕ → Lp ℝ 2 (volume : Measure Domain3)}
+    {a₀ b₀ : Lp ℝ 2 (volume : Measure Domain3)}
+    (ha : Filter.Tendsto a Filter.atTop (nhds a₀))
+    (hb : Filter.Tendsto b Filter.atTop (nhds b₀)) :
+    Filter.Tendsto (fun n => ∫ x : Domain3, (a n x) * (b n x) * (h x) ∂(volume : Measure Domain3))
+      Filter.atTop (nhds (∫ x : Domain3, (a₀ x) * (b₀ x) * (h x) ∂(volume : Measure Domain3))) := by
+  have heq : (fun n => ∫ x : Domain3, (a n x) * (b n x) * (h x) ∂(volume : Measure Domain3))
+      = fun n => (inner ℝ (a n) (mulRBdd h hh (b n)) : ℝ) := by
+    funext n; exact integral_mul_mul_eq_inner h hh (a n) (b n)
+  rw [heq, integral_mul_mul_eq_inner h hh a₀ b₀]
+  exact ha.inner (tendsto_mulRBdd h hh hb)
+
+/-! #### Schwartz-level Leibniz product rule -/
+
+/-- The pointwise product of two real Schwartz functions, as a Schwartz function. -/
+private noncomputable def prodS (f g : SchwartzMap Domain3 ℝ) : SchwartzMap Domain3 ℝ :=
+  SchwartzMap.bilinLeftCLM (ContinuousLinearMap.mul ℝ ℝ) g.hasTemperateGrowth f
+
+private theorem prodS_apply (f g : SchwartzMap Domain3 ℝ) (x : Domain3) :
+    (prodS f g) x = f x * g x := by
+  simp [prodS, SchwartzMap.bilinLeftCLM_apply]
+
+/-- Classical Leibniz rule for the directional derivative of a Schwartz product. -/
+private theorem lineDerivOp_prodS (f g : SchwartzMap Domain3 ℝ) (v x : Domain3) :
+    (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) v (prodS f g)) x
+      = (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) v f) x * g x
+        + f x * (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) v g) x := by
+  simp only [LineDeriv.lineDerivOpCLM_apply]
+  have hf : HasDerivAt (fun t : ℝ => f (x + t • v)) ((fderiv ℝ (⇑f) x) v) 0 :=
+    (SchwartzMap.hasFDerivAt f x).hasLineDerivAt v
+  have hg : HasDerivAt (fun t : ℝ => g (x + t • v)) ((fderiv ℝ (⇑g) x) v) 0 :=
+    (SchwartzMap.hasFDerivAt g x).hasLineDerivAt v
+  have hmul := hf.mul hg
+  rw [zero_smul, add_zero] at hmul
+  have hfun : ((fun t : ℝ => f (x + t • v)) * fun t : ℝ => g (x + t • v))
+      = fun t : ℝ => (prodS f g) (x + t • v) := by funext t; rw [prodS_apply]; rfl
+  rw [hfun] at hmul
+  have hline : HasLineDerivAt ℝ (⇑(prodS f g))
+      ((fderiv ℝ (⇑f) x) v * g x + f x * (fderiv ℝ (⇑g) x) v) x v := hmul
+  rw [lineDerivOp_apply, hline.lineDeriv, lineDerivOp_apply, lineDerivOp_apply,
+    (SchwartzMap.hasFDerivAt f x).hasLineDerivAt v |>.lineDeriv,
+    (SchwartzMap.hasFDerivAt g x).hasLineDerivAt v |>.lineDeriv]
+
+/-- **Schwartz-level Leibniz IBP.** For real Schwartz `f, g, φ` and direction `eₐ`:
+`∫ f·g·(∂ₐφ) = -∫ (∂ₐf·g + f·∂ₐg)·φ`. -/
+private theorem schwartzLeibniz2 (f g φ : SchwartzMap Domain3 ℝ) (a : Fin 3) :
+    ∫ x : Domain3, (f x) * (g x)
+        * (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) φ) x
+        ∂(volume : Measure Domain3)
+      = -∫ x : Domain3,
+          ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) f) x * g x
+            + f x * (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) g) x)
+          * (φ x) ∂(volume : Measure Domain3) := by
+  set m : Domain3 := EuclideanSpace.single a (1 : ℝ) with hm
+  -- Schwartz IBP for the product `prodS f g` against `φ`.
+  have hibp := SchwartzMap.integral_bilinear_lineDerivOp_right_eq_neg_left
+    (μ := (volume : Measure Domain3)) (prodS f g) φ (ContinuousLinearMap.mul ℝ ℝ) m
+  simp only [ContinuousLinearMap.mul_apply',
+    ← LineDeriv.lineDerivOpCLM_apply (R := ℝ) (E := SchwartzMap Domain3 ℝ)] at hibp
+  -- `hibp : ∫ (prodS f g)·∂ₘφ = -∫ ∂ₘ(prodS f g)·φ`. Rewrite both integrands.
+  rw [show (fun x => (prodS f g) x * (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m φ) x)
+        = fun x => (f x) * (g x) * (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m φ) x by
+        funext x; rw [prodS_apply],
+      show (fun x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m (prodS f g)) x * (φ x))
+        = fun x => ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m f) x * g x
+            + f x * (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m g) x) * (φ x) by
+        funext x; rw [lineDerivOp_prodS]] at hibp
+  exact hibp
+
+/-! #### Real-part of a complex Schwartz function, as a real Schwartz function -/
+
+/-- The real part of a complex Schwartz function, as a real Schwartz function (post-composition
+with `Complex.reCLM`). -/
+private noncomputable def reS (φ : SchwartzMap Domain3 ℂ) : SchwartzMap Domain3 ℝ :=
+  φ.postcompCLM Complex.reCLM
+
+private theorem reS_apply (φ : SchwartzMap Domain3 ℂ) (x : Domain3) : (reS φ) x = (φ x).re := by
+  rw [reS, SchwartzMap.postcompCLM_apply]; rfl
+
+/-- The directional derivative of the real part is the real part of the directional derivative. -/
+private theorem lineDerivOp_reS (φ : SchwartzMap Domain3 ℂ) (m x : Domain3) :
+    (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m (reS φ)) x
+      = ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ) m φ) x).re := by
+  simp only [LineDeriv.lineDerivOpCLM_apply, lineDerivOp_apply]
+  have hφ : HasDerivAt (fun t : ℝ => φ (x + t • m)) ((fderiv ℝ (⇑φ) x) m) 0 :=
+    (SchwartzMap.hasFDerivAt φ x).hasLineDerivAt m
+  have hcomp := Complex.reCLM.hasFDerivAt.comp_hasDerivAt 0 hφ
+  simp only [Function.comp_def] at hcomp
+  have hfun : (fun t : ℝ => Complex.reCLM (φ (x + t • m))) = fun t : ℝ => (reS φ) (x + t • m) := by
+    funext t; rw [reS_apply]; rfl
+  rw [hfun] at hcomp
+  have hl : HasLineDerivAt ℝ (⇑(reS φ)) (Complex.reCLM ((fderiv ℝ (⇑φ) x) m)) x m := hcomp
+  rw [hl.lineDeriv, (SchwartzMap.hasFDerivAt φ x).hasLineDerivAt m |>.lineDeriv]; rfl
+
+/-- The real `L²` class of `reS φ` is the real part `reLp` of the complex `L²` class of `φ`. -/
+private theorem reS_toLp_eq_reLp (φ : SchwartzMap Domain3 ℂ) :
+    (reS φ).toLp 2 (volume : Measure Domain3)
+      = reLp (φ.toLp 2 (volume : Measure Domain3)) := by
+  apply Lp.ext
+  filter_upwards [(reS φ).coeFn_toLp 2 (volume : Measure Domain3),
+    reLp_coeFn (φ.toLp 2 (volume : Measure Domain3)),
+    φ.coeFn_toLp 2 (volume : Measure Domain3)] with x h1 h2 h3
+  rw [h1, h2, h3, reS_apply]
+
+/-- **Per-component Schwartz approximation with real-part gradient convergence.**
+For `f : L2C_R3` in `H^{1,2}` and direction `eₐ` whose weak derivative distribution equals
+`(g : 𝓢')`, there is a real Schwartz sequence `ψₙ` with `(ψₙ).toLp → reLp f` and
+`(∂ₐψₙ).toLp → reLp g` in `Lp ℝ 2`. -/
+private theorem reSchwartz_approx (f g : L2C_R3) (a : Fin 3)
+    (hf : MemSobolev 1 2 (f : 𝓢'(Domain3, ℂ)))
+    (hg : (∂_{EuclideanSpace.single a (1 : ℝ)} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ))) :
+    ∃ ψ : ℕ → SchwartzMap Domain3 ℝ,
+      Filter.Tendsto (fun n => (ψ n).toLp 2 (volume : Measure Domain3))
+          Filter.atTop (nhds (reLp f)) ∧
+      Filter.Tendsto (fun n =>
+          (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) (ψ n)).toLp 2
+            (volume : Measure Domain3))
+          Filter.atTop (nhds (reLp g)) := by
+  obtain ⟨g', hg', φ, hφf, hφg⟩ := schwartz_h1_gradConv f (EuclideanSpace.single a (1 : ℝ)) hf
+  -- g' and g are both L² representatives of the same distribution `∂ₐ(f:𝓢')`, hence equal.
+  have hgg' : g' = g := L2C_eq_of_toTempered_eq (by rw [← hg', hg])
+  subst hgg'
+  refine ⟨fun n => reS (φ n), ?_, ?_⟩
+  · -- (reS φₙ).toLp = reLp (φₙ.toLp) → reLp f.
+    have heq : (fun n => (reS (φ n)).toLp 2 (volume : Measure Domain3))
+        = fun n => reLp (φ n |>.toLp 2 (volume : Measure Domain3)) := by
+      funext n; exact reS_toLp_eq_reLp (φ n)
+    rw [heq]; exact (reLp.continuous.tendsto f).comp hφf
+  · -- (∂ₐ(reS φₙ)).toLp = reLp ((∂ₐφₙ).toLp) → reLp g'.
+    have heq : (fun n =>
+        (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) (reS (φ n))).toLp
+          2 (volume : Measure Domain3))
+        = fun n => reLp ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
+            (EuclideanSpace.single a (1 : ℝ)) (φ n)).toLp 2 (volume : Measure Domain3)) := by
+      funext n
+      apply Lp.ext
+      filter_upwards [(lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+          (EuclideanSpace.single a (1 : ℝ)) (reS (φ n))).coeFn_toLp 2 (volume : Measure Domain3),
+        reLp_coeFn ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
+          (EuclideanSpace.single a (1 : ℝ)) (φ n)).toLp 2 (volume : Measure Domain3)),
+        (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
+          (EuclideanSpace.single a (1 : ℝ)) (φ n)).coeFn_toLp 2 (volume : Measure Domain3)]
+        with x h1 h2 h3
+      rw [h1, h2, h3, lineDerivOp_reS]
+    rw [heq]
+    -- ∂ₐ in ℂ corresponds via toLp to `∂_{eₐ}(φₙ)`; hφg : (∂ₐφₙ).toLp → g'.
+    have hφg' : Filter.Tendsto (fun n =>
+        (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ) (EuclideanSpace.single a (1 : ℝ)) (φ n)).toLp 2
+          (volume : Measure Domain3)) Filter.atTop (nhds g') := hφg
+    exact (reLp.continuous.tendsto g').comp hφg'
+
+/-! #### H¹·H¹ weak Leibniz product rule (the analytic heart of B6a) -/
+
+/-- Integrability of a triple product of real Schwartz functions. -/
+private theorem Schwartz_mul_mul_integrable (ψ ψ' φ : SchwartzMap Domain3 ℝ) :
+    MeasureTheory.Integrable (fun x => (ψ x) * (ψ' x) * (φ x)) (volume : Measure Domain3) := by
+  have := (SchwartzMap.bilinLeftCLM (ContinuousLinearMap.mul ℝ ℝ) φ.hasTemperateGrowth
+    (SchwartzMap.bilinLeftCLM (ContinuousLinearMap.mul ℝ ℝ) ψ'.hasTemperateGrowth ψ)).integrable
+    (μ := (volume : Measure Domain3))
+  refine this.congr ?_
+  filter_upwards with x
+  simp only [SchwartzMap.bilinLeftCLM_apply, ContinuousLinearMap.mul_apply']
+
+/-- Integrability of `(f.re)·(g.re)·φ` for `f, g : L2C_R3` and a real Schwartz test `φ`
+(Hölder `L²·L²·L^∞`). -/
+private theorem reInt_integrable (f g : L2C_R3) (φ : SchwartzMap Domain3 ℝ) :
+    MeasureTheory.Integrable (fun x => (f x).re * (g x).re * (φ x)) (volume : Measure Domain3) := by
+  have hfre : MemLp (fun x => (f x).re) 2 (volume : Measure Domain3) := (Lp.memLp f).re
+  have hgre : MemLp (fun x => (g x).re) 2 (volume : Measure Domain3) := (Lp.memLp g).re
+  have hφ : MemLp (fun x => φ x) ⊤ (volume : Measure Domain3) := φ.memLp_top (volume : Measure Domain3)
+  have hfg : MemLp (fun x => (f x).re * (g x).re) 1 (volume : Measure Domain3) :=
+    hgre.mul (p := 2) (q := 2) (r := 1) hfre
+  have hp := hfg.mul (p := ⊤) (q := 1) (r := 1) hφ
+  rw [memLp_one_iff_integrable] at hp
+  refine hp.congr ?_
+  filter_upwards with x
+  simp only [Pi.mul_apply]; ring
+
+/-- For a real Schwartz `ψ` and an essentially bounded `h`, the integral of `ψ·ψ'·h` (Schwartz
+values) equals the same integral with the `L²`-classes of `ψ, ψ'` (a.e. equal to `ψ, ψ'`). -/
+private theorem integral_schwartz_eq_toLp (ψ ψ' : SchwartzMap Domain3 ℝ) (h : Domain3 → ℝ) :
+    ∫ x : Domain3, (ψ x) * (ψ' x) * (h x) ∂(volume : Measure Domain3)
+      = ∫ x : Domain3, ((ψ.toLp 2 (volume : Measure Domain3)) x)
+          * ((ψ'.toLp 2 (volume : Measure Domain3)) x) * (h x) ∂(volume : Measure Domain3) := by
+  refine MeasureTheory.integral_congr_ae ?_
+  filter_upwards [ψ.coeFn_toLp 2 (volume : Measure Domain3),
+    ψ'.coeFn_toLp 2 (volume : Measure Domain3)] with x hx hx'
+  rw [hx, hx']
+
+/-- **H¹·H¹ weak Leibniz.** For `f, g : L2C_R3` in `H^{1,2}` with weak `eₐ`-derivatives
+`fG, gG` (i.e. `∂ₐ(f:𝓢') = (fG:𝓢')`, `∂ₐ(g:𝓢') = (gG:𝓢')`), and any real Schwartz `φ`:
+
+  `∫ (f.re)·(g.re)·(∂ₐφ) = -∫ ((fG.re)·(g.re) + (f.re)·(gG.re))·φ`.
+
+Proved by approximating `f, g, fG, gG` by Schwartz sequences (`reSchwartz_approx`), applying
+the classical Schwartz Leibniz IBP (`schwartzLeibniz2`), and passing to the `L²` limit
+(`tendsto_integral_mul_mul`). -/
+private theorem h1Leibniz2 (f g fG gG : L2C_R3) (a : Fin 3)
+    (hf : MemSobolev 1 2 (f : 𝓢'(Domain3, ℂ)))
+    (hg : MemSobolev 1 2 (g : 𝓢'(Domain3, ℂ)))
+    (hfG : (∂_{EuclideanSpace.single a (1 : ℝ)} (f : 𝓢'(Domain3, ℂ))) = (fG : 𝓢'(Domain3, ℂ)))
+    (hgG : (∂_{EuclideanSpace.single a (1 : ℝ)} (g : 𝓢'(Domain3, ℂ))) = (gG : 𝓢'(Domain3, ℂ)))
+    (φ : SchwartzMap Domain3 ℝ) :
+    ∫ x : Domain3, (f x).re * (g x).re
+        * (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) φ) x
+        ∂(volume : Measure Domain3)
+      = -∫ x : Domain3,
+          ((fG x).re * (g x).re + (f x).re * (gG x).re) * (φ x)
+          ∂(volume : Measure Domain3) := by
+  classical
+  set m : Domain3 := EuclideanSpace.single a (1 : ℝ) with hm
+  -- Schwartz approximants for f and g.
+  obtain ⟨ψf, hψf_val, hψf_grad⟩ := reSchwartz_approx f fG a hf hfG
+  obtain ⟨ψg, hψg_val, hψg_grad⟩ := reSchwartz_approx g gG a hg hgG
+  -- Essential boundedness of the test functions `∂ₐφ` and `φ`.
+  have hdφ_bdd : MemLp (fun x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m φ) x) ⊤
+      (volume : Measure Domain3) :=
+    (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m φ).memLp_top (volume : Measure Domain3)
+  have hφ_bdd : MemLp (fun x => φ x) ⊤ (volume : Measure Domain3) :=
+    φ.memLp_top (volume : Measure Domain3)
+  -- The three convergent integral sequences (LHS and the two RHS terms).
+  set LHS : ℕ → ℝ := fun n => ∫ x : Domain3, ((ψf n).toLp 2 (volume : Measure Domain3) x)
+      * ((ψg n).toLp 2 (volume : Measure Domain3) x)
+      * (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m φ) x ∂(volume : Measure Domain3) with hLHSdef
+  set R1 : ℕ → ℝ := fun n => ∫ x : Domain3,
+      ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m (ψf n)).toLp 2 (volume : Measure Domain3) x)
+        * ((ψg n).toLp 2 (volume : Measure Domain3) x) * (φ x) ∂(volume : Measure Domain3)
+    with hR1def
+  set R2 : ℕ → ℝ := fun n => ∫ x : Domain3, ((ψf n).toLp 2 (volume : Measure Domain3) x)
+      * ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m (ψg n)).toLp 2 (volume : Measure Domain3) x)
+        * (φ x) ∂(volume : Measure Domain3) with hR2def
+  -- Per-n Schwartz Leibniz identity: `LHS n = -(R1 n + R2 n)`.
+  have hper : ∀ n, LHS n = -(R1 n + R2 n) := by
+    intro n
+    have hL := schwartzLeibniz2 (ψf n) (ψg n) φ a
+    rw [← hm] at hL
+    rw [hLHSdef, hR1def, hR2def]
+    simp only
+    rw [← integral_schwartz_eq_toLp (ψf n) (ψg n),
+      ← integral_schwartz_eq_toLp (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m (ψf n)) (ψg n) φ,
+      ← integral_schwartz_eq_toLp (ψf n) (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m (ψg n)) φ]
+    rw [hL]
+    rw [← MeasureTheory.integral_add (Schwartz_mul_mul_integrable _ _ φ)
+      (Schwartz_mul_mul_integrable _ _ φ)]
+    refine congrArg Neg.neg (MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_))
+    intro x; ring
+  -- Limits of each sequence (rewriting the limit point via `reLp_coeFn`).
+  have hLHS : Filter.Tendsto LHS Filter.atTop (nhds (∫ x : Domain3, (f x).re * (g x).re
+      * (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) m φ) x ∂(volume : Measure Domain3))) := by
+    have h := tendsto_integral_mul_mul _ hdφ_bdd hψf_val hψg_val
+    refine h.mono_right (le_of_eq (congrArg nhds (MeasureTheory.integral_congr_ae ?_)))
+    filter_upwards [reLp_coeFn f, reLp_coeFn g] with x hxf hxg; rw [hxf, hxg]
+  have hR1 : Filter.Tendsto R1 Filter.atTop (nhds (∫ x : Domain3, (fG x).re * (g x).re * (φ x)
+      ∂(volume : Measure Domain3))) := by
+    have h := tendsto_integral_mul_mul _ hφ_bdd hψf_grad hψg_val
+    refine h.mono_right (le_of_eq (congrArg nhds (MeasureTheory.integral_congr_ae ?_)))
+    filter_upwards [reLp_coeFn fG, reLp_coeFn g] with x hxf hxg; rw [hxf, hxg]
+  have hR2 : Filter.Tendsto R2 Filter.atTop (nhds (∫ x : Domain3, (f x).re * (gG x).re * (φ x)
+      ∂(volume : Measure Domain3))) := by
+    have h := tendsto_integral_mul_mul _ hφ_bdd hψf_val hψg_grad
+    refine h.mono_right (le_of_eq (congrArg nhds (MeasureTheory.integral_congr_ae ?_)))
+    filter_upwards [reLp_coeFn f, reLp_coeFn gG] with x hxf hxg; rw [hxf, hxg]
+  -- Uniqueness of the limit: LHS limit = -(R1 limit + R2 limit).
+  have huniq := tendsto_nhds_unique hLHS ((hR1.add hR2).neg.congr (fun n => (hper n).symm))
+  rw [huniq, ← MeasureTheory.integral_add (reInt_integrable fG g φ) (reInt_integrable f gG φ)]
+  refine congrArg Neg.neg (MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_))
+  intro x; ring
+
 /-! ### B6 — Antisymmetry in slots 2,3 -/
 
 /-- **B6a `convFormH1_ibp` [must-prove].** Integration by parts for `convFormH1`:
@@ -877,7 +1243,7 @@ theorem convFormH1_ibp (u v w : L2VF_R3)
         (L2VF_projComponentC_R3 i v x).re *
         (gradComp_of_memH1 w hw a i x).re
       ∂(volume : Measure Domain3) := by
-  sorry -- ALLOW_SORRY: PR-2 (B6a) BLOCKED on the H¹·H¹ weak Leibniz product rule ∂ₐ(uₐ·wᵢ)=(∂ₐuₐ)wᵢ+uₐ(∂ₐwᵢ) as a distributional identity for two H¹ factors (uₐ, wᵢ). Mathlib has NO weak-derivative product rule for an H¹·H¹ product (only the Schwartz `integral_bilinear_lineDerivOp_right_eq_neg_left` for two Schwartz factors); the smooth-multiplier × distribution Leibniz (`lineDerivOp` ∘ `smulLeftCLM`) is also absent. Sound discharge needs a from-scratch mollification development (smooth-approx uₐ,wᵢ via Brick-1 `schwartz_h1_gradConv`, classical Leibniz, then H¹-limit + L⁶·L²·L³ Hölder continuity). Brick-1 (schwartz_h1_gradConv) is now available and axiom-clean; the remaining gap is exactly this Leibniz lemma.
+  sorry -- ALLOW_SORRY: PR-2 (B6a). The H¹·H¹ weak Leibniz product rule `h1Leibniz2` is now PROVED sorry-free (the stated Brick). B6a's per-(i,a) identity `∫ uₐ·(∂ₐvᵢ)·wᵢ = -∫(∂ₐuₐ)·vᵢ·wᵢ - ∫uₐ·vᵢ·(∂ₐwᵢ)` follows by applying `h1Leibniz2 uₐ wᵢ (∂ₐuₐ) (∂ₐwᵢ)` against Schwartz approximants `vₙ→vᵢ` of the H¹ test vᵢ and limiting. The ONLY remaining gap is the H¹-test extension: the RHS term ∫(∂ₐuₐ·wᵢ)·vₙ pairs L^{3/2}=(L²·L⁶) against vₙ, requiring vₙ→vᵢ in L³, whereas the single-direction `schwartz_h1_gradConv` export yields only L²-value + one-direction-L²-gradient convergence (`reSchwartz_approx`). L³ convergence needs a uniform L⁶ bound on the approximants (GNS `‖ψₙ‖₆≤C‖∇ψₙ‖₂`, needing the FULL gradient of a single approximant sequence) + interpolation `‖h‖₃≤‖h‖₂^{1/2}‖h‖₆^{1/2}` — i.e. a multi-direction variant of the SobolevEmbedding export (lean-coder signature change). All other ingredients are available and proved.
 
 /-- **B6b `convFormH1_divFree` [must-prove].** The weak div-free identity for `H¹_σ` elements:
 for `u ∈ L2Sigma_R3 ∩ H1Sigma_R3`, the weak divergence vanishes:
@@ -960,7 +1326,7 @@ theorem convFormH1_antisymm (u v w : L2VF_R3)
     (hv_sigma : (v : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
     (hw_sigma : (w : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)) :
     convFormH1 u v w hu hv hw = -convFormH1 u w v hu hw hv := by
-  sorry -- ALLOW_SORRY: PR-2 (B6) DEPENDS ON B6a; transitively blocked on the same H¹·H¹ weak Leibniz product rule (see convFormH1_ibp). Given B6a + B6b (proved), B6 closes by reindexing and the div-free cancellation of ∑ₐ(∂ₐuₐ)vᵢwᵢ; the only missing pillar is B6a.
+  sorry -- ALLOW_SORRY: PR-2 (B6) DEPENDS ON B6a (and the H¹-test div-free of ∑ₐ(∂ₐuₐ)vᵢwᵢ). The H¹·H¹ weak Leibniz `h1Leibniz2` (the stated Brick) is now PROVED sorry-free. B6 closes from B6a + the H¹-test div-free; both reduce to the H¹-test extension of the Schwartz identities, whose only open sub-step is the L³-convergence of single-direction Schwartz approximants (needs the multi-direction Brick-1 variant; see convFormH1_ibp).
 
 /-! ### B7 — L²-norm bound for fixed Schwartz test (CODEX CORRECTION route) -/
 
@@ -995,6 +1361,6 @@ theorem convFormH1_bound_Schwartz (u v w : L2VF_R3)
     (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) :
     ∃ C_w : ℝ, 0 ≤ C_w ∧
       |convFormH1 u v w hu hv hw_H1| ≤ C_w * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖ := by
-  sorry -- ALLOW_SORRY: PR-2 (B7) DEPENDS ON B6 (and hence B6a). The L²·L² bound REQUIRES moving the derivative off v onto the Schwartz test w (antisymmetry/IBP): a direct estimate only yields C_w·‖u‖₂·‖v‖_{H¹} (the ∂ₐvᵢ factor is bounded by ‖v‖_{H¹}, not ‖v‖₂), so the ‖v‖₂ conclusion genuinely needs B6. Transitively blocked on the same H¹·H¹ weak Leibniz pillar (see convFormH1_ibp).
+  sorry -- ALLOW_SORRY: PR-2 (B7) DEPENDS ON B6/B6a. The H¹·H¹ weak Leibniz `h1Leibniz2` (the stated Brick) is now PROVED sorry-free. With w Schwartz, h1Leibniz2 (f:=uₐ, g:=vᵢ, test φ:=wᵢ) gives convFormH1 u v w = -∑ᵢₐ∫ uₐ·vᵢ·(∂ₐwᵢ) - ∑ᵢₐ∫(∂ₐuₐ)·vᵢ·wᵢ; the L²·L² bound then needs the H¹-test div-free cancellation of the second sum ∑ₐ(∂ₐuₐ)(vᵢwᵢ) (a direct estimate of it yields only C_w·‖u‖_{H¹}·‖v‖₂). That div-free against the H¹ test vᵢwᵢ is the same H¹-test extension as B6a — open only at the L³-convergence sub-step (multi-direction Brick-1 variant; see convFormH1_ibp).
 
 end LerayHopf
