@@ -73,6 +73,7 @@ import LerayHopf.R3.ConvectionOperator
 import LerayHopf.R3.ConvectionForm
 import LerayHopf.R3.SobolevEmbedding
 import LerayHopf.R3.EnergyClassConvection
+import LerayHopf.R3.ConvectionExtension  -- PR-3: C0–C10 scaffold for full ConvectionGapOp construction
 
 -- Bochner layer (sorry-carrying)
 import LerayHopf.Bochner.GelfandTriple
