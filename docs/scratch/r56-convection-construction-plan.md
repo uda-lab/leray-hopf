@@ -202,8 +202,20 @@ Imports: `EnergyClassConvection.lean`, mathlib `LinearAlgebra/Basis/VectorSpace`
 
 - **C1 `convFormH1_linearMap`** [must-prove]: the trilinear tower `H1Sigma_submodule →ₗ[ℝ] H1Sigma_submodule →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] ℝ` from B4. NOTE: slot 3 can be extended to all `L2Sigma_R3` because at fixed `u,v ∈ H1_sigma`, `w ↦ convFormH1 u v w` is an integral that is actually linear for `w ∈ L²` (NOT requiring `hw : memH1VF_R3 w`) when the integrability follows from `u ∈ L⁶`, `∂v ∈ L²`, and Hölder `L^p·L^q·L^r` with `r=∞` for Schwartz `w` — or from B7's L²-uniform bound + density. This is the ONLY slot where slot-3 linearity can be seen directly without requiring `hw`. Confirm this precise statement before proceeding.
   - **⚠️ CODEX CORRECTION (PR-1 #58 review):** the "linear for w ∈ L² directly from the integral" hope is FALSE — with the derivative on v, `u·∂v ∈ L^{3/2}` pairs naturally with `w ∈ L³`, NOT arbitrary `w ∈ L²` on infinite-measure ℝ³. So slot-3 linearity/totality over all `L2Sigma_R3` does NOT come from the integral; it comes from the **Hamel algebraic extension (C3/`LinearMap.exists_extend`)**. b_cont_fixedTest is preserved NOT by extending slot 3 continuously, but because it is quantified only over Schwartz `w`, where slots 1,2 are the genuine bounded integral (B7). Do NOT attempt a BLT extension of slot 3 from an L³ pairing.
-- **C2 `convFormH1_extend_slot3`** [must-prove]: For fixed `u,v ∈ H1_sigma`, `w ↦ convFormH1(u,v,w)` extends to a bounded linear functional on `L2Sigma_R3`. Via B7 (bounded at fixed Schwartz w, which is dense in L²) + BLT. ~80 LOC.
-- **C3 `h1sigma_Hamel_extend`** [must-prove (nonconstructive)]: via `LinearMap.exists_extend` applied to the tower in C1/C2, produce `B_ext : L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] ℝ` with `B_ext|_{H1_sigma × H1_sigma × L2Sigma} = convFormH1_ext`. Uses `Classical.choice` internally via `exists_extend`. ~100 LOC.
+- **C2 `h1sigma_linearMap_slots12`** [must-prove]: For fixed Schwartz `w`, the map
+  `(u, v) ↦ convFormH1 u v w` (with `u, v ∈ H1_sigma`) is bilinear and bounded by
+  `C_w · ‖u‖₂ · ‖v‖₂` (from B7). This gives the L²-bounded bilinear form on `H1_sigma × H1_sigma`
+  at each fixed Schwartz `w` that B7 establishes. **This is NOT a slot-3 BLT extension.**
+  Per the C1 ⚠️ CODEX CORRECTION: slot-3 extension to all `L2Sigma_R3` goes via Hamel (C3),
+  NOT via BLT from L³ pairing (which fails on infinite-measure ℝ³). B7's role is solely
+  to provide the L²-norm bound for slots 1,2 at fixed Schwartz `w`, enabling `b_cont_fixedTest`.
+  ~30 LOC (restating B7 as a bilinear tower statement).
+- **C3 `h1sigma_Hamel_extend`** [must-prove (nonconstructive)]: via `LinearMap.exists_extend`
+  applied THREE TIMES to the tower in C1 (one per slot), produce
+  `B_ext : L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] ℝ`
+  restricting to `convFormH1` on `H1_sigma × H1_sigma × H1_sigma`. All three slots are
+  extended via Hamel (`LinearMap.exists_extend`), which gives algebraic linearity over all
+  of `L2Sigma_R3` without continuity assumptions. Uses `Classical.choice` internally. ~100 LOC.
 - **C4 `convFormL2_antisymm`** [must-prove]: define `b_anti` from `B_ext` by the antisymmetrize formula, prove: (a) linear tower (avg of two linear maps), (b) antisymmetric in slots 2,3, (c) restricts to `convFormH1` on H1_sigma triples (since `convFormH1` is antisymmetric, antisymmetrization is identity there), (d) restricts to `convFormSchwartz` on Schwartz triples (via B5 + (c)). ~100 LOC.
 - **C5 `convectionGapOpCore_exists`** [must-prove — PRIMARY TARGET for Tier 1]:
   ```

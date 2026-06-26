@@ -191,19 +191,28 @@ theorem memH1VF_R3_zero : memH1VF_R3 (0 : L2VF_R3) := by
 /-! #### B1 — The submodule itself -/
 
 /-- **B1 `H1Sigma_R3` [proved sorry-free].** The H¹_σ submodule of `L2VF_R3`:
-elements of `L²(ℝ³; ℝ³)` that satisfy the H¹ regularity condition `memH1VF_R3`.
+elements of `L²(ℝ³; ℝ³)` that satisfy BOTH the H¹ regularity condition `memH1VF_R3`
+AND the divergence-free condition (`u ∈ L2Sigma_R3`).
 
-This is a genuine `Submodule ℝ L2VF_R3`, with:
-- closure under addition: B1a (`memH1VF_R3_add`);
-- closure under ℝ-scalar multiplication: B1b (`memH1VF_R3_smul`);
-- zero member: B1c (`memH1VF_R3_zero`).
+Concretely:
+  `H1Sigma_R3 = {u : L2VF_R3 | memH1VF_R3 u ∧ u ∈ L2Sigma_R3}`
 
-Used by B2–B7 to quantify over `H¹_σ` elements. -/
+This is the correct `H¹_σ(ℝ³)` space: H¹ vector fields that are divergence-free in the
+weak sense. The div-free condition is required by downstream consumers
+(PR-3 Hamel extension, `b_antisymm` slot hypotheses in `convFormH1_antisymm`/B6/B7).
+
+Submodule closure proofs:
+- `add_mem'`: `memH1VF_R3_add` for the H¹ conjunct; `Submodule.add_mem` for the σ conjunct.
+- `zero_mem'`: `memH1VF_R3_zero` for H¹; `Submodule.zero_mem` for σ.
+- `smul_mem'`: `memH1VF_R3_smul` for H¹; `Submodule.smul_mem` for σ. -/
 def H1Sigma_R3 : Submodule ℝ L2VF_R3 where
-  carrier := {u | memH1VF_R3 u}
-  add_mem' {u v} hu hv := memH1VF_R3_add hu hv
-  zero_mem' := memH1VF_R3_zero
-  smul_mem' c {u} hu := memH1VF_R3_smul c hu
+  carrier := {u | memH1VF_R3 u ∧ u ∈ L2Sigma_R3}
+  add_mem' hu hv :=
+    ⟨memH1VF_R3_add hu.1 hv.1, L2Sigma_R3.add_mem hu.2 hv.2⟩
+  zero_mem' :=
+    ⟨memH1VF_R3_zero, L2Sigma_R3.zero_mem⟩
+  smul_mem' c _ hu :=
+    ⟨memH1VF_R3_smul c hu.1, L2Sigma_R3.smul_mem c hu.2⟩
 
 /-! ### Helpers — complexification of real Schwartz tests -/
 
