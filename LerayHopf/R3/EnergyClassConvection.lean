@@ -2074,15 +2074,17 @@ theorem convFormH1_antisymm (u v w : L2VF_R3)
 
 /-! ### B7 — L²-norm bound for fixed Schwartz test (CODEX CORRECTION route) -/
 
-/-- **B7 `convFormH1_bound_Schwartz` [must-prove — CODEX CORRECTION].** For `u, v ∈ H1Sigma_R3`
-(with `u, v, w ∈ L2Sigma_R3`) and fixed Schwartz `w` (`IsSchwartzDivFree_R3 w`):
+/-- **B7 `convFormH1_bound_Schwartz` [must-prove — CODEX CORRECTION].** For fixed Schwartz
+`w ∈ H1Sigma_R3`, there exists a constant `C_w ≥ 0` (depending only on `w` via `‖∇w‖_{L^∞}`)
+such that for ALL `u, v ∈ H1Sigma_R3`:
 
   `|convFormH1 u v w hu hv hw_H1| ≤ C_w * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖`
 
-where `C_w` depends only on the Schwartz seminorms of `w` (specifically `‖∇w‖_{L^∞}`).
+The quantifier order is `∃ C_w, ∀ u v`, making `C_w` uniform in `u, v`.
 
-**⚠️ CODEX CORRECTION (PR-1 #58 review):** The bound in L²-norms `‖u‖₂ · ‖v‖₂` follows
-via **B6 (antisymmetry/IBP): move the derivative onto the fixed Schwartz test w**.
+**⚠️ CODEX CORRECTION (PR-1 #58 review, P1):** The original statement had `u,v` before `∃ C_w`,
+allowing `C_w` to depend on `u,v` (nearly vacuous). The corrected statement quantifies `u,v`
+universally *inside* after `∃ C_w`.
 
 Route:
 1. By B6 antisymmetry: `convFormH1 u v w = -convFormH1 u w v = +convFormH1_moveDeriv u v w`
@@ -2090,21 +2092,21 @@ Route:
    (derivative moved onto `w` via IBP).
 2. Estimate: `|∑_{i,a} ∫ uₐ · ∂ₐwᵢ · vᵢ| ≤ ∑_{i,a} ‖∂ₐwᵢ‖_∞ · ‖uₐ‖_{L²} · ‖vᵢ‖_{L²}`
    (Cauchy–Schwarz: `|∫ f·g| ≤ ‖f‖_{L²}‖g‖_{L²}` with `f = uₐ`, `g = ∂ₐwᵢ · vᵢ`).
-3. Since `w` is Schwartz, `‖∂ₐwᵢ‖_∞ < ∞`; set `C_w := ∑_{i,a} ‖∂ₐwᵢ‖_∞ · 3 · 3`.
-4. Use `‖uₐ‖_{L²} ≤ ‖u‖_{L²}` and `‖vᵢ‖_{L²} ≤ ‖v‖_{L²}` (component projections are
-   contractions: `‖L2VF_projComponent_R3 j‖ ≤ 1`).
+3. Since `w` is Schwartz, `‖∂ₐwᵢ‖_∞ < ∞`; set `C_w := ∑_{i,a} ‖∂ₐwᵢ‖_∞·‖projₐ‖·‖projᵢ‖`.
+4. Use `‖uₐ‖_{L²} ≤ ‖projₐ‖·‖u‖_{L²}` and `‖vᵢ‖_{L²} ≤ ‖projᵢ‖·‖v‖_{L²}`.
 
 **Note:** A3/GNS is NOT needed for B7 (per CODEX CORRECTION). The L²-bound is achieved
 by moving ∂ onto the Schwartz test, not by invoking GNS on u,v. The `C_w` is finite
 because w is Schwartz (all derivatives are in L^∞). -/
-theorem convFormH1_bound_Schwartz (u v w : L2VF_R3)
-    (hu : memH1VF_R3 u) (hv : memH1VF_R3 v) (hw_H1 : memH1VF_R3 w)
-    (hu_sigma : (u : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
-    (hv_sigma : (v : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+theorem convFormH1_bound_Schwartz (w : L2VF_R3)
+    (hw_H1 : memH1VF_R3 w)
     (hw_sigma : (w : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
     (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) :
     ∃ C_w : ℝ, 0 ≤ C_w ∧
-      |convFormH1 u v w hu hv hw_H1| ≤ C_w * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖ := by
+      ∀ (u v : L2VF_R3) (hu : memH1VF_R3 u) (hv : memH1VF_R3 v)
+        (hu_sigma : (u : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+        (hv_sigma : (v : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
+        |convFormH1 u v w hu hv hw_H1| ≤ C_w * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖ := by
   classical
   -- `w` is Schwartz: `wᵢ.re = ψᵢ` a.e. for Schwartz `ψ`.
   obtain ⟨ψ, hψ⟩ := hw_sch
@@ -2146,12 +2148,18 @@ theorem convFormH1_bound_Schwartz (u v w : L2VF_R3)
           =ᵐ[volume] ⇑(χ.toLp 2 (volume : Measure Domain3))),
       χ.coeFn_toLp 2 (volume : Measure Domain3)] with x hx hx2
     rw [hx, hx2]
-  -- per-(i,a) bound: |∫ uₐ.re·(∂ₐwᵢ).re·vᵢ.re| ≤ Kᵢₐ·‖u‖·‖v‖ where Kᵢₐ = ‖∂ₐwᵢ‖_∞·‖projₐ‖·‖projᵢ‖.
+  -- Define C_w from w alone: sum of per-(a,i) L^∞-gradient × projector-norm products.
   set Kw : Fin 3 → Fin 3 → ℝ := fun a i =>
     (eLpNorm (fun x => (gradComp_of_memH1 w hw_H1 a i x).re) ⊤ (volume : Measure Domain3)).toReal
       * ‖L2VF_projComponentC_R3 a‖ * ‖L2VF_projComponentC_R3 i‖ with hKw
   have hKw_nonneg : ∀ a i, 0 ≤ Kw a i := by
     intro a i; rw [hKw]; positivity
+  -- Provide C_w and prove nonnegativity; then universally quantify over u, v.
+  refine ⟨∑ i : Fin 3, ∑ a : Fin 3, Kw a i, ?_, ?_⟩
+  · exact Finset.sum_nonneg (fun i _ => Finset.sum_nonneg (fun a _ => hKw_nonneg a i))
+  -- Now prove the bound for arbitrary u, v.
+  intro u v hu hv hu_sigma hv_sigma
+  -- per-(i,a) bound: |∫ uₐ.re·(∂ₐwᵢ).re·vᵢ.re| ≤ Kᵢₐ·‖u‖·‖v‖.
   have hterm : ∀ i a : Fin 3,
       |∫ x : Domain3, (L2VF_projComponentC_R3 a u x).re *
         (gradComp_of_memH1 w hw_H1 a i x).re * (L2VF_projComponentC_R3 i v x).re
@@ -2193,10 +2201,7 @@ theorem convFormH1_bound_Schwartz (u v w : L2VF_R3)
           refine mul_le_mul hua (hmul_le.trans ?_) (norm_nonneg _) (by positivity)
           exact mul_le_mul_of_nonneg_left hvi hMw_nonneg
       _ = Kw a i * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖ := by rw [hKw]; ring
-  -- Assemble: convFormH1 u v w = -convFormH1 u w v; bound by the finite sum of per-term constants.
-  refine ⟨∑ i : Fin 3, ∑ a : Fin 3, Kw a i, ?_, ?_⟩
-  · exact Finset.sum_nonneg (fun i _ => Finset.sum_nonneg (fun a _ => hKw_nonneg a i))
-  -- `convFormH1 u v w = -convFormH1 u w v = -∑ᵢ∑ₐ ∫ uₐ·vᵢ·(∂ₐwᵢ)` (definition of `convFormH1 u w v`).
+  -- `convFormH1 u v w = -convFormH1 u w v = -∑ᵢ∑ₐ ∫ uₐ·vᵢ·(∂ₐwᵢ)`.
   rw [convFormH1_antisymm u v w hu hv hw_H1 hu_sigma hv_sigma hw_sigma, abs_neg, convFormH1]
   -- `|∑ᵢ∑ₐ Tᵢₐ| ≤ ∑ᵢ∑ₐ |Tᵢₐ| ≤ ∑ᵢ∑ₐ Kw·‖u‖·‖v‖`.
   refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
