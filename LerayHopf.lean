@@ -72,6 +72,7 @@ import LerayHopf.R3.FrechetKolmogorov
 import LerayHopf.R3.ConvectionOperator
 import LerayHopf.R3.ConvectionForm
 import LerayHopf.R3.SobolevEmbedding
+import LerayHopf.R3.EnergyClassConvection
 
 -- Bochner layer (sorry-carrying)
 import LerayHopf.Bochner.GelfandTriple
