@@ -554,8 +554,9 @@ private theorem eLpNorm_fderiv_truncated_le (R : ℝ) (hR : 0 < R) (φ : Schwart
         rw [Real.enorm_eq_ofReal (div_nonneg hKnn hR.le)]
 
 /-- **GNS for Schwartz functions** (no compact support):
-`eLpNorm φ 6 ≤ C · eLpNorm (fderiv φ) 2`. -/
-private theorem gns_L6_schwartz (φ : SchwartzMap Domain3 ℂ) :
+`eLpNorm φ 6 ≤ C · eLpNorm (fderiv φ) 2`. Exported (non-`private`) so the energy-class
+convection development can obtain a uniform `L⁶` bound on `H¹` Schwartz approximants. -/
+theorem gns_L6_schwartz (φ : SchwartzMap Domain3 ℂ) :
     eLpNorm (φ : Domain3 → ℂ) 6 (volume : Measure Domain3) ≤
       SNormLESNormFDerivOfEqConst ℂ (volume : Measure Domain3) 2 *
         eLpNorm (fderiv ℝ (φ : Domain3 → ℂ)) 2 (volume : Measure Domain3) := by
@@ -1199,14 +1200,19 @@ private theorem memLp_top_ofReal_mLD (m : Domain3) :
       (hasTemperateGrowth_mLD m).1.continuous).aestronglyMeasurable
   · rw [Complex.norm_real, Real.norm_eq_abs]; exact abs_mLD_le m ξ
 
-theorem schwartz_h1_gradConv (f : L2C_R3) (m : Domain3)
+/-- **Shared engine for Brick-1 (`schwartz_h1_gradConv` and its multi-direction export).**
+The `φₙ = 𝓕⁻¹(smulLeftCLM wInv ηₙ)` construction is `m`-independent, so a SINGLE Schwartz
+sequence gives value-L² convergence to `f` together with, for EVERY direction `m`, L²
+convergence of `(∂_{m} φₙ).toLp` to the weak derivative `∂_m (f : 𝓢')`. Both public
+exports peel off the appropriate piece. -/
+private theorem schwartz_h1_gradConv_aux (f : L2C_R3)
     (hf : MemSobolev 1 2 (f : 𝓢'(Domain3, ℂ))) :
-    ∃ (g : L2C_R3)
-      (hg : (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ)))
-      (φ : ℕ → SchwartzMap Domain3 ℂ),
+    ∃ φ : ℕ → SchwartzMap Domain3 ℂ,
       Filter.Tendsto (fun n => (φ n).toLp 2 (volume : Measure Domain3))
           Filter.atTop (nhds f) ∧
-      Filter.Tendsto
+      ∀ m : Domain3, ∃ (g : L2C_R3)
+          (_ : (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ))),
+        Filter.Tendsto
           (fun n => (∂_{m} (φ n)).toLp 2 (volume : Measure Domain3))
           Filter.atTop (nhds g) := by
   classical
@@ -1221,9 +1227,8 @@ theorem schwartz_h1_gradConv (f : L2C_R3) (m : Domain3)
     exact (MeasureTheory.Lp.fourier_toTemperedDistribution_eq f).symm
   have hFf_ae : ⇑(𝓕 f : L2C_R3) =ᵐ[volume] fun ξ => (wInv ξ : ℂ) • (f' : Domain3 → ℂ) ξ :=
     fourier_ae_eq_wInv_smul f f' hf'
-  -- The bounded multipliers.
+  -- The bounded multiplier `wInv` (m-independent).
   have hwInv_mem := memLp_top_ofReal_wInv
-  have hmLD_mem := memLp_top_ofReal_mLD m
   -- Step 1: a Schwartz sequence `η n` with `(η n).toLp 2 → f'` in L² (verbatim from A3).
   obtain ⟨η, hη⟩ : ∃ η : ℕ → SchwartzMap Domain3 ℂ,
       Filter.Tendsto (fun n => (η n).toLp 2 (volume : Measure Domain3)) Filter.atTop (nhds f') := by
@@ -1291,6 +1296,10 @@ theorem schwartz_h1_gradConv (f : L2C_R3) (m : Domain3)
       simpa only [dist_eq_norm] using hdist
     refine squeeze_zero (fun n => dist_nonneg) (fun n => ?_) hd
     rw [dist_eq_norm]; exact hnorm_le n
+  -- Value convergence done; the SAME sequence `φ` now serves every direction `m`.
+  refine ⟨φ, htoLp, fun m => ?_⟩
+  -- The line-derivative multiplier `mLD m` (m-dependent).
+  have hmLD_mem := memLp_top_ofReal_mLD m
   -- THE LIMIT `g := 𝓕⁻¹(Complex.I • mulBdd mLD f')` (in the L² Fourier notation).
   set g : L2C_R3 := (𝓕⁻ (Complex.I • mulBdd (mLD m) hmLD_mem f') : L2C_R3) with hgdef
   -- `𝓕 g = Complex.I • mulBdd mLD f'`.
@@ -1384,6 +1393,24 @@ theorem schwartz_h1_gradConv (f : L2C_R3) (m : Domain3)
         Filter.atTop (nhds (g : 𝓢'(Domain3, ℂ))) := by
       refine hgrad𝓢'.congr (fun n => ?_); exact (hDeq n).symm
     exact tendsto_nhds_unique hDf hgrad𝓢''
+  exact ⟨g, hg, hgradtend⟩
+
+/-- **Brick-1 (per-direction).** For `f : L2C_R3` in `H^{1,2}` and a fixed direction `m`, there
+is a Schwartz sequence converging in L² to `f` whose `m`-directional derivatives converge in L²
+to the weak derivative `∂_m (f : 𝓢')`. Derived from the `m`-uniform engine
+`schwartz_h1_gradConv_aux`. -/
+theorem schwartz_h1_gradConv (f : L2C_R3) (m : Domain3)
+    (hf : MemSobolev 1 2 (f : 𝓢'(Domain3, ℂ))) :
+    ∃ (g : L2C_R3)
+      (hg : (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ)))
+      (φ : ℕ → SchwartzMap Domain3 ℂ),
+      Filter.Tendsto (fun n => (φ n).toLp 2 (volume : Measure Domain3))
+          Filter.atTop (nhds f) ∧
+      Filter.Tendsto
+          (fun n => (∂_{m} (φ n)).toLp 2 (volume : Measure Domain3))
+          Filter.atTop (nhds g) := by
+  obtain ⟨φ, htoLp, hm⟩ := schwartz_h1_gradConv_aux f hf
+  obtain ⟨g, hg, hgradtend⟩ := hm m
   exact ⟨g, hg, φ, htoLp, hgradtend⟩
 
 /-! **B6 export: `schwartz_h1_gradConv_multi`.**
@@ -1412,6 +1439,6 @@ theorem schwartz_h1_gradConv_multi (f : L2C_R3)
         Filter.Tendsto
           (fun n => (∂_{m} (φ n)).toLp 2 (volume : Measure Domain3))
           Filter.atTop (nhds g) := by
-  sorry -- ALLOW_SORRY: PR-2 Brick-1 multi-direction export (prover pass) — same φₙ = 𝓕⁻¹(smulLeftCLM wInv ηₙ) as schwartz_h1_gradConv (m-independent construction); apply the per-direction multiplier argument for each m
+  exact schwartz_h1_gradConv_aux f hf
 
 end LerayHopf
