@@ -71,6 +71,7 @@ import LerayHopf.R3.CurlDensityCapstone   -- issue #3: curlSchwartzDense_holds n
 import LerayHopf.R3.FrechetKolmogorov
 import LerayHopf.R3.ConvectionOperator
 import LerayHopf.R3.ConvectionForm
+import LerayHopf.R3.SobolevEmbedding
 
 -- Bochner layer (sorry-carrying)
 import LerayHopf.Bochner.GelfandTriple
