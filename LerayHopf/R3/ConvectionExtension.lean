@@ -1,66 +1,99 @@
 import LerayHopf.R3.EnergyClassConvection
 import LerayHopf.R3.ConvectionForm
+import LerayHopf.R3.TensorIntersection
+import Mathlib.LinearAlgebra.TensorProduct.Map
+import Mathlib.LinearAlgebra.LinearPMap
 import Mathlib.LinearAlgebra.Basis.VectorSpace
 import Mathlib.Analysis.Normed.Operator.Extend
 
 /-!
-# ConvectionExtension — Hamel / BLT construction of the full `b` form (PR-3, issue #56)
+# ConvectionExtension — determined-form construction of the full `b` form (issue #56)
 
 **File:** `LerayHopf/R3/ConvectionExtension.lean`
 
-**Scope (PR-3, declarations C0–C10).**  This file scaffolds the trilinear form
-`convFormL2_def : L2Sigma_R3 → L2Sigma_R3 → L2Sigma_R3 → ℝ` and all five fields of
-`ConvectionGapOp`.
+## What this file builds and why the construction changed
 
-## Construction summary
+This file constructs the trilinear convection form
+`convFormL2_def : L2Sigma_R3 → L2Sigma_R3 → L2Sigma_R3 → ℝ` together with all five
+fields of `ConvectionGapOp`.
 
-- **C0** `H1Sigma'` — `Submodule.comap L2Sigma_R3.subtype H1Sigma_R3`. PROVED sorry-free.
-- **C1** `convFormH1_tower` — `H1Sigma' →ₗ[ℝ] H1Sigma' →ₗ[ℝ] H1Sigma' →ₗ[ℝ] ℝ`.
-  Statement correct; linearity bodies and definition deferred to PR-4.
-- **C2** `convFormH1_bound_slot2_schwartz` — CRUX-FINAL (B7 ∘ B6). [PR-4]
-- **C3** `convBLT_fixedTest` — BLT via `LinearMap.extendOfNorm`. [PR-4]
-- **C4** `convBLT_swap_fixedTest` — BLT (slot-2 Schwartz). [PR-4]
-- **C5** `convFormL2_def` — the `b` form. PROVED (uses BExt scaffold).
-- **C6** `convFormL2_multilinear` — trilinear witness. [PR-4]
-- **C7** `convFormL2_antisymm` — `b u v w = -b u w v`. PROVED by `ring`.
-- **C8** `convFormL2_extends` — Schwartz triples `b = convFormSchwartz`. PROVED.
-- **C9** `convFormL2_cont_fixedTest` — joint continuity. [PR-4]
-- **C10** `r3ConvectionGapOp_holds` — `Nonempty (ConvectionGapOp 𝔊)`. Uses C6/C9.
+**Refuted predecessor.** An earlier scaffold defined
+`convFormL2_def u v w := (BExt_slot3 u v w − BExt_slot3 u w v) / 2`, where `BExt_slot3`
+was a *raw three-slot Hamel extension* of `convFormH1`.  Codex (PR #60) refuted that
+object: with `w` fixed Schwartz, the swapped term `BExt_slot3 u w v` feeds the *varied*
+slot-2 argument `v` into a **discontinuous Hamel index**, so `b_cont_fixedTest` (the 5th
+field) is FALSE for that object.
 
-## Mathlib decls consumed (PR-4 will wire them in)
+**Determined-form replacement (this file).** For fixed `u`, we build an antisymmetric
+bilinear form `β_u` on the genuinely *determined* submodule
+`D := (𝒮 ⊗ L²_σ) + (L²_σ ⊗ 𝒮) ≤ L²_σ ⊗[ℝ] L²_σ`, where
+`𝒮 := Submodule.span ℝ {x | IsSchwartzDivFree_R3 x}`:
 
-- `LinearMap.exists_extend` (`LinearAlgebra/Basis/VectorSpace.lean:288`)
-  requires `DivisionRing K` (satisfied for `K = ℝ`).  Applied three times for the
-  three-slot Hamel tower.  Instance issue: `DivisionRing.toDivisionSemiring.toSemiring ℝ`
-  vs `Real.semiring` causes `Classical.choose` to reject the term without an explicit
-  `letI`/`show` nudge; marked sorry for PR-4 with `-- TODO: add letI Semiring ℝ := inferInstance`.
-- `LinearMap.extendOfNorm` (`Analysis/Normed/Operator/Extend.lean:190`) — C3/C4.
-- `Submodule.comap` (`Algebra/Module/Submodule/Map.lean`) — C0.
-- `SchwartzMap.memSobolev` (`Analysis/Distribution/Sobolev.lean:201`) — C8 helper.
+- on `𝒮 ⊗ L²_σ` (slot-2 Schwartz): `(s, l) ↦ convFormH1 u s l` — defined for *all* `l`
+  because the Schwartz slot-2 makes `convFormH1 u s ·` `L²`-bounded (B7);
+- on `L²_σ ⊗ 𝒮` (slot-3 Schwartz): `(l, s) ↦ convFormH1 u l s = − convFormH1 u s l` (B6).
 
-## Marked sorries (PR-4 targets)
+These two prescriptions agree on the overlap
+`(𝒮 ⊗ L²_σ) ⊓ (L²_σ ⊗ 𝒮) = 𝒮 ⊗ 𝒮`
+(`TensorIntersection.range_map_subtype_inf_range_map_subtype`, proved sorry-free),
+where both equal `convFormH1 u s s'` via B6/the div-free identity.  So they glue to a
+single `β_u : D →ₗ[ℝ] ℝ` (`LinearPMap.sup`).  We then Hamel-extend `β_u` off `D` to
+`Bext_u : (L²_σ ⊗[ℝ] L²_σ) →ₗ[ℝ] ℝ` (`LinearMap.exists_extend`).
 
-C1 (whole body, 1 sorry), C2, C3, C4, BExt_slot*/BExt_on_H1 (4 sorries), C6, C8 helper, C9.
-Total: ~12 ALLOW_SORRY markers.
-C7, `convFormL2_def`, `convFormL2_def_eq`, `convFormL2_antisymm` are sorry-free.
-C8 `convFormL2_extends` and C10 `r3ConvectionGapOp_holds` use helpers with sorries.
+The whole tower is built linearly in `u` as well, giving a trilinear
+`B : L²_σ →ₗ[ℝ] L²_σ →ₗ[ℝ] L²_σ →ₗ[ℝ] ℝ` and
+`convFormL2_def u v w := Bext u (v ⊗ₜ w)`.
+
+**Why `b_cont_fixedTest` is now TRUE (the determined payoff).** For Schwartz `w`,
+`v ⊗ₜ w ∈ L²_σ ⊗ 𝒮 ⊆ D` for **all** `v`, so the value is the *determined* one,
+`convFormL2_def u v w = − convFormH1 u w v` — a genuine B7-controlled quantity, NOT a
+Hamel value.  Continuity in `(u, v)` is then exactly B7 (uniform-in-`u,v` bound at fixed
+Schwartz `w`).  This is the precise place the refuted object failed.
+
+## The five `ConvectionGapOp` fields
+
+- `b`              := `convFormL2_def`.
+- `b_extends`      — on Schwartz triples `b = convFormSchwartz`; B5 (`convFormH1_eq_convFormSchwartz`).
+- `b_multilinear`  — the trilinear `Bext` tower.
+- `b_antisymm_gap` — `β_u` is antisymmetric on `D` (B6), preserved by the Hamel extension.
+- `b_cont_fixedTest` — the CRUX: B7 on the determined slice `L²_σ ⊗ 𝒮`.
+
+## Status of proofs
+
+Per the issue-#56 PR-3 contract, the algebraic/structural fields whose proof is
+mechanical are discharged here; the analytic crux (`b_cont_fixedTest`) and the harder
+gluing/Hamel steps that require the BLT extension and the `u`-linear tower are scaffolded
+with `-- ALLOW_SORRY: PR-4` for the prover.  No new `axiom`/`opaque`.
+
+## Mathlib declarations consumed
+
+- `TensorProduct.map`, `TensorProduct.mapIncl`, `TensorProduct.lift`, `TensorProduct.mk`
+  (`LinearAlgebra/TensorProduct/{Basic,Map}.lean`) — the edge bilinears and `D`.
+- `TensorIntersection.range_map_subtype_inf_range_map_subtype` — the overlap identity
+  `(𝒮⊗L²) ⊓ (L²⊗𝒮) = 𝒮⊗𝒮` (PROVED, sorry-free, this repo).
+- `LinearPMap.sup` / `LinearPMap.sup_apply` (`LinearAlgebra/LinearPMap.lean`) — glue the
+  two edge prescriptions agreeing on the overlap.
+- `LinearMap.exists_extend` (`LinearAlgebra/Basis/VectorSpace.lean:288`, needs
+  `DivisionRing ℝ`) — Hamel-extend `β_u` off `D`.  Instance trap: `Classical.choose`
+  yields `DivisionRing.toDivisionSemiring.toSemiring ℝ` vs `Real.semiring`; fix with
+  `letI : Semiring ℝ := inferInstance`.
+- `LinearMap.extendOfNorm` (`Analysis/Normed/Operator/Extend.lean:190`) — the B7-bounded
+  `L²`-extension of `convFormH1 u s ·` on the Schwartz slot.
+- B5 `convFormH1_eq_convFormSchwartz`, B6 `convFormH1_antisymm`,
+  B7 `convFormH1_bound_Schwartz`, trilinearity `convFormH1_add/smul_{1,2,3}`
+  (`EnergyClassConvection.lean`).
 -/
 
-open MeasureTheory TemperedDistribution SchwartzMap LineDeriv
+open MeasureTheory TemperedDistribution SchwartzMap LineDeriv TensorProduct
 
 namespace LerayHopf.R3.ConvectionExtension
 
-/-! ### C0 — `H1Sigma'` -/
+/-! ### C0 — `H1Sigma'` (re-typing of H¹_σ inside `L2Sigma_R3`) -/
 
 /-- **C0 `H1Sigma'` [proved sorry-free].** H¹_σ re-typed as a submodule of `L2Sigma_R3`:
+`H1Sigma' := Submodule.comap L2Sigma_R3.subtype H1Sigma_R3`.
 
-  `H1Sigma' := Submodule.comap L2Sigma_R3.subtype H1Sigma_R3`
-
-Membership: `u ∈ H1Sigma' ↔ (u : L2VF_R3) ∈ H1Sigma_R3`
-           `↔ memH1VF_R3 (u : L2VF_R3) ∧ (u : L2VF_R3) ∈ L2Sigma_R3`.
-
-This is the domain for `convFormH1_tower` (C1) and the source for `LinearMap.exists_extend`
-×3 in C5. -/
+Membership: `u ∈ H1Sigma' ↔ (u : L2VF_R3) ∈ H1Sigma_R3`. -/
 noncomputable def H1Sigma' : Submodule ℝ L2Sigma_R3 :=
   Submodule.comap L2Sigma_R3.subtype H1Sigma_R3
 
@@ -73,113 +106,40 @@ theorem H1Sigma'_memH1 {u : L2Sigma_R3} (hu : u ∈ H1Sigma') :
     memH1VF_R3 (u : L2VF_R3) :=
   ((mem_H1Sigma'_iff u).mp hu).1
 
-/-! ### C1 — `convFormH1_tower` -/
+/-! ### C0b — `schwartzSpan` : the Schwartz-div-free span `𝒮` -/
 
-/-- **C1 `convFormH1_tower` [body PR-4; signature and toFun stated here].**
+/-- **C0b `schwartzSpan` (`𝒮`) [proved sorry-free].** The submodule of `L2Sigma_R3`
+spanned by the Schwartz-div-free class — the smooth "edge" used in the determined
+construction:
 
-  `H1Sigma' →ₗ[ℝ] H1Sigma' →ₗ[ℝ] H1Sigma' →ₗ[ℝ] ℝ`
+`𝒮 := Submodule.span ℝ {x : L2Sigma_R3 | IsSchwartzDivFree_R3 x}`. -/
+noncomputable def schwartzSpan : Submodule ℝ L2Sigma_R3 :=
+  Submodule.span ℝ {x : L2Sigma_R3 | IsSchwartzDivFree_R3 x}
 
-whose `toFun` maps `u v w ↦ convFormH1 (u : L2VF_R3) (v : L2VF_R3) (w : L2VF_R3)`.
+theorem subset_schwartzSpan {x : L2Sigma_R3} (hx : IsSchwartzDivFree_R3 x) :
+    x ∈ schwartzSpan :=
+  Submodule.subset_span hx
 
-**PR-4 note:** The linearity bodies use `convFormH1_add_{1,2,3}` / `convFormH1_smul_{1,2,3}`
-after `Subtype.coe_add` / `Subtype.coe_smul` unfolding.  These hit a `whnf` heartbeat limit
-at 200000 heartbeats; the whole body is deferred.  The `set_option maxHeartbeats 800000`
-setting plus explicit subtype coercion lemmas discharges them. -/
-noncomputable def convFormH1_tower :
-    H1Sigma' →ₗ[ℝ] H1Sigma' →ₗ[ℝ] H1Sigma' →ₗ[ℝ] ℝ := by
-  sorry -- ALLOW_SORRY: PR-4 (LinearMap.mk₃-style construction from convFormH1_add_{1,2,3}/smul_{1,2,3}; toFun u v w := convFormH1 u v w with H1Sigma'_memH1 witnesses; whnf timeout at 200000; needs maxHeartbeats 800000 + explicit Subtype.coe coercion steps)
+/-- Helper: `IsSchwartzDivFree_R3 u → memH1VF_R3 (u : L2VF_R3)`.
+Mirrors the private `memH1VF_R3_of_isSchwartzDivFree` in `SobolevEmbedding.lean`. -/
+private theorem memH1VF_R3_of_schwartz {u : L2Sigma_R3}
+    (hu : IsSchwartzDivFree_R3 u) : memH1VF_R3 (u : L2VF_R3) := by
+  sorry -- ALLOW_SORRY: PR-4 (SchwartzMap.memSobolev on (ψ j).postcompCLM ofRealCLM; matches memH1VF_R3 = ∀ j, MemSobolev 1 2 (L2VF_projComponentC_R3 j u))
 
-/-- `convFormH1_tower` at subtype elements computes `convFormH1` directly.
-By definition once PR-4 fills in the body; the sorry here propagates from C1. -/
-theorem convFormH1_tower_apply (u v w : H1Sigma') :
-    convFormH1_tower u v w =
-      convFormH1 (u : L2VF_R3) (v : L2VF_R3) (w : L2VF_R3)
-        (H1Sigma'_memH1 u.2) (H1Sigma'_memH1 v.2) (H1Sigma'_memH1 w.2) := by
-  sorry -- ALLOW_SORRY: PR-4 (rfl once convFormH1_tower is defined with the correct toFun)
+theorem schwartz_mem_H1Sigma' {u : L2Sigma_R3} (hu : IsSchwartzDivFree_R3 u) :
+    u ∈ H1Sigma' :=
+  (mem_H1Sigma'_iff u).mpr ⟨memH1VF_R3_of_schwartz hu, u.2⟩
 
-/-! ### C5 helpers — three-slot Hamel extension `BExt_slot*`
+/-! ### C2 — `convFormH1_bound_slot2_schwartz` (CRUX-FINAL bound, B7 ∘ B6) -/
 
-`LinearMap.exists_extend` (`LinearAlgebra/Basis/VectorSpace.lean:288`) requires `[DivisionRing K]`.
-For `K = ℝ` this is satisfied.  However, Lean 4's `Classical.choose` applied to
-`LinearMap.exists_extend (K := ℝ) f` produces a type using `DivisionRing.toDivisionSemiring.toSemiring ℝ`
-while the expected type needs `Real.semiring`.  These two `Semiring ℝ` instances are definitionally
-equal but not syntactically identical, causing unification failure.
-Fix (PR-4): add `letI : Semiring ℝ := inferInstance` or use `show` to coerce.
-For PR-3, the BExt definitions and their on-H1 agreement lemmas carry `ALLOW_SORRY: PR-4`.
--/
+/-- **C2 `convFormH1_bound_slot2_schwartz` [analytic must-prove — PR-4].**
+For a fixed Schwartz `w`, `(u, v) ↦ convFormH1 u w v` is `‖u‖‖v‖`-bounded.
 
-/-- Slot-1 Hamel extension: `L2Sigma_R3 →ₗ[ℝ] (H1Sigma' →ₗ[ℝ] H1Sigma' →ₗ[ℝ] ℝ)`
-extending `convFormH1_tower` from `H1Sigma'`.  Via `LinearMap.exists_extend`. -/
-private noncomputable def BExt_slot1 :
-    L2Sigma_R3 →ₗ[ℝ] (H1Sigma' →ₗ[ℝ] H1Sigma' →ₗ[ℝ] ℝ) := by
-  sorry -- ALLOW_SORRY: PR-4 (Classical.choose (LinearMap.exists_extend (K := ℝ) convFormH1_tower); instance issue: letI : Semiring ℝ := inferInstance before choose)
-
-private theorem BExt_slot1_spec :
-    BExt_slot1.comp H1Sigma'.subtype = convFormH1_tower := by
-  sorry -- ALLOW_SORRY: PR-4 (Classical.choose_spec; same instance fix)
-
-theorem BExt_slot1_on_H1 (u : H1Sigma') :
-    BExt_slot1 (u : L2Sigma_R3) = convFormH1_tower u := by
-  sorry -- ALLOW_SORRY: PR-4 (congr_fun BExt_slot1_spec u once instance fixed)
-
-/-- Slot-2 extension: for each `u`, `L2Sigma_R3 →ₗ[ℝ] (H1Sigma' →ₗ[ℝ] ℝ)` extending
-`BExt_slot1 u` from `H1Sigma'`.  Via `LinearMap.exists_extend`. -/
-private noncomputable def BExt_slot2 (u : L2Sigma_R3) :
-    L2Sigma_R3 →ₗ[ℝ] (H1Sigma' →ₗ[ℝ] ℝ) := by
-  sorry -- ALLOW_SORRY: PR-4 (Classical.choose (LinearMap.exists_extend (K := ℝ) (BExt_slot1 u)); same instance fix)
-
-theorem BExt_slot2_on_H1 (u : L2Sigma_R3) (v : H1Sigma') :
-    BExt_slot2 u (v : L2Sigma_R3) = BExt_slot1 u v := by
-  sorry -- ALLOW_SORRY: PR-4 (congr_fun (Classical.choose_spec …) v)
-
-/-- Slot-3 extension: for each `(u,v)`, `L2Sigma_R3 →ₗ[ℝ] ℝ` extending `BExt_slot2 u v`
-from `H1Sigma'`.  Via `LinearMap.exists_extend`. -/
-private noncomputable def BExt_slot3 (u v : L2Sigma_R3) : L2Sigma_R3 →ₗ[ℝ] ℝ := by
-  sorry -- ALLOW_SORRY: PR-4 (Classical.choose (LinearMap.exists_extend (K := ℝ) (BExt_slot2 u v)); same instance fix)
-
-theorem BExt_slot3_on_H1 (u v : L2Sigma_R3) (w : H1Sigma') :
-    BExt_slot3 u v (w : L2Sigma_R3) = BExt_slot2 u v w := by
-  sorry -- ALLOW_SORRY: PR-4 (congr_fun (Classical.choose_spec …) w)
-
-/-- On `H1Sigma'³`, the three-slot Hamel extension recovers `convFormH1_tower`.
-Proof (PR-4): `BExt_slot3_on_H1` → `BExt_slot2_on_H1` → `BExt_slot1_on_H1`;
-all three steps are sorry-free once the BExt definitions are filled in. -/
-theorem BExt_on_H1 (u v w : H1Sigma') :
-    BExt_slot3 (u : L2Sigma_R3) (v : L2Sigma_R3) (w : L2Sigma_R3) =
-      convFormH1_tower u v w := by
-  sorry -- ALLOW_SORRY: PR-4 (rw [BExt_slot3_on_H1, BExt_slot2_on_H1, BExt_slot1_on_H1]; holds once BExt_slot* are filled in; times out here due to sorry-propagation in isDefEq)
-
-/-! ### C5 — `convFormL2_def` : the `b` form -/
-
-/-- **C5 `convFormL2_def` [proved sorry-free].** The trilinear form on `L2Sigma_R3`:
-
-  `b u v w := (BExt_slot3 u v w − BExt_slot3 u w v) / 2`
-
-where `BExt_slot3 u v : L2Sigma_R3 →ₗ[ℝ] ℝ` is the slot-3 Hamel extension (linear in `w`).
-
-- Linear in `w`: from `BExt_slot3 u v` being a `LinearMap`.
-- Antisymmetry C7: `ring`.
-- Extends `convFormSchwartz` C8: via `BExt_on_H1` + B6 + B5. -/
-noncomputable def convFormL2_def (u v w : L2Sigma_R3) : ℝ :=
-  (BExt_slot3 u v w - BExt_slot3 u w v) / 2
-
-@[simp]
-theorem convFormL2_def_eq (u v w : L2Sigma_R3) :
-    convFormL2_def u v w = (BExt_slot3 u v w - BExt_slot3 u w v) / 2 :=
-  rfl
-
-/-! ### C2 — `convFormH1_bound_slot2_schwartz` (CRUX-FINAL, PR-4) -/
-
-/-- **C2 `convFormH1_bound_slot2_schwartz` [CRUX-FINAL — PR-4 target].**
-For fixed Schwartz `w`, `∃ C_w ≥ 0` with `|convFormH1 u w v| ≤ C_w ‖u‖ ‖v‖` for all H¹ `u,v`.
-
-**Proof route (PR-4):**
-- B6 (`convFormH1_antisymm`): `convFormH1 u w v hu hw hv = -convFormH1 u v w hu hv hw`.
-- `abs_neg`: same absolute value.
-- B7 (`convFormH1_bound_Schwartz`): `|convFormH1 u v w| ≤ C_w ‖u‖ ‖v‖`.
-
-CRUX-FINAL §5.3: both terms of `b u v w = (BExt u v w - BExt u w v)/2` have `w` Schwartz
-in a B7-controlled slot, making BOTH terms BLT-continuous in `(u,v)`. -/
+**Proof route (B7 ∘ B6, ~3 lines):** B6 (`convFormH1_antisymm`) gives
+`convFormH1 u w v = − convFormH1 u v w`; `abs_neg` keeps the magnitude; B7
+(`convFormH1_bound_Schwartz`) bounds `|convFormH1 u v w| ≤ C_w ‖u‖ ‖v‖`.  The varied slot
+is `(u, v)` (L²-controlled); the Schwartz `w` is the fixed test slot after the B6 flip —
+NO `‖∇w‖_∞`-in-the-rough-slot leakage. -/
 theorem convFormH1_bound_slot2_schwartz
     (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
     (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
@@ -191,124 +151,184 @@ theorem convFormH1_bound_slot2_schwartz
         |convFormH1 u w v hu hw_H1 hv| ≤ C_w * ‖u‖ * ‖v‖ := by
   sorry -- ALLOW_SORRY: PR-4 (B6 convFormH1_antisymm + abs_neg + B7 convFormH1_bound_Schwartz)
 
-/-! ### C3 — `convBLT_fixedTest` (PR-4) -/
+/-! ### C3 — `convDetSlot3` : the determined `L²`-slot bilinear on the Schwartz slice
 
-/-- **C3 `convBLT_fixedTest` [PR-4 target].** Jointly continuous bilinear
-`L2Sigma_R3 →L[ℝ] L2Sigma_R3 →L[ℝ] ℝ` extending `(u,v) ↦ convFormH1 u v w` for Schwartz `w`.
+For fixed `u` and a Schwartz test `w`, `convFormH1 u · w` is `L²`-bounded in its varied
+arguments (B7), so it BLT-extends to a continuous bilinear form on all of
+`L2Sigma_R3 × L2Sigma_R3`.  This is the genuine, determined value the construction reads
+off on the slice `L²_σ ⊗ 𝒮` (and its B6-flip on `𝒮 ⊗ L²_σ`). -/
 
-Constructed via `LinearMap.extendOfNorm` ×2 (`Analysis/Normed/Operator/Extend.lean:190`)
-with B7 norm bound + `h1Sigma_dense_in_L2Sigma` density. -/
+/-- **C3 `convBLT_fixedTest` [PR-4].** Jointly continuous bilinear
+`L2Sigma_R3 →L[ℝ] L2Sigma_R3 →L[ℝ] ℝ` extending `(u, v) ↦ convFormH1 u v w` for Schwartz
+`w`, via `LinearMap.extendOfNorm` ×2 with the B7 bound and `H1Sigma'`-density. -/
 noncomputable def convBLT_fixedTest
     (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
     (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
     (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) :
     L2Sigma_R3 →L[ℝ] L2Sigma_R3 →L[ℝ] ℝ :=
-  sorry -- ALLOW_SORRY: PR-4 (LinearMap.extendOfNorm ×2; B7 norm bound; h1Sigma_dense_in_L2Sigma DenseRange)
+  sorry -- ALLOW_SORRY: PR-4 (LinearMap.extendOfNorm ×2; B7 bound; H1Sigma' dense)
 
-/-! ### C4 — `convBLT_swap_fixedTest` (PR-4) -/
+/-! ### C4 — the two edge bilinears on the tensor product
 
-/-- **C4 `convBLT_swap_fixedTest` [PR-4 target].** Jointly continuous bilinear
-`L2Sigma_R3 →L[ℝ] L2Sigma_R3 →L[ℝ] ℝ` extending `(u,v) ↦ convFormH1 u w v` for Schwartz `w`.
+`D := (𝒮 ⊗ L²_σ) + (L²_σ ⊗ 𝒮)`, realized as the supremum of the two tensor-map ranges
+inside `L²_σ ⊗[ℝ] L²_σ`.  We name the two range-submodules and `D` itself here. -/
 
-Constructed via `LinearMap.extendOfNorm` ×2 with C2 norm bound + density. -/
-noncomputable def convBLT_swap_fixedTest
-    (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
+/-- The "slot-2 Schwartz" edge submodule `𝒮 ⊗ L²_σ ≤ L²_σ ⊗ L²_σ`. -/
+noncomputable def edgeSlot2 : Submodule ℝ (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :=
+  LinearMap.range (TensorProduct.map schwartzSpan.subtype (LinearMap.id : L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3))
+
+/-- The "slot-3 Schwartz" edge submodule `L²_σ ⊗ 𝒮 ≤ L²_σ ⊗ L²_σ`. -/
+noncomputable def edgeSlot3 : Submodule ℝ (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :=
+  LinearMap.range (TensorProduct.map (LinearMap.id : L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3) schwartzSpan.subtype)
+
+/-- **`D` (the determined domain).** `D := (𝒮 ⊗ L²_σ) + (L²_σ ⊗ 𝒮)`. -/
+noncomputable def detDomain : Submodule ℝ (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :=
+  edgeSlot2 ⊔ edgeSlot3
+
+/-- **The overlap identity (consumes the proved tensor-intersection lemma).**
+`(𝒮 ⊗ L²_σ) ⊓ (L²_σ ⊗ 𝒮) = 𝒮 ⊗ 𝒮`, on whose image the two edge prescriptions agree.
+This is `TensorIntersection.range_map_subtype_inf_range_map_subtype` specialized to
+`S = schwartzSpan`. -/
+theorem edge_inf_eq_schwartz_tensor :
+    edgeSlot2 ⊓ edgeSlot3
+      = LinearMap.range (TensorProduct.mapIncl schwartzSpan schwartzSpan) :=
+  LerayHopf.R3.TensorIntersection.range_map_subtype_inf_range_map_subtype schwartzSpan
+
+/-! ### C5 — the determined antisymmetric bilinear `β_u` on `D`, Hamel-extended
+
+For fixed `u`, the two edge prescriptions are:
+
+- on `𝒮 ⊗ L²_σ`: the bilinear `(s, l) ↦ convFormH1 u s l` (slot-2 Schwartz, B7-bounded in
+  `l`), lifted by `TensorProduct.lift` to a `LinearMap` on `edgeSlot2`;
+- on `L²_σ ⊗ 𝒮`: `(l, s) ↦ convFormH1 u l s = − convFormH1 u s l` (B6), lifted to a
+  `LinearMap` on `edgeSlot3`.
+
+They agree on `edgeSlot2 ⊓ edgeSlot3 = 𝒮 ⊗ 𝒮` (B6/div-free identity), so `LinearPMap.sup`
+glues them to a single partial linear map on `detDomain = D`.  `LinearMap.exists_extend`
+then Hamel-extends to all of `L²_σ ⊗ L²_σ`.  The whole tower is built linearly in `u`. -/
+
+/-- **C5 `detExtend` (`Bext`) [PR-4].** The Hamel extension of the glued determined form
+`β_u` from `D` to all of `L²_σ ⊗[ℝ] L²_σ`, assembled trilinearly in `u`.
+
+This is the single object the trilinear `b` reads.  Its construction
+(`TensorProduct.lift` on each edge → `LinearPMap.sup` glue via
+`edge_inf_eq_schwartz_tensor` → `LinearMap.exists_extend` Hamel, all done `u`-linearly)
+is the structural core deferred to PR-4; the statement here pins the contract. -/
+noncomputable def detExtend :
+    L2Sigma_R3 →ₗ[ℝ] (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) →ₗ[ℝ] ℝ := by
+  sorry -- ALLOW_SORRY: PR-4 (per-u: TensorProduct.lift the two edge bilinears (convFormH1 u s l on 𝒮⊗L², its B6-flip on L²⊗𝒮); glue with LinearPMap.sup using edge_inf_eq_schwartz_tensor for overlap agreement; Hamel-extend β_u to L²⊗L² via LinearMap.exists_extend (letI : Semiring ℝ := inferInstance); assemble u-linearly from convFormH1_add_1/smul_1)
+
+/-- **C5b `detExtend_on_edgeSlot3` [PR-4 — the determined identity].**
+On the slot-3-Schwartz edge `L²_σ ⊗ 𝒮`, `detExtend u` is the genuine determined value:
+for ALL `u, v` and any Schwartz `w`,
+`detExtend u (v ⊗ₜ w) = convBLT_fixedTest w … u v`,
+i.e. the value is the evaluation of the jointly continuous B7-bounded extension `Bw`
+(C3), NOT a Hamel value.
+
+This is the load-bearing identity for `b_cont_fixedTest`.  It holds for ALL `u, v`
+(not just H¹ ones): on the H¹ slice both sides equal the literal `convFormH1 u v w`
+(`β_u`'s slot-3 prescription, resp. `extendOfNorm_eq`), and both sides are continuous in
+`v` on the determined edge, so they agree everywhere by density of `𝒮`/H¹ in `L²_σ`. -/
+theorem detExtend_on_edgeSlot3
+    (u v : L2Sigma_R3) (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
     (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
     (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) :
-    L2Sigma_R3 →L[ℝ] L2Sigma_R3 →L[ℝ] ℝ :=
-  sorry -- ALLOW_SORRY: PR-4 (LinearMap.extendOfNorm ×2; C2 bound; h1Sigma_dense_in_L2Sigma DenseRange)
+    detExtend u ((v : L2Sigma_R3) ⊗ₜ[ℝ] (⟨w, hw_sigma⟩ : L2Sigma_R3))
+      = convBLT_fixedTest w hw_H1 hw_sigma hw_sch u v := by
+  sorry -- ALLOW_SORRY: PR-4 (v⊗w ∈ edgeSlot3 = L²⊗𝒮 ⊆ D; LinearPMap.sup_apply picks the slot-3 prescription = convFormH1 u v w on the H¹ slice = convBLT_fixedTest via extendOfNorm_eq; density of 𝒮/H¹ in L²_σ + continuity of both sides extends to all u,v)
 
-/-! ### C6 — `convFormL2_multilinear` (PR-4) -/
+/-! ### C6 — `convFormL2_def` : the determined trilinear `b` -/
 
-/-- **C6 `convFormL2_multilinear` [PR-4 target].**
-`∃ B trilinear, ∀ u v w, convFormL2_def u v w = B u v w`.
+/-- **C6 `convFormL2_def` (`b`) [proved sorry-free given `detExtend`].** The determined
+trilinear convection form:
 
-**Proof route (PR-4):** Construct a coherent `B_ext : L2Sigma_R3 →ₗ L2Sigma_R3 →ₗ L2Sigma_R3 →ₗ ℝ`
-via a jointly-linear Hamel tower (slot-1 from `BExt_slot1`; slots 2,3 via a module-valued
-extension linear in `u`); antisymmetrize: `B u v w = (B_ext u v w - B_ext u w v)/2`. -/
+`b u v w := detExtend u (v ⊗ₜ w)`.
+
+- Linear in `w` (slot 3): `detExtend u` is a `LinearMap` and `(v ⊗ₜ ·)` is linear.
+- Linear in `v` (slot 2): `(· ⊗ₜ w)` is linear.
+- Linear in `u` (slot 1): `detExtend` is a `LinearMap` in `u`.
+- Antisymmetric in `(v, w)`: `β_u` is antisymmetric on `D` (B6), preserved by the
+  Hamel extension (C7).
+- Extends `convFormSchwartz` on Schwartz triples (C8). -/
+noncomputable def convFormL2_def (u v w : L2Sigma_R3) : ℝ :=
+  detExtend u (v ⊗ₜ[ℝ] w)
+
+@[simp]
+theorem convFormL2_def_eq (u v w : L2Sigma_R3) :
+    convFormL2_def u v w = detExtend u (v ⊗ₜ[ℝ] w) :=
+  rfl
+
+/-! ### C7 — `convFormL2_multilinear` -/
+
+/-- **C7 `convFormL2_multilinear` [PR-4].** `∃ B trilinear, ∀ u v w, b u v w = B u v w`.
+
+**Proof route:** the trilinear `B` is `detExtend` precomposed with `TensorProduct.mk`:
+`B u := (detExtend u).compl₂ (TensorProduct.mk ℝ L2Sigma_R3 L2Sigma_R3)` — curry the
+`v ⊗ₜ w` argument.  `b u v w = detExtend u (v ⊗ₜ w) = B u v w` by `rfl`. -/
 theorem convFormL2_multilinear :
     ∃ B : L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] ℝ,
       ∀ (u v w : L2Sigma_R3), convFormL2_def u v w = B u v w := by
-  sorry -- ALLOW_SORRY: PR-4 (coherent trilinear Hamel tower; BExt_slot1 linear in u; antisymmetrize to get B)
+  sorry -- ALLOW_SORRY: PR-4 (B u := (detExtend u).compl₂ (TensorProduct.mk ℝ _ _) curried; convFormL2_def = B by rfl once detExtend is a genuine LinearMap)
 
-/-! ### C7 — `convFormL2_antisymm` -/
+/-! ### C8 — `convFormL2_antisymm` -/
 
-/-- **C7 `convFormL2_antisymm` [proved sorry-free].**
-`convFormL2_def u v w = -convFormL2_def u w v` by `ring`. -/
+/-- **C8 `convFormL2_antisymm` [PR-4].** `b u v w = − b u w v` for all `u v w`.
+
+`β_u` is antisymmetric on `D` (`convFormH1 u v w = − convFormH1 u w v`, B6, on the dense
+Schwartz edges; extended antisymmetrically by the Hamel extension).  The antisymmetry is
+a property of the *determined* `β_u` on `D` and is carried to all `v, w` because both
+`v ⊗ₜ w` and `w ⊗ₜ v` land in `D` whenever one of `v, w` is Schwartz — and the algebraic
+antisymmetry of the Hamel extension is fixed by the antisymmetric construction of `β_u`. -/
 theorem convFormL2_antisymm (u v w : L2Sigma_R3) :
     convFormL2_def u v w = -convFormL2_def u w v := by
-  simp only [convFormL2_def_eq]
-  ring
+  sorry -- ALLOW_SORRY: PR-4 (β_u antisymmetric on D by B6; the Hamel extension is built antisymmetric so the swap v↔w negates; reduces to detExtend u (v⊗w) = -detExtend u (w⊗v))
 
-/-! ### C8 — `convFormL2_extends` -/
+/-! ### C9 — `convFormL2_extends` -/
 
-/-- Helper: `IsSchwartzDivFree_R3 u → memH1VF_R3 (u : L2VF_R3)`.
-Each component `L2VF_projComponentC_R3 j u` equals `(ψ j).postcompCLM ofRealCLM` in L²;
-`SchwartzMap.memSobolev` gives `MemSobolev 1 2`.  Mirrors the private
-`memH1VF_R3_of_isSchwartzDivFree` in `SobolevEmbedding.lean:1067`. -/
-private theorem memH1VF_R3_of_schwartz {u : L2Sigma_R3}
-    (hu : IsSchwartzDivFree_R3 u) : memH1VF_R3 (u : L2VF_R3) := by
-  sorry -- ALLOW_SORRY: PR-4 (SchwartzMap.memSobolev on (ψ j).postcompCLM ofRealCLM; matches memH1VF_R3 = ∀ j, MemSobolev 1 2 (L2VF_projComponentC_R3 j u))
+/-- **C9 `convFormL2_extends` [PR-4].** On Schwartz triples, `b u v w = convFormSchwartz`.
 
-private theorem schwartz_mem_H1Sigma' {u : L2Sigma_R3}
-    (hu : IsSchwartzDivFree_R3 u) : u ∈ H1Sigma' :=
-  (mem_H1Sigma'_iff u).mpr ⟨memH1VF_R3_of_schwartz hu, u.2⟩
-
-/-- **C8 `convFormL2_extends` [proved sorry-free — modulo `memH1VF_R3_of_schwartz`].**
-On Schwartz triples, `convFormL2_def u v w = convFormSchwartz u v w`.
-
-**Proof:**
-1. `schwartz_mem_H1Sigma'`: `u,v,w ∈ H1Sigma'`.
-2. `BExt_on_H1`: reduce `BExt_slot3` to `convFormH1_tower`.
-3. `convFormH1_tower_apply`: reduce to `convFormH1`.
-4. B6: `convFormH1 u w v = -convFormH1 u v w`.
-5. Ring: `(x - (-x))/2 = x`.
-6. B5: `convFormH1 u v w = convFormSchwartz u v w`. -/
+**Proof:** all three of `u, v, w` are Schwartz ⇒ `v ⊗ₜ w ∈ 𝒮 ⊗ 𝒮 ⊆ D`, so `detExtend`
+reads the determined value `convFormH1 u v w` (C5b on the H¹ slice / overlap agreement);
+B5 (`convFormH1_eq_convFormSchwartz`) identifies it with `convFormSchwartz u v w`. -/
 theorem convFormL2_extends
     (u v w : L2Sigma_R3)
     (hu : IsSchwartzDivFree_R3 u) (hv : IsSchwartzDivFree_R3 v)
     (hw : IsSchwartzDivFree_R3 w) :
     convFormL2_def u v w = convFormSchwartz u v w hu hv hw := by
-  -- Steps (once BExt sorry-chain is filled in PR-4):
-  -- 1. schwartz_mem_H1Sigma' → hu', hv', hw' : u,v,w ∈ H1Sigma'
-  -- 2. BExt_on_H1: BExt_slot3 (u) (v) (w) = convFormH1_tower ⟨u,hu'⟩ ⟨v,hv'⟩ ⟨w,hw'⟩
-  --    and      BExt_slot3 (u) (w) (v) = convFormH1_tower ⟨u,hu'⟩ ⟨w,hw'⟩ ⟨v,hv'⟩
-  -- 3. convFormH1_tower_apply: unwrap to convFormH1 u v w and convFormH1 u w v
-  -- 4. B6 (convFormH1_antisymm): convFormH1 u w v = -convFormH1 u v w
-  -- 5. ring_nf: (x - (-x))/2 = x
-  -- 6. B5 (convFormH1_eq_convFormSchwartz): convFormH1 u v w = convFormSchwartz u v w
-  sorry -- ALLOW_SORRY: PR-4 (algebraic chain BExt_on_H1 + B6 + B5; sorry-propagation from BExt_* causes whnf timeout at 200000; proof is mechanically correct once PR-4 fills the chain)
+  sorry -- ALLOW_SORRY: PR-4 (detExtend_on_edgeSlot3 on the Schwartz slice gives convFormH1 u v w; B5 convFormH1_eq_convFormSchwartz)
 
-/-! ### C9 — `convFormL2_cont_fixedTest` (PR-4) -/
+/-! ### C10 — `convFormL2_cont_fixedTest` (the CRUX 5th field) -/
 
-/-- **C9 `convFormL2_cont_fixedTest` [PR-4 target].** Joint continuity of
-`(u,v) ↦ convFormL2_def u v w` for fixed Schwartz `w`.
+/-- **C10 `convFormL2_cont_fixedTest` [CRUX 5th field — PR-4].** For Schwartz `w`,
+`(u, v) ↦ b u v w` is jointly L²-continuous.
 
-**Proof route (PR-4 — CRUX-FINAL §5.3):**
-Both `BExt_slot3 u v w` and `BExt_slot3 u w v` at Schwartz `w ∈ H1Sigma'` equal the
-evaluations of BLT-continuous maps C3 and C4 (by `extendOfNorm_eq`); the difference and `/2`
-are jointly continuous in `(u,v)`. -/
+**Proof route (the determined payoff).** Fix Schwartz `w`.  For ALL `v`,
+`v ⊗ₜ w ∈ edgeSlot3 = L²_σ ⊗ 𝒮 ⊆ D`, so by `detExtend_on_edgeSlot3` the value is the
+*determined* `convFormH1 u v w` — NOT a Hamel value.  By C3 (`convBLT_fixedTest`), that
+equals the evaluation of the jointly continuous bilinear `Bw` (the B7-bounded `L²`
+extension), so `(u, v) ↦ b u v w = Bw u v` is continuous (`ContinuousLinearMap.continuous₂`).
+This is exactly where the refuted raw-Hamel object failed: here the swapped slot never
+puts a varied argument into a discontinuous Hamel index. -/
 theorem convFormL2_cont_fixedTest
     (w : L2Sigma_R3) (hw : IsSchwartzDivFree_R3 w) :
     Continuous (fun p : L2Sigma_R3 × L2Sigma_R3 => convFormL2_def p.1 p.2 w) := by
-  sorry -- ALLOW_SORRY: PR-4 (C3+C4 CLM continuity at Schwartz w; extendOfNorm_eq identifies BExt terms with CLM evaluations; difference and /2 continuous)
+  sorry -- ALLOW_SORRY: PR-4 (∀v: v⊗w ∈ edgeSlot3 ⊆ D; detExtend_on_edgeSlot3 ⇒ b u v w = convFormH1 u v w = convBLT_fixedTest w u v (C3); ContinuousLinearMap.continuous₂)
 
-/-! ### C10 — `r3ConvectionGapOp_holds` (PR-4/PR-5) -/
+/-! ### C11 — `r3ConvectionGapOp_holds` (assembled theorem; PR-5 re-exports as the axiom name) -/
 
-/-- **C10 `r3ConvectionGapOp_holds` [PR-4/PR-5 target].**
+/-- **C11 `r3ConvectionGapOp_holds` [assembled].**
 `∀ 𝔊 : R3GalerkinScheme, Nonempty (ConvectionGapOp 𝔊)`.
 
-This is the THEOREM version of axiom `r3ConvectionGapOp_exists`.  PR-5 will delete the axiom
-and re-export this as `r3ConvectionGapOp_exists` (Hard Rule #2: name unchanged).
-
-Assembled from:
-- `b = convFormL2_def` (C5, sorry-free)
-- `b_extends = convFormL2_extends` (C8, sorry-free modulo C8 helper)
-- `b_multilinear = convFormL2_multilinear` (C6, PR-4 sorry)
-- `b_antisymm_gap = convFormL2_antisymm` (C7, sorry-free)
-- `b_cont_fixedTest = convFormL2_cont_fixedTest` (C9, PR-4 sorry) -/
+THEOREM version of `axiom r3ConvectionGapOp_exists`.  PR-5 deletes the axiom and
+re-exports this under the same name (Hard Rule #2).  Assembled from the five determined-form
+fields:
+- `b               := convFormL2_def` (C6)
+- `b_extends       := convFormL2_extends` (C9)
+- `b_multilinear   := convFormL2_multilinear` (C7)
+- `b_antisymm_gap  := convFormL2_antisymm` (C8)
+- `b_cont_fixedTest := convFormL2_cont_fixedTest` (C10). -/
 theorem r3ConvectionGapOp_holds (𝔊 : R3GalerkinScheme) : Nonempty (ConvectionGapOp 𝔊) :=
-  ⟨{ b             := convFormL2_def
+  ⟨{ b              := convFormL2_def
      b_extends      := fun u v w hu hv hw => convFormL2_extends u v w hu hv hw
      b_multilinear  := convFormL2_multilinear
      b_antisymm_gap := convFormL2_antisymm
