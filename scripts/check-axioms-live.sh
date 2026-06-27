@@ -181,9 +181,11 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
    LerayHopf.aubin_lions LerayHopf.galerkin_limit_passage
    LerayHopf.torusConvectionGap_exists"
 
+# NOTE: r3ConvectionGapOp_exists REMOVED (issue #56) — proved sorry-free as r3ConvectionGapOp_holds
+#   (determined-form convection operator, ConvectionExtension.lean C11). Net R3 project axioms now 2.
 # ---------------------------------------------------------------------------
 # Pin 2: exists_lerayHopf_r3_axiomatic
-#   3 project axioms + 3 kernel = 6 total
+#   2 project axioms + 3 kernel = 5 total
 #   (spatial_compactness_R3 removed — issue #2 — now a theorem via the FK chain)
 #   (r3GalerkinScheme_exists removed — issue #21 — now a theorem, SWAPPED for the
 #    thinner curlSchwartzDense_holds density axiom)
@@ -214,7 +216,6 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound
    LerayHopf.galerkin_limit_passage_R3
-   LerayHopf.r3ConvectionGapOp_exists
    LerayHopf.galerkin_spacetime_precompact_R3"
 
 # ---------------------------------------------------------------------------
@@ -233,4 +234,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets (R3: 3 project axioms)."
+echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets (R3: 2 project axioms)."

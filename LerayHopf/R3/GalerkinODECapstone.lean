@@ -1,7 +1,7 @@
 import LerayHopf.R3.CurlDensityCapstone   -- nonempty_schwartzGalerkinBasis (proved, issue #3 / #21)
 import LerayHopf.R3.GalerkinODESolve
 import LerayHopf.R3.AubinLionsAssembly   -- build_galerkin_package_R3_of_galSeq (relocated, issue #15)
-import LerayHopf.R3.ConvectionForm        -- r3_NSForms_exists (proved theorem, issue #48 thin-swap)
+import LerayHopf.R3.ConvectionExtension    -- r3_NSForms_exists (proved theorem, issue #56 rewire)
 
 /-!
 # LerayHopf.R3.GalerkinODECapstone — discharge `galerkin_ode_solution_R3` (issue #10)
@@ -31,11 +31,13 @@ Routing the capstone through `galSeq_R3_of_basis` (axiom-free, concrete scheme) 
 the `galerkin_ode_solution_R3` axiom drops EXACTLY that axiom from
 `exists_lerayHopf_r3_axiomatic`'s `#print axioms`.  After issue #15 (which removed `aubin_lions_R3` — proving its spatial half and swapping its
 time content 1-for-1 for the single strictly-thinner UNCONDITIONAL
-`galerkinSpaceTimeExtraction_R3`) and issue #48 (which reorganized the named axiom `r3_NSForms_exist` into the operator-gap
-form `r3ConvectionGapOp_exists` + the proved theorem `r3_NSForms_exists` via `R3NSForms_of_gap`),
-the capstone rests on the THREE project axioms: `r3ConvectionGapOp_exists`,
-`galerkin_limit_passage_R3`, `galerkin_spacetime_precompact_R3`.
-`r3_NSForms_exist` is NO LONGER among them — replaced (issue #48) via `r3_NSForms_exists`.
+`galerkinSpaceTimeExtraction_R3`), issue #48 (which reorganized the named axiom `r3_NSForms_exist`
+into the operator-gap form `r3ConvectionGapOp_exists` + the proved theorem `r3_NSForms_exists`
+via `R3NSForms_of_gap`), and issue #56 (which proved `r3ConvectionGapOp_exists` sorry-free as
+`r3ConvectionGapOp_holds` via the determined-form construction in `ConvectionExtension.lean`),
+the capstone rests on TWO project axioms: `galerkin_limit_passage_R3` and
+`galerkin_spacetime_precompact_R3`.
+`r3ConvectionGapOp_exists` is NO LONGER among them — PROVED (issue #56) as `r3ConvectionGapOp_holds`.
 
 ## Declarations added
 
@@ -83,8 +85,8 @@ The witness scheme is the CONCRETE `schemeOfBasis B`, with `B` drawn from
 `nonempty_schwartzGalerkinBasis` (NOT from `r3GalerkinScheme_exists`, which would discard the
 basis via `Nonempty.elim` and reintroduce the need for the per-scheme ODE axiom).
 
-The name `_axiomatic` advertises that this result depends on the THREE remaining project axioms
-(`r3ConvectionGapOp_exists`, `galerkin_limit_passage_R3`, `galerkin_spacetime_precompact_R3`).
+The name `_axiomatic` advertises that this result depends on the TWO remaining project axioms
+(`galerkin_limit_passage_R3`, `galerkin_spacetime_precompact_R3`).
 `galerkin_ode_solution_R3` is NO LONGER among them — discharged here (issue #10).
 `aubin_lions_R3` is NO LONGER among them — removed (issue #15): its spatial half PROVED, its time
 content swapped 1-for-1 for the single strictly-thinner UNCONDITIONAL `galerkinSpaceTimeExtraction_R3`
@@ -92,10 +94,11 @@ content swapped 1-for-1 for the single strictly-thinner UNCONDITIONAL `galerkinS
 `r3GalerkinScheme_exists` was discharged earlier (issue #21, `curlSchwartzDense_holds`);
 `spatial_compactness_R3` earlier still (issue #2, FK chain).
 `r3_NSForms_exist` is NO LONGER among them — replaced (issue #48, reorganization):
-  the named axiom is replaced by `r3ConvectionGapOp_exists` (operator core, in `ConvectionForm.lean`)
+  the named axiom was replaced by `r3ConvectionGapOp_exists` (operator core, in `ConvectionForm.lean`)
   and the proved theorem `r3_NSForms_exists` (same conclusion, proved via `R3NSForms_of_gap`).
-  Note: `b_cont_fixedTest` ≡ `b_bound`, so the fixed-test bound is still assumed; what becomes
-  theorem content is multilinear algebra + density.  Net project axioms: 3. -/
+`r3ConvectionGapOp_exists` is NO LONGER among them — PROVED (issue #56) sorry-free as the
+  theorem `r3ConvectionGapOp_holds` in `ConvectionExtension.lean` (determined-form construction);
+  the operator core is now entirely axiom-free.  Net project axioms: 2. -/
 theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),

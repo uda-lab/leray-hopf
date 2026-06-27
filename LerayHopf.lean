@@ -73,6 +73,8 @@ import LerayHopf.R3.ConvectionOperator
 import LerayHopf.R3.ConvectionForm
 import LerayHopf.R3.SobolevEmbedding
 import LerayHopf.R3.EnergyClassConvection
+import LerayHopf.R3.ConvectionExtension  -- PR-3: C0–C10 scaffold for full ConvectionGapOp construction
+import LerayHopf.R3.TensorIntersection   -- issue #56: S⊗V ∩ V⊗S = S⊗S linear-algebra lemma
 
 -- Bochner layer (sorry-carrying)
 import LerayHopf.Bochner.GelfandTriple
