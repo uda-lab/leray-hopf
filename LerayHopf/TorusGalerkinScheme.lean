@@ -58,7 +58,7 @@ Fourier coefficients, and `velocityProjection_n_component_comm` reduces the `j`-
 `L2VF_projComponentC j u` is `RCLike.ofRealCLM ∘ L2VF_projComponent j u`; equality of all complex
 components forces equality of the real components (`ofRealCLM` injective at the `Lp` level), and a
 velocity field is determined by its three real components. -/
-private lemma L2VF_ext_componentC_mFourierCoeff {u v : L2VF}
+lemma L2VF_ext_componentC_mFourierCoeff {u v : L2VF}
     (h : ∀ (j : Fin 3) (k : Fin 3 → ℤ),
       mFourierCoeff3 (L2VF_projComponentC j u) k = mFourierCoeff3 (L2VF_projComponentC j v) k) :
     u = v := by
