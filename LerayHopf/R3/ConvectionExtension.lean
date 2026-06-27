@@ -29,9 +29,12 @@ bilinear form `β_u` on the genuinely *determined* submodule
 `D := (𝒮 ⊗ L²_σ) + (L²_σ ⊗ 𝒮) ≤ L²_σ ⊗[ℝ] L²_σ`, where
 `𝒮 := Submodule.span ℝ {x | IsSchwartzDivFree_R3 x}`:
 
-- on `𝒮 ⊗ L²_σ` (slot-2 Schwartz): `(s, l) ↦ convFormH1 u s l` — defined for *all* `l`
-  because the Schwartz slot-2 makes `convFormH1 u s ·` `L²`-bounded (B7);
-- on `L²_σ ⊗ 𝒮` (slot-3 Schwartz): `(l, s) ↦ convFormH1 u l s = − convFormH1 u s l` (B6).
+- on `𝒮 ⊗ L²_σ` (slot-2 Schwartz): for fixed Schwartz `s`, the map `l ↦ b(u, s, l)` is
+  realized as a bounded linear extension (`convBLTspan`/`edge2Lift`) from the H¹ slice to all
+  of `L²_σ`; in the tensor picture this edge bilinear is lifted via `TensorProduct.lift`
+  to a `LinearMap` on `edgeSlot2` (NOT the raw `convFormH1 u s l` outside its H¹ domain);
+- on `L²_σ ⊗ 𝒮` (slot-3 Schwartz): `(l, s) ↦ convFormH1 u l s = − convFormH1 u s l` (B6),
+  lifted to a `LinearMap` on `edgeSlot3`.
 
 These two prescriptions agree on the overlap
 `(𝒮 ⊗ L²_σ) ⊓ (L²_σ ⊗ 𝒮) = 𝒮 ⊗ 𝒮`
@@ -1711,3 +1714,29 @@ theorem r3ConvectionGapOp_holds (𝔊 : R3GalerkinScheme) : Nonempty (Convection
      b_cont_fixedTest := fun w hw => convFormL2_cont_fixedTest w hw }⟩
 
 end LerayHopf.R3.ConvectionExtension
+
+namespace LerayHopf
+
+/-- The ℝ³ NS convection form exists — THEOREM (was axiom `r3ConvectionGapOp_exists`, issue #56),
+now proved from `r3ConvectionGapOp_holds` (the sorry-free determined-form construction in
+`ConvectionExtension.lean`) + proved density, via the sorry-free `R3NSForms_of_gap`.
+
+Route: obtain `g : ConvectionGapOp 𝔊` from the proved theorem `r3ConvectionGapOp_holds`;
+supply proved density (`convectionGap_schwartz_dense curlSchwartzDense_holds`) as
+`schwartz_dense`; assemble a full `ConvectionGap 𝔊`; apply `R3NSForms_of_gap`.
+
+The conclusion `Nonempty (R3NSForms 𝔊)` is IDENTICAL to what `r3_NSForms_exist` asserted —
+no statement weakening.  The operator core is now PROVED sorry-free in this file
+(`r3ConvectionGapOp_holds`, C11); no project axiom remains for the convection operator.
+Mirrors the torus `torus3_NSForms_exists` (issue #22). -/
+theorem r3_NSForms_exists (𝔊 : R3GalerkinScheme) : Nonempty (R3NSForms 𝔊) :=
+  (LerayHopf.R3.ConvectionExtension.r3ConvectionGapOp_holds 𝔊).elim fun g =>
+    R3NSForms_of_gap 𝔊
+      { b              := g.b
+      , b_extends      := g.b_extends
+      , b_multilinear  := g.b_multilinear
+      , b_antisymm_gap := g.b_antisymm_gap
+      , b_cont_fixedTest := g.b_cont_fixedTest
+      , schwartz_dense := convectionGap_schwartz_dense curlSchwartzDense_holds }
+
+end LerayHopf

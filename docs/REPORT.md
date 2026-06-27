@@ -2,8 +2,9 @@
 
 > **Historical snapshot.** This report describes the original autonomous run (T³, branch
 > `autorun/leray-hopf-torus3`). For the *current* axiom frontier and status see
-> [`STATUS.md`](STATUS.md) and the repo [`README`](../README.md). As of 2026-06-24 both
-> the ℝ³ and 𝕋³ capstones rest on **3 project axioms** each.
+> [`STATUS.md`](STATUS.md) and the repo [`README`](../README.md). As of 2026-06-27 the ℝ³ capstone rests on **2 project axioms**
+> (`r3ConvectionGapOp_exists` proved as `r3ConvectionGapOp_holds`, issue #56/PR #60) and
+> the 𝕋³ capstone rests on **3 project axioms**.
 
 Leray–Hopf weak existence on the real 3-torus, built bottom-up on mathlib.
 Branch `autorun/leray-hopf-torus3`, 10 milestone commits on top of `9232c05`.

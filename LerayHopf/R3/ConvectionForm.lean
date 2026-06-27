@@ -638,48 +638,17 @@ lemma convectionGap_schwartz_dense (h : CurlSchwartzDense) :
       Filter.Tendsto s Filter.atTop (nhds u) :=
   fun u => schwartzDivFree_dense_of_curlDense h u
 
-/-! ### Issue #48 — Reorganization of AX-4: operator-core axiom + proved capstone theorem
+/-! ### Issue #56 — `r3ConvectionGapOp_exists` REMOVED (proved as `r3ConvectionGapOp_holds`)
 
-The named axiom `r3_NSForms_exist` is REPLACED by `r3ConvectionGapOp_exists` which holds
-the operator core (`ConvectionGapOp`).  Density (`schwartz_dense`) is NOT bundled — it is
-the proved lemma `convectionGap_schwartz_dense`.  `r3_NSForms_exists` assembles the full
-`ConvectionGap` from `ConvectionGapOp` + proved density, then applies `R3NSForms_of_gap`.
+The former axiom `r3ConvectionGapOp_exists` (operator core, five `ConvectionGapOp` fields)
+is NOW PROVED sorry-free as the theorem `r3ConvectionGapOp_holds` in
+`LerayHopf/R3/ConvectionExtension.lean` (C11, determined-form construction).  It is NO
+LONGER declared here as an axiom.
 
-What becomes theorem content: multilinear algebra (`b_add`, `b_smul`) and density.
-What remains assumed: the operator core including `b_cont_fixedTest` (equivalent to `b_bound`). -/
-
-/-- **Operator-core axiom (AX-4 reorganized, issue #48).**
-
-For any `R3GalerkinScheme 𝔊`, the five operator-core fields exist (`ConvectionGapOp 𝔊`):
-`b`, `b_extends`, `b_multilinear`, `b_antisymm_gap`, `b_cont_fixedTest`.
-
-Density (`schwartz_dense`) is NOT assumed — it is the proved lemma
-`convectionGap_schwartz_dense curlSchwartzDense_holds` assembled in `r3_NSForms_exists`.
-
-Note: `b_cont_fixedTest` (joint L²-continuity of `(u,v)↦b u v w` at fixed Schwartz `w`)
-is analytically equivalent to `R3NSForms.b_bound` (bounded bilinear ↔ continuous bilinear),
-so the fixed-test bound is still ASSUMED, not proved.  What genuinely becomes theorem content
-is the multilinear algebra (from `b_multilinear`) and density (from `curlSchwartzDense_holds`).
-Mirrors the torus `torusConvectionGap_exists` (issue #22). -/
-axiom r3ConvectionGapOp_exists (𝔊 : R3GalerkinScheme) : Nonempty (ConvectionGapOp 𝔊) -- ALLOW_AXIOM: ℝ³ weak (u·∇)v operator core (AX-4 reorganized, issue #48); 5 fields: b + b_extends + b_multilinear + b_antisymm_gap + b_cont_fixedTest; density (schwartz_dense) NOT assumed — proved via convectionGap_schwartz_dense curlSchwartzDense_holds; b_cont_fixedTest is equivalent to b_bound (bounded bilinear ↔ continuous bilinear) so the fixed-test bound is still assumed, not proved; what genuinely becomes theorem content: multilinear algebra (b_add/b_smul from b_multilinear) + density; NON-VACUOUS (b_extends + convFormSchwartz_eq_witness pin to convIntegralSchwartz excludes b=0); Temam II.§1; Lemarié-Rieusset §5; mirrors torus torusConvectionGap_exists (issue #22)
-
-/-- The ℝ³ NS convection form exists — THEOREM (was named axiom `r3_NSForms_exist`, issue #48),
-proved from `r3ConvectionGapOp_exists` + proved density, via the sorry-free `R3NSForms_of_gap`.
-
-Route: obtain `g : ConvectionGapOp 𝔊` from the axiom; supply proved density
-(`convectionGap_schwartz_dense curlSchwartzDense_holds`) as `schwartz_dense`; assemble a
-full `ConvectionGap 𝔊`; apply `R3NSForms_of_gap`.
-
-The conclusion `Nonempty (R3NSForms 𝔊)` is IDENTICAL to what `r3_NSForms_exist` asserted —
-no statement weakening.  Mirrors the torus `torus3_NSForms_exists` (issue #22). -/
-theorem r3_NSForms_exists (𝔊 : R3GalerkinScheme) : Nonempty (R3NSForms 𝔊) :=
-  (r3ConvectionGapOp_exists 𝔊).elim fun g =>
-    R3NSForms_of_gap 𝔊
-      { b              := g.b
-      , b_extends      := g.b_extends
-      , b_multilinear  := g.b_multilinear
-      , b_antisymm_gap := g.b_antisymm_gap
-      , b_cont_fixedTest := g.b_cont_fixedTest
-      , schwartz_dense := convectionGap_schwartz_dense curlSchwartzDense_holds }
+The theorem `r3_NSForms_exists` (same conclusion `Nonempty (R3NSForms 𝔊)`) is also now
+located in `ConvectionExtension.lean`, where it is proved from `r3ConvectionGapOp_holds`
+(NOT from an axiom) + proved density via `R3NSForms_of_gap`.  Net result: the operator core
+is PROVED; no project axiom remains for the convection operator.  R3 capstone now rests on
+TWO project axioms: `galerkin_limit_passage_R3` and `galerkin_spacetime_precompact_R3`. -/
 
 end LerayHopf

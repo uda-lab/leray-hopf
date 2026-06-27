@@ -118,12 +118,18 @@ I searched: mathlib has `TensorProduct.map`, `TensorProduct.lift`, `TensorProduc
 `A⊗B = P⊗Q ⊕ P⊗Qᶜ ⊕ Pᶜ⊗Q ⊕ Pᶜ⊗Qᶜ` and showing `(P⊗B)` and `(A⊗Q)` are sums of distinct summands — a
 multi-hundred-line tensor-algebra development with `TensorProduct.directSum` plumbing.
 
-**BUILD-AROUND (decisive — the Lean construction uses NO tensor products at all).** The tensor model is
-only a soundness picture. The **scalar** Lean encoding realizes the SAME determined form via
-`Submodule.exists_isCompl` on `H₁' ≤ L2Sigma_R3` plus `LinearMap.ofIsCompl`/`LinearMap.exists_extend`,
-operating on the curried `convFormH1` tower. **The tensor-intersection lemma is NOT built and NOT on the
-critical path.** §3 gives the tensor-free encoding. This is the single most important build-around: do
-**not** attempt the tensor-intersection lemma.
+**AS-BUILT NOTE (supersedes the planned build-around above):** The shipped Lean construction
+(`ConvectionExtension.lean`, PR #60) DOES use `TensorProduct` throughout and the
+tensor-intersection lemma IS on the critical path.  Specifically:
+- `TensorProduct.map`, `TensorProduct.mapIncl`, `TensorProduct.lift`, `TensorProduct.mk`
+  are used for the edge bilinears on `edgeSlot2` and `edgeSlot3`.
+- `TensorIntersection.range_map_subtype_inf_range_map_subtype` (proved sorry-free in
+  `TensorIntersection.lean`) supplies the overlap identity
+  `(𝒮 ⊗ L²_σ) ⊓ (L²_σ ⊗ 𝒮) = 𝒮 ⊗ 𝒮` (`edge_inf_eq_schwartz_tensor`), which is required
+  for `LinearPMap.sup` to glue the two edge prescriptions.
+The "tensor-free scalar encoding" described below in §3 was the planned route; the shipped
+route uses tensors and the intersection lemma.  Both routes yield the same five fields
+and the same sorry-free `r3ConvectionGapOp_holds` conclusion.
 
 ---
 

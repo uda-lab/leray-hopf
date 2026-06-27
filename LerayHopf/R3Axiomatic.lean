@@ -8,15 +8,18 @@ existence argument.  The capstone declaration is:
 
     `LerayHopf.exists_lerayHopf_r3_axiomatic`
 
-which depends on three project axioms:
-- `r3ConvectionGapOp_exists` (issue #48, reorganization of AX-4): carries the five operator-core
-  fields replacing the named axiom `r3_NSForms_exist`; density (`schwartz_dense`) is NOT bundled
-  (proved via `curlSchwartzDense_holds`); `b_cont_fixedTest` is equivalent to `R3NSForms.b_bound`
-  so the fixed-test bound is still assumed; what genuinely becomes theorem content: multilinear
-  algebra + density; mirrors torus `torusConvectionGap_exists` (issue #22)
+which depends on TWO project axioms:
 - `galerkin_spacetime_precompact_R3` (issue #44): refine-capable LOCAL Aubin–Lions–Simon
   spacetime precompactness in L²(0,T;L²(B_k)); no tightness on ℝ³ required
 - `galerkin_limit_passage_R3` (AX-3): limit passage to weak NS solution on ℝ³
+
+`r3ConvectionGapOp_exists` (former AX-4, issue #48) is NO LONGER an axiom — it is PROVED
+sorry-free as the theorem `r3ConvectionGapOp_holds` in `ConvectionExtension.lean` (issue #56,
+determined-form construction); all five `ConvectionGapOp` fields are discharged, including
+`b_cont_fixedTest` which is now GENUINELY proved (not assumed) via the BLT extension on the
+determined submodule `D = (𝒮 ⊗ L²_σ) + (L²_σ ⊗ 𝒮)`.  The proved theorem `r3_NSForms_exists`
+(same conclusion, no statement weakening) is rerouted through `r3ConvectionGapOp_holds` in
+`ConvectionExtension.lean`.  Mirrors torus `torusConvectionGap_exists` (issue #22).
 
 `galerkin_ode_solution_R3` (former AX-2) is NO LONGER an axiom — it is discharged (issue #10)
 by routing the capstone's per-`n` Galerkin sequence through the axiom-free
