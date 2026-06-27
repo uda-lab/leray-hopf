@@ -1,8 +1,19 @@
 name: lean
 
 on:
+  # Build only on pushes to main (e.g. merges); feature-branch work is covered by
+  # the pull_request trigger below. This avoids the push+pull_request double-run that
+  # billed every PR commit twice, and skips builds for pre-PR lane pushes.
   push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  # Documentation-only changes don't need the heavy Lean build / axiom pins.
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
   workflow_dispatch:
 
 # Cancel superseded runs on the same ref.
