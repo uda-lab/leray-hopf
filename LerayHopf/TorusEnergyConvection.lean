@@ -165,6 +165,24 @@ theorem memH1VF_smul (c : ℝ) {u : L2VF} (hu : memH1VF u) :
   nlinarith [abs_nonneg c, sq_nonneg N, mul_nonneg hk (sq_nonneg N),
              sq_nonneg (|c| * N), sq_abs c]
 
+/-! ### Fourier support of Galerkin-box elements -/
+
+/-- If `u ∈ Vₙ` (i.e. `velocityProjection_n n u = u`), then the `j`-th Fourier coefficient of
+`u` vanishes for `k ∉ fourierBox n`.
+
+Local copy of `coeff_zero_outside_box` (which lives in the downstream `TorusConvectionForm.lean`,
+not importable here): `velocityProjection_n_component_comm` rewrites the component of the
+projection to the `restrictScalars`-wrapped `fourierProjection_n`, whose coefficient is `0`
+outside the box (`fourierProjection_n_mFourierCoeff` + `if_neg`). -/
+private lemma coeff_zero_outside_box' (n : ℕ) (u : L2VF)
+    (hu : velocityProjection_n n u = u) (j : Fin 3) (k : Fin 3 → ℤ)
+    (hk : k ∉ fourierBox n) :
+    mFourierCoeff3 (L2VF_projComponentC j u) k = 0 := by
+  have hcomm := velocityProjection_n_component_comm n u j
+  rw [hu] at hcomm
+  conv_lhs => rw [hcomm]
+  rw [ContinuousLinearMap.coe_restrictScalars', fourierProjection_n_mFourierCoeff, if_neg hk]
+
 /-! ### The H¹_σ submodule of `L2Sigma` -/
 
 /-- **`H1SigmaTorus` — the div-free H¹ submodule of `L2Sigma`.**
@@ -193,10 +211,147 @@ theorem mem_H1SigmaTorus_iff (u : L2Sigma) :
     u ∈ H1SigmaTorus ↔ memH1Sigma (u : L2VF) :=
   Iff.rfl
 
+/-! ### ℓ² / weighted-ℓ² summability of Fourier coefficients (local helpers) -/
+
+/-- The squared Fourier coefficients of any `f : L2C` are summable (from `lp` membership).
+
+Local copy of `summable_norm_mFourierCoeff3_sq` (which lives in the downstream
+`TorusGalerkinODESolve.lean`); proved here directly from `Memℓp (repr f) 2`. -/
+private theorem summable_coeff_sq (f : L2C) :
+    Summable (fun k : Fin 3 → ℤ => ‖mFourierCoeff3 f k‖ ^ 2) := by
+  have hmem : Memℓp (torus3_mFourierBasis.repr f) 2 := (torus3_mFourierBasis.repr f).2
+  have hp : (0 : ℝ) < (2 : ENNReal).toReal := by norm_num
+  have := (memℓp_gen_iff hp).mp hmem
+  refine this.congr (fun k => ?_)
+  rw [show ((2 : ENNReal).toReal) = (2 : ℝ) by norm_num, Real.rpow_two]
+  rfl
+
+/-- The H¹-gradient-weighted squared coefficients are summable for an H¹ component:
+`∑_l (∑ᵢ (lᵢ)²) · ‖v̂(l)‖² < ∞`.  Dominated by the full H¹ weight `(1 + ∑ᵢ(lᵢ)²)`. -/
+private theorem summable_grad_weight_sq {f : L2C} (hf : memH1Torus f) :
+    Summable (fun l : Fin 3 → ℤ => (∑ i : Fin 3, (l i : ℝ) ^ 2) * ‖mFourierCoeff3 f l‖ ^ 2) := by
+  refine hf.of_nonneg_of_le (fun l => by positivity) (fun l => ?_)
+  have hge : (∑ i : Fin 3, (l i : ℝ) ^ 2) ≤ 1 + ∑ i : Fin 3, (l i : ℝ) ^ 2 := by linarith
+  exact mul_le_mul_of_nonneg_right hge (by positivity)
+
 /-! ### PR-2 analytic targets (scaffold — proved in PR-2) -/
 
 /-! #### Parseval triple-sum summability — Claim 1a (derivative on MIDDLE slot) -/
 
+/-- The per-`(i,a)` Fourier convection summand at lattice point `(k, l)`, before taking the
+real part.  Sums (over `(i, a)` and the lattice) to the convection form value. -/
+noncomputable def convSummand (u v w : L2VF) (i a : Fin 3) (k l : Fin 3 → ℤ) : ℂ :=
+  mFourierCoeff3 (L2VF_projComponentC a u) k *
+    ((2 * (Real.pi : ℂ) * Complex.I * (l a : ℂ)) *
+      (mFourierCoeff3 (L2VF_projComponentC i v) l *
+        mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l))))
+
+set_option maxHeartbeats 1000000 in
+/-- **Norm-summability of the convection summand on the H¹/Galerkin-test locus.**
+
+For `u : L2VF`, `v : L2VF` with `memH1VF v` (H¹ on the MIDDLE / gradient slot), and a Galerkin
+test `w`, the summand norm `‖convSummand u v w i a (k,l)‖` is summable over the lattice.
+
+Anti-diagonal AM-GM: `‖û_a(k)‖·2π|lₐ|·‖v̂_i(l)‖ ≤ π(‖û_a(k)‖² + (lₐ)²‖v̂_i(l)‖²)`, dominated
+(after the reindexings `(k,l)↦(k,-(k+l))` and `(k,l)↦(l,-(k+l))`) by products of
+`ℓ²(û)` / weighted-`ℓ²(∇v)` (from `memH1VF v`) with the finite-support `ℓ¹(ŵ)`.
+
+**Corresponds to:** `convSummand_summable_of_h1_test` in the PR-0 spike. -/
+theorem convSummand_norm_summable (u : L2VF) (v : L2VF) (hv : memH1VF v)
+    (w : L2Sigma) (hw : IsGalerkinTest w) (i a : Fin 3) :
+    Summable (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
+      ‖convSummand u v (w : L2VF) i a kl.1 kl.2‖) := by
+  classical
+  -- Abbreviations (definitional) for the three coefficient families.
+  let U : (Fin 3 → ℤ) → ℂ := fun k => mFourierCoeff3 (L2VF_projComponentC a u) k
+  let V : (Fin 3 → ℤ) → ℂ := fun l => mFourierCoeff3 (L2VF_projComponentC i v) l
+  let Wc : (Fin 3 → ℤ) → ℂ := fun m => mFourierCoeff3 (L2VF_projComponentC i (w : L2VF)) m
+  -- `‖Wc(·)‖` is finitely supported (Galerkin test ⟹ `w ∈ Vₙ`).
+  obtain ⟨n, hn⟩ := hw
+  have hWsupp : ∀ m : Fin 3 → ℤ, m ∉ fourierBox n → Wc m = 0 := by
+    intro m hm; exact coeff_zero_outside_box' n (w : L2VF) hn i m hm
+  have hWsumm : Summable (fun m : Fin 3 → ℤ => ‖Wc m‖) :=
+    summable_of_ne_finset_zero (s := fourierBox n)
+      (fun m hm => by rw [hWsupp m hm, norm_zero])
+  have hUsq : Summable (fun k : Fin 3 → ℤ => ‖U k‖ ^ 2) := summable_coeff_sq _
+  have hVw : Summable (fun l : Fin 3 → ℤ => (∑ j : Fin 3, (l j : ℝ) ^ 2) * ‖V l‖ ^ 2) :=
+    summable_grad_weight_sq (hv i)
+  -- The dominating sum `G kl := π · ‖Wc m‖ · (‖U k‖² + (lₐ)² ‖V l‖²)`, `m = -(k+l)`, is summable.
+  have hGsum : Summable (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
+      Real.pi * (‖Wc (-(kl.1 + kl.2))‖ *
+        (‖U kl.1‖ ^ 2 + (kl.2 a : ℝ) ^ 2 * ‖V kl.2‖ ^ 2))) := by
+    apply Summable.mul_left
+    have hsplit : (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
+          ‖Wc (-(kl.1 + kl.2))‖ * (‖U kl.1‖ ^ 2 + (kl.2 a : ℝ) ^ 2 * ‖V kl.2‖ ^ 2))
+        = (fun kl => ‖Wc (-(kl.1 + kl.2))‖ * ‖U kl.1‖ ^ 2)
+          + (fun kl => ‖Wc (-(kl.1 + kl.2))‖ * ((kl.2 a : ℝ) ^ 2 * ‖V kl.2‖ ^ 2)) := by
+      funext kl; simp only [Pi.add_apply]; ring
+    rw [hsplit]
+    refine Summable.add ?_ ?_
+    · -- Reindex `(k,l) ↦ (k, -(k+l))`; then product `‖U k‖² · ‖Wc m‖`.
+      let e : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) × (Fin 3 → ℤ) :=
+        { toFun := fun kl => (kl.1, -(kl.1 + kl.2))
+          invFun := fun km => (km.1, -(km.1 + km.2))
+          left_inv := fun kl => Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
+          right_inv := fun km => Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply]) }
+      have hprod : Summable (fun km : (Fin 3 → ℤ) × (Fin 3 → ℤ) => ‖U km.1‖ ^ 2 * ‖Wc km.2‖) :=
+        hUsq.mul_of_nonneg hWsumm (fun _ => by positivity) (fun _ => norm_nonneg _)
+      refine ((Equiv.summable_iff e).mpr hprod).congr (fun kl => ?_)
+      simp only [e, Equiv.coe_fn_mk, Function.comp]
+      ring
+    · -- Reindex `(k,l) ↦ (l, -(k+l))`; then product `((lₐ)²‖V l‖²) · ‖Wc m‖`.
+      let e : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) × (Fin 3 → ℤ) :=
+        { toFun := fun kl => (kl.2, -(kl.1 + kl.2))
+          invFun := fun lm => (-(lm.1 + lm.2), lm.1)
+          left_inv := fun kl => Prod.ext (by funext j; simp [Pi.neg_apply, Pi.add_apply]) rfl
+          right_inv := fun lm => Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply]) }
+      -- For the `(lₐ)²‖V l‖²` factor: dominated by the H¹ weight `(∑ⱼ(lⱼ)²)‖V l‖²`.
+      have hVa : Summable (fun l : Fin 3 → ℤ => (l a : ℝ) ^ 2 * ‖V l‖ ^ 2) := by
+        refine hVw.of_nonneg_of_le (fun l => by positivity) (fun l => ?_)
+        have hle : (l a : ℝ) ^ 2 ≤ ∑ j : Fin 3, (l j : ℝ) ^ 2 :=
+          Finset.single_le_sum (f := fun j => (l j : ℝ) ^ 2)
+            (fun j _ => by positivity) (Finset.mem_univ a)
+        exact mul_le_mul_of_nonneg_right hle (by positivity)
+      have hprod : Summable (fun lm : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
+          ((lm.1 a : ℝ) ^ 2 * ‖V lm.1‖ ^ 2) * ‖Wc lm.2‖) :=
+        hVa.mul_of_nonneg hWsumm (fun _ => by positivity) (fun _ => norm_nonneg _)
+      refine ((Equiv.summable_iff e).mpr hprod).congr (fun kl => ?_)
+      simp only [e, Equiv.coe_fn_mk, Function.comp]
+      ring
+  -- Dominate `‖convSummand‖` by `G`.
+  refine Summable.of_nonneg_of_le (fun kl => norm_nonneg _) (fun kl => ?_) hGsum
+  show ‖U kl.1 * ((2 * (Real.pi : ℂ) * Complex.I * (kl.2 a : ℂ)) *
+      (V kl.2 * Wc (-(kl.1 + kl.2))))‖
+    ≤ Real.pi * (‖Wc (-(kl.1 + kl.2))‖ * (‖U kl.1‖ ^ 2 + (kl.2 a : ℝ) ^ 2 * ‖V kl.2‖ ^ 2))
+  -- `‖z‖ = ‖U‖·(2π|lₐ|)·‖V‖·‖Wc‖`.
+  have hnormeq : ‖(U kl.1 * ((2 * (Real.pi : ℂ) * Complex.I * (kl.2 a : ℂ)) *
+        (V kl.2 * Wc (-(kl.1 + kl.2)))))‖
+      = ‖U kl.1‖ * ((2 * Real.pi) * |(kl.2 a : ℝ)|) * ‖V kl.2‖ * ‖Wc (-(kl.1 + kl.2))‖ := by
+    simp only [norm_mul, Complex.norm_I, mul_one, Complex.norm_real, Complex.norm_intCast,
+      Real.norm_eq_abs, Complex.norm_ofNat]
+    rw [abs_of_nonneg (by positivity : (0:ℝ) ≤ Real.pi)]
+    ring
+  rw [hnormeq]
+  -- AM-GM: `‖U‖·(2π|lₐ|)·‖V‖·‖Wc‖ ≤ π‖Wc‖(‖U‖² + (lₐ)²‖V‖²)`.
+  have hamgm : ‖U kl.1‖ * (|(kl.2 a : ℝ)| * ‖V kl.2‖)
+      ≤ (‖U kl.1‖ ^ 2 + (kl.2 a : ℝ) ^ 2 * ‖V kl.2‖ ^ 2) / 2 := by
+    nlinarith [sq_nonneg (‖U kl.1‖ - |(kl.2 a : ℝ)| * ‖V kl.2‖), norm_nonneg (U kl.1),
+      norm_nonneg (V kl.2), abs_nonneg (kl.2 a : ℝ), sq_abs (kl.2 a : ℝ),
+      mul_nonneg (abs_nonneg (kl.2 a : ℝ)) (norm_nonneg (V kl.2))]
+  have hWnn : (0:ℝ) ≤ ‖Wc (-(kl.1 + kl.2))‖ := norm_nonneg _
+  nlinarith [mul_le_mul_of_nonneg_left hamgm
+    (by positivity : (0:ℝ) ≤ (2 * Real.pi) * ‖Wc (-(kl.1 + kl.2))‖), Real.pi_pos, hWnn,
+    norm_nonneg (U kl.1), norm_nonneg (V kl.2)]
+
+/-- Complex summability of the convection summand on the H¹/Galerkin-test locus
+(from `convSummand_norm_summable` via `Summable.of_norm`). -/
+theorem convSummand_summable (u : L2VF) (v : L2VF) (hv : memH1VF v)
+    (w : L2Sigma) (hw : IsGalerkinTest w) (i a : Fin 3) :
+    Summable (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
+      convSummand u v (w : L2VF) i a kl.1 kl.2) :=
+  (convSummand_norm_summable u v hv w hw i a).of_norm
+
+set_option maxHeartbeats 1000000 in
 /-- **`gradPairingSummable` [scaffold, proved in PR-2, torus #53].**
 
 For `u : L2VF`, `v : L2VF` with `memH1VF v` (H¹ on the MIDDLE / gradient slot),
@@ -213,15 +368,17 @@ Galerkin test (finite support), `γ` is finitely supported ⟹ anti-diagonal col
 gives summability from `α ∈ ℓ²`, `β ∈ ℓ²` (the `ℓ²·ℓ²·ℓ¹_finite` product).  Three
 arbitrary L² slots do NOT suffice.
 
-**Corresponds to:** `convSummand_summable_of_h1_test` in the PR-0 spike. -/
+**Corresponds to:** `convSummand_summable_of_h1_test` in the PR-0 spike.
+
+Proof: `Complex.reCLM`-image of `convSummand_summable` (the complex-summable workhorse). -/
 theorem gradPairingSummable (u : L2VF) (v : L2VF) (hv : memH1VF v)
     (w : L2Sigma) (hw : IsGalerkinTest w) (i a : Fin 3) :
     Summable (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
       (mFourierCoeff3 (L2VF_projComponentC a u) kl.1 *
        ((2 * (Real.pi : ℂ) * Complex.I * (kl.2 a : ℂ)) *
         (mFourierCoeff3 (L2VF_projComponentC i v) kl.2 *
-         mFourierCoeff3 (L2VF_projComponentC i (w : L2VF)) (-(kl.1 + kl.2))))).re) := by
-  sorry -- ALLOW_SORRY: PR-1 scaffold, discharged in PR-2 (torus #53); anti-diagonal ℓ² Cauchy–Schwarz with finite support of `w` (Galerkin test) and H¹ weight on `v`
+         mFourierCoeff3 (L2VF_projComponentC i (w : L2VF)) (-(kl.1 + kl.2))))).re) :=
+  (convSummand_summable u v hv w hw i a).map Complex.reCLM Complex.reCLM.continuous
 
 /-! #### Galerkin tests are in H¹_σ -/
 
@@ -236,6 +393,39 @@ Then `coeff_zero_outside_box` gives `mFourierCoeff3 (L2VF_projComponentC j w) k 
 finite sum over `fourierBox n`, which is summable. -/
 theorem galerkinTestSpan_subset_H1Sigma {w : L2Sigma} (hw : IsGalerkinTest w) :
     w ∈ H1SigmaTorus := by
-  sorry -- ALLOW_SORRY: PR-1 scaffold, discharged in PR-2 (torus #53); finite Fourier support via coeff_zero_outside_box; weighted sum = finite sum over fourierBox n
+  rw [mem_H1SigmaTorus_iff]
+  refine ⟨w.2, fun j => ?_⟩
+  -- `w` lies in the Galerkin box `Vₙ`.
+  obtain ⟨n, hn⟩ := hw
+  -- The H¹-weight sum is supported on `fourierBox n`: the coefficient vanishes outside the box.
+  refine summable_of_ne_finset_zero (s := fourierBox n) (fun k hk => ?_)
+  rw [coeff_zero_outside_box' n (w : L2VF) hn j k hk, norm_zero]
+  ring
+
+/-! ### The total Fourier convection form `convFormFourier`
+
+`convFormFourier u v w` is the lattice-`tsum` extension of the finite box form
+`galerkinConvection n`.  It is **total** on `L²_σ × L²_σ × L²_σ` via the mathlib
+`tsum`-junk convention (value `0` off the summable locus), and **agrees with the genuine
+convection value exactly on the H¹/Galerkin-test locus** where `gradPairingSummable`
+guarantees convergence.
+
+This is the torus analog of R3's `convFormH1` (the genuine convection form on the H¹ slice),
+but built directly on the Fourier side — so its antisymmetry reduces to the divergence-free
+identity `∑ₐ kₐûₐ(k) = 0` (no spatial integration by parts, no Leibniz product rule).
+
+NOTE: this is **not yet** wired as the `TorusConvectionGap.b` field — the total `b`
+demands a genuine trilinear `LinearMap` (the `b_multilinear` field), which the raw `tsum`
+does not provide off the summable locus.  The determined-form construction (mirror of
+`R3/ConvectionExtension.lean`) reads `convFormFourier` off only on the determined H¹ slice,
+where it is convergent and genuinely multilinear.  The lemmas below (`_antisymm_h1`,
+`_bound_galerkinTest`) are the analytic inputs that construction consumes. -/
+
+/-- The **total Fourier convection form** on `L²_σ(𝕋³)`: the lattice `tsum` extension of
+`galerkinConvection`.  Total via the `tsum`-junk convention; genuine on the H¹/Galerkin-test
+locus (`gradPairingSummable`). -/
+noncomputable def convFormFourier (u v w : L2Sigma) : ℝ :=
+  ∑ i : Fin 3, ∑ a : Fin 3,
+    (∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ), convSummand (u : L2VF) (v : L2VF) (w : L2VF) i a kl.1 kl.2).re
 
 end LerayHopf
