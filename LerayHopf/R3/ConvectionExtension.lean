@@ -986,9 +986,10 @@ theorem edge_inf_eq_schwartz_tensor :
 
 For fixed `u`, the two edge prescriptions are:
 
-- on `𝒮 ⊗ L²_σ`: the bilinear `(s, l) ↦ convFormH1 u s l` (slot-2 Schwartz, B7-bounded in
-  `l`), lifted by `TensorProduct.lift` to a `LinearMap` on `edgeSlot2`;
-- on `L²_σ ⊗ 𝒮`: `(l, s) ↦ convFormH1 u l s = − convFormH1 u s l` (B6), lifted to a
+- on `𝒮 ⊗ L²_σ`: the BLT-extended bilinear `(s, l) ↦ -convBLTspan s u l` (`edge2Lift`, the
+  continuous extension of `convFormH1 u s ·` from the H¹ slice to all of `L²_σ` via the B7/C2
+  bound), lifted by `TensorProduct.lift` to a `LinearMap` on `edgeSlot2`;
+- on `L²_σ ⊗ 𝒮`: `(l, s) ↦ convBLTspan s u l` (i.e. `−(edge2Lift u s l)`, by B6), lifted to a
   `LinearMap` on `edgeSlot3`.
 
 They agree on `edgeSlot2 ⊓ edgeSlot3 = 𝒮 ⊗ 𝒮` (B6/div-free identity), so `LinearPMap.sup`
@@ -1717,6 +1718,13 @@ end LerayHopf.R3.ConvectionExtension
 
 namespace LerayHopf
 
+/-- The ℝ³ weak-convection operator-gap exists — THEOREM (formerly `axiom r3ConvectionGapOp_exists`,
+removed in issue #56). Re-exports the proved `ConvectionExtension.r3ConvectionGapOp_holds` under the
+original public name (Hard Rule #2: no rename). Being a theorem, it does NOT appear in `#print axioms`,
+so the capstone stays at 2 project axioms. -/
+theorem r3ConvectionGapOp_exists (𝔊 : R3GalerkinScheme) : Nonempty (ConvectionGapOp 𝔊) :=
+  LerayHopf.R3.ConvectionExtension.r3ConvectionGapOp_holds 𝔊
+
 /-- The ℝ³ NS convection form exists — THEOREM (was axiom `r3ConvectionGapOp_exists`, issue #56),
 now proved from `r3ConvectionGapOp_holds` (the sorry-free determined-form construction in
 `ConvectionExtension.lean`) + proved density, via the sorry-free `R3NSForms_of_gap`.
@@ -1730,7 +1738,7 @@ no statement weakening.  The operator core is now PROVED sorry-free in this file
 (`r3ConvectionGapOp_holds`, C11); no project axiom remains for the convection operator.
 Mirrors the torus `torus3_NSForms_exists` (issue #22). -/
 theorem r3_NSForms_exists (𝔊 : R3GalerkinScheme) : Nonempty (R3NSForms 𝔊) :=
-  (LerayHopf.R3.ConvectionExtension.r3ConvectionGapOp_holds 𝔊).elim fun g =>
+  (r3ConvectionGapOp_exists 𝔊).elim fun g =>
     R3NSForms_of_gap 𝔊
       { b              := g.b
       , b_extends      := g.b_extends
