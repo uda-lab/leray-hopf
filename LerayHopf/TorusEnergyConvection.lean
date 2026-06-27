@@ -1,7 +1,12 @@
 import LerayHopf.AxiomaticClosure
+import LerayHopf.RellichEmbedding
 -- AxiomaticClosure import justification: provides `IsGalerkinTest`, `galerkinConvection`,
 --   `L2Sigma`, `L2VF`, `L2C`, `mFourierCoeff3`, `velocityProjection_n`, and
 --   transitively `H1Sigma.lean` (`memH1VF`, `memH1Sigma`, `memH1Torus`).
+-- RellichEmbedding import justification: provides the Parseval identity
+--   `L2C_norm_sq_eq_tsum_coeff_sq` (`‖f‖² = ∑' k, ‖f̂(k)‖²`) needed for the ℓ²-Cauchy–Schwarz
+--   fixed-Galerkin-test bound on `convFormFourier` (Claim 3). No import cycle: RellichEmbedding
+--   only depends on GalerkinProjection + SobolevTorus + mathlib.
 
 open MeasureTheory Filter Topology
 
@@ -427,5 +432,137 @@ locus (`gradPairingSummable`). -/
 noncomputable def convFormFourier (u v w : L2Sigma) : ℝ :=
   ∑ i : Fin 3, ∑ a : Fin 3,
     (∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ), convSummand (u : L2VF) (v : L2VF) (w : L2VF) i a kl.1 kl.2).re
+
+/-! ### Antisymmetry on the Galerkin-test overlap (Claim 2 — div-free identity, no IBP) -/
+
+/-- A Galerkin test is H¹: finite Fourier support ⟹ every Sobolev norm finite. -/
+private theorem memH1VF_of_galerkinTest {w : L2Sigma} (hw : IsGalerkinTest w) :
+    memH1VF (w : L2VF) := (galerkinTestSpan_subset_H1Sigma hw).2
+
+/-- The full-lattice involution `(k, l) ↦ (k, -(k + l))` on the product index set, used for
+the antisymmetry reindex.  Unlike the box-truncated `galerkinConvection_antisymm` (which needs
+`v, w ∈ Vₙ` because `box × box` is not `σ`-invariant), the **full** lattice IS invariant, so the
+reindex is an unconditional `Equiv`. -/
+private def latticeInvol : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) × (Fin 3 → ℤ) where
+  toFun kl := (kl.1, -(kl.1 + kl.2))
+  invFun km := (km.1, -(km.1 + km.2))
+  left_inv kl := Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
+  right_inv km := Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
+
+set_option maxHeartbeats 1000000 in
+/-- **Antisymmetry of `convFormFourier` on the Galerkin-test overlap.**
+
+For `u : L²_σ` divergence-free and `v, w` both Galerkin tests (the `𝒢 ⊗ 𝒢` overlap of the
+determined-form construction):
+`convFormFourier u v w = - convFormFourier u w v`.
+
+This is the genuine Faedo–Galerkin convection antisymmetry, proved **on the Fourier side**
+without integration by parts: per `(i, a)`, the two complex lattice sums `A` (with `v` in the
+middle) and `A'` (with `w` in the middle) combine, the involution `latticeInvol` (full-lattice,
+no box truncation) reindexes `A'`, and the factor `(lₐ + (-(k+l))ₐ) = -kₐ` is annihilated by the
+divergence-free identity `∑ₐ kₐ ûₐ(k) = 0`.  Both orientations are summable because `v, w` are
+Galerkin tests (`convSummand_summable`). -/
+theorem convFormFourier_antisymm_galerkinTest (u : L2Sigma) (v w : L2Sigma)
+    (hv : IsGalerkinTest v) (hw : IsGalerkinTest w) :
+    convFormFourier u v w = -convFormFourier u w v := by
+  classical
+  have hdiv : DivFreeL2 (u : L2VF) := (mem_L2Sigma_iff _).mp u.2
+  have hvH1 : memH1VF (v : L2VF) := memH1VF_of_galerkinTest hv
+  have hwH1 : memH1VF (w : L2VF) := memH1VF_of_galerkinTest hw
+  rw [convFormFourier, convFormFourier, ← Finset.sum_neg_distrib]
+  refine Finset.sum_congr rfl (fun i _ => ?_)
+  -- Work with the `∑ a` kept together (the div-free identity needs the `a`-sum).
+  -- Summability of both orientations, for every `a` (`v, w` Galerkin tests).
+  have hsummA : ∀ a : Fin 3, Summable (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
+      convSummand (u : L2VF) (v : L2VF) (w : L2VF) i a kl.1 kl.2) :=
+    fun a => convSummand_summable (u : L2VF) (v : L2VF) hvH1 w hw i a
+  have hsummA' : ∀ a : Fin 3, Summable (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
+      convSummand (u : L2VF) (w : L2VF) (v : L2VF) i a kl.1 kl.2) :=
+    fun a => convSummand_summable (u : L2VF) (w : L2VF) hwH1 v hv i a
+  -- Reindex each `A'ₐ` by the full-lattice involution `(k,l) ↦ (k,-(k+l))`.
+  have hsummA'rei : ∀ a : Fin 3, Summable (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
+      convSummand (u : L2VF) (w : L2VF) (v : L2VF) i a kl.1 (-(kl.1 + kl.2))) := by
+    intro a
+    have := (Equiv.summable_iff latticeInvol).mpr (hsummA' a)
+    refine this.congr (fun kl => ?_)
+    simp only [latticeInvol, Equiv.coe_fn_mk, Function.comp]
+  have hA'rei : ∀ a : Fin 3,
+      (∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),
+        convSummand (u : L2VF) (w : L2VF) (v : L2VF) i a kl.1 kl.2)
+      = ∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),
+        convSummand (u : L2VF) (w : L2VF) (v : L2VF) i a kl.1 (-(kl.1 + kl.2)) := by
+    intro a; rw [← Equiv.tsum_eq latticeInvol]; rfl
+  -- Goal: `∑ a, (∑'kl S_v).re = -∑ a, (∑'kl S_w).re`.  Reduce to `∑ a, (∑'kl S_v + ∑'kl S_w).re = 0`.
+  rw [eq_neg_iff_add_eq_zero, ← Finset.sum_add_distrib]
+  rw [show (∑ a : Fin 3,
+        ((∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),
+            convSummand (u : L2VF) (v : L2VF) (w : L2VF) i a kl.1 kl.2).re
+          + (∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),
+            convSummand (u : L2VF) (w : L2VF) (v : L2VF) i a kl.1 kl.2).re))
+      = (∑ a : Fin 3,
+          ((∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),
+            convSummand (u : L2VF) (v : L2VF) (w : L2VF) i a kl.1 kl.2)
+          + (∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),
+            convSummand (u : L2VF) (w : L2VF) (v : L2VF) i a kl.1 kl.2))).re from by
+    rw [Complex.re_sum]; refine Finset.sum_congr rfl (fun a _ => ?_); rw [Complex.add_re]]
+  rw [← Complex.zero_re]
+  refine congrArg Complex.re ?_
+  -- Per `a`: combine the two reindexed tsums into one (`Summable.tsum_add`).
+  have hcombine : ∀ a : Fin 3,
+      (∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),
+          convSummand (u : L2VF) (v : L2VF) (w : L2VF) i a kl.1 kl.2)
+        + (∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),
+          convSummand (u : L2VF) (w : L2VF) (v : L2VF) i a kl.1 kl.2)
+      = ∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),
+          (2 * (Real.pi : ℂ) * Complex.I) * (-(kl.1 a : ℂ)) *
+            (mFourierCoeff3 (L2VF_projComponentC a (u : L2VF)) kl.1 *
+              (mFourierCoeff3 (L2VF_projComponentC i (v : L2VF)) kl.2 *
+               mFourierCoeff3 (L2VF_projComponentC i (w : L2VF)) (-(kl.1 + kl.2)))) := by
+    intro a
+    rw [hA'rei a, ← Summable.tsum_add (hsummA a) (hsummA'rei a)]
+    refine tsum_congr (fun kl => ?_)
+    -- Inner argument `-(k + -(k+l)) = l` (the involution is self-inverse).
+    have harg : -(kl.1 + -(kl.1 + kl.2)) = kl.2 := by funext j; simp [Pi.neg_apply, Pi.add_apply]
+    have hka : ((-(kl.1 + kl.2)) a : ℂ) = -(kl.1 a : ℂ) - (kl.2 a : ℂ) := by
+      simp [Pi.neg_apply, Pi.add_apply]; push_cast; ring
+    simp only [convSummand, harg]
+    rw [hka]
+    ring
+  rw [Finset.sum_congr rfl (fun a _ => hcombine a)]
+  -- Swap `∑ a` inside the tsum (each combined family is summable), then per-`(k,l)`.
+  have hGsumm : ∀ a : Fin 3, Summable (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
+      (2 * (Real.pi : ℂ) * Complex.I) * (-(kl.1 a : ℂ)) *
+        (mFourierCoeff3 (L2VF_projComponentC a (u : L2VF)) kl.1 *
+          (mFourierCoeff3 (L2VF_projComponentC i (v : L2VF)) kl.2 *
+           mFourierCoeff3 (L2VF_projComponentC i (w : L2VF)) (-(kl.1 + kl.2))))) := by
+    intro a
+    have hsum := (hsummA a).add (hsummA'rei a)
+    refine hsum.congr (fun kl => ?_)
+    have harg : -(kl.1 + -(kl.1 + kl.2)) = kl.2 := by funext j; simp [Pi.neg_apply, Pi.add_apply]
+    have hka : ((-(kl.1 + kl.2)) a : ℂ) = -(kl.1 a : ℂ) - (kl.2 a : ℂ) := by
+      simp [Pi.neg_apply, Pi.add_apply]; push_cast; ring
+    simp only [convSummand, harg]
+    rw [hka]; ring
+  rw [← (hasSum_sum (fun a (_ : a ∈ Finset.univ) => (hGsumm a).hasSum)).tsum_eq]
+  -- Each lattice term `∑ₐ G_a kl = 0` by the divergence-free identity; so the tsum is `tsum 0 = 0`.
+  rw [show (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) => ∑ a : Fin 3,
+        (2 * (Real.pi : ℂ) * Complex.I) * (-(kl.1 a : ℂ)) *
+          (mFourierCoeff3 (L2VF_projComponentC a (u : L2VF)) kl.1 *
+            (mFourierCoeff3 (L2VF_projComponentC i (v : L2VF)) kl.2 *
+             mFourierCoeff3 (L2VF_projComponentC i (w : L2VF)) (-(kl.1 + kl.2)))))
+      = fun _ => (0 : ℂ) from funext (fun kl => ?_), tsum_zero]
+  -- `∑ a, (2πi)(-kₐ)ûₐ(k)·(common) = (2πi)·(common)·(-∑ₐ kₐûₐ(k)) = 0`.
+  have hfac : ∑ a : Fin 3, (2 * (Real.pi : ℂ) * Complex.I) * (-(kl.1 a : ℂ)) *
+        (mFourierCoeff3 (L2VF_projComponentC a (u : L2VF)) kl.1 *
+          (mFourierCoeff3 (L2VF_projComponentC i (v : L2VF)) kl.2 *
+           mFourierCoeff3 (L2VF_projComponentC i (w : L2VF)) (-(kl.1 + kl.2))))
+      = -((2 * (Real.pi : ℂ) * Complex.I) *
+          (mFourierCoeff3 (L2VF_projComponentC i (v : L2VF)) kl.2 *
+           mFourierCoeff3 (L2VF_projComponentC i (w : L2VF)) (-(kl.1 + kl.2)))) *
+          (∑ a : Fin 3, (kl.1 a : ℂ) * mFourierCoeff3 (L2VF_projComponentC a (u : L2VF)) kl.1) := by
+    rw [Finset.mul_sum]
+    refine Finset.sum_congr rfl (fun a _ => ?_)
+    ring
+  rw [hfac, hdiv kl.1, mul_zero]
 
 end LerayHopf
