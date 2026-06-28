@@ -40,6 +40,7 @@ precise same-line `-- ALLOW_SORRY: <blocker>`; no statement is weakened and no a
 import LerayHopf.Bochner.TimeConvolution
 import LerayHopf.Bochner.TimeSobolev
 import Mathlib.Analysis.Calculus.BumpFunction.FiniteDimension
+import Mathlib.Data.Real.Sign -- Real.sign used in B1 (even-reflection weak-deriv sign flip)
 
 namespace LerayHopf.Bochner
 
@@ -208,82 +209,139 @@ variable {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X] [CompleteSpace X
 
 open scoped Convolution
 
-/-- **Weak-derivative commutation `(ρ ⋆ u)' = ρ ⋆ u'` (pointwise-curve form).**
+/-- **Weak-derivative commutation `(ρ ⋆ u)' = ρ ⋆ u'` (pointwise-curve form, corrected signature).**
 
-If `v` is the weak time derivative of the `X`-valued curve `u` on `(0, T)` and `ρ` is a
-normalized time mollifier, then the pointwise time-convolution `ρ ⋆ v` is the weak time
-derivative of `ρ ⋆ u` on `(0, T)`.
+If `v` is the **whole-line** weak time derivative of the `X`-valued curve `u` (`IsWeakTimeDerivℝ
+u v`, per `s1-walls-design.md` §1b) and `ρ` is a normalized time mollifier, then the
+pointwise time-convolution `ρ ⋆ v` is the whole-line weak time derivative of `ρ ⋆ u`.
 
-This is the third S1 ingredient: the convolution (a linear time operation) commutes with the
-distributional time derivative. The defining IBP identity transports through the Fubini
-interchange
-`∫ ψ'(t) (ρ ⋆ u)(t) dt = ∫ ρ(s) (∫ ψ'(t) u(t−s) dt) ds = −∫ ρ(s) (∫ ψ(t) v(t−s) dt) ds
-  = −∫ ψ(t) (ρ ⋆ v)(t) dt`,
-where the inner identity `∫ ψ'(t) u(t−s) = −∫ ψ(t) v(t−s)` is the weak-derivative property of
-`u` tested against the shifted test function `ψ(· + s)` (whose support stays in `Ioo 0 T` for
-`s` in the kernel support, *provided the test function's support is interior enough* — this is
-why the whole-line `W1pTime` extension of Theorem 2 is needed upstream so that `u`/`v` are
-defined on all of `ℝ`).
+**Corrected signature (§1b of `s1-walls-design.md`):** the old interval hypothesis
+`IsWeakTimeDeriv T u v` was UNSOUND for convolution: shifting a compactly-supported global
+test function `ψ` by `s` gives `ψ(·+s)`, which has support shifted away from `(0,T)` and
+so falls outside the interval predicate. The global predicate `IsWeakTimeDerivℝ` dissolves
+this obstruction: `ψ(·+s)` is still compactly supported and global, so `hwd (ψ(·+s))`
+is always applicable. The `{T}` binder is gone.
 
-**Genuine wall (isolated, not weakened).** The Fubini interchange of the two time integrals
-requires joint integrability of `(t, s) ↦ ψ'(t) ρ(s) u(t − s)` on `ℝ²`. For an `L²`-only curve
-`u` this double integral is NOT absolutely convergent on `ℝ²` (the time-line transport of the
-exact obstruction `FrechetKolmogorov.convL2_coeFn_ae` had to resolve via finite-set
-restriction); the honest discharge is the same finite-support Fubini argument carried out
-there, lifted to the Banach-valued weak-derivative test integrals. That assembled
-Banach-valued interchange is the S1 sub-build flagged months-class by SPIKE-1; it is isolated
-here as a single `ALLOW_SORRY` with the statement kept intact. -/
-theorem timeConvL2_weakDeriv_comm {ρ : ℝ → ℝ} (hρ : IsTimeMollifier ρ) {T : ℝ}
-    {u v : ℝ → X} (hwd : IsWeakTimeDeriv T u v) :
-    IsWeakTimeDeriv T (ρ ⋆[ContinuousLinearMap.lsmul ℝ ℝ] u)
+The proof strategy (§1c, Opus tier) is:
+1. Unfold `convolution_lsmul`; pull `ψ'(t)•` inside (linearity); apply Fubini
+   (`integral_integral_swap`) — joint integrability: integrand supported in
+   `(supp ψ) × (supp ρ)` (compact×compact), bounded by `‖ψ'‖∞ · ρ s · ‖u(t−s)‖`,
+   L¹ on that box (`u` L²-loc ⇒ L¹ on bounded set).
+2. Fix `s`, substitute `r = t−s`: inner `= ∫ r, deriv(ψ(·+s)) r • u r = -∫ r, ψ(r+s) • v r`
+   by `hwd (ψ(·+s))` — **this step requires the global predicate**.
+3. Fubini back + resubstitute: result is `-∫ t, ψ t • (ρ ⋆ v)(t)`.
+Tier: **Opus** (box-Fubini + `deriv (ψ(·+s)) = (deriv ψ)(·+s)` rewrite). -/
+theorem timeConvL2_weakDeriv_comm {ρ : ℝ → ℝ} (hρ : IsTimeMollifier ρ)
+    {u v : ℝ → X} (hwd : IsWeakTimeDerivℝ u v) :
+    IsWeakTimeDerivℝ (ρ ⋆[ContinuousLinearMap.lsmul ℝ ℝ] u)
       (ρ ⋆[ContinuousLinearMap.lsmul ℝ ℝ] v) := by
-  -- TODO (PR-F3 S1, Theorem 3): the IBP+Fubini interchange of the test-time integrals.
-  -- `∫ ψ'(t) (ρ ⋆ u)(t) = ∫ ρ(s) ∫ ψ'(t) u(t−s)` (Fubini) `= −∫ ρ(s) ∫ ψ(t) v(t−s)`
-  -- (weak-deriv of `u` against `ψ(·+s)`, support preserved on the whole-line extension)
-  -- `= −∫ ψ(t) (ρ ⋆ v)(t)` (Fubini back). The two Fubini steps need joint integrability of
-  -- `(t,s) ↦ ψ'(t) ρ(s) u(t−s)` on ℝ², which is NOT absolutely convergent for L²-only `u`;
-  -- the honest discharge is the finite-support double-integral argument of
-  -- `FrechetKolmogorov.convL2_coeFn_ae`, lifted to the Banach-valued weak-derivative test
-  -- integrals. SPIKE-1 S1 sub-build (months-class), isolated soundly here.
-  sorry -- ALLOW_SORRY: PR-F3 S1 Theorem 3 — the Banach-valued IBP+Fubini interchange `∫ψ'(ρ⋆u)=−∫ψ(ρ⋆v)`. The two time-integral Fubini swaps need joint integrability of `(t,s)↦ψ'(t)ρ(s)u(t−s)` on ℝ², which is NOT absolutely convergent for an L²-only curve `u` (the exact obstruction `FrechetKolmogorov.convL2_coeFn_ae` resolved by finite-set restriction on ℝ³); the sound discharge is that finite-support double-integral argument lifted to the Banach-valued weak-derivative test integrals. SPIKE-1 S1 (months-class), statement kept intact, no axiom.
+  -- TODO (s1-walls-design.md §1c, Opus): IBP+Fubini interchange for the corrected global signature.
+  -- Step 1: unfold convolution, Fubini (box compact×compact, L¹ by Cauchy–Schwarz on bounded set).
+  -- Step 2: `hwd (ψ(·+s))` — applicable because `ψ(·+s)` is compactly supported (global predicate).
+  -- Step 3: Fubini back, resubstitute.
+  -- Key rewrite: `deriv (fun t => ψ (t + s)) = fun t => deriv ψ (t + s)` (`deriv_comp_add_const`).
+  sorry -- ALLOW_SORRY: s1-walls-design.md §1b/§1c — corrected whole-line signature; Opus tier; proof by box-Fubini + shifted test function argument; joint integrability by compact support × compact support box argument
 
 end WeakDerivComm
 
-/-! ### W1pTime-preserving whole-line extension (Theorem 2)
+/-! ### WALL B sub-lemma scaffolds (s1-walls-design.md §2)
 
-A `W1pTime GT 2 2 T uV` curve lives on `[0,T]`; the whole-line Young bound (and the pointwise
-convolution of Theorem 3) need a curve defined on all of `ℝ`. The sound extension is the
-Sobolev even-reflection × cutoff of the design note: it agrees with `uV` a.e. on `[0,T]`, lies
-in `L²(ℝ;V)`, and its whole-line weak `V'`-derivative agrees with `u'` a.e. on `[0,T]` WITHOUT
-a boundary jump (the reflected weak derivative is the reflection of the derivative — the
-soundness crux). -/
+The bounded foundational layer that WALL B's assembly (`w1pTime_lineExtension`) rests on.
+Each sub-lemma carries a precise statement from the design note and a same-line `ALLOW_SORRY`
+tagged with the note's §-reference and prover tier. Proof bodies are deferred to tiered provers.
+
+Sub-lemma order per recommended dispatch (§3 of design note):
+- B0 / §2a: the `IsWeakTimeDerivℝ` conclusion for `w1pTime_lineExtension` (signature update).
+- B1 / §2b: even-reflection reflects the weak derivative with sign flip (no Dirac at 0).
+- B2 / §2c: cutoff (Leibniz) product rule for whole-line weak derivatives.
+- B2e-global / §2e: `isWeakTimeDerivℝ_comp_clm` is in `TimeSobolev.lean` (added this PR).
+- B3 / §2d: assembly: ūV := χ • (reflection of uV), all three properties + weak-deriv identity.
+-/
 
 section LineExtension
 
-/-- **W1pTime-preserving whole-line extension (Theorem 2).**
+variable {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X] [CompleteSpace X]
+
+/-- **Sub-lemma B1 — even reflection reflects the whole-line weak derivative with sign flip.**
+
+For a curve `u : ℝ → X` and its whole-line weak time derivative `v` (i.e.
+`IsWeakTimeDerivℝ u v`), the even reflection `ũ t := u |t|` has whole-line weak time derivative
+`ṽ t := Real.sign t • v |t|` — with NO Dirac at `t = 0`, because even reflection matches the
+trace `u(0⁺) = u(0⁻)`.
+
+The proof splits `∫_ℝ = ∫_{t < 0} + ∫_{t > 0}`, changes variables `t ↦ -t` on the left half
+(`integral_comp_neg`, measure-preserving), recombines; boundary terms at `0` cancel precisely
+because the global `C¹` test `ψ` sees `ψ(0)·u(0)` with opposite signs from the two halves
+(this cancellation is the "no Dirac" soundness heart). The whole-line predicate `IsWeakTimeDerivℝ`
+is required because the reflected test function `ψ(-·)` is globally compactly supported, not
+confined to any `(0, T)`.
+
+Tier: **Opus** (the soundness heart — distributional IBP with cancellation at `t = 0`). -/
+theorem weakTimeDerivℝ_even_reflection (u v : ℝ → X)
+    (hwd : IsWeakTimeDerivℝ u v) :
+    IsWeakTimeDerivℝ (fun t => u |t|) (fun t => Real.sign t • v |t|) := by
+  -- TODO (s1-walls-design.md §2b, Opus): distributional IBP with split at t=0.
+  -- Split: ∫_ℝ ψ'(t) • u|t| = ∫_{<0} + ∫_{>0}.
+  -- On {t > 0}: t ↦ |t| = t, so inner = ∫_{>0} ψ'(t) • u(t).
+  -- On {t < 0}: substitute r = -t (measure-preserving); |t| = r; ψ'(t) = -ψ'(-r)·(-1) wait —
+  --   deriv(ψ(-·)) r = -deriv ψ (-r) = -(deriv ψ)(−r) by chain rule (deriv_comp_neg);
+  --   integrand becomes -ψ'(−r) • u(r). Combine: = ∫_ℝ_+ [ψ'(t) - ψ'(-t)] • u(t).
+  -- Apply hwd to the globally compactly-supported test ψ and to ψ(-·) separately, recombine.
+  -- Sign-flip at 0 cancels because ψ(0) appears with opposite signs from two IBPs; no Dirac.
+  -- Conclude: RHS = -∫_ℝ ψ(t) • (sign t • v|t|).
+  sorry -- ALLOW_SORRY: s1-walls-design.md §2b — B1 even-reflection no-Dirac identity; Opus tier; distributional IBP with split at t=0, sign cancellation at the boundary
+
+/-- **Sub-lemma B2 — cutoff (Leibniz) product rule for whole-line Banach-valued weak derivatives.**
+
+For a globally `C¹` cutoff `χ : ℝ → ℝ` (not assumed compactly supported) and curves
+`u v : ℝ → X` with `IsWeakTimeDerivℝ u v`,
+
+  `IsWeakTimeDerivℝ (fun t => χ t • u t) (fun t => χ t • v t + deriv χ t • u t)`.
+
+The proof transfers `χ` onto the test function `ψ`: the product `χ · ψ` is `C¹` and compactly
+supported (compact support of `ψ` wins), `deriv (χ · ψ) = χ · ψ' + χ' · ψ`, so
+`∫ (χψ)'• u = ∫ χ ψ' • u + ∫ χ' ψ • u`. Apply `hwd (χ · ψ)` on the left, regroup.
+
+Tier: **Sonnet** (mechanical IBP once B1's pattern exists; no boundary subtlety because
+`χ` is global `C¹` and `ψ` compactly supported). Promote to Opus only if `smul`/`deriv`
+rewrites fight back. -/
+theorem isWeakTimeDerivℝ_smul_cutoff (χ : ℝ → ℝ) (hχ : ContDiff ℝ 1 χ)
+    (u v : ℝ → X) (hwd : IsWeakTimeDerivℝ u v) :
+    IsWeakTimeDerivℝ (fun t => χ t • u t) (fun t => χ t • v t + deriv χ t • u t) := by
+  -- TODO (s1-walls-design.md §2c, Sonnet): Leibniz/product rule for distributional derivatives.
+  -- For test ψ (HasCompactSupport, ContDiff ℝ 1): χ·ψ is C¹ and compactly supported.
+  -- deriv (χ·ψ) = χ·ψ' + χ'·ψ (Leibniz).
+  -- Apply hwd (χ·ψ): ∫ deriv(χψ) • u = -∫ (χψ) • v.
+  -- Expand LHS = ∫ χ ψ' • u + ∫ χ' ψ • u; RHS = -∫ ψ • (χ v + χ' u). QED.
+  sorry -- ALLOW_SORRY: s1-walls-design.md §2c — B2 cutoff product rule; Sonnet tier; Leibniz (χψ)' = χψ' + χ'ψ argument
+
+/-- **W1pTime-preserving whole-line extension (Theorem 2 / WALL B assembly, §2d).**
 
 Given a `W1pTime GT 2 2 T uV` element (curve on `[0,T]` with `V'`-valued weak derivative), there
-is a whole-line curve `ūV : ℝ → V` such that:
+is a whole-line curve `ūV : ℝ → GT.V` such that:
 
 * `ūV =ᵐ uV` on `[0,T]` (the extension restricts to the genuine curve);
 * `ūV ∈ L²(ℝ;V)` (`MemLp ūV 2 volume`);
 * there is a whole-line `V'`-valued curve `ū'` with `MemLp ū' 2 volume`, agreeing a.e. on
-  `[0,T]` with `W.u'`, that is the whole-line weak `V'`-derivative of `t ↦ hToVprime (ι (ūV t))`
-  — i.e. NO boundary jump is introduced (the soundness crux).
+  `[0,T]` with `W.u'`, that is the **whole-line** weak `V'`-derivative of
+  `t ↦ hToVprime (ι (ūV t))` in the `IsWeakTimeDerivℝ` sense — i.e. NO boundary jump is
+  introduced (the soundness crux).
 
-The construction is the Sobolev even-reflection × cutoff: reflect across `t = 0` and `t = T`
-and multiply by a fixed smooth cutoff supported near `[0,T]`. Reflection matches the trace at
-each endpoint, so the weak derivative of the reflected extension is the (sign-flipped)
-reflection of `u'` with no Dirac boundary term.
+**Corrected conclusion (§2a of `s1-walls-design.md`):** the weak-derivative field now uses the
+**global** predicate `IsWeakTimeDerivℝ` (not the old interval `IsWeakTimeDeriv T`), matching
+the corrected WALL A signature (`timeConvL2_weakDeriv_comm`) which consumes it directly.
 
-**Genuine wall (isolated, not weakened).** The no-boundary-jump identity for the reflected
-weak `V'`-derivative is the soundness crux flagged MONTHS-CLASS by the design note: it requires
-the vector-valued Sobolev reflection calculus (even reflection preserves the weak derivative up
-to sign, the cutoff product rule for weak derivatives, and absence of an endpoint Dirac term),
-none of which is assembled in mathlib for Banach/`V'`-valued curves. The statement is kept
-fully intact (all three properties, including the no-jump weak-derivative identity); the body
-is isolated as a single `ALLOW_SORRY`, with neither the no-jump property weakened nor an axiom
-introduced. -/
+The construction is the Sobolev even-reflection × cutoff (§2d): reflect `uV` and `u'` off
+`[0,T]` using `weakTimeDerivℝ_even_reflection` (B1), then multiply by a smooth cutoff `χ`
+supported in a bounded neighbourhood of `[0,T]` with `χ ≡ 1` on `[0,T]` (B2 gives the
+product rule for the weak derivative; `χ' ≡ 0` on `[0,T]` so `ū' =ᵐ u'` there).
+
+**Genuine wall (WALL B assembly, not weakened).** The no-boundary-jump identity is the
+soundness crux: it assembles B1 (even-reflection sign flip) + B2 (cutoff product rule) +
+`isWeakTimeDerivℝ_comp_clm` (CLM transport through `hToVprime∘ι`). The `=ᵐ`/`MemLp`
+bookkeeping is Sonnet-mechanical; the glue is Opus.
+
+Body deferred to tiered provers (Sonnet for `=ᵐ`/`MemLp`; Opus for the assembly glue). -/
 theorem w1pTime_lineExtension (GT : GelfandTriple) {T : ℝ} (hT : 0 < T)
     {uV : ℝ → GT.V} (W : W1pTime GT 2 2 T uV) :
     letI := GT.instNACG_V; letI := GT.instIPS_V;
@@ -293,15 +351,16 @@ theorem w1pTime_lineExtension (GT : GelfandTriple) {T : ℝ} (hT : 0 < T)
       MemLp ūV 2 (volume : Measure ℝ) ∧
       ū' =ᵐ[volume.restrict (Set.Icc 0 T)] W.u' ∧
       MemLp ū' 2 (volume : Measure ℝ) ∧
-      IsWeakTimeDeriv (X := GT.Vprime) T (fun t => GT.hToVprime (GT.ι (ūV t))) ū' := by
+      IsWeakTimeDerivℝ (X := GT.Vprime) (fun t => GT.hToVprime (GT.ι (ūV t))) ū' := by
   letI := GT.instNACG_V; letI := GT.instIPS_V
   letI := GT.instNACG_H; letI := GT.instIPS_H
-  -- TODO (PR-F3 S1, Theorem 2): the Sobolev even-reflection × cutoff extension and its
-  -- no-boundary-jump reflected weak-`V'`-derivative identity. Requires the vector-valued
-  -- Sobolev reflection calculus (even reflection ⇒ weak derivative reflects with a sign flip;
-  -- cutoff product rule for weak derivatives; no endpoint Dirac term), none assembled in
-  -- mathlib for `V'`-valued curves. MONTHS-CLASS per the `TimeConvolution.lean` design note.
-  sorry -- ALLOW_SORRY: PR-F3 S1 Theorem 2 — the W1pTime-preserving whole-line extension (even reflection × cutoff) and its no-boundary-jump reflected weak-V'-derivative identity (the soundness crux). Needs the vector-valued Sobolev reflection calculus (even reflection reflects the weak derivative with a sign flip; cutoff product rule for weak derivatives; absence of an endpoint Dirac term), none assembled in mathlib for V'-valued curves. MONTHS-CLASS per the TimeConvolution.lean design note; statement (all three properties, incl. the no-jump weak-derivative identity) kept fully intact, no axiom.
+  -- TODO (s1-walls-design.md §2d, Opus glue + Sonnet bookkeeping): WALL B assembly.
+  -- 1. Apply weakTimeDerivℝ_even_reflection (B1) to reflect uV/W.u' off [0,T].
+  -- 2. Multiply by cutoff χ (ContDiff, HasCompactSupport near [0,T], χ ≡ 1 on [0,T]).
+  -- 3. Apply isWeakTimeDerivℝ_smul_cutoff (B2): get IsWeakTimeDerivℝ on (χ • reflected uV).
+  -- 4. Transport through isWeakTimeDerivℝ_comp_clm with hToVprimeCLM (§2e, in TimeSobolev).
+  -- 5. =ᵐ/MemLp bookkeeping: χ ≡ 1 on [0,T]; reflection agrees on [0,T]; MemLp by compact supp.
+  sorry -- ALLOW_SORRY: s1-walls-design.md §2d — WALL B assembly (B1+B2+CLM transport+MemLp); Opus glue tier; body deferred; statement (all three properties + IsWeakTimeDerivℝ no-jump weak-derivative identity) kept fully intact, no axiom
 
 end LineExtension
 
