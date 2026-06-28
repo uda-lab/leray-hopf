@@ -3,6 +3,40 @@
 Target: `LerayHopf/Bochner/TimeSobolev.lean:534` `w1pTime_continuous_in_H`
 (Lions–Magenes `W^{1,p}(0,T;V,V') ↪ C([0,T];H)`).
 
+## DECISIVE CONSUMER VERDICT (settled — read this first)
+
+**`w1pTime_continuous_in_H` is NOT on the critical path to the C-axiom removals.**
+Traced the actual consumer chain: the standalone theorem is referenced ONLY in docstrings; it
+is **applied nowhere**. The real C axioms are `galerkin_limit_passage_R3`
+(`R3/AxiomaticClosure.lean:558`) and its torus twin. The axiom is applied to the **weak limit
+`alPkg.u`** (`AubinLionsAssembly.lean:84`), a curve carrying ONLY `u_aestronglyMeasurable` — no
+strong derivative, not even a `V'`-valued weak derivative. Its five conclusions are:
+
+| conclusion | how it is obtained (sound route) | needs Lions–Magenes on the weak limit? |
+|---|---|---|
+| `WeakFormNS` (weak eq) | approximant `u_ode` integrated against test `ψ` (`tsupport ⊆ Ioo 0 T`, boundary-free) + `bForm_tendsto_of_strongL2` (already proved) | **NO** — `WeakFormNS` (`EvolutionTriple.lean:98`) is the distributional form; `tsupport ψ ⊆ Ioo 0 T` kills the boundary term, so no trace/continuity of `u` is used |
+| energy inequality | weak-lsc of `‖·‖` applied to approximant `energy_bound` | **NO** — lsc inheritance |
+| initial trace `u(t)→u₀` | approximant `u_initial` (`uₙ(0)=Pₙu₀`) + `𝔊.tendsto_id` + energy bound (Temam III.3) | **NO** — established through the weak form + energy estimate, not a continuous-in-H representative |
+| energy class (a.e. H¹ + integ. viscous) | approximant `reg_mem`/`reg_bound` + convergence + lsc | **NO** — inheritance |
+
+So the SOUND route to removing the C axioms is **(b) the strong-approximant structure**
+(`GalerkinSolutionData_R3.u_hasDeriv`/`u_ode`/`energy_bound`/`reg_bound`), passed to the weak
+limit by lsc + the proved nonlinear passage — **NOT (a) weak-limit Lions–Magenes FTC**. The
+months-class Bochner weak-FTC / `w1pTime_continuous_in_H` is genuinely BYPASSED for the axiom
+removals. This makes the limit-passage foundation **days-class (Temam III.3 wiring on existing
+proved pieces), not months-class.** `w1pTime_continuous_in_H` stays a true, faithful, but
+*off-critical-path* scaffold theorem; finishing its own proof (the route below) is independent of
+the C-axiom campaign and need not block it.
+
+(The strong-deriv reflection bypass the parallel prover found via `HasCompactSupport.integral_Ioi_deriv_eq`
+is real, but it is moot for the axioms: the consumer is the WEAK LIMIT, which has no strong
+derivative, so neither the reflection-strong route NOR the reflection-weak route is needed — the
+limit-passage conclusions never require a continuous-in-H representative of the limit at all.)
+
+---
+
+## Below: the route to prove `w1pTime_continuous_in_H` ITSELF (off-critical-path, for completeness)
+
 ## The circularity, stated precisely
 
 The committed reflection route (`TimeMollifierInterval.weakTimeDerivℝ_even_reflection`, B1)
