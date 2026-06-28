@@ -49,6 +49,12 @@ import LerayHopf.EnergyEstimate
 import LerayHopf.TorusAxiomatic
 import LerayHopf.R3Axiomatic
 
+-- Torus H¹_σ submodule + Parseval scaffold (issue #53 PR-1)
+import LerayHopf.TorusEnergyConvection
+
+-- Torus determined-form scaffold (issue #53 PR-2: TorusConvectionExtension)
+import LerayHopf.TorusConvectionExtension
+
 -- Concrete T³ convection form (issue #22: removes torus3_NSForms_exist axiom)
 import LerayHopf.TorusConvectionForm
 

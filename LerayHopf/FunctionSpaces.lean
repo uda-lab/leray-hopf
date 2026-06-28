@@ -81,4 +81,27 @@ isomorphism from `L2C` to `ℓ²(ℤ³, ℂ)` given by the Hilbert basis. -/
 noncomputable def mFourierCoeff3 (f : L2C) (k : Fin 3 → ℤ) : ℂ :=
   torus3_mFourierBasis.repr f k
 
+/-! ### D-08: Parseval identity for L²(𝕋³; ℂ) -/
+
+/-- **Parseval identity.** The squared L²-norm of `f ∈ L²(𝕋³; ℂ)` equals the sum of squared
+absolute values of its Fourier coefficients.
+
+Proof:
+1. `torus3_mFourierBasis.repr` is a `LinearIsometryEquiv`, so
+   `LinearIsometryEquiv.norm_map` gives `‖repr f‖ = ‖f‖`.
+2. `repr f : ℓ²(ℤ³, ℂ)`.  `lp.norm_rpow_eq_tsum` at `p = 2` gives
+   `‖repr f‖^2 = ∑' k, ‖(repr f) k‖^2`.
+3. `mFourierCoeff3 f k = (torus3_mFourierBasis.repr f) k` by `rfl`.
+Key mathlib lemmas: `LinearIsometryEquiv.norm_map`, `lp.norm_rpow_eq_tsum`. -/
+theorem L2C_norm_sq_eq_tsum_coeff_sq (f : L2C) :
+    ‖f‖ ^ 2 = ∑' k : Fin 3 → ℤ, ‖mFourierCoeff3 f k‖ ^ 2 := by
+  have hp : 0 < (2 : ENNReal).toReal := by norm_num
+  have h := lp.norm_rpow_eq_tsum hp (torus3_mFourierBasis.repr f)
+  simp only [ENNReal.toReal_ofNat] at h
+  have h2 : ∀ x : ℝ, x ^ (2 : ℝ) = x ^ (2 : ℕ) := fun x => by
+    rw [← Real.rpow_natCast x 2]; norm_num
+  simp only [h2] at h
+  rw [← torus3_mFourierBasis.repr.norm_map f]
+  exact h
+
 end LerayHopf

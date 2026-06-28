@@ -652,22 +652,14 @@ theorem Torus3NSForms_of_gap (g : TorusConvectionGap) : Nonempty Torus3NSForms :
   case b_galerkin =>
     exact g.b_galerkin_pin
 
-/-! ### The thin residual axiom and the rerouted capstone (issue #22) -/
+/-! ### Remarks on `torusConvectionGap_exists` and `torus3_NSForms_exists` (issues #22 and #53) -/
 
-/-- **Thin residual existence axiom.**  A `TorusConvectionGap` exists.
-
-This is the single isolated torus weak-convection-operator frontier (the smooth-test bound /
-torus integration-by-parts that Mathlib lacks).  It is **strictly thinner** than the removed
-`torus3_NSForms_exist`: all of the trilinear `b_add_*`/`b_smul_*` algebra, the unrestricted
-L²-bound transfer, and the Galerkin pin are now *theorem* content via `Torus3NSForms_of_gap`.
-TRUE: the genuine `(u·∇)v` form witnesses it; NON-VACUOUS: `b_galerkin_pin` excludes `b = 0`. -/
-axiom torusConvectionGap_exists : Nonempty TorusConvectionGap -- ALLOW_AXIOM: isolates the single torus weak-convection-operator frontier (smooth-test bound / torus IBP that mathlib lacks); strictly thinner than torus3_NSForms_exist — all trilinear/bound/Galerkin-pin algebra is now THEOREM content via Torus3NSForms_of_gap; Temam II.§1; RRS §3.2
-
-/-- **T³ NS forms exist (de-axiomatized via the thin gap).**  Replaces the removed fat axiom
-`torus3_NSForms_exist`: `Nonempty Torus3NSForms` now follows from the thin
-`torusConvectionGap_exists` through the proved `Torus3NSForms_of_gap`. -/
-theorem torus3_NSForms_exists : Nonempty Torus3NSForms :=
-  torusConvectionGap_exists.elim fun g => Torus3NSForms_of_gap g
+/-! **`torusConvectionGap_exists` is now a PROVED THEOREM** (issue #53), no longer an axiom.
+The determined-form construction in `LerayHopf/TorusConvectionExtension.lean`
+(`torusConvectionGap_holds`, sorry-free) establishes `Nonempty TorusConvectionGap`.
+`LerayHopf.torusConvectionGap_exists` and `LerayHopf.torus3_NSForms_exists` are both theorems
+declared in `TorusConvectionExtension.lean`; they are visible here transitively via the import
+`LerayHopf.TorusConvectionExtension` (added to `TorusGalerkinODECapstone`). -/
 
 /-! **Main existence theorem on 𝕋³ (axiomatic) — RELOCATED (issue #24).**
 

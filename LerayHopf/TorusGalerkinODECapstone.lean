@@ -1,4 +1,4 @@
-import LerayHopf.TorusConvectionForm
+import LerayHopf.TorusConvectionExtension
 import LerayHopf.TorusGalerkinODESolve
 
 /-!

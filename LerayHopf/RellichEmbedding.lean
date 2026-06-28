@@ -21,7 +21,8 @@ No H¹ normed-space structure is built here (deferred to a later milestone).
 
 ## Main results (lemma chain L1 → L2 → L3 → L4 → Bonus → L5)
 
-- `L2C_norm_sq_eq_tsum_coeff_sq`       (L1) : Parseval identity `‖f‖² = ∑' k, ‖f̂(k)‖²`.
+- `L2C_norm_sq_eq_tsum_coeff_sq`       (L1) : Parseval identity `‖f‖² = ∑' k, ‖f̂(k)‖²`
+                                              (proved in `LerayHopf.FunctionSpaces`, available here).
 - `L2C_norm_sub_fourierProjection_sq`  (L2) : `‖f - P_N f‖² = ∑_{k ∉ box} ‖f̂(k)‖²`.
 - `H1_tail_bound`                      (L3) : tail bound `∑_{k ∉ box} ‖f̂(k)‖² ≤ M²/(1+N²)`.
 - `H1_ball_uniform_L2_approx`          (L4) : uniform L²-approximation on the H¹-ball.
@@ -35,28 +36,11 @@ None beyond mathlib axioms. No `sorry` is present without an `-- ALLOW_SORRY` ma
 
 namespace LerayHopf
 
-/-! ### L1: Parseval — `‖f‖² = ∑' k, ‖f̂(k)‖²` -/
+/-! ### L1: Parseval — `‖f‖² = ∑' k, ‖f̂(k)‖²`
 
-/-- **L1 (Parseval).** The squared L²-norm of `f ∈ L²(𝕋³; ℂ)` equals the sum of squared
-absolute values of its Fourier coefficients.
-
-Proof route for lean-prover:
-1. `torus3_mFourierBasis.repr` is a `LinearIsometryEquiv`, so
-   `LinearIsometryEquiv.norm_map` gives `‖repr f‖ = ‖f‖`.
-2. `repr f : ℓ²(ℤ³, ℂ)`.  `lp.norm_rpow_eq_tsum` at `p = 2` gives
-   `‖repr f‖^2 = ∑' k, ‖(repr f) k‖^2`.
-3. `mFourierCoeff3 f k = (torus3_mFourierBasis.repr f) k` by `rfl`.
-Key mathlib lemmas: `LinearIsometryEquiv.norm_map`, `lp.norm_rpow_eq_tsum`. -/
-theorem L2C_norm_sq_eq_tsum_coeff_sq (f : L2C) :
-    ‖f‖ ^ 2 = ∑' k : Fin 3 → ℤ, ‖mFourierCoeff3 f k‖ ^ 2 := by
-  have hp : 0 < (2 : ENNReal).toReal := by norm_num
-  have h := lp.norm_rpow_eq_tsum hp (torus3_mFourierBasis.repr f)
-  simp only [ENNReal.toReal_ofNat] at h
-  have h2 : ∀ x : ℝ, x ^ (2 : ℝ) = x ^ (2 : ℕ) := fun x => by
-    rw [← Real.rpow_natCast x 2]; norm_num
-  simp only [h2] at h
-  rw [← torus3_mFourierBasis.repr.norm_map f]
-  exact h
+`L2C_norm_sq_eq_tsum_coeff_sq` is proved in `LerayHopf.FunctionSpaces` (upstream) and
+is available here via the transitive import chain
+`RellichEmbedding → GalerkinProjection → Leray → DivergenceFree → FunctionSpaces`. -/
 
 /-! ### L2: Tail-norm identity — `‖f - P_N f‖² = ∑_{k ∉ fourierBox N} ‖f̂(k)‖²` -/
 
