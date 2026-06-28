@@ -1202,37 +1202,41 @@ private theorem viscousFormSq_aestronglyMeasurable_of_memH1
   refine AEStronglyMeasurable.congr ?_ heq.symm
   refine (Finset.aemeasurable_sum Finset.univ (fun j _ => (hlin_meas j).ennreal_toReal)).aestronglyMeasurable
 
-/-- **Pointwise weak-H¹ lower semicontinuity of the viscous seminorm (the genuine analytic
-wall of the (b)-route's energy/energy-class conclusions).**
+/-- **Pointwise weak-H¹ lower semicontinuity of the viscous seminorm** (the genuine analytic
+content of the (b)-route's energy/energy-class conclusions) — PROVED `sorry`-free.
 
 At a.e. time `t ∈ [0, T]` the strong-L²(-on-balls) Galerkin limit `alPkg.u t` lies in `H¹` and
 its viscous (Dirichlet) seminorm is dominated by the `liminf` of the approximants':
 
 ```
 memH1VF_R3 (alPkg.u t) ∧
-viscousFormSq_R3 1 (alPkg.u t) ≤ liminf_n viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t)
+ofReal (viscousFormSq_R3 1 (alPkg.u t)) ≤ liminf_n ofReal (viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t))
 ```
 
-together with measurability of the limit's viscous form in time (needed to feed Fatou).
+together with time-measurability of the limit's viscous form (needed to feed Fatou downstream).
 
-**Why this is the wall (Codex-honest scope).** Unlike the kinetic norm — which is recovered in
-the limit by *continuous* ball-restriction (`continuous_restrictToBall`) + ball exhaustion, the
-route used in `kineticEnergy_lsc_bound` — the viscous form `viscousFormSq_R3 1 w =
-∑ⱼ ‖weightedFourierComponent w · j‖²` is the **global Fourier H¹ seminorm**, which is NOT
-continuous under strong-L² convergence: it is only *weakly* lower-semicontinuous. Establishing
-the pointwise bound requires extracting a weak-H¹ limit of the (`reg_bound`-bounded) approximant
-sequence `n ↦ (galSeq (alPkg.φ n)).u t` (Banach–Alaoglu in the H¹ graph space), identifying that
-weak-H¹ limit with the strong-L² limit `alPkg.u t` (strong-L²-on-balls ⇒ weak-L², and the weak-H¹
-limit projects to the same weak-L² limit), and applying lower-semicontinuity of the convex,
-strongly-L²-lsc seminorm functional. That weak-H¹ compactness machinery (Banach–Alaoglu +
-weak-limit identification + convex-functional lsc) is NOT yet available in this development;
-mathlib supplies `WeakDual`/Banach–Alaoglu but not the bespoke H¹-graph weak-compactness +
-weak-limit-identification chain this needs.
+**Proof route — Fourier–Plancherel, entirely in `L²`** (no H¹ Hilbert-space type, no sequential
+Banach–Alaoglu, no convex-functional weak-lsc). The viscous form `viscousFormSq_R3 1 w =
+∑ⱼ ∫ (2π)²‖ξ‖² ‖𝓕(projⱼ w) ξ‖²` is the global Fourier Dirichlet seminorm: not continuous, only
+weakly lower-semicontinuous, under strong-L². The chain:
+* **Full-sequence weak-L²** `uₙ(t) ⇀ u(t)` a.e. `t`, from `alPkg.strong_convergence_ae` (per-ball
+  a.e.-`t` strong convergence) + the ball-tail ε/3 argument against the uniform `‖uₙ t‖ ≤ ‖u₀‖`
+  (`inner_tendsto_of_perball` / `weak_tendsto_of_inner_tendsto`). The full-sequence form is what
+  the frozen `liminf` over `n` requires — supplied by the package's a.e.-`t` field, not a
+  measure-subsequence.
+* **Bounded-multiplier push**: for each truncation `k`, `mulBdd (min(√W,k)) ∘ 𝓕 ∘ projⱼ` is an
+  ℝ-CLM (`mulBddCLM`/`fourierProjCLM`), so `clm_pushes_weak` transports the weak convergence; then
+  squared norm-weak-lsc (`normSq_le_liminf_of_weak`, the inner-product trick `‖g‖² = lim⟪g,gₙ⟫`).
+* **Truncated ≤ full + MCT in `k`** (`iSup_ofReal_norm_mulBddTrunc_sq`, `lintegral_iSup`) recovers
+  the full Dirichlet integrand; sum over `j` by `ENNReal` `liminf`-superadditivity. The `memH1`
+  conjunct follows from the finite weighted-Fourier integral (`reg_bound`+Fatou finiteness in
+  `liminf_viscousFormSq_lt_top_ae`) via `memSobolev_of_finite_weightedFourier_R3`; time-measurability
+  via `viscousFormSq_aestronglyMeasurable_of_memH1`.
 
-This is strictly the **pointwise** content; the *integrated* bound (`∫₀ᵀ viscous(u) ≤ ½‖u₀‖²`)
-and the a.e.-`H¹` membership are then assembled axiom-free from this via Fatou-in-time +
-`reg_bound` in `viscous_lsc_under_strongL2`. Temam III.3 / Lemarié-Rieusset §6 (weak-H¹ lsc of
-the dissipation under the strong-L² Galerkin limit). -/
+`0 < ν` is load-bearing: the approximants' H¹ seminorm is controlled only through `reg_bound`'s
+`ν`-weighted bound, so the `memH1` conjunct genuinely fails for `ν ≤ 0`. The *integrated* bound
+(`∫₀ᵀ viscous(u) ≤ ½‖u₀‖²`) is assembled from this via Fatou-in-time + `reg_bound` in
+`viscous_lsc_under_strongL2`. Temam III.3 / Lemarié-Rieusset §6. -/
 private theorem viscous_pointwise_lsc (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν T : ℝ) (hν : 0 < ν) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
@@ -1363,7 +1367,8 @@ theorem viscous_lsc_under_strongL2 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊
   haveI hμfin : IsFiniteMeasure μ := by
     rw [hμ]; refine isFiniteMeasure_restrict.2 ?_
     rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top
-  -- The pointwise weak-H¹ lsc (the isolated wall) + measurability of the limit's viscous form.
+  -- The pointwise weak-H¹ lsc (proved via the Fourier–Plancherel route) + measurability of the
+  -- limit's viscous form.
   obtain ⟨hmeas_u, hptwise⟩ := viscous_pointwise_lsc 𝔊 F ν T hν hT u₀ galSeq alPkg
   -- Abbreviations for the `ν = 1` viscous forms (scaling by `ν` is folded in at the end).
   set g : ℝ → ℝ := fun t => viscousFormSq_R3 1 (alPkg.u t : L2VF_R3) with hg
