@@ -3,6 +3,64 @@
 Target: `LerayHopf/Bochner/TimeSobolev.lean:534` `w1pTime_continuous_in_H`
 (Lions–Magenes `W^{1,p}(0,T;V,V') ↪ C([0,T];H)`).
 
+## (b)-ROUTE PR PLAN — discharging `galerkin_limit_passage_R3` via the strong approximants
+
+**Status: read-only wiring map (pending codex validation of the consumer verdict below).** Target
+axiom: `galerkin_limit_passage_R3` (`R3/AxiomaticClosure.lean:558`), consumed once at
+`AubinLionsAssembly.lean:84` to build `GalerkinCompactnessPackageFull_R3`. The axiom's `∃ u` is the
+weak limit `alPkg.u` itself (the a.e.-link conjunct is discharged trivially by `u := alPkg.u`,
+making the first conjunct `rfl`-shaped). So the real obligation is the **other four** conclusions on
+`alPkg.u`. Per-conclusion discharge:
+
+| # | conclusion (on `alPkg.u`) | already-proved pieces to wire | NEW proof needed? |
+|---|---|---|---|
+| 0 | `∀ᵐ t, u t = alPkg.u t` (a.e.-link) | take `u := alPkg.u`; conjunct is `ae_eq_refl` | **NO** — trivial |
+| 1 | energy inequality `½‖u t‖²+∫₀ᵗ viscous ≤ ½‖u₀‖²` (`∀ t∈[0,T]`) | approximant `galerkin_energy_identity` (E1, `GalerkinODE.lean:191`: `½ d/dt‖uₙ‖²=−ν·viscousFormSq`) integrated ⟹ per-`n` `½‖uₙ t‖²+∫₀ᵗν·visc=½‖uₙ0‖²`; `energy_bound`/`reg_bound` fields; weak-lsc of `‖·‖` + the `eLpNorm`-form `alPkg.strong_convergence`; the lsc machinery in `kineticEnergy_lsc_bound` (`AubinLionsLimitPassage.lean:458`) | **PARTIAL — biggest gap.** `kineticEnergy_lsc_bound` proves only the *kinetic* a.e. bound `½‖u‖²≤½‖u₀‖²`, NOT the inequality-with-dissipation and NOT `∀ t`. Need: (a) approximant energy *inequality* (integrate E1 — bounded), (b) lsc passage of BOTH the kinetic term (have) AND the dissipation integral `∫viscous` (NEW: weak-lsc of the H¹/viscous seminorm under strong-L² limit — the genuine new lemma), (c) the `∀ t` (not a.e.) upgrade — see note below |
+| 2 | `WeakFormNS ν T (r3Evolution 𝔊 F) u` (distributional weak NS eq) | approximant `u_ode` (`AxiomaticClosure.lean:387`) tested against fixed `ψ⊗w`; `r3Evolution.convForm = F.b`, `.viscousForm = stokesTestPairing_R3` (`AxiomaticClosure.lean:348`); the PROVED nonlinear passage `bForm_tendsto_of_strongL2` (`AubinLionsLimitPassage.lean:150`); `WeakFormNS` is boundary-free (`tsupport ψ ⊆ Ioo 0 T`, `EvolutionTriple.lean:98`) so NO trace used | **YES — second-biggest gap.** No proved WeakFormNS-passage exists. Need a new lemma: integrate `u_ode` against `ψ(t)·w` over `[0,T]` (IBP in `t`, boundary-free), then pass `n→∞` using `bForm_tendsto_of_strongL2` (nonlinear, HAVE) + linear-term L²-convergence (from `strong_convergence`). The `isTest w` class restricts to Schwartz div-free `w`, matching `b_bound`'s domain. Bounded but real (~Temam III.3 core) |
+| 3 | initial trace `u(t)→u₀` as `t→0⁺` (strong L²) | approximant `u_initial` (`uₙ(0)=Pₙu₀`); `𝔊.tendsto_id` (proved field via `galerkinP_tendsto_id`, `GalerkinScheme.lean`); `energy_bound` | **YES.** No proved trace lemma. Standard route (Temam): weak-L² continuity at 0 (from the weak eq + energy bound) + `‖u(t)‖→‖u₀‖` (energy) ⟹ strong. Does NOT need a continuous-in-H representative of the limit, but IS a genuine new proof; the `∀t`/limit-at-0 subtlety overlaps the conclusion-1 `∀t` note |
+| 4 | energy class: a.e. `memH1VF_R3 (u t)` + `IntervalIntegrable (viscousFormSq ν ∘ u)` | approximant `reg_mem` (`AxiomaticClosure.lean:392`, each `uₙ t ∈ H¹`); `reg_bound` (`∫₀ᵀ viscous ≤ ½‖u₀‖²`, n-uniform); the local strong-L² convergence + `aeStronglyMeasurable_of_spaceTimeL2`/`kineticEnergy_lsc_transfer` (`TimeSobolev.lean`, PROVED) | **PARTIAL.** a.e.-H¹ membership of the limit + integrable dissipation follow by lsc-inheritance of the H¹/viscous seminorm + `reg_bound` — but this reuses the SAME new weak-lsc-of-viscous lemma flagged in conclusion 1. Once that lemma exists, this is inheritance wiring (bounded) |
+
+**The `∀ t` (vs a.e.-in-t) subtlety — the one place the verdict needs care.** Conclusions 1 and 3
+are stated `∀ t∈[0,T]` (pointwise in time), but the lsc/inheritance machinery (`kineticEnergy_lsc_bound`,
+`kineticEnergy_lsc_transfer`) yields **a.e.-in-`t`** bounds, because `alPkg.u` carries only
+`u_aestronglyMeasurable` (no pointwise-in-time representative). `AubinLionsLimitPassage.lean:450-457`
+explicitly documents this: promoting a.e.→`∀t` "requires the good-representative frontier
+(weak-time-continuity/trace)". **This is the ONE spot where the (b)-route brushes against the
+continuity question.** BUT it does NOT need the months-class Lions–Magenes H-FTC: the standard
+resolution is to redefine `u` on the null set as the weakly-continuous (or right-continuous) energy
+representative — which is exactly the cheap **V'-continuous representative R1 produces**
+(`w1pTime_continuous_in_Vprime`, now built in `TimeSobolevAC.lean`), NOT the H-continuous one. So R1 is
+the natural supplier of the `∀t` upgrade for conclusions 1/3, even though it is off the *axiom's
+statement* critical path. Flag for the build dispatch: decide early whether to (i) keep the limit as
+`alPkg.u` and accept the a.e. form by re-deriving the axiom's `∀t` as the weakly-continuous
+representative's pointwise bound (uses R1's V'-cont rep), or (ii) state the discharge with the a.e.
+forms if the capstone consumer tolerates them (it currently consumes `∀t` via
+`energy_ineq_limit`/`initial_trace_limit` fields — so (i) is required).
+
+### Build list (dispatch order, once codex confirms)
+
+1. **NEW LEMMA `viscous_lsc_under_strongL2`** (the load-bearing new pillar, shared by conclusions
+   1+4): weak-lower-semicontinuity of `t ↦ viscousFormSq_R3 ν (·)` (the H¹/Dirichlet seminorm)
+   under strong-L²-on-balls convergence, giving `∫₀ᵀ viscous(u) ≤ liminf ∫₀ᵀ viscous(uₙ) ≤ ½‖u₀‖²`
+   and a.e. `memH1(u t)`. Opus. This is the genuine remaining analytic core.
+2. **NEW LEMMA `galerkin_energy_inequality`** (approximant side, conclusion 1): integrate E1
+   `galerkin_energy_identity` ⟹ per-`n` `½‖uₙ t‖²+∫₀ᵗ ν·visc = ½‖uₙ0‖² ≤ ½‖u₀‖²`. Bounded (Sonnet).
+3. **NEW LEMMA `weakFormNS_limit_passage`** (conclusion 2): integrate `u_ode` against `ψ⊗w`
+   (boundary-free IBP) + `n→∞` via `bForm_tendsto_of_strongL2` + linear-term convergence. Opus.
+4. **NEW LEMMA `initial_trace_limit`** (conclusion 3): weak-L²-cont-at-0 + norm convergence ⟹
+   strong trace; uses R1's V'-cont representative for the `∀t`-at-`0` form. Opus.
+5. **ASSEMBLY** `galerkinLimitPassage_R3_proved` replacing the axiom: `u := alPkg.u` (or its R1
+   V'-cont representative for the `∀t` fields), conjunct 0 = `rfl`, conjuncts 1–4 from lemmas 1–4 +
+   the proved lsc/inheritance machinery. Wire into `AubinLionsAssembly.lean:84` (drop the axiom).
+
+**Honest scope:** the (b)-route is **days-class, multi-PR, not months** — the two genuinely-new
+analytic cores are `viscous_lsc_under_strongL2` (lsc of the viscous seminorm) and
+`weakFormNS_limit_passage` (the Temam III.3 nonlinear passage), both bounded and both built on
+already-proved pieces (`bForm_tendsto_of_strongL2`, E1, the lsc transfer lemmas). It needs NO
+Bochner weak-FTC and NO reflection. R1's V'-continuous representative is the supplier for the `∀t`
+upgrade of the energy/trace conclusions — the only contact point with the continuity question, and
+it uses the cheap V'-form, not the months-class H-form.
+
 ## DECISIVE CONSUMER VERDICT (settled — read this first)
 
 **`w1pTime_continuous_in_H` is NOT on the critical path to the C-axiom removals.**
