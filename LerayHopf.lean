@@ -85,4 +85,5 @@ import LerayHopf.R3.TensorIntersection   -- issue #56: S⊗V ∩ V⊗S = S⊗S l
 -- Bochner layer (sorry-carrying)
 import LerayHopf.Bochner.GelfandTriple
 import LerayHopf.Bochner.TimeSobolev
+import LerayHopf.Bochner.TimeConvolution
 import LerayHopf.Bochner.TimeMollification
