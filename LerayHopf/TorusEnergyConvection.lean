@@ -1,12 +1,8 @@
 import LerayHopf.AxiomaticClosure
-import LerayHopf.RellichEmbedding
 -- AxiomaticClosure import justification: provides `IsGalerkinTest`, `galerkinConvection`,
 --   `L2Sigma`, `L2VF`, `L2C`, `mFourierCoeff3`, `velocityProjection_n`, and
---   transitively `H1Sigma.lean` (`memH1VF`, `memH1Sigma`, `memH1Torus`).
--- RellichEmbedding import justification: provides the Parseval identity
---   `L2C_norm_sq_eq_tsum_coeff_sq` (`‖f‖² = ∑' k, ‖f̂(k)‖²`) needed for the ℓ²-Cauchy–Schwarz
---   fixed-Galerkin-test bound on `convFormFourier` (Claim 3). No import cycle: RellichEmbedding
---   only depends on GalerkinProjection + SobolevTorus + mathlib.
+--   transitively `H1Sigma.lean` (`memH1VF`, `memH1Sigma`, `memH1Torus`) and
+--   `FunctionSpaces.lean` (`L2C_norm_sq_eq_tsum_coeff_sq` for the ℓ²-Cauchy–Schwarz bound).
 
 open MeasureTheory Filter Topology
 

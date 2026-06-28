@@ -1435,9 +1435,16 @@ end LerayHopf.TorusConvectionExtension
 namespace LerayHopf
 
 /-- **Torus weak-convection operator gap — proved via the determined form (torus #53).**
-Re-exports `TorusConvectionExtension.torusConvectionGap_holds` as a proof of
-`Nonempty TorusConvectionGap`, contributing to the discharge of `torusConvectionGap_exists`. -/
-theorem torusConvectionGap_holds_thm : Nonempty TorusConvectionGap :=
+Re-exports `TorusConvectionExtension.torusConvectionGap_holds` under the original axiom name.
+Being a theorem (not an axiom), it does NOT appear in `#print axioms` output. -/
+theorem torusConvectionGap_exists : Nonempty TorusConvectionGap :=
   LerayHopf.TorusConvectionExtension.torusConvectionGap_holds
+
+/-- **T³ NS forms exist — de-axiomatized via the proved operator (torus #53).**
+Relocated here from `TorusConvectionForm.lean` (where it was routed through the now-proved
+`torusConvectionGap_exists`).  `Torus3NSForms_of_gap` is available transitively via the
+`TorusConvectionForm` import. -/
+theorem torus3_NSForms_exists : Nonempty Torus3NSForms :=
+  torusConvectionGap_exists.elim fun g => Torus3NSForms_of_gap g
 
 end LerayHopf
