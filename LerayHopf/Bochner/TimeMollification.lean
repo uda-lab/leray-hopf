@@ -15,8 +15,8 @@ import cycle into either domain closure.
 
 - `TimeMollification GT T uV W` — the bundled S1 data: smooth-in-time approximants `uᵋ`
   (indexed by `ℕ`), their `V`-valued strong derivatives `(uᵋ)'`, the `C¹` regularity, and the
-  two `L²`-convergences `ι∘uᵋ → ι∘u` in `L²(0,T;H)` and `hToVprime∘ι∘(uᵋ)' → u'` in
-  `L²(0,T;V')`. (Lifted verbatim from the spike so the downstream
+  two `L²`-convergences `uᵋ → u` in `L²(0,T;V)` (the V-norm form per codex P1) and
+  `hToVprime∘ι∘(uᵋ)' → u'` in `L²(0,T;V')`. (So the downstream
   `lionsMagenes_energy_identity` consumes exactly this interface.)
 - `timeMollification_of_w1pTime` — the constructor producing a `TimeMollification` from the
   `W1pTime` data.
@@ -41,7 +41,7 @@ a `TimeMollification`) are built here, together with the genuinely-provable doma
 `weaklyRegular_volume_restrict_Icc`. The irreducible analytic core — for which mathlib has the
 *pieces* but not the *assembled Banach-valued theorem*, exactly as SPIKE-1 sized — is isolated
 as the single local lemma `timeMollification_exists` (the S1 existence claim: smooth
-time-mollification with the two *linked* `L²(H)` / `L²(V')` convergences), carrying a precise
+time-mollification with the two *linked* `L²(V)` / `L²(V')` convergences), carrying a precise
 `-- ALLOW_SORRY: <blocker>` and a `-- TODO:`. No statement is weakened; no new `axiom`/`opaque`
 is introduced. That single core IS the S1 wall the spike flagged as the "days-to-2-weeks"
 from-scratch build; everything else (the domain regularity helper, the structure definition,
@@ -88,7 +88,7 @@ Bundles what time-mollification `uᵋ := ρᵋ ⋆ₜ u` produces, as a sequence
 mollification index `ε = εₙ → 0`):
 - each `uVeps n` is `C¹` in `t` valued in `V` (so `ι ∘ uVeps n` is `C¹` into `H`), with strong
   `V`-derivative `uVeps' n`;
-- `ι ∘ uVeps n → ι ∘ uV` in `L²(0,T;H)` and `hToVprime ∘ ι ∘ uVeps' n → W.u'` in `L²(0,T;V')`.
+- `uVeps n → uV` in `L²(0,T;V)` and `hToVprime ∘ ι ∘ uVeps' n → W.u'` in `L²(0,T;V')`.
 
 These two `L²`-convergences are linked by differentiation (the derivative of the mollified
 curve is the mollification of the derivative), which is exactly why independent `Lᵖ`-density
@@ -108,10 +108,16 @@ structure TimeMollification (GT : GelfandTriple) (T : ℝ) (uV : ℝ → GT.V)
   /-- Continuity of its V-derivative on `[0,T]`. -/
   cont' : letI := GT.instNACG_V; letI := GT.instIPS_V;
     ∀ n, ContinuousOn (uVeps' n) (Set.Icc 0 T)
-  /-- `L²(0,T;H)` convergence of the H-image `ι ∘ uVeps n → ι ∘ uV`. -/
-  conv_uV : letI := GT.instNACG_H; letI := GT.instIPS_H;
+  /-- `L²(0,T;V)` convergence of the approximant `uVeps n → uV` in the **V-norm**.
+
+  Codex P1 fix: the Lions–Magenes energy-identity RHS is a `V'×V` dual pairing estimated by
+  `‖φ‖_{V'}‖v‖_V`, so passing it to the limit needs `uVeps n → uV` in `L²(0,T;V)` (the V-norm),
+  not merely in `L²(0,T;H)`. Since `V ↪ H` can be strict/compact, `L²(H)` convergence gives no
+  `L²(V)` control. This `L²(V)` form is STRONGER and is what mollification actually delivers; it
+  implies the old `L²(H)` form via the continuous embedding `‖ι v‖_H ≤ ‖ι‖·‖v‖_V`. -/
+  conv_uV : letI := GT.instNACG_V; letI := GT.instIPS_V;
     Tendsto (fun n => eLpNorm
-      (fun t => GT.ι (uVeps n t) - GT.ι (uV t)) 2 (volume.restrict (Set.Icc 0 T)))
+      (fun t => uVeps n t - uV t) 2 (volume.restrict (Set.Icc 0 T)))
       atTop (𝓝 0)
   /-- `L²(0,T;V')` convergence of the V'-image of the derivative to `W.u'`. -/
   conv_uV' : letI := GT.instNACG_V; letI := GT.instIPS_V;
@@ -150,7 +156,7 @@ variable {GT : GelfandTriple} {T : ℝ}
 
 This is the single from-scratch pillar: time-mollification of a `W1pTime` curve producing the
 full `TimeMollification` data — the smooth approximants, their `V`-derivatives, the `C¹`
-regularity, AND the two *linked* `L²`-convergences (in `H` for the curve, in `V'` for the
+regularity, AND the two *linked* `L²`-convergences (in `V` for the curve, in `V'` for the
 derivative). The two convergences are NOT independent: the derivative of the mollified curve is
 the mollification of the (weak) derivative, which is the whole reason the linked structure is
 the right object.
@@ -159,7 +165,7 @@ the right object.
 - *Regularity* (`hasDeriv`/`cont`/`cont'`): from
   `HasCompactSupport.hasDerivAt_convolution_right` (the derivative falls on the smooth bump
   `ρᵋ`, so `(ρᵋ ⋆ u)' = ρᵋ' ⋆ u` is continuous) — mathlib HAS this.
-- *`L²(H)` convergence* (`conv_uV`): mathlib HAS the vector-valued continuous-dense-in-`Lᵖ`
+- *`L²(V)` convergence* (`conv_uV`): mathlib HAS the vector-valued continuous-dense-in-`Lᵖ`
   lemma (`MemLp.exists_boundedContinuous_eLpNorm_sub_le`), the pointwise mollification
   convergence (`ContDiffBump.convolution_tendsto_right`), and the Young `eLpNorm` bound shape
   (`‖∫ h, ρ(h) • τ_h g‖ ≤ ‖g‖`, cf. the proved `FrechetKolmogorov.convL2_norm_le`), but NOT
@@ -187,7 +193,7 @@ statement is weakened, no axiom introduced. -/
 theorem timeMollification_exists (GT : GelfandTriple) (T : ℝ)
     (uV : ℝ → GT.V) (W : W1pTime GT 2 2 T uV) :
     Nonempty (TimeMollification GT T uV W) := by
-  sorry -- ALLOW_SORRY: PR-F3 S1 — production of the TimeMollification data (smooth time-mollification with LINKED L²(H)/L²(V') convergence). mathlib has bump-convolution differentiation (HasCompactSupport.hasDerivAt_convolution_right), vector-valued continuous-dense-in-Lᵖ (MemLp.exists_boundedContinuous_eLpNorm_sub_le), pointwise mollification convergence (ContDiffBump.convolution_tendsto_right), and the Young ‖∫‖≤∫‖·‖ shape, but NOT the assembled eLpNorm-mollification convergence nor the weak-V'-derivative commutation (ρᵋ⋆ιu)'=ρᵋ⋆u'. SPIKE-1 S1 wall (days-to-2-weeks).
+  sorry -- ALLOW_SORRY: PR-F3 S1 — production of the TimeMollification data (smooth time-mollification with LINKED L²(V)/L²(V') convergence, the V-norm form per codex P1). The from-scratch wall is the INTERVAL Steklov assembly: mathlib's whole-line tools (HasCompactSupport.hasDerivAt_convolution_right for the C¹ regularity, MemLp.exists_boundedContinuous_eLpNorm_sub_le for vector-valued continuous-density, ContDiffBump.convolution_tendsto_right for pointwise convergence, and the ‖∫‖≤∫‖·‖ Young shape proved at the Lp-element level in FrechetKolmogorov.convL2_norm_le) do NOT transport to [0,T] because time-translation does not preserve the interval and zero-extension injects boundary jumps into the weak V'-derivative; the genuine sub-build is (i) the interval-boundary Steklov construction giving approximants with the C¹ link uVeps'=(uVeps)' intact, (ii) the assembled eLpNorm-mollification convergence eLpNorm(ρᵋ⋆g−g)2→0 for a V/V'-valued curve, and (iii) the weak-V'-derivative commutation (ρᵋ⋆ιu)'=ρᵋ⋆u' via isWeakTimeDeriv_comp_clm/hToVprimeCLM. SPIKE-1 S1 wall (days-to-2-weeks, none of it assembled in mathlib).
 
 end AnalyticCores
 
