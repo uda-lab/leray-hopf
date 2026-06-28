@@ -2333,6 +2333,74 @@ theorem galerkinSpaceTimeExtraction_R3
           (nhds (restrictToBall R (u t : L2VF_R3)))) :=
   u_lim_aestronglyMeasurable 𝔊 F ν hν T hT u₀ galSeq B
 
+/-! ### Tier W — WeakFormNS limit passage (conjunct 2 of `galerkin_limit_passage_R3`)
+
+This is the `WeakFormNS` conjunct of the limit-passage axiom, isolated as a named lemma so the
+axiom's second component can be discharged independently of conjuncts 0/1/3/4.  The target is
+exactly `WeakFormNS ν T (r3Evolution 𝔊 F) alPkg.u` — byte-identical to the `weak_eq_limit`
+field of `GalerkinCompactnessPackageFull_R3` (and to `hspec.2.1` in `build_galerkin_package_R3`
+once the good representative is taken to be `alPkg.u`, conjunct 0 = `EventuallyEq.refl`).
+
+PROOF SKELETON (Temam III.3).  Fix an admissible test `ψ ⊗ w` (`ψ : Time → ℝ` C¹ with
+`tsupport ψ ⊆ Ioo 0 T`, `w` Schwartz divergence-free).  For each Galerkin level `N` and each
+`n ≥ N` the approximant ODE `u_ode` (`AxiomaticClosure.lean:387`) holds against the Galerkin
+test `𝔊.P N w` (a fixed point of `𝔊.P n` for `n ≥ N`).  Multiplying by `ψ(t)`, integrating over
+`[0,T]`, and integrating the time-derivative term by parts (boundary-free because
+`tsupport ψ ⊆ Ioo 0 T`) yields, for the approximant `uₙ`,
+`∫₀ᵀ (-⟪uₙ t, 𝔊.P N w⟫ ψ'(t) + ψ(t)(ν·B(uₙ t, 𝔊.P N w) + b(uₙ t, uₙ t, 𝔊.P N w))) = 0`.
+Passing `n→∞` (linear terms by the weak-L² convergence bridge `inner_tendsto_of_perball`; the
+nonlinear term by `bForm_tendsto_of_strongL2`) and then `N→∞` (Galerkin test density) gives the
+weak form for `alPkg.u` against `ψ ⊗ w`.
+
+ISOLATED ANALYTIC FRONTIER (the residual of this conjunct — see the `ALLOW_SORRY` below).  Three
+mathlib/repo-absent pieces remain entangled in producing the per-test integral identity:
+(i) the VISCOUS-form equality passage `B(uₙ t, w) → B(u t, w)`: `stokesTestPairing_R3` is the
+H¹/Dirichlet pairing `∑ⱼ∫ (2π)²‖ξ‖² Re[𝓕uⱼ·conj 𝓕wⱼ]` (`Regularity.lean:123`), carrying a gradient
+weight, so it is NOT L²-continuous in `u`; passing it requires spatial integration by parts moving
+`-Δ` onto the Schwartz test `w` (no such reformulation lemma exists; the file carries only the
+viscous *lsc* used for the energy inequality, not the equality passage);
+(ii) the NONLINEAR strong passage at a.e. time: `bForm_tendsto_of_strongL2` needs FULL-SPACE strong
+L² convergence, whereas the package supplies only per-ball strong (`strong_convergence_ae`) plus
+full-space WEAK (`inner_tendsto_of_perball`).  Bridging per-ball to full-space strong for the
+`b`-term needs Schwartz-tail control of `b` (absent from `TrilinearEstimate`);
+(iii) the Galerkin→Schwartz test DENSITY extension (`u_ode` holds only for `𝔊.P n w = w`).
+These are the genuinely-new analytic cores; the structural reduction (time-IBP + dominated
+convergence in time) stands on already-proved pieces. -/
+
+/-- **WeakFormNS limit passage (conjunct 2 of `galerkin_limit_passage_R3`).**
+
+The Aubin–Lions limit curve `alPkg.u` satisfies the distributional Navier–Stokes weak equation
+`WeakFormNS ν T (r3Evolution 𝔊 F) alPkg.u`.  This is exactly the second conjunct of the
+`galerkin_limit_passage_R3` axiom (taking the good representative `u := alPkg.u`), and the
+`weak_eq_limit` field of `GalerkinCompactnessPackageFull_R3`.
+
+See the section docstring above for the Temam III.3 proof skeleton and the precise statement of
+the isolated analytic frontier (the single `ALLOW_SORRY` below). -/
+theorem weakFormNS_limit_passage
+    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
+    (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
+    WeakFormNS ν T (r3Evolution 𝔊 F) alPkg.u := by
+  -- Unfold `WeakFormNS` (the `r3Evolution` evolution: `viscousForm = stokesTestPairing_R3`,
+  -- `convForm = F.b`, `isTest = IsSchwartzDivFree_R3`).  Intro the admissible test data.
+  intro ψ hψcs hψsupp hψC1 w hw
+  -- The integrand to be shown to integrate to `0` over `[0,T]` is, with the `r3Evolution`
+  -- fields substituted,
+  --   `-(⟪alPkg.u t, w⟫) · ψ'(t) + ψ(t) · (ν · stokesTestPairing_R3 (alPkg.u t) w
+  --       + F.b (alPkg.u t) (alPkg.u t) w)`.
+  -- The proof passes the time-IBP'd approximant identity to the limit (`n→∞`) along the Galerkin
+  -- test density (`N→∞`).  The structural reduction (time-IBP + dominated convergence in time) is
+  -- in hand via `integral_mul_deriv_eq_deriv_mul` (boundary-free, `tsupport ψ ⊆ Ioo 0 T`),
+  -- `HasDerivAt.inner`, and `galerkin_norm_le_u0`/`inner_tendsto_of_perball`.  The residual is the
+  -- three entangled analytic cores (i)–(iii) named in the section docstring: the viscous-form
+  -- equality passage (gradient weight ⟹ no L²-continuity, needs spatial IBP onto `w`), the
+  -- nonlinear per-ball→full-space strong bridge (needs Schwartz-tail control of `b`), and the
+  -- Galerkin→Schwartz test density.  None weakens the statement; the goal below is the verbatim
+  -- `WeakFormNS` integral identity.
+  sorry -- ALLOW_SORRY: WeakFormNS passage residual — three entangled mathlib/repo-absent analytic cores: (i) viscous-form equality passage B(uₙ·,w)→B(u·,w) needs spatial IBP moving -Δ onto Schwartz w (stokesTestPairing_R3 carries a gradient weight ‖ξ‖², not L²-continuous; only viscous lsc is in the file); (ii) nonlinear strong passage at a.e. t needs FULL-SPACE strong L² but only per-ball strong (strong_convergence_ae) + full-space weak (inner_tendsto_of_perball) are available — the per-ball→full-space-strong bridge needs Schwartz-tail control of b (absent from TrilinearEstimate); (iii) Galerkin→Schwartz test density (u_ode holds only for 𝔊.P n w = w). Structural reduction (time-IBP via integral_mul_deriv_eq_deriv_mul boundary-free + dominated convergence) is in hand. Temam III.3.
+
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
 set_option maxHeartbeats 800000 in
