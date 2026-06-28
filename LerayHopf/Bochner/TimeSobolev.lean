@@ -393,11 +393,27 @@ theorem isWeakTimeDerivℝ_comp_clm {X Y : Type*}
     (hv_int : ∀ ψ : ℝ → ℝ, HasCompactSupport ψ → ContDiff ℝ 1 ψ →
       Integrable (fun t => ψ t • v t) volume) :
     IsWeakTimeDerivℝ (X := Y) (fun t => L (u t)) (fun t => L (v t)) := by
-  -- TODO (s1-walls-design.md §2e): mechanical port of `isWeakTimeDeriv_comp_clm` to the whole-line setting.
-  -- The proof is `L.integral_comp_comm` (whole-line `MeasureTheory.integral`) + `map_smul` + `hwd ψ`.
-  -- Integrability side-goals are supplied by `hu_int` / `hv_int`.
-  -- Tier: Sonnet (mechanical).
-  sorry -- ALLOW_SORRY: s1-walls-design.md §2e — whole-line CLM transport; mechanical port of isWeakTimeDeriv_comp_clm; Sonnet tier
+  -- Port of `isWeakTimeDeriv_comp_clm` to the whole-line setting.
+  -- For each test ψ: push L through both global integrals via `ContinuousLinearMap.integral_comp_comm`,
+  -- use `map_smul` to commute L with scalar multiplication, then apply `hwd ψ`.
+  intro ψ hψcs hψC1
+  -- The defining identity in `X`: `∫ deriv ψ • u = - ∫ ψ • v`.
+  have hX := hwd ψ hψcs hψC1
+  -- Push `L` through the left integral: `∫ deriv ψ t • L (u t) = L (∫ deriv ψ t • u t)`.
+  have hLu : (∫ t, deriv ψ t • L (u t)) = L (∫ t, deriv ψ t • u t) := by
+    have hint := hu_int ψ hψcs hψC1
+    have : (fun t => deriv ψ t • L (u t)) = (fun t => L (deriv ψ t • u t)) := by
+      ext t; rw [L.map_smul]
+    rw [this]
+    exact L.integral_comp_comm hint
+  -- Push `L` through the right integral: `∫ ψ t • L (v t) = L (∫ ψ t • v t)`.
+  have hLv : (∫ t, ψ t • L (v t)) = L (∫ t, ψ t • v t) := by
+    have hint := hv_int ψ hψcs hψC1
+    have : (fun t => ψ t • L (v t)) = (fun t => L (ψ t • v t)) := by
+      ext t; rw [L.map_smul]
+    rw [this]
+    exact L.integral_comp_comm hint
+  rw [hLu, hLv, hX, L.map_neg]
 
 /-- Helper for `W1pTime.ofHValuedDeriv`: a Bochner curve `g` integrable on `Icc 0 T`,
 scalar-multiplied by a continuous, compactly-supported test factor `φ` whose support sits

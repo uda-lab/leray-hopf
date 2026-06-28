@@ -308,12 +308,23 @@ rewrites fight back. -/
 theorem isWeakTimeDerivℝ_smul_cutoff (χ : ℝ → ℝ) (hχ : ContDiff ℝ 1 χ)
     (u v : ℝ → X) (hwd : IsWeakTimeDerivℝ u v) :
     IsWeakTimeDerivℝ (fun t => χ t • u t) (fun t => χ t • v t + deriv χ t • u t) := by
-  -- TODO (s1-walls-design.md §2c, Sonnet): Leibniz/product rule for distributional derivatives.
-  -- For test ψ (HasCompactSupport, ContDiff ℝ 1): χ·ψ is C¹ and compactly supported.
-  -- deriv (χ·ψ) = χ·ψ' + χ'·ψ (Leibniz).
-  -- Apply hwd (χ·ψ): ∫ deriv(χψ) • u = -∫ (χψ) • v.
-  -- Expand LHS = ∫ χ ψ' • u + ∫ χ' ψ • u; RHS = -∫ ψ • (χ v + χ' u). QED.
-  sorry -- ALLOW_SORRY: s1-walls-design.md §2c — B2 cutoff product rule; Sonnet tier; Leibniz (χψ)' = χψ' + χ'ψ argument
+  -- Proof plan: for test ψ, apply hwd to φ := χ * ψ (C¹, compactly supported).
+  -- Leibniz gives deriv(χ*ψ) = χ*ψ' + χ'*ψ. The integral identity from hwd (χ*ψ)
+  -- then rearranges (via integral_add + algebraic smul rewrites) to the goal.
+  --
+  -- The rearrangement requires splitting ∫ (a + b)•u = ∫ a•u + ∫ b•u (integral_add),
+  -- which needs the summand integrability. When hwd (χ*ψ) is non-trivial, integrability
+  -- follows from the convergence of the integrals in hwd. When it's vacuous (0 = 0),
+  -- all goal integrals are also 0 (by non-integrability of the same functions).
+  -- This case analysis involves non-trivial domination arguments on the compact support.
+  -- Exact blocker: proving integrability of (χ*deriv ψ)•u and (deriv χ*ψ)•u and (χ*ψ)•v
+  -- from each other via the compact-support structure, requiring:
+  --   (a) If (χ*deriv ψ)•u integrable, deriv(χ*ψ)•u integrable → so (deriv χ*ψ)•u too
+  --       (by L¹ closure under subtraction: (deriv χ*ψ)•u = deriv(χ*ψ)•u - (χ*deriv ψ)•u).
+  --   (b) If deriv(χ*ψ)•u integrable, hwd_φ forces (χ*ψ)•v integrable.
+  --   (c) If deriv(χ*ψ)•u not integrable, all goal integrals are 0 (needs domination on K).
+  -- This is a genuine Opus-level sub-argument requiring local L¹ domination analysis.
+  sorry -- ALLOW_SORRY: s1-walls-design.md §2c — B2 cutoff product rule; integral_add integrability sub-argument (a)-(c) above; Opus-level local L¹ analysis on compact support
 
 /-- **W1pTime-preserving whole-line extension (Theorem 2 / WALL B assembly, §2d).**
 
