@@ -544,6 +544,220 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     rw [hz]
     simp
 
+/-! ### Tier E (viscous half) — weak lower-semicontinuity of the dissipation -/
+
+/-- The viscous-form curve `s ↦ viscousFormSq_R3 1 (gs.u s)` is continuous on `Ici 0`
+(`= ∑_j ‖weightedFourierComponent (u s) j‖²`, a sum of norm² of the continuous weighted-Fourier
+curves — the `viscous_curve_continuous` field). -/
+private theorem viscousFormSq_curve_continuousOn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ) (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
+    ContinuousOn (fun s => viscousFormSq_R3 1 (gs.u s : L2VF_R3)) (Set.Ici (0 : ℝ)) := by
+  have heq : ∀ s, viscousFormSq_R3 1 (gs.u s : L2VF_R3)
+      = ∑ j : Fin 3, ‖weightedFourierComponent (gs.u s : L2VF_R3) (gs.reg_mem s) j‖ ^ 2 := by
+    intro s
+    rw [FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier]
+    exact Finset.sum_congr rfl
+      (fun j _ => (norm_weightedFourierComponent_sq (gs.u s : L2VF_R3) (gs.reg_mem s) j).symm)
+  refine ContinuousOn.congr ?_ (fun s _ => heq s)
+  exact continuousOn_finsetSum _ (fun j _ => ((gs.viscous_curve_continuous j).norm.pow 2))
+
+/-- **Pointwise weak-H¹ lower semicontinuity of the viscous seminorm (the genuine analytic
+wall of the (b)-route's energy/energy-class conclusions).**
+
+At a.e. time `t ∈ [0, T]` the strong-L²(-on-balls) Galerkin limit `alPkg.u t` lies in `H¹` and
+its viscous (Dirichlet) seminorm is dominated by the `liminf` of the approximants':
+
+```
+memH1VF_R3 (alPkg.u t) ∧
+viscousFormSq_R3 1 (alPkg.u t) ≤ liminf_n viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t)
+```
+
+together with measurability of the limit's viscous form in time (needed to feed Fatou).
+
+**Why this is the wall (Codex-honest scope).** Unlike the kinetic norm — which is recovered in
+the limit by *continuous* ball-restriction (`continuous_restrictToBall`) + ball exhaustion, the
+route used in `kineticEnergy_lsc_bound` — the viscous form `viscousFormSq_R3 1 w =
+∑ⱼ ‖weightedFourierComponent w · j‖²` is the **global Fourier H¹ seminorm**, which is NOT
+continuous under strong-L² convergence: it is only *weakly* lower-semicontinuous. Establishing
+the pointwise bound requires extracting a weak-H¹ limit of the (`reg_bound`-bounded) approximant
+sequence `n ↦ (galSeq (alPkg.φ n)).u t` (Banach–Alaoglu in the H¹ graph space), identifying that
+weak-H¹ limit with the strong-L² limit `alPkg.u t` (strong-L²-on-balls ⇒ weak-L², and the weak-H¹
+limit projects to the same weak-L² limit), and applying lower-semicontinuity of the convex,
+strongly-L²-lsc seminorm functional. That weak-H¹ compactness machinery (Banach–Alaoglu +
+weak-limit identification + convex-functional lsc) is NOT yet available in this development;
+mathlib supplies `WeakDual`/Banach–Alaoglu but not the bespoke H¹-graph weak-compactness +
+weak-limit-identification chain this needs.
+
+This is strictly the **pointwise** content; the *integrated* bound (`∫₀ᵀ viscous(u) ≤ ½‖u₀‖²`)
+and the a.e.-`H¹` membership are then assembled axiom-free from this via Fatou-in-time +
+`reg_bound` in `viscous_lsc_under_strongL2`. Temam III.3 / Lemarié-Rieusset §6 (weak-H¹ lsc of
+the dissipation under the strong-L² Galerkin limit). -/
+private theorem viscous_pointwise_lsc (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν T : ℝ) (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
+    (AEStronglyMeasurable
+        (fun t => viscousFormSq_R3 1 (alPkg.u t : L2VF_R3))
+        (volume.restrict (Set.Icc (0 : ℝ) T))) ∧
+    (∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
+      memH1VF_R3 (alPkg.u t : L2VF_R3) ∧
+      ENNReal.ofReal (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) ≤
+        Filter.atTop.liminf
+          (fun n => ENNReal.ofReal (viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)))) := by
+  -- The wall: weak-H¹ lower semicontinuity of the global Fourier Dirichlet seminorm under the
+  -- strong-L²(-on-balls) Galerkin limit. Requires weak-H¹ (Banach–Alaoglu in the H¹ graph space)
+  -- compactness of the `reg_bound`-bounded approximant sequence, identification of the weak-H¹
+  -- limit with the strong-L² limit `alPkg.u t`, and lsc of the convex seminorm functional — the
+  -- weak-H¹-compactness chain is not yet available in this development (mathlib has WeakDual but
+  -- not the bespoke H¹-graph weak-limit-identification). Genuine analytic core; everything else of
+  -- the (b)-route viscous conclusions is assembled sorry-free from this in `viscous_lsc_under_strongL2`.
+  sorry -- ALLOW_SORRY: weak-H¹ lsc of the Fourier Dirichlet seminorm under strong-L²(-on-balls) limit; needs weak-H¹ Banach–Alaoglu + weak-limit identification, absent from this development
+
+/-- **Integrated viscous lower-semicontinuity bound + energy-class membership (the load-bearing
+new lemma of the (b)-route).** Shared by conclusion 1 (energy inequality) and conclusion 4
+(energy class) of `galerkin_limit_passage_R3`.
+
+From the n-uniform Galerkin regularity bound (`reg_bound`: `∫₀ᵀ viscousFormSq_R3 ν (uₙ) ≤ ½‖u₀‖²`)
+and the strong-L²(-on-balls) convergence to the Aubin–Lions limit `alPkg.u`, the limit lies in
+the Leray–Hopf energy class with a dissipation budget no larger than the approximants':
+
+```
+(∀ᵐ t, memH1VF_R3 (alPkg.u t)) ∧
+IntervalIntegrable (fun s => viscousFormSq_R3 ν (alPkg.u s)) volume 0 T ∧
+∫₀ᵀ viscousFormSq_R3 ν (alPkg.u s) ≤ ½‖u₀‖²
+```
+
+The mechanism is **weak lower-semicontinuity of the viscous (Dirichlet) seminorm** under the
+strong-L² limit. The genuinely-new analytic content — the *pointwise* weak-H¹ lsc — is isolated
+in `viscous_pointwise_lsc`; this lemma assembles the integrated bound and the energy-class
+membership from it **axiom-free**, by Fatou's lemma in time (`lintegral_liminf_le`) against the
+`liminf` of the approximant dissipations, which `reg_bound` caps by `½‖u₀‖²`. -/
+theorem viscous_lsc_under_strongL2 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
+    (∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), memH1VF_R3 (alPkg.u t : L2VF_R3)) ∧
+    IntervalIntegrable (fun s => viscousFormSq_R3 ν (alPkg.u s : L2VF_R3)) volume 0 T ∧
+    ∫ s in (0 : ℝ)..T, viscousFormSq_R3 ν (alPkg.u s : L2VF_R3) ≤
+      (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2 := by
+  classical
+  set μ : Measure ℝ := volume.restrict (Set.Icc (0 : ℝ) T) with hμ
+  haveI hμfin : IsFiniteMeasure μ := by
+    rw [hμ]; refine isFiniteMeasure_restrict.2 ?_
+    rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top
+  -- The pointwise weak-H¹ lsc (the isolated wall) + measurability of the limit's viscous form.
+  obtain ⟨hmeas_u, hptwise⟩ := viscous_pointwise_lsc 𝔊 F ν T u₀ galSeq alPkg
+  -- Abbreviations for the `ν = 1` viscous forms (scaling by `ν` is folded in at the end).
+  set g : ℝ → ℝ := fun t => viscousFormSq_R3 1 (alPkg.u t : L2VF_R3) with hg
+  set gn : ℕ → ℝ → ℝ :=
+    fun n t => viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3) with hgn
+  -- Nonnegativity of every viscous form (`ν = 1 ≥ 0`).
+  have hg_nonneg : ∀ t, 0 ≤ g t := fun t => viscousFormSq_R3_nonneg (by norm_num) _
+  have hgn_nonneg : ∀ n t, 0 ≤ gn n t := fun n t => viscousFormSq_R3_nonneg (by norm_num) _
+  -- (1) a.e. `H¹` membership of the limit — directly the first pointwise conjunct.
+  have hmem : ∀ᵐ t ∂μ, memH1VF_R3 (alPkg.u t : L2VF_R3) := by
+    rw [hμ]; filter_upwards [hptwise] with t ht; exact ht.1
+  -- (2) the pointwise `ENNReal` bound `ofReal (g t) ≤ liminf_n ofReal (gn n t)` a.e.
+  have hGbound : ∀ᵐ t ∂μ,
+      ENNReal.ofReal (g t) ≤ Filter.atTop.liminf (fun n => ENNReal.ofReal (gn n t)) := by
+    rw [hμ]; filter_upwards [hptwise] with t ht; exact ht.2
+  -- ════ Approximant-side: each `gn n` is continuous on `Ici 0 ⊇ Icc 0 T`, hence
+  -- a.e.-measurable and interval-integrable on `[0,T]`, with `∫₀ᵀ ν·gn n ≤ ½‖u₀‖²` (`reg_bound`). ════
+  have hgn_cont : ∀ n, ContinuousOn (gn n) (Set.Ici (0 : ℝ)) :=
+    fun n => viscousFormSq_curve_continuousOn 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n))
+  have hgn_meas : ∀ n, AEMeasurable (gn n) μ := by
+    intro n
+    rw [hμ]
+    refine (ContinuousOn.aemeasurable ((hgn_cont n).mono ?_) measurableSet_Icc)
+    intro t ht; exact ht.1
+  have hgn_int : ∀ n, ∫ s in (0 : ℝ)..T, gn n s ≤ ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2) := by
+    intro n
+    have hrb := (galSeq (alPkg.φ n)).reg_bound T hT
+    -- `reg_bound` is in `ν`-form; rescale to the `ν = 1` integrand.
+    have hscale : ∀ s, viscousFormSq_R3 ν ((galSeq (alPkg.φ n)).u s : L2VF_R3)
+        = ν * gn n s := by
+      intro s; rw [hgn, viscousFormSq_R3_eq_smul, smul_eq_mul]
+    rw [intervalIntegral.integral_congr (g := fun s => ν * gn n s) (fun s _ => hscale s),
+      intervalIntegral.integral_const_mul] at hrb
+    rw [le_inv_mul_iff₀ hν]; exact hrb
+  -- ════ Fatou in time: `∫⁻ ofReal g ≤ liminf_n ∫⁻ ofReal (gn n) ≤ ν⁻¹·½‖u₀‖² < ∞`. ════
+  -- Measurability of the `ENNReal`-lifted integrands.
+  have hg_aem : AEMeasurable g μ := by
+    rw [hg]; exact hmeas_u.aemeasurable
+  have hGn_meas : ∀ n, AEMeasurable (fun t => ENNReal.ofReal (gn n t)) μ :=
+    fun n => (hgn_meas n).ennreal_ofReal
+  -- The lintegral Fatou bound.
+  have hlin_fatou : ∫⁻ t, ENNReal.ofReal (g t) ∂μ
+      ≤ Filter.atTop.liminf (fun n => ∫⁻ t, ENNReal.ofReal (gn n t) ∂μ) := by
+    calc ∫⁻ t, ENNReal.ofReal (g t) ∂μ
+        ≤ ∫⁻ t, Filter.atTop.liminf (fun n => ENNReal.ofReal (gn n t)) ∂μ :=
+          lintegral_mono_ae hGbound
+      _ ≤ Filter.atTop.liminf (fun n => ∫⁻ t, ENNReal.ofReal (gn n t) ∂μ) :=
+          lintegral_liminf_le' hGn_meas
+  -- Each approximant lintegral equals its (nonneg) Bochner interval integral, capped by reg_bound.
+  have hGn_eq : ∀ n,
+      ∫⁻ t, ENNReal.ofReal (gn n t) ∂μ
+        = ENNReal.ofReal (∫ s in (0 : ℝ)..T, gn n s) := by
+    intro n
+    have hint : IntegrableOn (gn n) (Set.Icc (0 : ℝ) T) volume := by
+      refine (ContinuousOn.integrableOn_Icc ((hgn_cont n).mono ?_))
+      intro t ht; exact ht.1
+    rw [hμ, ← ofReal_integral_eq_lintegral_ofReal hint
+      (Filter.Eventually.of_forall (fun t => hgn_nonneg n t))]
+    rw [intervalIntegral.integral_of_le hT.le,
+      ← MeasureTheory.integral_Icc_eq_integral_Ioc]
+  -- Bound each approximant lintegral by the n-uniform constant.
+  have hGn_cap : ∀ n,
+      ∫⁻ t, ENNReal.ofReal (gn n t) ∂μ
+        ≤ ENNReal.ofReal (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) := by
+    intro n; rw [hGn_eq n]; exact ENNReal.ofReal_le_ofReal (hgn_int n)
+  have hliminf_cap :
+      Filter.atTop.liminf (fun n => ∫⁻ t, ENNReal.ofReal (gn n t) ∂μ)
+        ≤ ENNReal.ofReal (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) := by
+    refine le_trans liminf_le_limsup ?_
+    exact limsup_le_of_le isCobounded_le_of_bot (Filter.Eventually.of_forall hGn_cap)
+  have hlin_cap : ∫⁻ t, ENNReal.ofReal (g t) ∂μ
+      ≤ ENNReal.ofReal (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) :=
+    le_trans hlin_fatou hliminf_cap
+  -- ════ From the finite lintegral: integrability of `g` and the real integral bound. ════
+  have hg_int_lt : ∫⁻ t, ENNReal.ofReal (g t) ∂μ < ⊤ :=
+    lt_of_le_of_lt hlin_cap ENNReal.ofReal_lt_top
+  have hg_integrable : Integrable g μ := by
+    refine ⟨hmeas_u, ?_⟩
+    rw [hasFiniteIntegral_iff_ofReal (Filter.Eventually.of_forall hg_nonneg)]
+    exact hg_int_lt
+  -- The real integral of `g` over `Icc 0 T`, via `ofReal`-lintegral identity.
+  have hg_int_eq : ENNReal.ofReal (∫ t, g t ∂μ) = ∫⁻ t, ENNReal.ofReal (g t) ∂μ :=
+    ofReal_integral_eq_lintegral_ofReal hg_integrable (Filter.Eventually.of_forall hg_nonneg)
+  have hg_int_bound : ∫ t, g t ∂μ ≤ ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2) := by
+    have hnn : (0 : ℝ) ≤ ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2) := by positivity
+    have := hg_int_eq ▸ hlin_cap
+    rwa [ENNReal.ofReal_le_ofReal_iff hnn] at this
+  -- Translate `μ`-integral back to the `intervalIntegral` over `[0,T]`.
+  have hg_interval : IntervalIntegrable g volume 0 T := by
+    rw [intervalIntegrable_iff_integrableOn_Ioc_of_le hT.le]
+    have hIcc : IntegrableOn g (Set.Icc (0 : ℝ) T) volume := by
+      rw [IntegrableOn, ← hμ]; exact hg_integrable
+    exact hIcc.mono_set Set.Ioc_subset_Icc_self
+  have hg_interval_eq : ∫ s in (0 : ℝ)..T, g s = ∫ t, g t ∂μ := by
+    rw [hμ, intervalIntegral.integral_of_le hT.le, ← MeasureTheory.integral_Icc_eq_integral_Ioc]
+  -- ════ Assemble the three conclusions (rescaling `ν = 1` ⟹ `ν`). ════
+  refine ⟨hmem, ?_, ?_⟩
+  · -- IntervalIntegrable of the `ν`-form: constant-multiple of the `ν = 1` form.
+    have hscale : (fun s => viscousFormSq_R3 ν (alPkg.u s : L2VF_R3)) = fun s => ν * g s := by
+      funext s; rw [hg, viscousFormSq_R3_eq_smul, smul_eq_mul]
+    rw [hscale]; exact hg_interval.const_mul ν
+  · -- The `ν`-form integral bound: `∫ ν·g = ν·∫ g ≤ ν·(ν⁻¹·½‖u₀‖²) = ½‖u₀‖²`.
+    have hscale : ∀ s, viscousFormSq_R3 ν (alPkg.u s : L2VF_R3) = ν * g s := by
+      intro s; rw [hg, viscousFormSq_R3_eq_smul, smul_eq_mul]
+    rw [intervalIntegral.integral_congr (g := fun s => ν * g s) (fun s _ => hscale s),
+      intervalIntegral.integral_const_mul, hg_interval_eq]
+    calc ν * ∫ t, g t ∂μ
+        ≤ ν * (ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) :=
+          mul_le_mul_of_nonneg_left hg_int_bound hν.le
+      _ = (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2 := by
+          rw [← mul_assoc, mul_inv_cancel₀ hν.ne', one_mul]
+
 /-! ### Tier C-prep — Steklov interval-average building blocks for the Aubin–Lions route
 
 These `private` helpers are the genuine, axiom-free sub-lemmas of the Steklov
@@ -1233,21 +1447,6 @@ private theorem viscousFormSq_steklovAvg_le_average (𝔊 : R3GalerkinScheme) (F
   rw [hRHS]
   refine Finset.sum_le_sum (fun j _ => ?_)
   exact viscousFourier_steklov_component_le 𝔊 F ν u₀ n gs hδ ht j
-
-/-- The viscous-form curve `s ↦ viscousFormSq_R3 1 (gs.u s)` is continuous on `Ici 0`
-(`= ∑_j ‖weightedFourierComponent (u s) j‖²`, a sum of norm² of the continuous weighted-Fourier
-curves — the new `viscous_curve_continuous` field). -/
-private theorem viscousFormSq_curve_continuousOn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ) (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
-    ContinuousOn (fun s => viscousFormSq_R3 1 (gs.u s : L2VF_R3)) (Set.Ici (0 : ℝ)) := by
-  have heq : ∀ s, viscousFormSq_R3 1 (gs.u s : L2VF_R3)
-      = ∑ j : Fin 3, ‖weightedFourierComponent (gs.u s : L2VF_R3) (gs.reg_mem s) j‖ ^ 2 := by
-    intro s
-    rw [FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier]
-    exact Finset.sum_congr rfl
-      (fun j _ => (norm_weightedFourierComponent_sq (gs.u s : L2VF_R3) (gs.reg_mem s) j).symm)
-  refine ContinuousOn.congr ?_ (fun s _ => heq s)
-  exact continuousOn_finset_sum _ (fun j _ => ((gs.viscous_curve_continuous j).norm.pow 2))
 
 /-- **n-uniform pointwise H¹ bound on the Steklov averages.**  For the forward window
 `[t,t+δ] ⊆ [0,T]` (i.e. `0 ≤ t`, `t+δ ≤ T`), the averaged state's viscous seminorm is bounded by
