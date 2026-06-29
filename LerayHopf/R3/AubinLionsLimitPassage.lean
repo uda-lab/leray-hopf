@@ -2352,20 +2352,30 @@ Passing `n→∞` (linear terms by the weak-L² convergence bridge `inner_tendst
 nonlinear term by `bForm_tendsto_of_strongL2`) and then `N→∞` (Galerkin test density) gives the
 weak form for `alPkg.u` against `ψ ⊗ w`.
 
-ISOLATED ANALYTIC FRONTIER (the residual of this conjunct — see the `ALLOW_SORRY` below).  Three
-mathlib/repo-absent pieces remain entangled in producing the per-test integral identity:
-(i) the VISCOUS-form equality passage `B(uₙ t, w) → B(u t, w)`: `stokesTestPairing_R3` is the
-H¹/Dirichlet pairing `∑ⱼ∫ (2π)²‖ξ‖² Re[𝓕uⱼ·conj 𝓕wⱼ]` (`Regularity.lean:123`), carrying a gradient
-weight, so it is NOT L²-continuous in `u`; passing it requires spatial integration by parts moving
-`-Δ` onto the Schwartz test `w` (no such reformulation lemma exists; the file carries only the
-viscous *lsc* used for the energy inequality, not the equality passage);
-(ii) the NONLINEAR strong passage at a.e. time: `bForm_tendsto_of_strongL2` needs FULL-SPACE strong
-L² convergence, whereas the package supplies only per-ball strong (`strong_convergence_ae`) plus
-full-space WEAK (`inner_tendsto_of_perball`).  Bridging per-ball to full-space strong for the
-`b`-term needs Schwartz-tail control of `b` (absent from `TrilinearEstimate`);
-(iii) the Galerkin→Schwartz test DENSITY extension (`u_ode` holds only for `𝔊.P n w = w`).
-These are the genuinely-new analytic cores; the structural reduction (time-IBP + dominated
-convergence in time) stands on already-proved pieces. -/
+ISOLATED ANALYTIC FRONTIER (the residual of this conjunct — see the `ALLOW_SORRY` below).  After
+the structural reduction (time-IBP + dominated convergence in time, both in hand) three atoms
+remain.  Each is PROVABLE on existing repo/Mathlib pieces — none is a strong-compactness wall —
+but each is its own multi-lemma sub-development not yet built:
+(i) the VISCOUS-form equality passage `B(uₙ t, w) → B(u t, w)`.  `stokesTestPairing_R3` is the
+H¹/Dirichlet pairing `∑ⱼ∫ (2π)²‖ξ‖² Re[𝓕uⱼ·conj 𝓕wⱼ]` (`Regularity.lean:123`), not L²-continuous in
+`u` as written.  PROVABLE route (Plancherel onto the test): `(2π)²‖ξ‖² 𝓕wⱼ = 𝓕((-Δ)wⱼ)` for Schwartz
+`wⱼ`, so by Parseval (`Lp.inner_fourier_eq` / `(Lp.fourierTransformₗᵢ _ _).inner_map_map`) the
+pairing equals `⟨u, lapVF w⟩_{L²}` with the FIXED element `lapVF w := -Δw ∈ L²` (Schwartz).  This is
+the exact second-order analogue of the already-proved first-order
+`divComponent_eq_fourier_integral` (`CurlDensity.lean:460`, which moves a single `∂ⱼ` onto a Schwartz
+test via `lineDerivOpCLM`/`schwartzC`/`toLp_schwartzC_eq`).  Once reformulated, it passes by the
+full-space WEAK convergence already available (`weak_tendsto_of_inner_tendsto`/`inner_tendsto_of_perball`
+against the fixed `lapVF w`).  Atom = the 2nd-order Plancherel–Laplacian reformulation lemma.
+(ii) the NONLINEAR passage `b(uₙ t, uₙ t, w) → b(u t, u t, w)` at a.e. `t`.  NOT a full-space
+strong-compactness gap: `w` is Schwartz (rapid decay), so the ball-tail ε/3 split
+(per-ball strong-L² via `strong_convergence_ae` on `‖x‖≤R` + the `b`-Schwartz-tail bound for
+`‖x‖>R`) reduces it — mirroring the `inner_tendsto_of_perball` ball/tail pattern.  Atom = the
+trilinear Schwartz-tail bound for `F.b`/`convIntegralSchwartz` (the `‖x‖>R` remainder controlled by
+`w`'s decay), currently absent from `TrilinearEstimate`.
+(iii) the Galerkin→Schwartz test DENSITY extension (`u_ode` holds only for `𝔊.P n w = w`; pass the
+`N`-th identity then `N→∞` via `𝔊.tendsto_id`).
+All three stand on already-proved pieces; the structural reduction (time-IBP + dominated convergence
+in time) is in hand. -/
 
 /-- **WeakFormNS limit passage (conjunct 2 of `galerkin_limit_passage_R3`).**
 
@@ -2390,16 +2400,28 @@ theorem weakFormNS_limit_passage
   -- fields substituted,
   --   `-(⟪alPkg.u t, w⟫) · ψ'(t) + ψ(t) · (ν · stokesTestPairing_R3 (alPkg.u t) w
   --       + F.b (alPkg.u t) (alPkg.u t) w)`.
-  -- The proof passes the time-IBP'd approximant identity to the limit (`n→∞`) along the Galerkin
-  -- test density (`N→∞`).  The structural reduction (time-IBP + dominated convergence in time) is
-  -- in hand via `integral_mul_deriv_eq_deriv_mul` (boundary-free, `tsupport ψ ⊆ Ioo 0 T`),
-  -- `HasDerivAt.inner`, and `galerkin_norm_le_u0`/`inner_tendsto_of_perball`.  The residual is the
-  -- three entangled analytic cores (i)–(iii) named in the section docstring: the viscous-form
-  -- equality passage (gradient weight ⟹ no L²-continuity, needs spatial IBP onto `w`), the
-  -- nonlinear per-ball→full-space strong bridge (needs Schwartz-tail control of `b`), and the
-  -- Galerkin→Schwartz test density.  None weakens the statement; the goal below is the verbatim
-  -- `WeakFormNS` integral identity.
-  sorry -- ALLOW_SORRY: WeakFormNS passage residual — three entangled mathlib/repo-absent analytic cores: (i) viscous-form equality passage B(uₙ·,w)→B(u·,w) needs spatial IBP moving -Δ onto Schwartz w (stokesTestPairing_R3 carries a gradient weight ‖ξ‖², not L²-continuous; only viscous lsc is in the file); (ii) nonlinear strong passage at a.e. t needs FULL-SPACE strong L² but only per-ball strong (strong_convergence_ae) + full-space weak (inner_tendsto_of_perball) are available — the per-ball→full-space-strong bridge needs Schwartz-tail control of b (absent from TrilinearEstimate); (iii) Galerkin→Schwartz test density (u_ode holds only for 𝔊.P n w = w). Structural reduction (time-IBP via integral_mul_deriv_eq_deriv_mul boundary-free + dominated convergence) is in hand. Temam III.3.
+  -- The proof passes the time-IBP'd approximant identity to the limit (`n→∞`).  The structural
+  -- reduction (time-IBP + dominated convergence in time) is in hand via
+  -- `integral_mul_deriv_eq_deriv_mul` (boundary-free, `tsupport ψ ⊆ Ioo 0 T`), `HasDerivAt.inner`,
+  -- and `galerkin_norm_le_u0`/`inner_tendsto_of_perball`.  STATUS of the residual:
+  --  (a) VISCOUS — DISCHARGED: `stokesTestPairing_R3_eq_sum_inner_negLap` (`CurlDensity.lean`) proves
+  --      `stokesTestPairing_R3 u w = ∑ⱼ ⟪uⱼ, (-Δ ψⱼ).toLp⟫`, an `L²`-weak-continuous functional, so
+  --      the viscous term passes against the FIXED `-Δ ψⱼ` by `weak_tendsto_of_inner_tendsto`.
+  --  (b) NONLINEAR — PROVABLE via the fixed-Schwartz-`w` integral representation (the `w` in
+  --      `WeakFormNS` is ALWAYS Schwartz-div-free: `r3Evolution.isTest = IsSchwartzDivFree_R3`).
+  --      Step 1: `F.b f g w = -∑_{i,a} ∫ fₐ·gᵢ·(∂ₐ ψwᵢ)` for ALL `f,g ∈ L²_σ`, by extending the
+  --      Schwartz identity (`b_galerkin` = `convIntegralSchwartz`, then
+  --      `convIntegralSchwartz_divFree_eq` = the IBP'd antisymmetric integral with the derivative on
+  --      `w`) off the dense Schwartz set (`schwartzDivFree_dense_of_curlDense`) using joint
+  --      `L²`-continuity of BOTH sides (`F.b` via `b_bound`; the integral via Cauchy–Schwarz +
+  --      `∂ψw ∈ L^∞`).  The integrand is a genuine `L¹` Lebesgue integral, so Step 2 ball-splits it:
+  --      tail `‖x‖>R` is `≤ sup_{|x|>R}|∂ψw|·2M² → 0` (Schwartz decay, `SchwartzMap.tendsto_cocompact`,
+  --      uniform `M`), middle `‖x‖≤R` → 0 by per-ball strong (`strong_convergence_ae`).  No
+  --      full-space strong needed — the LOCAL package + Schwartz tail is exactly the design.
+  --  (c) DENSITY — UNNECESSARY: `WeakFormNS`'s test is already Schwartz-div-free, so the fixed-`w`
+  --      slice in (b) covers it; no Galerkin→Schwartz step is required.
+  -- None weakens the statement; the goal below is the verbatim `WeakFormNS` integral identity.
+  sorry -- ALLOW_SORRY: WeakFormNS passage residual. Atom (a) VISCOUS DISCHARGED (stokesTestPairing_R3_eq_sum_inner_negLap, CurlDensity.lean — weak-continuous, passes by weak_tendsto_of_inner_tendsto). Atom (b) NONLINEAR PROVABLE via the fixed-Schwartz-w integral rep (WeakFormNS test w is always IsSchwartzDivFree_R3): Step 1 F.b f g w = -∑ᵢₐ∫ fₐ·gᵢ·∂ₐψwᵢ for all f,g∈L²σ by density-extending the Schwartz identity (b_galerkin + convIntegralSchwartz_divFree_eq) off schwartzDivFree_dense_of_curlDense using joint L²-continuity of both sides (b_bound; Cauchy-Schwarz+∂ψw∈L∞) — genuine L¹ integral; Step 2 ε/3 ball-split (tail ≤ sup_{|x|>R}|∂ψw|·2M²→0 by SchwartzMap.tendsto_cocompact + uniform M; middle→0 by per-ball strong strong_convergence_ae). NO full-space strong needed. Atom (c) DENSITY UNNECESSARY (WeakFormNS test already Schwartz). Structural reduction (time-IBP boundary-free + dominated convergence) in hand. Temam III.3. (Earlier "interface wall" claim RETRACTED — the fixed-w slice has the integral rep.)
 
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
