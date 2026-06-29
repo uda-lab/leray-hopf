@@ -88,7 +88,12 @@ theorem ContDiffBump.isTimeMollifier {c : ℝ} (φ : ContDiffBump c) :
 
 section Young
 
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+-- `[CompleteSpace E]` is required: the Bochner convolution API (`timeConvL2`,
+-- `timeConvL2_norm_le`, etc.) is only semantically sound for complete spaces — without
+-- completeness the Bochner integral can collapse to a junk fallback while the Young
+-- norm bound still typechecks. All intended GelfandTriple consumers already provide
+-- `CompleteSpace`. Lemmas that do NOT use completeness carry `omit [CompleteSpace E]`.
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
 
 /-- **Time-translation on `L²(ℝ; E)`**: `τ_h g = g(· + h)`, realized as
 `Lp.compMeasurePreserving` of the measure-preserving shift `(· + h)`. It is a linear isometry
@@ -98,13 +103,13 @@ noncomputable def timeTranslateL2 (h : ℝ) (g : Lp E 2 (volume : Measure ℝ)) 
   Lp.compMeasurePreserving (· + h)
     (measurePreserving_add_right (volume : Measure ℝ) h) g
 
-omit [NormedSpace ℝ E] in
+omit [NormedSpace ℝ E] [CompleteSpace E] in
 /-- Translation is an isometry on `L²(ℝ;E)`: `‖τ_h g‖ = ‖g‖`. -/
 theorem timeTranslateL2_norm (h : ℝ) (g : Lp E 2 (volume : Measure ℝ)) :
     ‖timeTranslateL2 h g‖ = ‖g‖ := by
   rw [timeTranslateL2, Lp.norm_compMeasurePreserving]
 
-omit [NormedSpace ℝ E] in
+omit [NormedSpace ℝ E] [CompleteSpace E] in
 /-- `h ↦ τ_h g` is continuous from `ℝ` into `L²(ℝ;E)` (mathlib's translation continuity in
 `Lp`, `Continuous.compMeasurePreservingLp`). Needed for strong measurability / integrability of
 the convolution integrand. -/
@@ -129,6 +134,7 @@ noncomputable def timeConvL2 (ρ : ℝ → ℝ) (g : Lp E 2 (volume : Measure �
     Lp E 2 (volume : Measure ℝ) :=
   ∫ h : ℝ, ρ h • timeTranslateL2 h g ∂(volume : Measure ℝ)
 
+omit [CompleteSpace E] in
 /-- The kernel-weighted-translate family `h ↦ ρ h • τ_h g` is Bochner integrable as an
 `L²(ℝ;E)`-valued map: continuous (so strongly measurable), with compact support
 (`tsupport ρ`, since outside it the scalar factor vanishes). -/
@@ -145,6 +151,7 @@ theorem integrable_timeMollifier_smul_translate {ρ : ℝ → ℝ} (hρ : IsTime
     simp [this]
   exact hcont.integrable_of_hasCompactSupport hsupp
 
+omit [CompleteSpace E] in
 /-- `‖ρ h • τ_h g‖ = ρ h · ‖g‖` (using `hρ.nonneg` so `|ρ h| = ρ h`, and translation isometry). -/
 theorem norm_timeMollifier_smul_translate {ρ : ℝ → ℝ} (hρ : IsTimeMollifier ρ)
     (g : Lp E 2 (volume : Measure ℝ)) (h : ℝ) :

@@ -449,14 +449,21 @@ this no-Dirac identity cannot be closed by elementary distributional manipulatio
 
 Tier: **Opus** (the soundness heart — needs the Bochner-valued 1D-Sobolev FTC/trace pillar). -/
 theorem weakTimeDerivℝ_even_reflection (u v : ℝ → X)
+    (hu : LocallyIntegrable u (volume : Measure ℝ))
+    (hv : LocallyIntegrable v (volume : Measure ℝ))
     (hwd : IsWeakTimeDerivℝ u v) :
     IsWeakTimeDerivℝ (fun t => u |t|) (fun t => Real.sign t • v |t|) := by
+  -- `hu`/`hv`: local integrability is required so that the Bochner integrals in `IsWeakTimeDerivℝ`
+  -- are not junk and the half-axis splitting `∫_ℝ = ∫_{<0} + ∫_{>0}` is sound (Fubini/dominated
+  -- convergence requires at least local integrability of the integrand). Without it a caller could
+  -- assert the no-Dirac identity for arbitrary measurable curves, smuggling the circular trace
+  -- assumption with no integrability control.
   -- The no-Dirac reflection identity genuinely requires the trace `u(0)`, i.e. the Bochner-valued
   -- 1D-Sobolev continuous-representative / FTC pillar (`u(t) = u(a) + ∫_a^t v`). The whole-line
   -- hypothesis `hwd` mixes both half-axes; the conclusion only sees `u` on `[0,∞)`. Extracting the
   -- half-axis identity needs the boundary trace, which is not derivable from `IsWeakTimeDerivℝ`
   -- alone. This is the same months-class pillar as `w1pTime_continuous_in_H`.
-  sorry -- ALLOW_SORRY: s1-walls-design.md §2b — B1 even-reflection no-Dirac identity. GENUINE BLOCKER: needs the Bochner-valued 1D-Sobolev FTC/continuous-representative (trace at 0) pillar — the design note's elementary split is incomplete because the whole-line `hwd` mixes both half-axes while the conclusion only sees u on [0,∞); same months-class residual as w1pTime_continuous_in_H. Statement is TRUE (a.e.-invariant; holds for the continuous representative), not weakened.
+  sorry -- ALLOW_SORRY: s1-walls-design.md §2b — B1 even-reflection no-Dirac identity. GENUINE BLOCKER: needs the Bochner-valued 1D-Sobolev FTC/continuous-representative (trace at 0) pillar; local integrability (hu/hv) is now required so the half-axis Fubini split is sound — the design note's elementary split is incomplete because the whole-line `hwd` mixes both half-axes while the conclusion only sees u on [0,∞); same months-class residual as w1pTime_continuous_in_H. Statement is TRUE (a.e.-invariant; holds for the continuous representative), not weakened.
 
 /-- **Sub-lemma B2 — cutoff (Leibniz) product rule for whole-line Banach-valued weak derivatives.**
 
