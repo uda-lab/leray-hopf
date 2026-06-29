@@ -130,8 +130,9 @@ theorem convFormSchwartz_eq_witness
 /-! ### Helper: derive the Schwartz-level div-free predicate from L2Sigma_R3 membership -/
 
 /-- Given `u ∈ L2Sigma_R3` with Schwartz witness `ψu` (from `IsSchwartzDivFree_R3 u`),
-the component witnesses satisfy the Schwartz-level weak div-free predicate used in R3-d. -/
-private theorem schwartzDivFree_of_L2Sigma
+the component witnesses satisfy the Schwartz-level weak div-free predicate used in R3-d.
+Public so the limit-passage layer can supply `hdiv` for `convIntegralSchwartz_divFree_eq`. -/
+theorem schwartzDivFree_of_L2Sigma
     (u : L2Sigma_R3) (ψu : Fin 3 → SchwartzMap Domain3 ℝ)
     (hψu : ∀ j, L2VF_projComponent_R3 j (u : L2VF_R3)
         = (ψu j).toLp 2 (volume : Measure Domain3)) :
