@@ -12,21 +12,20 @@
 #     propext  Classical.choice  Quot.sound  (3 kernel)
 #     LerayHopf.aubin_lions  LerayHopf.galerkin_limit_passage  (2 project)
 #     NOTE: torus3_NSForms_exist REMOVED (issue #22) — Nonempty Torus3NSForms is now the theorem
-#           torus3_NSForms_exists, SWAPPED for the thinner torusConvectionGap_exists gap axiom via
-#           the proved Torus3NSForms_of_gap.
+#           torus3_NSForms_exists, routed through the TorusConvectionGap interface and the proved
+#           Torus3NSForms_of_gap.
 #     NOTE: galerkin_ode_solution REMOVED (issue #24) — discharged by routing the capstone through
 #           the axiom-free galerkinSolutionData_torus (proved finite-dim Galerkin ODE over
-#           velocitySpan n); net torus project axioms now 3.
+#           velocitySpan n).
 #     NOTE: torusConvectionGap_exists REMOVED (issue #53) — proved sorry-free as
 #           torusConvectionGap_holds (determined-form construction, TorusConvectionExtension.lean);
 #           re-exported as LerayHopf.torusConvectionGap_exists (theorem, not axiom).
 #           Net 𝕋³ project axioms now 2.
 #
-#   exists_lerayHopf_r3_axiomatic — exactly 6 axioms:
+#   exists_lerayHopf_r3_axiomatic — exactly 5 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
 #     LerayHopf.galerkin_limit_passage_R3
-#     LerayHopf.r3ConvectionGapOp_exists
-#     LerayHopf.galerkin_spacetime_precompact_R3  (3 project)
+#     LerayHopf.galerkin_spacetime_precompact_R3  (2 project)
 #     NOTE: spatial_compactness_R3 REMOVED (issue #2) — now a theorem via the FK chain.
 #     NOTE: r3GalerkinScheme_exists REMOVED (issue #21) — now a theorem, SWAPPED for the
 #           thinner curlSchwartzDense_holds density axiom.
@@ -57,8 +56,10 @@
 #           b_cont_fixedTest) + proved theorem r3_NSForms_exists (via R3NSForms_of_gap).
 #           Density (schwartz_dense) NOT assumed — proved via curlSchwartzDense_holds.
 #           Note: b_cont_fixedTest ≡ b_bound (bounded/continuous-bilinear equivalence) so the
-#           fixed-test bound is still assumed, not proved.  What genuinely becomes theorem content:
-#           multilinear algebra (b_add/b_smul) + density.  Net R3 project axioms still 3.
+#           fixed-test bound was still assumed, not proved, at this stage.
+#     NOTE: r3ConvectionGapOp_exists REMOVED (issue #56) — proved sorry-free as
+#           r3ConvectionGapOp_holds by the determined-form BLT construction. Net R3 project axioms
+#           now 2.
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.

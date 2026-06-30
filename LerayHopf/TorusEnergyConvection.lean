@@ -7,11 +7,11 @@ import LerayHopf.AxiomaticClosure
 open MeasureTheory Filter Topology
 
 /-!
-# Torus H¹_σ submodule — packaging + Parseval scaffold (PR-1, torus issue #53)
+# Torus H¹_σ submodule — packaging + Parseval support (torus issue #53)
 
-**Scope (PR-1, torus #53):** Stand up the torus div-free H¹ submodule `H1SigmaTorus`
-as a `Submodule ℝ L2Sigma`, state the membership characterisation, and scaffold the
-two analytic targets that PR-2 will prove:
+**Scope (torus #53):** Stand up the torus div-free H¹ submodule `H1SigmaTorus`
+as a `Submodule ℝ L2Sigma`, state the membership characterisation, and provide the
+two analytic bridge lemmas used by the determined-form construction:
 
 - **`gradPairingSummable`** — the Parseval triple sum is summable when the MIDDLE slot
   `v` is H¹ (derivative sits on `v`); Claim-1a from the PR-0 spike.
@@ -21,7 +21,7 @@ two analytic targets that PR-2 will prove:
 ## Dependency note
 
 This file sits **above** `TorusConvectionForm.lean` in the DAG; it does NOT import it.
-`TorusConvectionForm.lean` will import this module (in PR-6) to build the proved
+`TorusConvectionForm.lean` imports this module to build the proved
 `theorem torusConvectionGap_exists`.
 
 ## Declarations
@@ -34,13 +34,12 @@ This file sits **above** `TorusConvectionForm.lean` in the DAG; it does NOT impo
                                      (proved, sorry-free via the three closure lemmas above)
 - `mem_H1SigmaTorus_iff`           — membership characterisation (proved, sorry-free)
 - `gradPairingSummable`            — Parseval summability with H¹ on middle slot
-                                     (scaffold sorry, PR-2 target)
-- `galerkinTestSpan_subset_H1Sigma`— Galerkin tests ⊆ H¹_σ (scaffold sorry, PR-2 target)
+- `galerkinTestSpan_subset_H1Sigma`— Galerkin tests ⊆ H¹_σ
 
 ## Assumptions
 
-None — this file introduces no `axiom`/`opaque`. The two scaffold `sorry`s are
-analytic content deferred to `lean-prover` in PR-2.
+None — this file introduces no `axiom`/`opaque`. The Parseval and Galerkin-test bridge lemmas
+are proved and feed the BLT construction.
 -/
 
 namespace LerayHopf
@@ -235,7 +234,7 @@ private theorem summable_grad_weight_sq {f : L2C} (hf : memH1Torus f) :
   have hge : (∑ i : Fin 3, (l i : ℝ) ^ 2) ≤ 1 + ∑ i : Fin 3, (l i : ℝ) ^ 2 := by linarith
   exact mul_le_mul_of_nonneg_right hge (by positivity)
 
-/-! ### PR-2 analytic targets (scaffold — proved in PR-2) -/
+/-! ### Analytic bridge lemmas used by the determined-form construction -/
 
 /-! #### Parseval triple-sum summability — Claim 1a (derivative on MIDDLE slot) -/
 
@@ -353,7 +352,7 @@ theorem convSummand_summable (u : L2VF) (v : L2VF) (hv : memH1VF v)
   (convSummand_norm_summable u v hv w hw i a).of_norm
 
 set_option maxHeartbeats 1000000 in
-/-- **`gradPairingSummable` [scaffold, proved in PR-2, torus #53].**
+/-- **`gradPairingSummable` (torus #53).**
 
 For `u : L2VF`, `v : L2VF` with `memH1VF v` (H¹ on the MIDDLE / gradient slot),
 and `w : L2Sigma` a Galerkin test, the Parseval convection summand
@@ -383,7 +382,7 @@ theorem gradPairingSummable (u : L2VF) (v : L2VF) (hv : memH1VF v)
 
 /-! #### Galerkin tests are in H¹_σ -/
 
-/-- **`galerkinTestSpan_subset_H1Sigma` [scaffold, proved in PR-2, torus #53].**
+/-- **`galerkinTestSpan_subset_H1Sigma` (torus #53).**
 
 Every Galerkin test `w : L2Sigma` (i.e., `IsGalerkinTest w`, so `w ∈ Vₙ` for some `n`)
 lies in `H1SigmaTorus`.

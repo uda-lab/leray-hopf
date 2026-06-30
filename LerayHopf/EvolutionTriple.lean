@@ -94,7 +94,15 @@ endpoints, so the integration-by-parts boundary terms are zero (fixing defect 2)
 
 The `E.isTest w` condition restricts spatial tests to the admissible class
 (e.g. smooth/Galerkin div-free vectors), matching the Faedo–Galerkin limit-passage
-argument (Fix 3 of the Codex axiom audit). -/
+argument (Fix 3 of the Codex axiom audit).
+
+**Side-condition design note (issue #64).** `WeakFormNS` is the distributional identity
+only. It deliberately does not bundle interval-integrability or measurability side conditions
+for the displayed integrand, because the current capstones package those obligations in the
+domain-specific full solution structures (`LerayHopfSolutionFull` and
+`LerayHopfSolutionFull_R3`) through their `energy_class` fields and in the limit-passage
+axioms that produce the good representative. Public statements should therefore cite the
+full solution structures, not bare `WeakFormNS`, as the weak-solution contract. -/
 def WeakFormNS (ν T : ℝ) (E : DissipativeEvolution) (u : Time → E.H) : Prop :=
   letI := E.instNACG
   letI := E.instIPS

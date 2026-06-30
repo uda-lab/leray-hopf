@@ -8,7 +8,7 @@ debt**, never merged sibling files.
 
 `#print axioms exists_lerayHopf_r3_axiomatic` = **2 project axioms + 3 kernel** (no sorryAx).
 Live R3 axioms: `galerkin_spacetime_precompact_R3`, `galerkin_limit_passage_R3`.
-Live T³ axioms: `aubin_lions`, `galerkin_limit_passage`, `torusConvectionGap_exists`.
+Live T³ axioms: `aubin_lions`, `galerkin_limit_passage`.
 
 **Removed so far (original 6 → current 2):**
 - `spatial_compactness_R3` (#2) — Fréchet–Kolmogorov chain
@@ -18,6 +18,7 @@ Live T³ axioms: `aubin_lions`, `galerkin_limit_passage`, `torusConvectionGap_ex
 - `r3GalerkinScheme_exists` (#21) — curl-density + Schwartz Galerkin basis
 - `curlSchwartzDense_holds` (#3) — Fourier route
 - `r3ConvectionGapOp_exists` (#56/PR #60) — determined-form BLT construction (`r3ConvectionGapOp_holds`)
+- `torusConvectionGap_exists` (#53/PR #62) — determined-form torus construction (`torusConvectionGap_holds`)
 
 The `check-axioms-live.sh` script is the canonical live pin.
 
@@ -60,19 +61,19 @@ L²-Fourier base for A/B/γ.
   via Fourier route; `r3GalerkinScheme_exists` removed from capstone.
 - ~~**Stream B — FK + integrability (P-β).**~~ **DONE (issue #2/PR #35)** — `spatial_compactness_R3`
   proved via FK chain; capstone wired.
-- **Stream C — `(u·∇)v` on Lp (P-γ).** Build the genuine convection operator/form on all
-  `L²_σ`, lifting R3-d's Schwartz estimates; construct a concrete `R3NSForms`. Mild shared
-  weak-derivative base with A. **Unblocks capstone #4 (+ feeds `galerkin_ode_solution`'s F).**
-  *Needs a fresh feasibility planner — never scoped.*
+- ~~**Stream C — `(u·∇)v` convection form (P-γ).**~~ **DONE (issue #56/PR #60)** —
+  `r3ConvectionGapOp_exists` is removed by the determined-form BLT construction. The result is a
+  proof-carrying total trilinear extension pinned to the Schwartz test-class form and continuous
+  in the two solution slots at fixed Schwartz tests, not a canonical continuous pure-`L²³`
+  operator.
 - **Stream D — Bochner–Sobolev-in-time (P-δ), abstract.** The Gelfand-triple time-Sobolev +
   Aubin–Lions library. Orthogonal (time direction). **Unblocks `aubin_lions`/`limit_passage`
   on BOTH ℝ³ and T³.** Highest leverage, largest.
-- **(Stream T — T³ substantiation, optional/lower priority.** T³ is now at **3 axioms** (same as ℝ³);
+- **(Stream T — T³ substantiation, optional/lower priority.** T³ is now at **2 axioms** (same as ℝ³);
   shares the abstract layer + Stream D.)
 
-Parallel-safety: A/B/C/D are separate files, separate domains, no cross-stream data-flow; the
-only shared read-only base is `FourierL2`. **All four can run concurrently.** The capstones
-(below) are the sequential part.
+Parallel-safety: the completed A/B/C files remain separate from the live D work; the only shared
+read-only base is `FourierL2`. The remaining capstone work is sequential.
 
 ## Capstone (wiring) stream — sequential, edits `AxiomaticClosure.lean`, gated
 

@@ -23,25 +23,34 @@ theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < 
       Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)
 ```
 
-Each capstone currently rests on **3 project axioms**, pinned exactly by
+Each capstone currently rests on **2 project axioms**, pinned exactly by
 `scripts/check-axioms-live.sh` (a CI gate that runs `#print axioms` and fails on any
 unexpected or missing axiom, or any `sorryAx`):
 
-- **𝕋³:** `aubin_lions`, `galerkin_limit_passage`, `torusConvectionGap_exists`
-- **ℝ³:** `galerkin_spacetime_precompact_R3`, `galerkin_limit_passage_R3`, `r3ConvectionGapOp_exists`
+- **𝕋³:** `aubin_lions`, `galerkin_limit_passage`
+- **ℝ³:** `galerkin_spacetime_precompact_R3`, `galerkin_limit_passage_R3`
 
 Everything else in the Galerkin construction — the functional-analytic backbone, the
 finite-dimensional ODE solver, spatial Rellich–Kondrachov compactness, the
-Aubin–Lions-in-time diagonalization, Helmholtz/curl density (Fourier route), and the
-Mazur weak-limit closure — is **proved sorry-free**, not assumed.
+Aubin–Lions-in-time diagonalization, Helmholtz/curl density (Fourier route), the
+Mazur weak-limit closure, and the determined-form convection extensions — is
+**proved sorry-free**, not assumed.
 
 > **Honest scope.** This repository does **not** establish *unconditional* existence.
 > The remaining axioms are genuine analytic facts that Mathlib currently lacks
-> (Bochner Aubin–Lions–Simon compactness; the 3D trilinear/convection Sobolev estimate;
-> Lions–Magenes good-representative limit passage). No regularity, uniqueness, or
+> (Bochner Aubin–Lions–Simon compactness and Lions–Magenes/good-representative
+> limit passage). The convection forms are proof-carrying total trilinear extensions
+> pinned to the genuine Schwartz/Galerkin test-class forms, with fixed-test continuity;
+> they are not claims of a canonical continuous convection operator on all pure
+> `L² × L² × L²` triples. No regularity, uniqueness, or
 > non-uniqueness claim is made. The project's goal is to drive the axiom count to zero;
 > the current frontier and remaining work are tracked in the open GitHub issues and
 > [`docs/STATUS.md`](docs/STATUS.md).
+
+Public summaries should cite the proof-carrying `LerayHopfSolutionFull` /
+`LerayHopfSolutionFull_R3` structures and the `_axiomatic` capstones above. The older
+generic `ExistsLerayHopf` / `LerayHopfSolution` layer is scaffold-only and should not
+be described as a PDE existence theorem.
 
 ## Layout
 
