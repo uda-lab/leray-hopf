@@ -1441,4 +1441,96 @@ theorem schwartz_h1_gradConv_multi (f : L2C_R3)
           Filter.atTop (nhds g) := by
   exact schwartz_h1_gradConv_aux f hf
 
+/-! ### Public H¹ membership from finite weighted-Fourier integrand
+
+This lemma exposes the bridge from the **pointwise viscous spectral integrand**
+`∫⁻ (2π)²‖ξ‖²‖𝓕(projⱼ w) ξ‖²` being finite (for each component `j`) to
+`memH1VF_R3 w`, making the private Bessel-weight machinery available to callers
+(in particular `AubinLionsLimitPassage.lean`) without duplicating the ~100 LOC
+du-Bois-Reymond / `smulLeftCLM` construction.
+
+The hypothesis is the unfolded definition of `viscousLintegrand_j j w` in
+`AubinLionsLimitPassage.lean`; callers `rw [viscousLintegrand_j]` to expose it. -/
+
+/-- **H¹ membership from finite weighted-Fourier integral.**
+If for each component `j : Fin 3` the lower Lebesgue integral
+`∫⁻ ξ, (2π)²‖ξ‖² ‖𝓕(projⱼ w) ξ‖² dξ` is finite, then `w` lies in `H¹(ℝ³; ℝ³)`,
+i.e. `memH1VF_R3 w`.
+
+**Proof plan (for prover pass):**
+For each `j`, finiteness of the lintegral gives `MemLp (fun ξ => wPosC ξ • (𝓕(projⱼ w) ξ)) 2`:
+- `‖wPosC ξ‖² · ‖𝓕(projⱼ w) ξ‖² = (1+‖ξ‖²) · ‖𝓕(projⱼ w) ξ‖²`
+  `≤ ‖𝓕(projⱼ w) ξ‖² + (1/(2π)²) · (2π)²‖ξ‖²‖𝓕(projⱼ w) ξ‖²`,
+  so `∫⁻ ‖wPosC ξ • (𝓕(projⱼ w) ξ)‖² < ∞` by the hypothesis plus `𝓕(projⱼ w) ∈ L²`.
+- `MemLp ... 2` gives via `ae_eq_of_integral_contDiff_smul_eq` + `locallyIntegrable_wPosC_smul`
+  that `smulLeftCLM ℂ wPosC (𝓕 (projⱼ w)) = f'` for some `f' ∈ L²` (the `wPosC_eq_smulLeftCLM_weight`
+  reconciliation as in `gns_L6_of_memH1_R3`).
+- Apply `memSobolev_iff_exists_smulLeftCLM_fourier.mpr` to conclude `MemSobolev 1 2 (projⱼ w)`.
+- Universally quantify over `j` to obtain `memH1VF_R3 w`. -/
+theorem memSobolev_of_finite_weightedFourier_R3 (w : L2VF_R3)
+    (h : ∀ j : Fin 3,
+      ∫⁻ ξ : Domain3, ENNReal.ofReal ((2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
+        ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2)
+        ∂(volume : Measure Domain3) < ⊤) :
+    memH1VF_R3 w := by
+  classical
+  intro j
+  set g : L2C_R3 := (𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) with hg
+  -- Step 1: `wPosC • g ∈ MemLp 2`.  `‖wPosC ξ • g ξ‖² = (1+‖ξ‖²)‖g ξ‖²
+  --   = ‖g ξ‖² + (1/(2π)²)·(2π)²‖ξ‖²‖g ξ‖²`, both `lintegral`-finite (`g ∈ L²` + hypothesis).
+  have hmemLp : MemLp (fun ξ : Domain3 => wPosC ξ • (g : Domain3 → ℂ) ξ) 2
+      (volume : Measure Domain3) := by
+    have haesm : AEStronglyMeasurable (fun ξ : Domain3 => wPosC ξ • (g : Domain3 → ℂ) ξ)
+        (volume : Measure Domain3) :=
+      (continuous_wPosC.aestronglyMeasurable).smul (Lp.aestronglyMeasurable g)
+    refine (memLp_two_iff_integrable_sq_norm haesm).mpr ?_
+    -- `‖wPosC ξ • g ξ‖² = (1+‖ξ‖²)‖g ξ‖²`.
+    have hpt : ∀ ξ, ‖wPosC ξ • (g : Domain3 → ℂ) ξ‖ ^ 2 = (1 + ‖ξ‖ ^ 2) * ‖(g : Domain3 → ℂ) ξ‖ ^ 2 := by
+      intro ξ
+      rw [norm_smul, mul_pow]
+      congr 1
+      rw [wPosC, Complex.norm_real, Real.norm_eq_abs, sq_abs,
+        ← Real.rpow_natCast _ 2, ← Real.rpow_mul (by positivity)]
+      norm_num
+    -- integrability via the two pieces.
+    have hg_sq : Integrable (fun ξ : Domain3 => ‖(g : Domain3 → ℂ) ξ‖ ^ 2) volume :=
+      (memLp_two_iff_integrable_sq_norm (Lp.aestronglyMeasurable g)).mp (Lp.memLp g)
+    -- the scaled weighted integrand `(2π)²‖ξ‖²‖g‖²` is `lintegral`-finite (hypothesis) + nonneg ⟹ integrable.
+    have hscaled_int : Integrable
+        (fun ξ : Domain3 => (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(g : Domain3 → ℂ) ξ‖ ^ 2) volume := by
+      have hjle := h j
+      rw [← hg] at hjle
+      refine ⟨((continuous_const.mul (continuous_norm.pow 2)).aemeasurable.mul
+        ((Lp.aestronglyMeasurable g).aemeasurable.norm.pow_const 2)).aestronglyMeasurable, ?_⟩
+      rw [hasFiniteIntegral_iff_ofReal (Filter.Eventually.of_forall (fun ξ => by positivity))]
+      exact hjle
+    have hweighted_int : Integrable (fun ξ : Domain3 => ‖ξ‖ ^ 2 * ‖(g : Domain3 → ℂ) ξ‖ ^ 2) volume := by
+      have := hscaled_int.const_mul ((2 * Real.pi) ^ 2)⁻¹
+      refine this.congr ?_
+      filter_upwards with ξ
+      rw [← mul_assoc, ← mul_assoc, inv_mul_cancel₀ (by positivity), one_mul]
+    -- assemble: `(1+‖ξ‖²)‖g‖² = ‖g‖² + ‖ξ‖²‖g‖²`.
+    refine (hg_sq.add hweighted_int).congr ?_
+    filter_upwards with ξ
+    simp only [Pi.add_apply, hpt ξ]; ring
+  -- Step 2: build the Sobolev representative `f' := toLp (wPosC • g)`.
+  set f' : L2C_R3 := hmemLp.toLp _ with hf'
+  -- Step 3: `smulLeftCLM ℂ wPosC (𝓕 …) = (f' : 𝓢')` (du-Bois-Reymond is unnecessary: pair equality).
+  rw [TemperedDistribution.memSobolev_iff_exists_smulLeftCLM_fourier]
+  refine ⟨f', ?_⟩
+  -- reconcile the weight `(1+‖·‖²)^(1/2)` with `wPosC`, and `𝓕 (toTempDist (proj w)) = toTempDist g`.
+  rw [wPosC_eq_smulLeftCLM_weight, MeasureTheory.Lp.fourier_toTemperedDistribution_eq
+    (L2VF_projComponentC_R3 j w), ← hg]
+  -- the two distributions agree: both pair as `∫ (smulLeftCLM_S φ) · g` resp `∫ φ · (wPosC•g)`.
+  ext φ
+  rw [TemperedDistribution.smulLeftCLM_apply_apply, MeasureTheory.Lp.toTemperedDistribution_apply,
+    MeasureTheory.Lp.toTemperedDistribution_apply]
+  refine integral_congr_ae ?_
+  filter_upwards [hmemLp.coeFn_toLp] with ξ hξ
+  show (SchwartzMap.smulLeftCLM ℂ wPosC φ) ξ • (g : Domain3 → ℂ) ξ
+      = (φ ξ) • (f' : Domain3 → ℂ) ξ
+  rw [SchwartzMap.smulLeftCLM_apply_apply hasTemperateGrowth_wPosC, hξ]
+  simp only [smul_smul, smul_eq_mul]
+  ring
+
 end LerayHopf

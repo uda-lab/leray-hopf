@@ -521,6 +521,16 @@ structure AubinLionsPackage_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
         (fun t => restrictToBall R ((galSeq (φ n)).u t) - restrictToBall R (u t))
         2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)))
       Filter.atTop (nhds 0)
+  /-- **A.e.-in-t per-ball convergence** of the subsequence to the limit: for every ball
+  radius `R`, for almost every `t ∈ [0,T]`, the ball-restricted Galerkin iterates
+  `restrictToBall R (uₙ t)` converge to `restrictToBall R (u t)` in `L²(B_R)`.
+
+  This is the pointwise-in-time LOCAL form, carrying the a.e.-t content directly
+  (as opposed to `strong_convergence`'s integrated `eLpNorm` form).  It is used by
+  the C-route lsc wall to extract pointwise weak convergence at a.e. `t`. -/
+  strong_convergence_ae : ∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)),
+    Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t))
+      Filter.atTop (nhds (restrictToBall R (u t)))
 
 /-! ### AX-2: Aubin–Lions on ℝ³ — former axiom `aubin_lions_R3` REMOVED (issue #15)
 

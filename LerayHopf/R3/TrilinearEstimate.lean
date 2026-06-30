@@ -614,9 +614,13 @@ private theorem divFree_leibniz_pair
   rw [lineDerivOp_schwartzMul]
   ring
 
-/-- Under `hdiv`, the IBP identity collapses: the `∂_a ψu_a` term vanishes, leaving
-`conv ψu ψv ψw = -∑_i ∑_a ∫ ψu_a · ψv_i · (∂_a ψw_i)`. -/
-private theorem convIntegralSchwartz_divFree_eq
+/-- **Integral representation of `convIntegralSchwartz` under div-free (slot 1).** Under `hdiv`
+the IBP identity collapses: the `∂_a ψu_a` term vanishes, and the divergence on `ψw` moved off
+`ψv` leaves the surviving antisymmetric integral
+`convIntegralSchwartz ψu ψv ψw = -∑_{i,a} ∫ ψuₐ·ψvᵢ·(∂ₐψwᵢ)`.  Public so the limit-passage layer
+can ball-split this genuine Lebesgue integral (the integrand is `L¹`: Cauchy–Schwarz + `∂ψw`
+bounded). -/
+theorem convIntegralSchwartz_divFree_eq
     (ψu ψv ψw : Fin 3 → SchwartzMap Domain3 ℝ)
     (hdiv : ∀ φ : SchwartzMap Domain3 ℝ,
       ∑ a : Fin 3,

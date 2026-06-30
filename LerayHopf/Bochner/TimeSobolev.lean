@@ -108,6 +108,24 @@ def IsWeakTimeDeriv (T : ℝ) (u v : ℝ → X) : Prop :=
   ∀ ψ : ℝ → ℝ, HasCompactSupport ψ → tsupport ψ ⊆ Set.Ioo 0 T → ContDiff ℝ 1 ψ →
     (∫ t in (0 : ℝ)..T, deriv ψ t • u t) = - ∫ t in (0 : ℝ)..T, ψ t • v t
 
+/-- **Whole-line weak (distributional) time derivative** of a Banach-valued curve on all of `ℝ`.
+
+`v` is a whole-line weak time derivative of `u` iff for every scalar test function
+`ψ : ℝ → ℝ` that is `C¹` with compact support (no interval constraint),
+
+  `∫ t, deriv ψ t • u t = - ∫ t, ψ t • v t`   (global Bochner integrals).
+
+The global integrals converge because `ψ` has compact support. This is the honest
+distributional derivative on `ℝ` — strictly stronger than `IsWeakTimeDeriv T u v`, which
+only tests `ψ` supported inside `(0, T)`. It is the correct hypothesis for whole-line
+operations such as convolution (see `s1-walls-design.md` §1a): shifting a globally
+compactly-supported test function by `s` stays compactly-supported and global, so
+`hwd (ψ(· + s))` is always applicable, dissolving the Fubini obstruction present at
+the old interval signature. -/
+def IsWeakTimeDerivℝ (u v : ℝ → X) : Prop :=
+  ∀ ψ : ℝ → ℝ, HasCompactSupport ψ → ContDiff ℝ 1 ψ →
+    (∫ t, deriv ψ t • u t) = - ∫ t, ψ t • v t
+
 /-- **A.e. uniqueness of the weak time derivative.** If `v₁` and `v₂` are both weak time
 derivatives of the same curve `u` on `(0, T)`, then they agree a.e. on `[0, T]`.
 
@@ -350,6 +368,52 @@ theorem isWeakTimeDeriv_comp_clm {X Y : Type*}
       (f := fun t => ψ t • v t) (hv_int ψ hψcs hψsupp hψC1)
     simpa only [map_smul] using this
   rw [hLu, hLv, hX, map_neg]
+
+/-- **Transport of a whole-line weak time derivative through a continuous linear map.**
+If `v` is the whole-line weak time derivative of `u` (an `X`-valued curve, `IsWeakTimeDerivℝ
+u v`) and `L : X →L[ℝ] Y` is continuous linear, then `L ∘ v` is the whole-line weak time
+derivative of `L ∘ u`.
+
+The global integrals converge because the test `ψ` has compact support; `L` commutes with
+the Bochner integral (`ContinuousLinearMap.integral_comp_comm`, which needs integrability —
+automatic here: integrand `deriv ψ • u` is supported in `tsupport ψ` which is compact, so
+integrability follows from continuity of the integrand on a compact domain) and with `smul`
+(`map_smul`). This is the global analogue of `isWeakTimeDeriv_comp_clm` (§2e of the
+`s1-walls-design.md`); the interval integrability side-conditions collapse because
+compactness of `tsupport ψ` gives integrability for free.
+
+Tier: **Sonnet** (mechanical port of `isWeakTimeDeriv_comp_clm`). -/
+theorem isWeakTimeDerivℝ_comp_clm {X Y : Type*}
+    [NormedAddCommGroup X] [NormedSpace ℝ X] [CompleteSpace X]
+    [NormedAddCommGroup Y] [NormedSpace ℝ Y] [CompleteSpace Y]
+    {u v : ℝ → X} (L : X →L[ℝ] Y)
+    (hwd : IsWeakTimeDerivℝ (X := X) u v)
+    (hu_int : ∀ ψ : ℝ → ℝ, HasCompactSupport ψ → ContDiff ℝ 1 ψ →
+      Integrable (fun t => deriv ψ t • u t) volume)
+    (hv_int : ∀ ψ : ℝ → ℝ, HasCompactSupport ψ → ContDiff ℝ 1 ψ →
+      Integrable (fun t => ψ t • v t) volume) :
+    IsWeakTimeDerivℝ (X := Y) (fun t => L (u t)) (fun t => L (v t)) := by
+  -- Port of `isWeakTimeDeriv_comp_clm` to the whole-line setting.
+  -- For each test ψ: push L through both global integrals via `ContinuousLinearMap.integral_comp_comm`,
+  -- use `map_smul` to commute L with scalar multiplication, then apply `hwd ψ`.
+  intro ψ hψcs hψC1
+  -- The defining identity in `X`: `∫ deriv ψ • u = - ∫ ψ • v`.
+  have hX := hwd ψ hψcs hψC1
+  -- Push `L` through the left integral: `∫ deriv ψ t • L (u t) = L (∫ deriv ψ t • u t)`.
+  have hLu : (∫ t, deriv ψ t • L (u t)) = L (∫ t, deriv ψ t • u t) := by
+    have hint := hu_int ψ hψcs hψC1
+    have : (fun t => deriv ψ t • L (u t)) = (fun t => L (deriv ψ t • u t)) := by
+      ext t; rw [L.map_smul]
+    rw [this]
+    exact L.integral_comp_comm hint
+  -- Push `L` through the right integral: `∫ ψ t • L (v t) = L (∫ ψ t • v t)`.
+  have hLv : (∫ t, ψ t • L (v t)) = L (∫ t, ψ t • v t) := by
+    have hint := hv_int ψ hψcs hψC1
+    have : (fun t => ψ t • L (v t)) = (fun t => L (ψ t • v t)) := by
+      ext t; rw [L.map_smul]
+    rw [this]
+    exact L.integral_comp_comm hint
+  rw [hLu, hLv, hX, L.map_neg]
 
 /-- Helper for `W1pTime.ofHValuedDeriv`: a Bochner curve `g` integrable on `Icc 0 T`,
 scalar-multiplied by a continuous, compactly-supported test factor `φ` whose support sits

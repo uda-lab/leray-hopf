@@ -622,6 +622,264 @@ theorem schwartzDivFree_dense_of_curlDense
     exact hsn_lim
   exact ⟨s, hs_sch, hs_lim⟩
 
+/-! ### Step 1 — fixed-Schwartz-`w` integral representation of `F.b` (conjunct-2 atom b)
+
+For a fixed Schwartz divergence-free test `w` (witness `ψw`), `F.b (·) (·) w` is — on ALL of
+`L²_σ × L²_σ`, not only on Schwartz pairs — the IBP'd antisymmetric integral with the derivative
+on the test:
+  `F.b f g w = -∑_{i,a} ∫ fₐ·gᵢ·(∂ₐ ψwᵢ)`.
+Both sides are jointly `L²`-continuous in `(f, g)` (LHS by `b_bound`; RHS by Cauchy–Schwarz with
+`∂ψw ∈ L^∞`), and they agree on the dense Schwartz×Schwartz set (`b_galerkin = convIntegralSchwartz`,
+then `convIntegralSchwartz_divFree_eq`), so they agree everywhere.  This exposes the genuine `L¹`
+Lebesgue integral that the limit-passage layer ball-splits (the nonlinear `b`-term passage). -/
+
+/-- Multiplication of a real `L²` element by an essentially bounded real function, landing in
+`L²` (local builder; only its `coeFn` and an `L²`-Lipschitz bound are needed). -/
+private noncomputable def mulBddR (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3)) (a : Lp ℝ 2 (volume : Measure Domain3)) :
+    Lp ℝ 2 (volume : Measure Domain3) :=
+  (((Lp.memLp a).smul (p := ⊤) (q := 2) (r := 2) hh)).toLp
+
+private theorem mulBddR_coeFn (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3)) (a : Lp ℝ 2 (volume : Measure Domain3)) :
+    (mulBddR h hh a : Domain3 → ℝ) =ᵐ[volume] fun x => h x * a x := by
+  filter_upwards [MemLp.coeFn_toLp (((Lp.memLp a).smul (p := ⊤) (q := 2) (r := 2) hh))]
+    with x hx
+  rw [mulBddR]; rw [hx]; rfl
+
+private theorem norm_mulBddR_le (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3)) (a : Lp ℝ 2 (volume : Measure Domain3)) :
+    ‖mulBddR h hh a‖ ≤ (eLpNorm h ⊤ (volume : Measure Domain3)).toReal * ‖a‖ := by
+  have hnorm : ‖mulBddR h hh a‖
+      = (eLpNorm (h • (a : Domain3 → ℝ)) 2 (volume : Measure Domain3)).toReal :=
+    Lp.norm_toLp _ _
+  have hcnorm : ‖a‖ = (eLpNorm a 2 (volume : Measure Domain3)).toReal := Lp.norm_def a
+  rw [hnorm, hcnorm, ← ENNReal.toReal_mul]
+  haveI hHT : ENNReal.HolderTriple ⊤ 2 2 := ⟨by simp⟩
+  refine ENNReal.toReal_mono
+    (ENNReal.mul_ne_top hh.eLpNorm_lt_top.ne (Lp.memLp a).eLpNorm_lt_top.ne) ?_
+  exact eLpNorm_smul_le_mul_eLpNorm (Lp.aestronglyMeasurable _) hh.aestronglyMeasurable
+
+private theorem mulBddR_sub (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3)) (a a' : Lp ℝ 2 (volume : Measure Domain3)) :
+    mulBddR h hh a' - mulBddR h hh a = mulBddR h hh (a' - a) := by
+  apply Lp.ext
+  filter_upwards [Lp.coeFn_sub (mulBddR h hh a') (mulBddR h hh a), mulBddR_coeFn h hh a',
+    mulBddR_coeFn h hh a, mulBddR_coeFn h hh (a' - a), Lp.coeFn_sub a' a] with x h1 h2 h3 h4 h5
+  rw [h1, Pi.sub_apply, h2, h3, h4, h5, Pi.sub_apply, mul_sub]
+
+private theorem mulBddR_continuous (h : Domain3 → ℝ)
+    (hh : MemLp h ⊤ (volume : Measure Domain3)) :
+    Continuous (fun a : Lp ℝ 2 (volume : Measure Domain3) => mulBddR h hh a) := by
+  -- `mulBddR` is `ℝ`-linear with operator bound `C := ‖h‖_∞`, hence `(C+1)`-Lipschitz.
+  refine LipschitzWith.continuous (K := ((eLpNorm h ⊤ (volume : Measure Domain3)).toReal.toNNReal + 1))
+    (LipschitzWith.of_dist_le_mul (fun a' a => ?_))
+  rw [dist_eq_norm, dist_eq_norm, mulBddR_sub]
+  calc ‖mulBddR h hh (a' - a)‖
+      ≤ (eLpNorm h ⊤ (volume : Measure Domain3)).toReal * ‖a' - a‖ := norm_mulBddR_le h hh (a' - a)
+    _ ≤ ((((eLpNorm h ⊤ (volume : Measure Domain3)).toReal.toNNReal : ℝ) + 1)) * ‖a' - a‖ := by
+        refine mul_le_mul_of_nonneg_right ?_ (norm_nonneg _)
+        rw [Real.coe_toNNReal _ ENNReal.toReal_nonneg]; linarith
+    _ = (((eLpNorm h ⊤ (volume : Measure Domain3)).toReal.toNNReal + 1 : NNReal) : ℝ) * ‖a' - a‖ := by
+        push_cast; ring
+
+/-- The fixed-`w` antisymmetric integral form `Ψ_w(f,g) = -∑_{i,a} ∫ fₐ·gᵢ·(∂ₐψwᵢ)`, written via
+`L²` inner products so its joint continuity in `(f,g)` is immediate. -/
+@[irreducible] private noncomputable def antisymmIntegral (ψw : Fin 3 → SchwartzMap Domain3 ℝ)
+    (hbdd : ∀ a i : Fin 3, MemLp
+      (fun x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+        (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψw i)) x) ⊤ (volume : Measure Domain3))
+    (f g : L2VF_R3) : ℝ :=
+  -(∑ i : Fin 3, ∑ a : Fin 3,
+    (inner ℝ (L2VF_projComponent_R3 a f)
+      (mulBddR (fun x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+          (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψw i)) x) (hbdd a i)
+        (L2VF_projComponent_R3 i g)) : ℝ))
+
+/-- `antisymmIntegral` is jointly `L²`-continuous in `(f, g)`: a finite sum of inner products
+`⟪comp_a f, mulBddR (∂ψw) (comp_i g)⟫`, each continuous (component CLMs ∘ `mulBddR` continuous ∘
+`inner` continuous). -/
+private theorem antisymmIntegral_continuous (ψw : Fin 3 → SchwartzMap Domain3 ℝ)
+    (hbdd : ∀ a i : Fin 3, MemLp
+      (fun x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+        (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψw i)) x) ⊤ (volume : Measure Domain3)) :
+    Continuous (fun p : L2VF_R3 × L2VF_R3 => antisymmIntegral ψw hbdd p.1 p.2) := by
+  unfold antisymmIntegral
+  refine continuous_neg.comp (continuous_finset_sum _ (fun i _ => continuous_finset_sum _
+    (fun a _ => ?_)))
+  -- `(f,g) ↦ ⟪comp_a f, mulBddR (∂ψw) (comp_i g)⟫` : inner of two continuous maps.
+  refine continuous_inner.comp (Continuous.prodMk ?_ ?_)
+  · exact (L2VF_projComponent_R3 a).continuous.comp continuous_fst
+  · exact (mulBddR_continuous _ (hbdd a i)).comp
+      ((L2VF_projComponent_R3 i).continuous.comp continuous_snd)
+
+/-- A bounded multiplier `∂ₐψwᵢ` is `MemLp ⊤` (it is a Schwartz function, hence `L^∞`). -/
+private theorem lineDerivOp_schwartz_memLp_top (ψ : SchwartzMap Domain3 ℝ) (a : Fin 3) :
+    MemLp (fun x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+        (EuclideanSpace.single a (1 : ℝ) : Domain3) ψ) x) ⊤ (volume : Measure Domain3) := by
+  have : (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+      (EuclideanSpace.single a (1 : ℝ) : Domain3) ψ).toLp 2 (volume : Measure Domain3)
+      = (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+          (EuclideanSpace.single a (1 : ℝ) : Domain3) ψ).toLp 2 (volume : Measure Domain3) := rfl
+  exact (SchwartzMap.memLp (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+    (EuclideanSpace.single a (1 : ℝ) : Domain3) ψ) ⊤ (volume : Measure Domain3))
+
+/-! ### Step 1 lemmas: `F.b` continuity, Schwartz agreement, and the integral representation.
+The main result `fb_eq_antisymmIntegral` says `F.b f g w = -∑_{i,a} ∫ (comp_a f)·(comp_i g)·(∂ₐψwᵢ)`
+for ALL `f, g ∈ L²_σ` and Schwartz-div-free `w`; the RHS is a genuine `L¹` Lebesgue integral,
+ball-splittable by the limit-passage layer.  Built by density extension of the Schwartz-pair
+agreement using joint `L²`-continuity of both sides. -/
+
+set_option maxHeartbeats 1000000 in
+/-- `F.b (·) (·) w` is jointly `L²`-continuous at a fixed Schwartz `w` — from the bilinear bound
+`b_bound` (`|F.b u v w| ≤ Cb·‖u‖·‖v‖`) together with bilinearity (`b_add`, `b_smul`).  Proved by
+the standard bounded-bilinear ⇒ continuous estimate on the difference
+`F.b u v w − F.b u₀ v₀ w = F.b (u−u₀) v w + F.b u₀ (v−v₀) w`. -/
+theorem fb_continuous_fixedTest {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊)
+    (w : L2Sigma_R3) (hw : IsSchwartzDivFree_R3 w) :
+    Continuous (fun p : L2Sigma_R3 × L2Sigma_R3 => F.b p.1 p.2 w) := by
+  obtain ⟨Cb, hCb⟩ := F.b_bound w hw
+  -- use `C := |Cb| + 1 > 0` so the bound `|F.b u v w| ≤ C ‖u‖ ‖v‖` holds with `0 < C`.
+  set C : ℝ := |Cb| + 1 with hCdef
+  have hCpos : 0 < C := by positivity
+  have hCbound : ∀ u v : L2Sigma_R3, |F.b u v w| ≤ C * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖ := by
+    intro u v
+    refine (hCb u v).trans ?_
+    have hle : Cb ≤ C := by rw [hCdef]; linarith [le_abs_self Cb]
+    refine mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hle (norm_nonneg _)) (norm_nonneg _)
+  refine Metric.continuous_iff.2 (fun p ε hε => ?_)
+  set M : ℝ := ‖(p.1 : L2VF_R3)‖ + ‖(p.2 : L2VF_R3)‖ + 1 with hM
+  -- choose `δ = min 1 (ε / (2CM + 1))` so the small-difference bound also gives `‖q.2‖ ≤ M`.
+  set δ : ℝ := min 1 (ε / (C * M + C * M + 1)) with hδ
+  refine ⟨δ, lt_min one_pos (by positivity), fun q hq => ?_⟩
+  rw [Prod.dist_eq, max_lt_iff, dist_eq_norm, dist_eq_norm] at hq
+  obtain ⟨hq1, hq2⟩ := hq
+  have hcoe1 : ‖q.1 - p.1‖ = ‖((q.1 : L2VF_R3) - (p.1 : L2VF_R3))‖ := by
+    rw [← AddSubgroupClass.coe_sub]; rfl
+  have hcoe2 : ‖q.2 - p.2‖ = ‖((q.2 : L2VF_R3) - (p.2 : L2VF_R3))‖ := by
+    rw [← AddSubgroupClass.coe_sub]; rfl
+  rw [hcoe1] at hq1; rw [hcoe2] at hq2
+  -- the two small-norm facts and the `< δ ≤ ε/(2CM+1)` consequence.
+  have hδ1 : δ ≤ 1 := min_le_left _ _
+  have hδ2 : δ ≤ ε / (C * M + C * M + 1) := min_le_right _ _
+  have hq1' : ‖((q.1 : L2VF_R3) - (p.1 : L2VF_R3))‖ < ε / (C * M + C * M + 1) := lt_of_lt_of_le hq1 hδ2
+  have hq2' : ‖((q.2 : L2VF_R3) - (p.2 : L2VF_R3))‖ < ε / (C * M + C * M + 1) := lt_of_lt_of_le hq2 hδ2
+  have hdecomp : F.b q.1 q.2 w - F.b p.1 p.2 w
+      = F.b (q.1 - p.1) q.2 w + F.b p.1 (q.2 - p.2) w := by
+    have e1 : F.b q.1 q.2 w = F.b (q.1 - p.1) q.2 w + F.b p.1 q.2 w := by
+      have := F.b_add_1 (q.1 - p.1) p.1 q.2 w; simpa [sub_add_cancel] using this
+    have e2 : F.b p.1 q.2 w = F.b p.1 (q.2 - p.2) w + F.b p.1 p.2 w := by
+      have := F.b_add_2 p.1 (q.2 - p.2) p.2 w; simpa [sub_add_cancel] using this
+    rw [e1, e2]; ring
+  rw [dist_eq_norm, Real.norm_eq_abs, hdecomp]
+  have hb1 := hCbound (q.1 - p.1) q.2
+  have hb2 := hCbound p.1 (q.2 - p.2)
+  rw [AddSubgroupClass.coe_sub] at hb1 hb2
+  -- `‖q.2‖ ≤ M`: `‖q.2‖ ≤ ‖p.2‖ + ‖q.2 - p.2‖ ≤ ‖p.2‖ + 1 ≤ M` (uses `δ ≤ 1`).
+  have hq2n : ‖((q.2 : L2VF_R3))‖ ≤ M := by
+    have htri : ‖(q.2 : L2VF_R3)‖
+        ≤ ‖(p.2 : L2VF_R3)‖ + ‖((q.2 : L2VF_R3) - (p.2 : L2VF_R3))‖ := by
+      have := norm_add_le (p.2 : L2VF_R3) ((q.2 : L2VF_R3) - (p.2 : L2VF_R3))
+      simpa using this
+    have hle1 : ‖((q.2 : L2VF_R3) - (p.2 : L2VF_R3))‖ ≤ 1 := le_trans hq2.le hδ1
+    rw [hM]; linarith [htri, hle1, norm_nonneg (p.1 : L2VF_R3)]
+  have hp1M : ‖((p.1 : L2VF_R3))‖ ≤ M := by rw [hM]; linarith [norm_nonneg (p.2 : L2VF_R3)]
+  calc |F.b (q.1 - p.1) q.2 w + F.b p.1 (q.2 - p.2) w|
+      ≤ |F.b (q.1 - p.1) q.2 w| + |F.b p.1 (q.2 - p.2) w| := abs_add_le _ _
+    _ ≤ C * M * ‖((q.1 : L2VF_R3) - (p.1 : L2VF_R3))‖
+          + C * M * ‖((q.2 : L2VF_R3) - (p.2 : L2VF_R3))‖ := by
+        refine add_le_add ?_ ?_
+        · calc |F.b (q.1 - p.1) q.2 w|
+              ≤ C * ‖((q.1 : L2VF_R3) - (p.1 : L2VF_R3))‖ * ‖(q.2 : L2VF_R3)‖ := hb1
+            _ = C * ‖(q.2 : L2VF_R3)‖ * ‖((q.1 : L2VF_R3) - (p.1 : L2VF_R3))‖ := by ring
+            _ ≤ C * M * ‖((q.1 : L2VF_R3) - (p.1 : L2VF_R3))‖ := by
+                refine mul_le_mul_of_nonneg_right ?_ (norm_nonneg _)
+                exact mul_le_mul_of_nonneg_left hq2n hCpos.le
+        · calc |F.b p.1 (q.2 - p.2) w|
+              ≤ C * ‖(p.1 : L2VF_R3)‖ * ‖((q.2 : L2VF_R3) - (p.2 : L2VF_R3))‖ := hb2
+            _ ≤ C * M * ‖((q.2 : L2VF_R3) - (p.2 : L2VF_R3))‖ := by
+                refine mul_le_mul_of_nonneg_right ?_ (norm_nonneg _)
+                exact mul_le_mul_of_nonneg_left hp1M hCpos.le
+    _ < C * M * (ε / (C * M + C * M + 1)) + C * M * (ε / (C * M + C * M + 1)) := by
+        have hM1 : (1:ℝ) ≤ M := by
+          rw [hM]; linarith [norm_nonneg (p.1 : L2VF_R3), norm_nonneg (p.2 : L2VF_R3)]
+        have hCM : 0 < C * M := mul_pos hCpos (by linarith)
+        exact add_lt_add (mul_lt_mul_of_pos_left hq1' hCM) (mul_lt_mul_of_pos_left hq2' hCM)
+    _ = ((C * M + C * M) / (C * M + C * M + 1)) * ε := by ring
+    _ ≤ 1 * ε := by
+        refine mul_le_mul_of_nonneg_right ?_ hε.le
+        rw [div_le_one (by positivity)]; linarith
+    _ = ε := one_mul ε
+
+set_option maxHeartbeats 1600000 in
+/-- The Schwartz-pair agreement: for Schwartz-div-free `f', g'`, `F.b f' g' w` equals the
+antisymmetric integral.  `b_galerkin` rewrites `F.b` to `convIntegralSchwartz`, then
+`convIntegralSchwartz_divFree_eq` gives the IBP'd integral, which matches `antisymmIntegral`'s
+inner-product integrands a.e. -/
+theorem fb_eq_antisymmIntegral_schwartz {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊)
+    (w : L2Sigma_R3) (ψw : Fin 3 → SchwartzMap Domain3 ℝ)
+    (hψw : ∀ j : Fin 3,
+      L2VF_projComponent_R3 j (w : L2VF_R3) = (ψw j).toLp 2 (volume : Measure Domain3))
+    (f' g' : L2Sigma_R3) (hf' : IsSchwartzDivFree_R3 f') (hg' : IsSchwartzDivFree_R3 g') :
+    F.b f' g' w
+      = antisymmIntegral ψw
+          (fun a i => lineDerivOp_schwartz_memLp_top (ψw i) a) (f' : L2VF_R3) (g' : L2VF_R3) := by
+  classical
+  obtain ⟨ψf, hψf⟩ := hf'
+  obtain ⟨ψg, hψg⟩ := hg'
+  rw [F.b_galerkin ψf ψg ψw f' g' w hψf hψg hψw,
+    convIntegralSchwartz_divFree_eq ψf ψg ψw (schwartzDivFree_of_L2Sigma f' ψf hψf)]
+  unfold antisymmIntegral
+  congr 1
+  refine Finset.sum_congr rfl (fun i _ => Finset.sum_congr rfl (fun a _ => ?_))
+  rw [MeasureTheory.L2.inner_def]
+  refine MeasureTheory.integral_congr_ae ?_
+  filter_upwards [show (L2VF_projComponent_R3 a (f' : L2VF_R3) : Domain3 → ℝ)
+        =ᵐ[volume] fun x => (ψf a) x from by
+      rw [hψf a]; exact (ψf a).coeFn_toLp 2 (volume : Measure Domain3),
+    mulBddR_coeFn (fun x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+        (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψw i)) x)
+      (lineDerivOp_schwartz_memLp_top (ψw i) a)
+      (L2VF_projComponent_R3 i (g' : L2VF_R3)),
+    show (L2VF_projComponent_R3 i (g' : L2VF_R3) : Domain3 → ℝ)
+        =ᵐ[volume] fun x => (ψg i) x from by
+      rw [hψg i]; exact (ψg i).coeFn_toLp 2 (volume : Measure Domain3)]
+    with x hfx hmulx hgx2
+  rw [RCLike.inner_apply, conj_trivial, hfx, hmulx, hgx2]
+  ring
+
+set_option maxHeartbeats 800000 in
+/-- **Step 1 (conjunct-2 atom b): the integral representation `F.b f g w = antisymmIntegral`.**
+Density extension of `fb_eq_antisymmIntegral_schwartz` using joint `L²`-continuity of both sides
+(`fb_continuous_fixedTest`; `antisymmIntegral_continuous`). -/
+theorem fb_eq_antisymmIntegral {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊)
+    (w : L2Sigma_R3) (ψw : Fin 3 → SchwartzMap Domain3 ℝ)
+    (hψw : ∀ j : Fin 3,
+      L2VF_projComponent_R3 j (w : L2VF_R3) = (ψw j).toLp 2 (volume : Measure Domain3))
+    (f g : L2Sigma_R3) :
+    F.b f g w
+      = antisymmIntegral ψw
+          (fun a i => lineDerivOp_schwartz_memLp_top (ψw i) a) (f : L2VF_R3) (g : L2VF_R3) := by
+  have hw_sch : IsSchwartzDivFree_R3 w := ⟨ψw, hψw⟩
+  -- Both sides are continuous in `(f,g)` and agree on the dense Schwartz set.  Use the explicit
+  -- `hbdd` term (not `set`) so all `antisymmIntegral` applications are syntactically identical.
+  have hRHS_cont : Continuous
+      (fun p : L2Sigma_R3 × L2Sigma_R3 =>
+        antisymmIntegral ψw (fun a i => lineDerivOp_schwartz_memLp_top (ψw i) a)
+          (p.1 : L2VF_R3) (p.2 : L2VF_R3)) :=
+    (antisymmIntegral_continuous ψw (fun a i => lineDerivOp_schwartz_memLp_top (ψw i) a)).comp
+      ((continuous_subtype_val.comp continuous_fst).prodMk
+        (continuous_subtype_val.comp continuous_snd))
+  obtain ⟨sf, hsf_sch, hsf_lim⟩ := schwartzDivFree_dense_of_curlDense curlSchwartzDense_holds f
+  obtain ⟨sg, hsg_sch, hsg_lim⟩ := schwartzDivFree_dense_of_curlDense curlSchwartzDense_holds g
+  have hpair_lim : Filter.Tendsto (fun n => ((sf n, sg n) : L2Sigma_R3 × L2Sigma_R3))
+      Filter.atTop (nhds (f, g)) := hsf_lim.prodMk_nhds hsg_lim
+  have hLHS : Filter.Tendsto (fun n => F.b (sf n) (sg n) w) Filter.atTop (nhds (F.b f g w)) :=
+    ((fb_continuous_fixedTest F w hw_sch).tendsto (f, g)).comp hpair_lim
+  have hRHS := (hRHS_cont.tendsto (f, g)).comp hpair_lim
+  refine tendsto_nhds_unique (hLHS.congr (fun n => ?_)) hRHS
+  exact fb_eq_antisymmIntegral_schwartz F w ψw hψw (sf n) (sg n) (hsf_sch n) (hsg_sch n)
+
 /-! ### P2 — Scaffold packaging for future `ConvectionGap` construction -/
 
 /-- **P2 (scaffold-only).** Packaging of the density result as the `schwartz_dense`
