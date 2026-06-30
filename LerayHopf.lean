@@ -23,8 +23,8 @@ Side branches (independent of the existence spine):
 
 The import surface is now split:
 - `import LerayHopf.Core`            — axiom-free, sorryAx-free spatial/regularity layer
-- `import LerayHopf.TorusAxiomatic`  — T³ axiomatic closure (4 project axioms)
-- `import LerayHopf.R3Axiomatic`     — ℝ³ axiomatic closure (5 project axioms; `r3GalerkinScheme_exists` swapped for `curlSchwartzDense_holds`, issue #21)
+- `import LerayHopf.TorusAxiomatic`  — T³ axiomatic closure (2 project axioms)
+- `import LerayHopf.R3Axiomatic`     — ℝ³ axiomatic closure (2 project axioms)
 - `import LerayHopf`                 — (this file) re-exports all three layers
 
 Core work that does not require the axiomatic closures should use
@@ -52,7 +52,7 @@ import LerayHopf.R3Axiomatic
 -- Torus H¹_σ submodule + Parseval scaffold (issue #53 PR-1)
 import LerayHopf.TorusEnergyConvection
 
--- Torus determined-form scaffold (issue #53 PR-2: TorusConvectionExtension)
+-- Torus determined-form construction (issue #53: removes torusConvectionGap_exists axiom)
 import LerayHopf.TorusConvectionExtension
 
 -- Concrete T³ convection form (issue #22: removes torus3_NSForms_exist axiom)
@@ -70,7 +70,7 @@ import LerayHopf.R3.GalerkinODE
 import LerayHopf.R3.GalerkinODEExistence
 import LerayHopf.R3.GalerkinODESolve
 import LerayHopf.R3.GalerkinODECapstone
-import LerayHopf.R3.ArzelaAscoliTime      -- issue #44: T0.1/T0.2 axioms + T1–T4 scaffold
+import LerayHopf.R3.ArzelaAscoliTime      -- issue #44: spacetime precompactness frontier
 import LerayHopf.R3.AubinLionsLimitPassage
 import LerayHopf.R3.CurlDensity
 import LerayHopf.R3.CurlDensityCapstone   -- issue #3: curlSchwartzDense_holds now a proved theorem
@@ -79,7 +79,7 @@ import LerayHopf.R3.ConvectionOperator
 import LerayHopf.R3.ConvectionForm
 import LerayHopf.R3.SobolevEmbedding
 import LerayHopf.R3.EnergyClassConvection
-import LerayHopf.R3.ConvectionExtension  -- PR-3: C0–C10 scaffold for full ConvectionGapOp construction
+import LerayHopf.R3.ConvectionExtension  -- issue #56: determined-form ConvectionGapOp construction
 import LerayHopf.R3.TensorIntersection   -- issue #56: S⊗V ∩ V⊗S = S⊗S linear-algebra lemma
 
 -- Bochner layer (sorry-carrying)

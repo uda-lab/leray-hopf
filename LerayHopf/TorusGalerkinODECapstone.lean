@@ -24,8 +24,8 @@ is UPSTREAM of the torus solver chain (`TorusGalerkinScheme` → `TorusGalerkinO
 
 Routing the capstone through `galSeq_of_torus` (axiom-free, the proved solver) instead of the
 `galerkin_ode_solution` axiom drops EXACTLY that axiom from `exists_lerayHopf_torus3_axiomatic`'s
-`#print axioms`.  After this change the capstone rests on the three remaining torus project axioms:
-`torusConvectionGap_exists`, `aubin_lions`, `galerkin_limit_passage`.
+`#print axioms`.  After issue #53 / PR #62 also proved `torusConvectionGap_exists`, the capstone
+rests on the two remaining torus project axioms: `aubin_lions`, `galerkin_limit_passage`.
 
 ## Declarations added
 
@@ -67,10 +67,10 @@ from the axiom-free `galerkinSolutionData_torus` (over the finite-dim `velocityS
 `galerkin_ode_solution`.  The theorem name and statement are **byte-identical** to the original
 (only the package builder swapped: `build_galerkin_package` → `build_galerkin_package_of_torus`).
 
-The `_axiomatic` suffix advertises dependence on the THREE remaining torus project axioms
-(`torusConvectionGap_exists`, `aubin_lions`, `galerkin_limit_passage`).  `galerkin_ode_solution` is
-NO LONGER among them — discharged here (issue #24); see `LerayHopf/Core.lean` for the axiom-free
-layer. -/
+The `_axiomatic` suffix advertises dependence on the TWO remaining torus project axioms
+(`aubin_lions`, `galerkin_limit_passage`).  `galerkin_ode_solution` and
+`torusConvectionGap_exists` are NO LONGER among them — discharged in issues #24 and #53; see
+`LerayHopf/Core.lean` for the axiom-free layer. -/
 theorem exists_lerayHopf_torus3_axiomatic (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ F : Torus3NSForms, Nonempty (LerayHopfSolutionFull F ν T u₀) := by

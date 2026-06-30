@@ -14,7 +14,7 @@ import Mathlib.Analysis.Normed.Operator.Extend
 
 ## What this file builds
 
-This file constructs the scaffold for the trilinear convection form
+This file constructs the trilinear convection form
 `convFormL2_def : L2Sigma → L2Sigma → L2Sigma → ℝ` together with all seven
 fields of `TorusConvectionGap`, mirroring `LerayHopf/R3/ConvectionExtension.lean`.
 
@@ -29,24 +29,23 @@ The construction uses the **determined-form** approach:
 
 ## Declarations delivered
 
-### Proved sorry-free
 - `galerkinTestSpan` — the Galerkin-test span submodule `𝒢 ≤ L²_σ`
 - `edgeSlot2`, `edgeSlot3`, `detDomain` — the two edge submodules and their sup
 - `edge_inf_eq_galerkin_tensor` — `(𝒢 ⊗ L²) ⊓ (L² ⊗ 𝒢) = 𝒢 ⊗ 𝒢` (direct reuse)
-
-### Scaffold (`:= by sorry -- ALLOW_SORRY`)
 - `convBLTgalerkin` — the jointly continuous bilinear for a fixed Galerkin test `w`
 - `convBLTgalerkinLin` — linearity of `convBLTgalerkin` in the test slot
 - `antisymmetrizer` — `(id − swap)/2` on `L²_σ ⊗ L²_σ`
 - `gInv` — left-inverse of `detDomain.subtype`
 - `detExtend` — the determined extension `L²_σ →ₗ (L²_σ ⊗ L²_σ) →ₗ ℝ`
 - `convFormL2_def` — the trilinear `b u v w := detExtend u (v ⊗ₜ w)`
-- `torusConvectionGap_holds` — assembly theorem (7 fields, mostly scaffolded)
+- `torusConvectionGap_holds` — assembly theorem for all seven fields
 
 ## Axiom status
 
-No new `axiom`/`opaque`. All analytic obligations are scaffold `sorry`s with
-`ALLOW_SORRY: PR-2 determined-form, prover discharges (torus #53)` markers.
+No new `axiom`/`opaque`.  The determined-form construction proves
+`torusConvectionGap_holds`, so `LerayHopf.torusConvectionGap_exists` is a theorem and does not
+appear in the capstone `#print axioms` output.  This is a pinned proof-carrying trilinear
+extension with fixed-Galerkin-test continuity, not a canonical continuous pure-`L²³` operator.
 -/
 
 open MeasureTheory TensorProduct
@@ -101,7 +100,7 @@ theorem edge_inf_eq_galerkin_tensor :
       = LinearMap.range (TensorProduct.mapIncl galerkinTestSpan galerkinTestSpan) :=
   LerayHopf.R3.TensorIntersection.range_map_subtype_inf_range_map_subtype galerkinTestSpan
 
-/-! ### T2 — the edge bilinears from `convFormFourier` (scaffold)
+/-! ### T2 — the edge bilinears from `convFormFourier`
 
 For a fixed Galerkin test `w`, `convFormFourier u v w` is the determined value on the
 Galerkin-test slice.  The two edge prescriptions mirror R3's `edge2Bil` / `edge3Bil`:
@@ -110,8 +109,8 @@ Galerkin-test slice.  The two edge prescriptions mirror R3's `edge2Bil` / `edge3
   (antisymmetric of the slot-3 value, by `convFormFourier_antisymm_galerkinTest`);
 - on `L²_σ ⊗ 𝒢` (slot-3 Galerkin): `(l, s) ↦ convFormFourier u l s`.
 
-The analytic obligation (jointly continuous BLT extension off the Galerkin-test slice to
-all of `L²_σ`) is the scaffold target for PR-2. -/
+The jointly continuous BLT extension off the Galerkin-test slice to all of `L²_σ` is supplied
+by the proved determined-form construction below. -/
 
 
 /-! ### ENGINE: analytic core (folded from validated ScratchConv) -/
@@ -775,12 +774,11 @@ theorem mem_galerkinTestSpan_isTest {s : L2Sigma} (hs : s ∈ galerkinTestSpan) 
     (fun x y _ _ hx hy => isGalerkinTest_add hx hy)
     (fun c x _ hx => isGalerkinTest_smul c hx) hs
 
-/-- **`convBLTgalerkin` [scaffold].** Jointly continuous bilinear form
+/-- **`convBLTgalerkin`.** Jointly continuous bilinear form
 `L2Sigma →L[ℝ] L2Sigma →L[ℝ] ℝ` extending `(u, v) ↦ convFormFourier u v w` for a
 fixed Galerkin test `w : galerkinTestSpan`.
 
-PR-2 prover obligation: construct the BLT extension via the H¹ density of Galerkin tests
-and `convSummand_summable` / `galerkinConvection_bound`. -/
+Constructed by extending the Galerkin-test bound through the H¹/Galerkin-test slice. -/
 noncomputable def convBLTgalerkin (w : galerkinTestSpan) :
     L2Sigma →L[ℝ] L2Sigma →L[ℝ] ℝ :=
   convBLTw (w : L2Sigma) (mem_galerkinTestSpan_isTest w.2)
@@ -788,11 +786,11 @@ noncomputable def convBLTgalerkin (w : galerkinTestSpan) :
 @[simp] theorem convBLTgalerkin_apply (w : galerkinTestSpan) (u v : L2Sigma) :
     convBLTgalerkin w u v = convValW (u : L2VF) (v : L2VF) (w : L2Sigma) := rfl
 
-/-- **`convBLTgalerkin_span_linear` [scaffold].** The map `w ↦ convBLTgalerkin w` is
+/-- **`convBLTgalerkin_span_linear`.** The map `w ↦ convBLTgalerkin w` is
 ℝ-linear over `galerkinTestSpan`.
 
-PR-2 prover obligation: prove linearity via the dense-agreement argument (same dense
-Galerkin-test × Galerkin-test square), using `convFormFourier`'s linearity in the third slot. -/
+Linearity follows by dense agreement on the Galerkin-test square, using `convFormFourier`'s
+linearity in the third slot. -/
 noncomputable def convBLTgalerkinLin :
     galerkinTestSpan →ₗ[ℝ] (L2Sigma →L[ℝ] L2Sigma →L[ℝ] ℝ) where
   toFun := convBLTgalerkin
@@ -806,7 +804,7 @@ noncomputable def convBLTgalerkinLin :
     simp only [convBLTgalerkin_apply, ContinuousLinearMap.smul_apply, RingHom.id_apply, smul_eq_mul]
     exact convValW_smul_w c (u:L2VF) (v:L2VF) (s:L2Sigma)
 
-/-! ### T3 — the two edge `TensorProduct.lift` functionals (scaffold) -/
+/-! ### T3 — the two edge `TensorProduct.lift` functionals -/
 
 /-- The ℝ-linear evaluation `B ↦ B u v` on continuous bilinear forms (torus version). -/
 private noncomputable def evalBil (u v : L2Sigma) :
@@ -968,7 +966,7 @@ private theorem edge2Lift_smul (c : ℝ) (u : L2Sigma)
 
 attribute [irreducible] edge3Lift edge2Lift
 
-/-! ### T4 — the projection `projG`, retractions, and the overlap agreement (scaffold) -/
+/-! ### T4 — the projection `projG`, retractions, and the overlap agreement -/
 
 /-- A complement of `galerkinTestSpan` and the resulting data. -/
 private noncomputable def galerkinCompl : Submodule ℝ L2Sigma :=
@@ -1020,9 +1018,9 @@ private theorem retr2_tmul_span (s : galerkinTestSpan) (v : L2Sigma) :
   unfold retr2
   rw [TensorProduct.map_tmul, LinearMap.id_apply, projG_subtype]
 
-/-! #### T4b — overlap agreement on `𝒢 ⊗ 𝒢` (scaffold) -/
+/-! #### T4b — overlap agreement on `𝒢 ⊗ 𝒢` -/
 
-/-- **`convBLTgalerkin_overlap` [scaffold].** For `s, s' ∈ 𝒢` and any `u`,
+/-- **`convBLTgalerkin_overlap`.** For `s, s' ∈ 𝒢` and any `u`,
 `convBLTgalerkin s' u (s : L2Sigma) = -convBLTgalerkin s u (s' : L2Sigma)`.
 
 This is the torus analog of `convBLTspan_overlap`, following from `convFormFourier_antisymm_galerkinTest`
@@ -1282,7 +1280,7 @@ private theorem psiD_edge2_value (u v : L2Sigma) (s : galerkinTestSpan) :
 
 /-! ### T8 — `convFormL2_def` and its properties -/
 
-/-- **`convFormL2_def` (`b`) [proved given scaffold].** The determined trilinear convection
+/-- **`convFormL2_def` (`b`).** The determined trilinear convection
 form:
 
 `b u v w := detExtend u (v ⊗ₜ w)`. -/
@@ -1363,11 +1361,11 @@ theorem convFormL2_cont_fixedTest (w : L2Sigma) (hw : IsGalerkinTest w) :
   rw [heq]
   exact (convBLTw w hw).continuous₂
 
-/-- **`convFormL2_bound_galerkinTest` [scaffold].** For Galerkin tests `u, v, w`,
+/-- **`convFormL2_bound_galerkinTest`.** For Galerkin tests `u, v, w`,
 `|b u v w| ≤ C(w) · ‖u‖ · ‖v‖` for some `C(w) ≥ 0`.
 
-PR-2 prover obligation: transfer the bilinear bound from `convBLTgalerkin` (which
-is built from `galerkinConvection_bound` / `convSummand_summable`). -/
+This transfers the bilinear bound from `convBLTgalerkin`, built from
+`galerkinConvection_bound` / `convSummand_summable`. -/
 theorem convFormL2_bound_galerkinTest (w : L2Sigma) (hw : IsGalerkinTest w) :
     ∃ C : ℝ, ∀ (u v : L2Sigma), IsGalerkinTest u → IsGalerkinTest v →
       |convFormL2_def u v w| ≤ C * ‖(u : L2VF)‖ * ‖(v : L2VF)‖ := by
@@ -1376,11 +1374,11 @@ theorem convFormL2_bound_galerkinTest (w : L2Sigma) (hw : IsGalerkinTest w) :
   rw [convFormL2_def_eq_convValW u v w hw]
   exact hC (u : L2VF) (v : L2VF)
 
-/-- **`convFormL2_galerkin_pin` [scaffold].** On Galerkin subspaces `Vₙ`,
+/-- **`convFormL2_galerkin_pin`.** On Galerkin subspaces `Vₙ`,
 `b` restricts to the finite box-truncated form `galerkinConvection n`.
 
-PR-2 prover obligation: follow from `convFormFourier` matching `galerkinConvection` on
-the finite box plus the determination identity on the Galerkin-test slice. -/
+This follows from `convFormFourier` matching `galerkinConvection` on the finite box plus the
+determination identity on the Galerkin-test slice. -/
 theorem convFormL2_galerkin_pin :
     ∀ (n : ℕ) (u v w : L2Sigma),
       velocityProjection_n n (u : L2VF) = (u : L2VF) →
@@ -1415,12 +1413,8 @@ theorem convFormL2_galerkinTest_dense (u : L2Sigma) :
 
 /-! ### T9 — `torusConvectionGap_holds` : assemble the 7 `TorusConvectionGap` fields -/
 
-/-- **`torusConvectionGap_holds` [scaffold — 5 of 7 fields scaffold-sorry].** Assembly of
-the `TorusConvectionGap` structure from the determined-form construction.
-
-Proved sorry-free: `b_multilinear`, `b_antisymm_gap` (from `detExtend`).
-Scaffold-sorry (PR-2 prover targets): `b_galerkin_pin`, `b_bound_test`, `b_cont_fixedTest`,
-`galerkinTest_dense`. -/
+/-- **`torusConvectionGap_holds`.** Assembly of the `TorusConvectionGap` structure from the
+determined-form construction.  All seven fields are supplied by the proved declarations above. -/
 theorem torusConvectionGap_holds : Nonempty TorusConvectionGap :=
   ⟨{ b              := convFormL2_def
      b_galerkin_pin  := convFormL2_galerkin_pin

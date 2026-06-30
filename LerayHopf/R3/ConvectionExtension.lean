@@ -1694,14 +1694,14 @@ theorem convFormL2_cont_fixedTest
   -- The jointly continuous bilinear `convBLT_fixedTest w` evaluated at `(p.1, p.2)`.
   exact (convBLT_fixedTest (w : L2VF_R3) hw_H1 hw_sigma hwsch).isBoundedBilinearMap.continuous
 
-/-! ### C11 — `r3ConvectionGapOp_holds` (assembled theorem; PR-5 re-exports as the axiom name) -/
+/-! ### C11 — `r3ConvectionGapOp_holds` (assembled theorem) -/
 
 /-- **C11 `r3ConvectionGapOp_holds` [assembled].**
 `∀ 𝔊 : R3GalerkinScheme, Nonempty (ConvectionGapOp 𝔊)`.
 
-THEOREM version of `axiom r3ConvectionGapOp_exists`.  PR-5 deletes the axiom and
-re-exports this under the same name (Hard Rule #2).  Assembled from the five determined-form
-fields:
+Theorem replacing the former `r3ConvectionGapOp_exists` axiom.  The root namespace re-exports
+this theorem under that compatibility name (Hard Rule #2).  Assembled from the five
+determined-form fields:
 - `b               := convFormL2_def` (C6)
 - `b_extends       := convFormL2_extends` (C9)
 - `b_multilinear   := convFormL2_multilinear` (C7)

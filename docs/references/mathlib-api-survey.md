@@ -1,45 +1,43 @@
 # Mathlib API Survey — Current Axiom Frontier
 
 This document records the Mathlib declarations directly relevant to discharging (or
-understanding the gap of) each current project axiom. Updated after PR #45 (merged).
+understanding the gap of) each current project axiom. Updated after issue #53 / PR #62.
 
 ---
 
-## R³ capstone: current 5 project axioms
+## R³ capstone: current 2 project axioms
 
-After PR #45 the `#print axioms exists_lerayHopf_r3_axiomatic` footprint is:
+The current `#print axioms exists_lerayHopf_r3_axiomatic` footprint is:
 
 | # | Axiom name | File | Mathematical content |
 |---|---|---|---|
-| 1 | `curlSchwartzDense_holds` | `R3/SchwartzDivFreeBasis.lean` | Helmholtz/Weyl density: closure of curls of Schwartz potentials = L²_σ(ℝ³) |
-| 2 | `r3_NSForms_exist` | `R3/AxiomaticClosure.lean` | ℝ³ convection form b exists (trilinear, antisymmetric, Schwartz-test-bounded) |
-| 3 | `galerkin_spacetime_precompact_R3` | `R3/ArzelaAscoliTime.lean` | LOCAL Aubin–Lions–Simon L²(0,T;L²(B_k)) precompactness (refine-capable) |
-| 4 | `galerkin_weakLimit_R3` | `R3/ArzelaAscoliTime.lean` | Banach–Alaoglu + weak-closedness of L2Sigma_R3: measurable weak limit |
-| 5 | `galerkin_limit_passage_R3` | `R3/AxiomaticClosure.lean` | Limit passage: good representative, WeakFormNS, energy inequality, initial trace |
+| 1 | `galerkin_spacetime_precompact_R3` | `R3/ArzelaAscoliTime.lean` | LOCAL Aubin–Lions–Simon L²(0,T;L²(B_k)) precompactness (refine-capable) |
+| 2 | `galerkin_limit_passage_R3` | `R3/AxiomaticClosure.lean` | Limit passage: good representative, WeakFormNS, energy inequality, initial trace |
 
-**Changes from pre-PR #45 (5-axiom footprint):**
+**Removed since the earlier 5-axiom survey:**
+- `curlSchwartzDense_holds` / `r3GalerkinScheme_exists` — proved by the Fourier curl-density route.
+- `r3_NSForms_exist` / `r3ConvectionGapOp_exists` — proved by the determined-form BLT construction.
+- `galerkin_weakLimit_R3` — proved by the strong ball-exhaustion + Mazur route.
 - REMOVED: `aubin_lions_R3` (its spatial half proved; time half rerouted through two
-  thinner axioms below).
-- ADDED: `galerkin_spacetime_precompact_R3` (axiom 3 above).
-- ADDED: `galerkin_weakLimit_R3` (axiom 4 above).
-- Net count: unchanged at 5 (one removed, two added; this is the "thin swap" described
-  in `AubinLionsAssembly.lean`).
+  thinner statements; only `galerkin_spacetime_precompact_R3` remains live).
 
-## T³ capstone: current 3 project axioms
+## T³ capstone: current 2 project axioms
 
 `#print axioms exists_lerayHopf_torus3_axiomatic` footprint:
 
 | # | Axiom name | File | Mathematical content |
 |---|---|---|---|
-| 1 | `torusConvectionGap_exists` | `TorusConvectionForm.lean` | T³ convection operator gap (IBP/smooth-test bound on T³) |
-| 2 | `aubin_lions` | `AxiomaticClosure.lean` | Aubin–Lions time compactness (spatial half = rellich_L2Sigma, proved) |
-| 3 | `galerkin_limit_passage` | `AxiomaticClosure.lean` | T³ limit passage to weak NS solution |
+| 1 | `aubin_lions` | `AxiomaticClosure.lean` | Aubin–Lions time compactness (spatial half = rellich_L2Sigma, proved) |
+| 2 | `galerkin_limit_passage` | `AxiomaticClosure.lean` | T³ limit passage to weak NS solution |
+
+`torusConvectionGap_exists` is now a theorem (`torusConvectionGap_holds`, issue #53 / PR #62),
+not a project axiom.
 
 ---
 
 ## Mathlib API relevant to each axiom
 
-### Axiom 3: `galerkin_spacetime_precompact_R3`
+### R3 axiom 1: `galerkin_spacetime_precompact_R3`
 
 **What it asserts:** For any Galerkin sequence + subsequence ψ + ball radius k, there
 exists a further ρ and measurable g_k such that the Bochner L²(0,T;L²(B_k)) norm of
@@ -68,7 +66,7 @@ a further subsequence with norm→0 exists (the compactness step).
 
 ---
 
-### Axiom 4: `galerkin_weakLimit_R3`
+### Removed former R3 axiom: `galerkin_weakLimit_R3`
 
 **What it asserts:** From per-ball a.e.-t convergence (hypothesis `hball`), extract a
 measurable u : Time → L2Sigma_R3 with AEStronglyMeasurable + per-ball a.e.-t convergence.
@@ -110,7 +108,7 @@ aestronglyMeasurable_of_tendsto_ae   (line ~1009)
 
 ---
 
-### Axiom 1: `curlSchwartzDense_holds`
+### Removed former R3 axiom: `curlSchwartzDense_holds`
 
 **What it asserts:** CurlSchwartzDense — the L²-closure of the span of curls of Schwartz
 vector potentials equals L²_σ(ℝ³).
@@ -137,7 +135,7 @@ is the path but the real-valuedness step is missing.
 
 ---
 
-### Axiom 2: `r3_NSForms_exist`
+### Removed former R3 axiom: `r3_NSForms_exist`
 
 **What it asserts:** Existence of the R³ NS convection form b (antisymmetric, trilinear,
 b_bound via Schwartz-test decay, b_galerkin = convIntegralSchwartz).
@@ -152,7 +150,7 @@ Schwartz-test class only; lifting to a genuine operator on L²_σ requires weak 
 
 ---
 
-### Axiom 5: `galerkin_limit_passage_R3`
+### R3 axiom 2: `galerkin_limit_passage_R3`
 
 **What it asserts:** Good representative u (a.e. equal to AL limit), WeakFormNS, energy
 inequality, initial trace, energy class.
@@ -175,7 +173,7 @@ and WeakFormNS time-IBP step all require this missing pillar.
 
 ## T³ axiom API survey
 
-### T³ axiom 2: `aubin_lions`
+### T³ axiom 1: `aubin_lions`
 
 Same mathematical content as `galerkin_spacetime_precompact_R3` (time-compactness) but
 for T³. The spatial half is discharged by `rellich_L2Sigma` (`H1Sigma.lean`, proved via
@@ -183,7 +181,7 @@ Fourier-tail decay). The time half is the same Aubin–Lions–Simon gap as the 
 
 **Mathlib:** Same as axiom 3 above.
 
-### T³ axiom 1: `torusConvectionGap_exists`
+### Removed former T³ axiom: `torusConvectionGap_exists`
 
 **What it asserts:** `Nonempty TorusConvectionGap` — existence of the T³ weak convection
 operator gap (IBP identity and smooth-test bound for the torus trilinear form).
