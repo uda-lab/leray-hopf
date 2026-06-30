@@ -179,7 +179,7 @@ Same mathematical content as `galerkin_spacetime_precompact_R3` (time-compactnes
 for T³. The spatial half is discharged by `rellich_L2Sigma` (`H1Sigma.lean`, proved via
 Fourier-tail decay). The time half is the same Aubin–Lions–Simon gap as the R³ version.
 
-**Mathlib:** Same as axiom 3 above.
+**Mathlib:** Same as R3 axiom 1 (`galerkin_spacetime_precompact_R3`) above.
 
 ### Removed former T³ axiom: `torusConvectionGap_exists`
 
