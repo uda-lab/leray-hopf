@@ -37,6 +37,8 @@ and `docs/milestone.md` → this file → existing Lean theorem statements → R
    `-- TODO:` describing the exact blocker. Do not patch around it by weakening math.
 9. **Prefer small local lemmas** over large monolithic tactic blocks.
 10. **Do not import broad modules unnecessarily;** justify a heavy import.
+11. **Do not stream full Lean build logs into agent context;** capture logs to a file
+    and inspect only the exit status plus relevant tail/error lines.
 
 ## Edit ownership (see `docs/agent-roles.md`)
 

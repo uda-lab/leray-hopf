@@ -41,6 +41,18 @@ Builds, then runs all three checks in order:
 bash scripts/agent-preflight.sh
 ```
 
+For agent runs, do not stream full Lean build or preflight output into the chat/context.
+Capture the log, inspect the exit status, and read only the relevant success tail or
+error slice:
+
+```bash
+bash scripts/agent-preflight.sh >/tmp/lean-pde-preflight.log 2>&1
+echo $?
+tail -n 80 /tmp/lean-pde-preflight.log
+```
+
+On failure, narrow the log with `rg`, `sed`, or `tail` before quoting output.
+
 ## Markers
 
 The checks honor same-line justification markers:
