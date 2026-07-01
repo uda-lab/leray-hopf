@@ -199,6 +199,12 @@ structure R3GalerkinScheme where
     ∀ j : Fin 3,
       L2VF_projComponent_R3 j (P n u) =
         (ψ j).toLp 2 (volume : Measure Domain3)
+  /-- **Subspace nesting / eventual test-fixing.** If `w` is fixed by an earlier projector
+  `P m` (i.e. `w ∈ range (P m)`), it stays fixed by all later projectors `P n`, `n ≥ m`.
+  For the concrete witness (`galerkinP B n = orthogonal projection onto the nested prefix span
+  `galerkinSpan B n`), this holds by `galerkinSpan_mono` + orthogonal-projection-fixes-its-subspace.
+  Required for the uniform-in-`n` per-test time-derivative bound in the initial-trace route. -/
+  mono_range : ∀ (m n : ℕ), m ≤ n → ∀ (w : L2VF_R3), P m w = w → P n w = w
 
 /-! **Former axiom AX-G — now DISCHARGED (issue #21).** A Galerkin approximation-projection
 family on `L²_σ(ℝ³)` exists.  No longer an axiom: it is proved as the `theorem`

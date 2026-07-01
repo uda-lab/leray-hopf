@@ -88,6 +88,7 @@ noncomputable def schemeOfBasis (B : SchwartzGalerkinBasis) : R3GalerkinScheme w
   norm_le         := galerkinP_norm_le B
   idem            := galerkinP_idem B
   range_schwartz  := galerkinP_range_schwartz B
+  mono_range      := galerkinP_mono_range B
 
 /-- The projector of `schemeOfBasis B` is definitionally `galerkinP B`. -/
 @[simp] theorem schemeOfBasis_P (B : SchwartzGalerkinBasis) (n : ℕ) :
