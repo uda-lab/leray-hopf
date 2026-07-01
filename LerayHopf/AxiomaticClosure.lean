@@ -332,6 +332,14 @@ structure AubinLionsPackage (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
     Filter.Tendsto
       (fun n => ∫ t in (0 : ℝ)..T, ‖((galSeq (φ n)).u t : L2VF) - (u t : L2VF)‖ ^ 2)
       Filter.atTop (nhds 0)
+  /-- **AE strong measurability of the limit curve** `t ↦ (u t : L2VF)` on `[0,T]`.
+  Matches the ℝ³ sibling `AubinLionsPackage_R3.u_aestronglyMeasurable`; it is a standard,
+  true part of the Aubin–Lions conclusion (the limit of a bounded measurable sequence is
+  measurable) and is needed by the density-free WeakFormNS limit passage
+  (`TorusLimitPassage.lean`). -/
+  u_aestronglyMeasurable :
+    AEStronglyMeasurable (fun t => (u t : L2VF))
+      (MeasureTheory.volume.restrict (Set.Icc 0 T))
 
 /-! ### Axiom A2: Aubin–Lions (spatial half discharged by rellich_L2Sigma) -/
 
