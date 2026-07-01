@@ -302,7 +302,13 @@ theorem galerkinP_range_schwartz (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF
 orthogonal projection fixes points of its subspace). Discharges `R3GalerkinScheme.mono_range`. -/
 theorem galerkinP_mono_range (B : SchwartzGalerkinBasis) :
     ∀ (m n : ℕ), m ≤ n → ∀ (w : L2VF_R3), galerkinP B m w = w → galerkinP B n w = w := by
-  sorry -- ALLOW_SORRY: Phase 0.5 nesting discharge, owned by the follow-up prover
+  intro m n hmn w hw
+  -- `galerkinP B m w ∈ galerkinSpan B m`; rewrite by `hw` to get `w ∈ galerkinSpan B m`
+  have hw_mem_m : w ∈ galerkinSpan B m := hw ▸ galerkinP_mem_span B m w
+  -- prefix spans are nested: `galerkinSpan B m ≤ galerkinSpan B n`
+  have hw_mem_n : w ∈ galerkinSpan B n := galerkinSpan_mono B hmn hw_mem_m
+  -- orthogonal projection fixes points of its subspace
+  exact Submodule.starProjection_eq_self_iff.mpr hw_mem_n
 
 /-! ### D7 — supporting lemma (six field properties) -/
 
