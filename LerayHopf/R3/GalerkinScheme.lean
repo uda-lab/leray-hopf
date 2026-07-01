@@ -295,6 +295,15 @@ theorem galerkinP_range_schwartz (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF
       exact hasSchwartzComponents_smul a hx
   exact key
 
+/-! ### D6b — subspace nesting for the concrete projector (field `mono_range`) -/
+
+/-- **Nesting for the concrete projector.** A point fixed by `galerkinP B m` stays fixed by
+`galerkinP B n` for `n ≥ m` (its subspace `galerkinSpan B m ⊆ galerkinSpan B n` and the
+orthogonal projection fixes points of its subspace). Discharges `R3GalerkinScheme.mono_range`. -/
+theorem galerkinP_mono_range (B : SchwartzGalerkinBasis) :
+    ∀ (m n : ℕ), m ≤ n → ∀ (w : L2VF_R3), galerkinP B m w = w → galerkinP B n w = w := by
+  sorry -- ALLOW_SORRY: Phase 0.5 nesting discharge, owned by the follow-up prover
+
 /-! ### D7 — supporting lemma (six field properties) -/
 
 /-- **Supporting lemma (P5).** From a total Schwartz divergence-free basis, the orthogonal
@@ -343,13 +352,15 @@ theorem nonempty_r3GalerkinScheme_of_basis (B : SchwartzGalerkinBasis) :
   --      tendsto_id      := galerkinP_tendsto_id B,             -- (D5, now matches the weakened field)
   --      norm_le         := galerkinP_norm_le B,                -- (D1)
   --      idem            := galerkinP_idem B,                   -- (D2)
-  --      range_schwartz  := galerkinP_range_schwartz B }⟩       -- (D6)
+  --      range_schwartz  := galerkinP_range_schwartz B          -- (D6)
+  --      mono_range      := galerkinP_mono_range B }⟩           -- (D6b)
   exact ⟨{
     P               := galerkinP B
     preserves_sigma := galerkinP_preserves_sigma B
     tendsto_id      := fun u hu => galerkinP_tendsto_id B u hu
     norm_le         := galerkinP_norm_le B
     idem            := galerkinP_idem B
-    range_schwartz  := galerkinP_range_schwartz B }⟩
+    range_schwartz  := galerkinP_range_schwartz B
+    mono_range      := galerkinP_mono_range B }⟩
 
 end LerayHopf

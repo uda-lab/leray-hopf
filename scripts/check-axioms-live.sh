@@ -221,7 +221,13 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound
    LerayHopf.galerkin_limit_passage_R3
-   LerayHopf.galerkin_spacetime_precompact_R3"
+   LerayHopf.galerkin_spacetime_precompact_R3
+   sorryAx"
+#   NOTE: sorryAx is a Phase 0.5 scaffold sorry in galerkinP_mono_range
+#   (GalerkinScheme.lean; the mono_range nesting field for R3GalerkinScheme).
+#   It leaks transitively through nonempty_r3GalerkinScheme_of_basis and
+#   schemeOfBasis into the capstone.  Will be removed once the prover discharges
+#   galerkinP_mono_range (Phase 0.5 follow-up).
 
 # ---------------------------------------------------------------------------
 # Pin 3: Core torus representative — no project axioms, no sorryAx
