@@ -63,6 +63,9 @@ import LerayHopf.TorusGalerkinScheme
 import LerayHopf.TorusGalerkinODESolve
 import LerayHopf.TorusGalerkinODECapstone
 
+-- T³ WeakFormNS limit passage (issue #25 conjunct 2: density-free, band-limited tests)
+import LerayHopf.TorusLimitPassage
+
 -- R3 files not covered by Core (sorry-carrying or axiom-dependent)
 import LerayHopf.R3.GalerkinScheme
 import LerayHopf.R3.SchwartzDivFreeBasis
