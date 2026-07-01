@@ -119,18 +119,88 @@ private theorem galerkin_weakFormNS_zero
   -- IntervalIntegrable of ψ' on [0, T] (C¹ ψ → deriv ψ continuous → integrable)
   have hψ'_intble : IntervalIntegrable (fun t => deriv ψ t) volume 0 T :=
     hψC1.continuous_deriv_one.intervalIntegrable 0 T
-  -- IntervalIntegrable of ⟪deriv gs.u, w⟫ on [0,T]:
-  -- By ODE, ⟪deriv gs.u t, w⟫ = -(ν·stokesTestPairing + F.b), which is continuous.
+  -- Helper: continuity of the curve t ↦ (gs.u t : L2VF) from HasDerivAt
+  have hcurve : ContinuousOn (fun t => (gs.u t : L2VF)) (Set.Icc 0 T) :=
+    fun t ht => (gs.u_hasDeriv t ht.1).continuousAt.continuousWithinAt
+  -- Helper: continuity of inner product t ↦ ⟪gs.u t, w⟫ via bounded linear functional
+  -- (innerSL ℝ w maps u ↦ ⟪w, u⟫; use real_inner_comm to get ⟪u, w⟫)
+  have hinner_cont : ContinuousOn
+      (fun t => inner (𝕜 := ℝ) (gs.u t : L2VF) (w : L2VF)) (Set.Icc 0 T) :=
+    ((innerSL ℝ (w : L2VF)).continuous.comp_continuousOn hcurve).congr
+      (fun t _ => real_inner_comm _ _)
+  -- Helper: stokesTestPairing at band-limited w reduces to a finite sum (fourierBox n₀)
+  have hstokes_fin : ∀ v : L2VF, stokesTestPairing v (w : L2VF) =
+      ∑ j : Fin 3, ∑ k ∈ fourierBox n₀,
+        ((2 * Real.pi) ^ 2 * ∑ i : Fin 3, (k i : ℝ) ^ 2) *
+        (mFourierCoeff3 (L2VF_projComponentC j v) k *
+          starRingEnd ℂ (mFourierCoeff3 (L2VF_projComponentC j (w : L2VF)) k)).re := by
+    intro v; unfold stokesTestPairing; congr 1; ext j
+    apply tsum_eq_sum
+    intro k hk
+    simp [coeff_zero_outside_box n₀ (w : L2VF) hn₀ j k hk]
+  -- Helper: continuity of stokesTestPairing(gs.u t, w) in t via CLM compositions
+  have hstokes_cont : ContinuousOn
+      (fun t => stokesTestPairing (gs.u t : L2VF) (w : L2VF)) (Set.Icc 0 T) := by
+    simp_rw [hstokes_fin]
+    apply continuousOn_finsetSum Finset.univ; intro j _
+    apply continuousOn_finsetSum (fourierBox n₀); intro k _
+    apply ContinuousOn.mul continuousOn_const
+    apply ContinuousOn.comp Complex.continuous_re.continuousOn _ (Set.mapsTo_univ _ _)
+    apply ContinuousOn.mul _ continuousOn_const
+    have heq : (fun t => mFourierCoeff3 (L2VF_projComponentC j (gs.u t : L2VF)) k) =
+        (fun t => fourierCoeffCLM k (L2VF_projComponentC j (gs.u t : L2VF))) := by
+      ext t; simp only [fourierCoeffCLM_apply]
+    rw [heq]
+    exact ((fourierCoeffCLM k).continuous.comp
+        (L2VF_projComponentC j).continuous).comp_continuousOn hcurve
+  -- Helper: continuity of gs.u t as L2Sigma.
+  -- The coercion L2Sigma → L2VF is an isometry (norms agree), hence inducing.
+  have hcurve_sigma : ContinuousOn (fun t => gs.u t) (Set.Icc 0 T) := by
+    have hiso : Isometry (fun x : L2Sigma => (x : L2VF)) := by
+      rw [isometry_iff_dist_eq]
+      intro x y
+      simp only [dist_eq_norm, ← AddSubgroupClass.coe_sub, Submodule.coe_norm]
+    exact hiso.isUniformInducing.isInducing.continuousOn_iff.mpr hcurve
+  -- Helper: continuity of F.b(gs.u t, gs.u t, w) via bilinear CLM construction
+  have hb_cont : ContinuousOn (fun t => F.b (gs.u t) (gs.u t) w) (Set.Icc 0 T) := by
+    obtain ⟨Cb, hCb⟩ := F.b_bound w ⟨n₀, hn₀⟩
+    let b_blin : L2Sigma →ₗ[ℝ] L2Sigma →ₗ[ℝ] ℝ :=
+      LinearMap.mk₂ ℝ (fun u v => F.b u v w)
+        (fun u u' v => F.b_add_1 u u' v w)
+        (fun c u v => (F.b_smul_1 c u v w).trans (smul_eq_mul c _).symm)
+        (fun u v v' => F.b_add_2 u v v' w)
+        (fun c u v => (F.b_smul_2 c u v w).trans (smul_eq_mul c _).symm)
+    have hb_norm : ∀ u v : L2Sigma, ‖b_blin u v‖ ≤ Cb * ‖u‖ * ‖v‖ := fun u v => by
+      show ‖F.b u v w‖ ≤ Cb * ‖u‖ * ‖v‖
+      simp only [Real.norm_eq_abs, Submodule.coe_norm]
+      exact hCb u v
+    let b_clm : L2Sigma →L[ℝ] L2Sigma →L[ℝ] ℝ := b_blin.mkContinuous₂ Cb hb_norm
+    have hb_clm_eq : ∀ u v, b_clm u v = F.b u v w := fun u v => rfl
+    have hpair_cont : ContinuousOn (fun t => (gs.u t, gs.u t)) (Set.Icc 0 T) :=
+      hcurve_sigma.prodMk hcurve_sigma
+    have h : ContinuousOn (fun t => b_clm (gs.u t) (gs.u t)) (Set.Icc 0 T) :=
+      b_clm.continuous₂.comp_continuousOn hpair_cont
+    exact h.congr (fun t _ => (hb_clm_eq (gs.u t) (gs.u t)).symm)
+  -- Helper: inner(deriv gs.u t, w) is continuous on [0,T] (equals -(ν·stokes + b) by ODE)
+  have h_A_cont : ContinuousOn
+      (fun t => inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF)) t) (w : L2VF))
+      (Set.Icc 0 T) := by
+    -- First build ContinuousOn for -(ν*stokes + F.b), typed explicitly so that congr fires
+    have hcont : ContinuousOn
+        (fun t : Time => -(ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) +
+                           F.b (gs.u t) (gs.u t) w))
+        (Set.Icc 0 T) := by
+      apply ContinuousOn.neg
+      exact (continuousOn_const.mul hstokes_cont).add hb_cont
+    -- Pointwise equality -(ν*stokes + F.b) = inner(deriv u, w) from ODE
+    exact hcont.congr (fun t ht => by
+      have h := hode t ht.1
+      linarith)
+  -- IntervalIntegrable of ⟪deriv gs.u, w⟫ on [0,T]: follows from continuity above
   have hf'_intble : IntervalIntegrable
       (fun t => inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF)) t) (w : L2VF))
-      volume 0 T := by
-    -- ALLOW_SORRY: IntervalIntegrable of ⟪deriv u_n, w⟫ on [0,T].
-    -- Route: ODE identity ⟪deriv u_n t, w⟫ = -(ν·stokesTestPairing(u_n t, w) + F.b(u_n t, u_n t, w))
-    -- on [0,T]. The RHS is continuous: u_n is continuous on [0,T] from HasDerivAt.continuousAt
-    -- (gs.u_hasDeriv t ht.1 : HasDerivAt ... → ContinuousAt), stokesTestPairing is linear and
-    -- bounded at fixed band-limited w (hence continuous), F.b is bilinear-bounded (b_bound → continuous).
-    -- So RHS ∈ C([0,T]) → IntervalIntegrable. Full formalization needs ContinuousOn-from-HasDerivAt.
-    sorry -- ALLOW_SORRY: IntervalIntegrable of ⟪deriv u_n, w⟫; provable via ODE identity + continuity of u_n from HasDerivAt + continuity of stokesTestPairing and F.b at fixed band-limited w; needs ContinuousOn_of_forall_continuousAt formalization
+      volume 0 T :=
+    h_A_cont.intervalIntegrable_of_Icc (le_of_lt hT)
   -- IBP: ∫_0^T f(t)·ψ'(t) = f(T)·ψ(T) − f(0)·ψ(0) − ∫_0^T f'(t)·ψ(t)
   have hibp : ∫ t in (0 : ℝ)..T,
       inner (𝕜 := ℝ) (gs.u t : L2VF) (w : L2VF) * deriv ψ t =
@@ -161,16 +231,68 @@ private theorem galerkin_weakFormNS_zero
       rw [hode t ht.1, mul_zero]
     rw [intervalIntegral.integral_congr hzero]
     exact intervalIntegral.integral_zero
-  -- Assemble: the ODE integral plus IBP gives the WeakFormNS identity
-  -- We need integrability of the individual components to split the ODE integral.
-  -- ALLOW_SORRY: integral splitting + algebraic rearrangement.
-  -- Route: the ODE integral splits (by integral_add + continuity of each component):
-  --   ∫ ψ·⟪deriv u_n, w⟫ + ∫ ψ·(ν·stokesTestPairing + F.b) = 0
-  -- Using hinner_eq (with mul_comm):
-  --   −∫ ⟪u_n, w⟫·ψ' + ∫ ψ·(ν·stokesTestPairing + F.b) = 0
-  -- Which is exactly ∫ (−⟪u_n, w⟫·ψ' + ψ·(ν·stokesTestPairing + F.b)) = 0
-  -- (by integral_add when each component is integrable).
-  sorry -- ALLOW_SORRY: algebraic assembly from hinner_eq + hode_int into the WeakFormNS zero; needs integral_add for each component and mul_comm for ψ·inner vs inner·ψ; provable from hf'_intble and continuity of stokesTestPairing + F.b at fixed w; see proof route above
+  -- Assemble: split hode_int and use IBP identity hinner_eq to get the WeakFormNS zero.
+  -- Integrability of each component (continuous on [0,T] → integrable):
+  have h_inner_ψ'_int : IntervalIntegrable
+      (fun t => inner (𝕜 := ℝ) (gs.u t : L2VF) (w : L2VF) * deriv ψ t) volume 0 T :=
+    (hinner_cont.mul hψC1.continuous_deriv_one.continuousOn).intervalIntegrable_of_Icc (le_of_lt hT)
+  have h_ψ_BC_cont : ContinuousOn
+      (fun t => ψ t * (ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) +
+                       F.b (gs.u t) (gs.u t) w)) (Set.Icc 0 T) :=
+    hψC1.continuous.continuousOn.mul ((continuousOn_const.mul hstokes_cont).add hb_cont)
+  have h_ψ_BC_int : IntervalIntegrable
+      (fun t => ψ t * (ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) +
+                       F.b (gs.u t) (gs.u t) w)) volume 0 T :=
+    h_ψ_BC_cont.intervalIntegrable_of_Icc (le_of_lt hT)
+  have h_ψ_A_int : IntervalIntegrable
+      (fun t => ψ t * inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF)) t) (w : L2VF))
+      volume 0 T :=
+    (hψC1.continuous.continuousOn.mul h_A_cont).intervalIntegrable_of_Icc (le_of_lt hT)
+  -- h_f: ∫ψ*inner' = -(∫ inner_u*ψ') by IBP identity hinner_eq
+  have h_f : ∫ t in (0 : ℝ)..T,
+      ψ t * inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF)) t) (w : L2VF) =
+      -(∫ t in (0 : ℝ)..T, inner (𝕜 := ℝ) (gs.u t : L2VF) (w : L2VF) * deriv ψ t) := by
+    conv_lhs => arg 1; ext t; rw [mul_comm]
+    exact hinner_eq
+  -- Assembly: direct calc chain using integral linearity and IBP
+  calc ∫ t in (0 : ℝ)..T,
+          (-(inner (𝕜 := ℝ) (gs.u t : L2VF) (w : L2VF)) * deriv ψ t +
+           ψ t * (ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) + F.b (gs.u t) (gs.u t) w))
+      -- ring: -inner*ψ' = -(inner*ψ')
+      = ∫ t in (0 : ℝ)..T,
+            (-(inner (𝕜 := ℝ) (gs.u t : L2VF) (w : L2VF) * deriv ψ t) +
+             ψ t * (ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) + F.b (gs.u t) (gs.u t) w)) :=
+          intervalIntegral.integral_congr (fun t _ => by ring)
+      -- split: ∫(A+B) = ∫A + ∫B
+      _ = (∫ t in (0 : ℝ)..T,
+              -(inner (𝕜 := ℝ) (gs.u t : L2VF) (w : L2VF) * deriv ψ t)) +
+          ∫ t in (0 : ℝ)..T,
+              ψ t * (ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) + F.b (gs.u t) (gs.u t) w) :=
+          intervalIntegral.integral_add h_inner_ψ'_int.neg h_ψ_BC_int
+      -- pull neg out: ∫-f = -(∫f)
+      _ = -(∫ t in (0 : ℝ)..T,
+              inner (𝕜 := ℝ) (gs.u t : L2VF) (w : L2VF) * deriv ψ t) +
+          ∫ t in (0 : ℝ)..T,
+              ψ t * (ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) + F.b (gs.u t) (gs.u t) w) := by
+          rw [intervalIntegral.integral_neg]
+      -- IBP: -(∫ inner*ψ') = ∫ ψ*inner'
+      _ = (∫ t in (0 : ℝ)..T,
+              ψ t * inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF)) t) (w : L2VF)) +
+          ∫ t in (0 : ℝ)..T,
+              ψ t * (ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) + F.b (gs.u t) (gs.u t) w) := by
+          rw [← h_f]
+      -- combine: ∫A + ∫B = ∫(A+B)
+      _ = ∫ t in (0 : ℝ)..T,
+              (ψ t * inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF)) t) (w : L2VF) +
+               ψ t * (ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) + F.b (gs.u t) (gs.u t) w)) :=
+          (intervalIntegral.integral_add h_ψ_A_int h_ψ_BC_int).symm
+      -- ring: ψ*(A) + ψ*(B+C) = ψ*(A+B+C)
+      _ = ∫ t in (0 : ℝ)..T,
+              ψ t * (inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF)) t) (w : L2VF) +
+                     ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) + F.b (gs.u t) (gs.u t) w) :=
+          intervalIntegral.integral_congr (fun t _ => by ring)
+      -- ODE: integrand = 0 pointwise → integral = 0
+      _ = 0 := hode_int
 
 /-! ### P4: Main theorem — WeakFormNS limit passage -/
 
@@ -227,6 +349,6 @@ theorem torus_weakFormNS_of_strongConvergence
   -- not guaranteed to equal the Lebesgue integral (could be 0 by convention).
   -- Fix needed: add u_aestronglyMeasurable : AEStronglyMeasurable (fun t => alPkg.u t : L2VF)
   --   (volume.restrict (Set.Icc 0 T)) to AubinLionsPackage (lean-coder task).
-  sorry -- ALLOW_SORRY: limit passage N→∞ for WeakFormNS on 𝕋³; structural reduction (IBP + ODE, hgal_zero) complete; blocked by AubinLionsPackage lacking u_aestronglyMeasurable (unlike AubinLionsPackage_R3); add that field to close; linear terms: ∫‖diff‖ ≤ √T·√(∫‖diff‖²) → 0; b-term: ∫(‖u‖+‖u₀‖)·‖diff‖ → 0 needs ‖u‖ integrable; strong_convergence gives ∫‖diff‖² → 0; see proof route in comment above
+  sorry -- ALLOW_SORRY: limit passage N→∞ for WeakFormNS on 𝕋³; structural reduction (IBP + ODE, hgal_zero) complete; real blocker = AubinLionsPackage.strong_convergence uses Bochner integral ∫‖d_N‖²→0 which equals 0 by convention when d_N ∉ L² (non-integrable), so cannot derive genuine L²-convergence (eLpNorm → 0) needed for Cauchy-Schwarz ∫‖d_N‖ ≤ √T·√(∫‖d_N‖²) and b-form domination; fix = add MemLp field or change strong_convergence to use eLpNorm in AubinLionsPackage (lean-coder task)
 
 end LerayHopf
