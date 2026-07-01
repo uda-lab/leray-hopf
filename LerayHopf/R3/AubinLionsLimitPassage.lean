@@ -2421,7 +2421,61 @@ theorem weakFormNS_limit_passage
   --  (c) DENSITY — UNNECESSARY: `WeakFormNS`'s test is already Schwartz-div-free, so the fixed-`w`
   --      slice in (b) covers it; no Galerkin→Schwartz step is required.
   -- None weakens the statement; the goal below is the verbatim `WeakFormNS` integral identity.
-  sorry -- ALLOW_SORRY: WeakFormNS passage residual. Atom (a) VISCOUS DISCHARGED (stokesTestPairing_R3_eq_sum_inner_negLap, CurlDensity.lean — weak-continuous, passes by weak_tendsto_of_inner_tendsto). Atom (b) NONLINEAR PROVABLE via the fixed-Schwartz-w integral rep (WeakFormNS test w is always IsSchwartzDivFree_R3): Step 1 F.b f g w = -∑ᵢₐ∫ fₐ·gᵢ·∂ₐψwᵢ for all f,g∈L²σ by density-extending the Schwartz identity (b_galerkin + convIntegralSchwartz_divFree_eq) off schwartzDivFree_dense_of_curlDense using joint L²-continuity of both sides (b_bound; Cauchy-Schwarz+∂ψw∈L∞) — genuine L¹ integral; Step 2 ε/3 ball-split (tail ≤ sup_{|x|>R}|∂ψw|·2M²→0 by SchwartzMap.tendsto_cocompact + uniform M; middle→0 by per-ball strong strong_convergence_ae). NO full-space strong needed. Atom (c) DENSITY UNNECESSARY (WeakFormNS test already Schwartz). Structural reduction (time-IBP boundary-free + dominated convergence) in hand. Temam III.3. (Earlier "interface wall" claim RETRACTED — the fixed-w slice has the integral rep.)
+  -- ── Step 0: assemble the convergence data needed for the Temam III.3 argument ────────────
+  set M : ℝ := ‖(u₀ : L2VF_R3)‖ with hM_def
+  -- Per-ball a.e.-t convergence of the Galerkin subsequence (from the AubinLionsPackage field).
+  have hpb_ae : ∀ R : ℝ, ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
+      Filter.Tendsto (fun n => restrictToBall R ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+        Filter.atTop (nhds (restrictToBall R (alPkg.u t : L2VF_R3))) :=
+    alPkg.strong_convergence_ae
+  -- Uniform energy bound: ‖(galSeq (φ n)).u t‖ ≤ M for all n and a.e. t ∈ [0,T].
+  have hbd_ae : ∀ n, ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
+      ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ≤ M := by
+    intro n
+    apply ae_restrict_of_forall_mem measurableSet_Icc
+    intro t ht
+    exact_mod_cast galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) ht.1
+  -- Limit-curve L²-bound a.e.: ‖alPkg.u t‖ ≤ M for a.e. t ∈ [0,T]
+  -- (from `kineticEnergy_lsc_bound`, which gives ½‖u t‖² ≤ ½M² a.e.).
+  have hbu_ae : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
+      ‖(alPkg.u t : L2VF_R3)‖ ≤ M := by
+    filter_upwards [kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq alPkg] with t ht
+    -- ht : ½‖u t‖² ≤ ½‖u₀‖² = ½M²; extract ‖u t‖ ≤ M via √ monotonicity.
+    have hsq : ‖(alPkg.u t : L2VF_R3)‖ ^ 2 ≤ M ^ 2 := by
+      have : M = ‖(u₀ : L2VF_R3)‖ := hM_def
+      nlinarith [norm_nonneg (alPkg.u t : L2VF_R3), norm_nonneg (u₀ : L2VF_R3)]
+    calc ‖(alPkg.u t : L2VF_R3)‖
+        = Real.sqrt (‖(alPkg.u t : L2VF_R3)‖ ^ 2) :=
+          (Real.sqrt_sq (norm_nonneg _)).symm
+      _ ≤ Real.sqrt (M ^ 2) := Real.sqrt_le_sqrt hsq
+      _ = M := by rw [hM_def]; exact Real.sqrt_sq (norm_nonneg _)
+  -- ── Temam III.3: ODE + IBP + n→∞ (DCT) + N→∞ (density) ─────────────────────────────────
+  -- (i) For each N and approximant n ≥ N, `u_ode` gives the Galerkin identity against test
+  --     `𝔊.P N (w : L2VF_R3)` (which satisfies `𝔊.P n (𝔊.P N w) = 𝔊.P N w` for n ≥ N by
+  --     `mono_range` + `idem`).  Multiplying by `ψ(t)` and integrating by parts
+  --     (`integral_mul_deriv_eq_deriv_mul`; boundary-free because `tsupport ψ ⊆ Ioo 0 T`;
+  --     HasDerivAt from `gs.u_hasDeriv` + `HasDerivAt.inner`) gives, for the approximant uₙ,
+  --         ∫₀ᵀ (-⟪uₙ t, P_N w⟫·ψ'(t) + ψ(t)·(ν·B(uₙ t, P_N w) + F.b(uₙ t, uₙ t, P_N w))) = 0.
+  -- (ii) n→∞ (fixed N): `inner_tendsto_of_perball` (per-ball a.e. from `hpb_ae` + bound from
+  --     `hbd_ae`; applied to the fixed test `P_N w` as element of L²) + dominated convergence
+  --     (integrand bounded by `C·‖ψ‖_C¹` with C depending only on M, ‖P_N w‖, `b_bound`) passes
+  --     each of the three terms.  The nonlinear term uses `fb_tendsto_of_perball` (per-ball a.e.
+  --     from `hpb_ae`, uniform bound `hbd_ae`, limit bound `hbu_ae`; applied pointwise in t via
+  --     `ae_all_iff.2 hpb_ae`).
+  -- (iii) N→∞: `𝔊.tendsto_id (w : L2VF_R3) w_in_Sigma` gives `P_N w → w` in L²; inner product
+  --     and `stokesTestPairing_R3` are continuous in the test (fixed-u slice), and `F.b` is
+  --     Lipschitz in the test via `b_bound`; DCT in N (or integral continuity) closes the identity.
+  sorry -- ALLOW_SORRY: Temam III.3 structural gap (three substeps above).
+        -- Precise blockers:
+        -- (i) ODE + IBP: `intervalIntegral.integral_mul_deriv_eq_deriv_mul` needs HasDerivAt of
+        --     `t ↦ ⟪uₙ(t), P_N w⟫` (= HasDerivAt.inner of gs.u_hasDeriv) + integrability.
+        --     Also needs construction of `P_N w` as an element of `L2Sigma_R3` via
+        --     `𝔊.preserves_sigma`.
+        -- (ii) n→∞ DCT bound: `|ψ(t)|·|⟪uₙ t - u t, P_N w⟫| ≤ ‖ψ‖_∞ · 2M · ‖P_N w‖` (all n, a.e. t);
+        --     `fb_tendsto_of_perball` (ConvectionForm.lean) provides a.e.-t nonlinear convergence
+        --     once `ae_all_iff.2 hpb_ae` assembles the per-ball data pointwise.
+        -- (iii) N→∞: `𝔊.tendsto_id` needs `w ∈ L2Sigma_R3` — follows from
+        --     `IsSchwartzDivFree_R3 w → w ∈ L2Sigma_R3` (hw).
 
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 

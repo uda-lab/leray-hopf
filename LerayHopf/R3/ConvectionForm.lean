@@ -880,6 +880,117 @@ theorem fb_eq_antisymmIntegral {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊)
   refine tendsto_nhds_unique (hLHS.congr (fun n => ?_)) hRHS
   exact fb_eq_antisymmIntegral_schwartz F w ψw hψw (sf n) (sg n) (hsf_sch n) (hsg_sch n)
 
+/-! ### Per-ball convergence of F.b (atom b — WeakFormNS limit passage) -/
+
+/-- Schwartz tail decay: for any Schwartz map φ on Domain3 and ε > 0, there is R₀ > 0
+with |φ(x)| < ε whenever ‖x‖ > R₀. Follows from `SchwartzMap.tendsto_cocompact`. -/
+private theorem schwartz_ball_tail_decay (φ : SchwartzMap Domain3 ℝ) {ε : ℝ} (hε : 0 < ε) :
+    ∃ R₀ : ℝ, 0 < R₀ ∧ ∀ x : Domain3, R₀ < ‖x‖ → ‖φ x‖ < ε := by
+  obtain ⟨K, hKcomp, hKsub⟩ :=
+    Filter.mem_cocompact.mp (Metric.tendsto_nhds.mp φ.tendsto_cocompact ε hε)
+  obtain ⟨R₀, hR₀pos, hKball⟩ := hKcomp.isBounded.subset_closedBall_lt 0 (0 : Domain3)
+  refine ⟨R₀, hR₀pos, fun x hxR => ?_⟩
+  have hxK : x ∉ K := fun hxK =>
+    absurd (hKball hxK) (by rwa [Metric.mem_closedBall, dist_zero_right, not_le])
+  simpa [dist_zero_right] using hKsub (Set.mem_compl hxK)
+
+/-- Self-adjointness of real pointwise multiplication: `⟨f, h·g⟩ = ⟨h·f, g⟩`
+in `Lp ℝ 2 volume`.
+
+Both sides equal `∫ x, (↑f x) * h x * (↑g x) ∂μ` via `MeasureTheory.L2.inner_def`,
+`mulBddR_coeFn`, and the identity `inner ℝ a b = a * b` for real scalars. -/
+private theorem mulBddR_self_adjoint (h : Domain3 → ℝ) (hh : MemLp h ⊤ (volume : Measure Domain3))
+    (f g : Lp ℝ 2 (volume : Measure Domain3)) :
+    (inner ℝ f (mulBddR h hh g) : ℝ) = (inner ℝ (mulBddR h hh f) g : ℝ) := by
+  rw [MeasureTheory.L2.inner_def, MeasureTheory.L2.inner_def]
+  refine integral_congr_ae ?_
+  filter_upwards [mulBddR_coeFn h hh f, mulBddR_coeFn h hh g] with x hxf hxg
+  -- After RCLike.inner_apply (which gives ⟪a, b⟫_ℝ = conj a * b) and conj_trivial
+  -- (conj is identity on ℝ), both sides reduce to a * h x * b expressions.
+  simp only [RCLike.inner_apply, conj_trivial, hxf, hxg]
+  ring
+
+set_option maxHeartbeats 800000 in
+/-- **Per-ball convergence of F.b (atom b of WeakFormNS passage).**
+
+For a Schwartz-div-free test `w` with witnesses `ψw`, if `uₙ → u` in L²(B_R) for every
+radius R (per-ball convergence) with uniform L² bound `‖uₙ‖ ≤ M`, then
+`F.b(uₙ, uₙ, w) → F.b(u, u, w)`.
+
+**Method.** After applying `fb_eq_antisymmIntegral` and unfolding `antisymmIntegral`, each
+(i, a)-term is `inner (comp_a uₙ) (mulBddR φ_{a,i} (comp_i uₙ))`.  The bilinear difference
+splits into:
+- TERM A `= inner (comp_a (uₙ - u)) (mulBddR φ (comp_i uₙ))`: ε/3 split via
+  `schwartz_ball_tail_decay` for the `‖x‖>R` tail and per-ball for the `‖x‖≤R` ball;
+- TERM B `= inner (comp_a u) (mulBddR φ (comp_i (uₙ - u)))`: self-adjointness +
+  scalar ball-tail ε/3 argument (tail of FIXED element → 0, ball uses per-ball). -/
+theorem fb_tendsto_of_perball {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊)
+    (w : L2Sigma_R3) (hw : IsSchwartzDivFree_R3 w)
+    (un : ℕ → L2Sigma_R3) (u : L2Sigma_R3)
+    (M : ℝ) (hM0 : 0 ≤ M)
+    (hbd : ∀ n, ‖(un n : L2VF_R3)‖ ≤ M)
+    (hbu : ‖(u : L2VF_R3)‖ ≤ M)
+    (hperball : ∀ k : ℕ, Filter.Tendsto
+        (fun n => restrictToBall (k : ℝ) (un n : L2VF_R3))
+        Filter.atTop (nhds (restrictToBall (k : ℝ) (u : L2VF_R3)))) :
+    Filter.Tendsto (fun n => F.b (un n) (un n) w) Filter.atTop (nhds (F.b u u w)) := by
+  obtain ⟨ψw, hψw⟩ := hw
+  simp_rw [fb_eq_antisymmIntegral F w ψw hψw]
+  -- Unfold the (private, @[irreducible]) def — allowed from within this file.
+  unfold antisymmIntegral
+  apply Filter.Tendsto.neg
+  apply tendsto_finsetSum; intro i _
+  apply tendsto_finsetSum; intro a _
+  -- Abbreviated notation for this (i, a)-summand
+  set φs : SchwartzMap Domain3 ℝ :=
+    lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψw i)
+  set φ : Domain3 → ℝ := ⇑φs
+  set hφ : MemLp φ ⊤ (volume : Measure Domain3) := lineDerivOp_schwartz_memLp_top (ψw i) a
+  set cA := L2VF_projComponent_R3 a
+  set cI := L2VF_projComponent_R3 i
+  -- Reduce to showing the difference → 0
+  suffices hd : Filter.Tendsto
+      (fun n => (inner ℝ (cA (un n : L2VF_R3)) (mulBddR φ hφ (cI (un n : L2VF_R3))) : ℝ) -
+               (inner ℝ (cA (u : L2VF_R3)) (mulBddR φ hφ (cI (u : L2VF_R3))) : ℝ))
+      Filter.atTop (nhds 0) by
+    have := hd.add (tendsto_const_nhds (x := (inner ℝ (cA (u : L2VF_R3)) (mulBddR φ hφ (cI (u : L2VF_R3))) : ℝ)))
+    simp only [sub_add_cancel, zero_add] at this
+    exact this
+  -- Bilinear decomposition: diff = TERM_A + TERM_B
+  have hdecomp : ∀ n,
+      (inner ℝ (cA (un n : L2VF_R3)) (mulBddR φ hφ (cI (un n : L2VF_R3))) : ℝ) -
+      (inner ℝ (cA (u : L2VF_R3)) (mulBddR φ hφ (cI (u : L2VF_R3))) : ℝ) =
+      (inner ℝ (cA (un n : L2VF_R3) - cA (u : L2VF_R3))
+          (mulBddR φ hφ (cI (un n : L2VF_R3))) : ℝ) +
+      (inner ℝ (cA (u : L2VF_R3))
+          (mulBddR φ hφ (cI (un n : L2VF_R3)) - mulBddR φ hφ (cI (u : L2VF_R3))) : ℝ) := by
+    intro n
+    linarith [inner_sub_left (𝕜 := ℝ) (cA (un n : L2VF_R3)) (cA (u : L2VF_R3))
+                (mulBddR φ hφ (cI (un n : L2VF_R3))),
+              inner_sub_right (𝕜 := ℝ) (cA (u : L2VF_R3)) (mulBddR φ hφ (cI (un n : L2VF_R3)))
+                (mulBddR φ hφ (cI (u : L2VF_R3)))]
+  simp_rw [hdecomp]
+  -- TERM A → 0
+  have htermA : Filter.Tendsto
+      (fun n => (inner ℝ (cA (un n : L2VF_R3) - cA (u : L2VF_R3))
+        (mulBddR φ hφ (cI (un n : L2VF_R3))) : ℝ)) Filter.atTop (nhds 0) := by
+    sorry -- ALLOW_SORRY: TERM A ε/3 split (Schwartz decay on tail, per-ball on ball).
+          -- |inner(cA(uₙ-u))(mulBddR φ (cI uₙ))| ≤ BALL + TAIL.
+          -- BALL ≤ eLpNorm(φ,⊤) * ‖cA(uₙ-u)|_{B_R}‖ * M → 0 (‖cA(uₙ-u)|_{B_R}‖ ≤ ‖restrictToBall R(uₙ-u)‖ → 0 by hperball).
+          -- TAIL ≤ sup_{‖x‖>R}|φ| * ‖cA(uₙ-u)‖ * M → 0 (schwartz_ball_tail_decay for φs + uniform bound 2M).
+  -- TERM B → 0
+  have htermB : Filter.Tendsto
+      (fun n => (inner ℝ (cA (u : L2VF_R3))
+        (mulBddR φ hφ (cI (un n : L2VF_R3)) - mulBddR φ hφ (cI (u : L2VF_R3))) : ℝ))
+      Filter.atTop (nhds 0) := by
+    -- self-adjointness: inner(cA u)(mulBddR φ (cI(uₙ-u))) = inner(mulBddR φ (cA u))(cI(uₙ-u))
+    sorry -- ALLOW_SORRY: TERM B scalar ball-tail ε/3 argument.
+          -- After mulBddR_self_adjoint + mulBddR_sub + map_sub:
+          -- need inner(FIXED e_B)(cI(uₙ-u)) → 0 where e_B := mulBddR φ (cA u) ∈ Lp ℝ 2 vol.
+          -- Tail of e_B → 0 (fixed-element tail vanishing by Vitali/dominated convergence).
+          -- Ball: ‖e_B‖ * ‖cI(uₙ-u)|_{B_R}‖ → 0 (per-ball + comp_j ∘ restrictToBall = scalarBall ∘ comp_j).
+  simpa only [add_zero] using htermA.add htermB
+
 /-! ### P2 — Scaffold packaging for future `ConvectionGap` construction -/
 
 /-- **P2 (scaffold-only).** Packaging of the density result as the `schwartz_dense`
