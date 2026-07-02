@@ -10,10 +10,9 @@ existence argument.  The capstone declaration is:
 
     `LerayHopf.exists_lerayHopf_torus3_axiomatic`
 
-(relocated to `LerayHopf/TorusGalerkinODECapstone.lean` in issue #24), which depends on two
-project axioms:
+(relocated to `LerayHopf/TorusGalerkinODECapstone.lean` in issue #24), which depends on one
+project axiom:
 - `aubin_lions` (AX-2): Aubin–Lions time compactness (spatial half proved)
-- `galerkin_limit_passage` (AX-3): limit passage to weak NS solution
 
 The former `galerkin_ode_solution` axiom (Picard–Lindelöf on finite-dim Vₙ) has been **removed**
 (issue #24): the finite-dim torus Galerkin ODE is now solved unconditionally by the proved

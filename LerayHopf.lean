@@ -72,6 +72,10 @@ import LerayHopf.TorusLimitPassage
 -- (full 5-conjunct existential, conditional only on the energy-class conjunct 4 for alPkg.u)
 import LerayHopf.TorusTraceEnergy
 
+-- T³ energy-class conjunct (4) scaffold: a.e. memH1VF + IntervalIntegrable dissipation
+-- for alPkg.u, to be plugged into torus_galerkin_limit_passage_of_energyClass
+import LerayHopf.TorusViscousLimit
+
 -- T³ galerkin_limit_passage removal: orthogonality calculus for velocityProjection_n (PR-1)
 import LerayHopf.TorusProjectionAdjoint
 

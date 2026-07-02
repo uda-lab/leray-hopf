@@ -12,19 +12,19 @@
 --
 --   exists_lerayHopf_torus3_axiomatic — EXACTLY:
 --     propext  Classical.choice  Quot.sound
---     LerayHopf.aubin_lions  LerayHopf.galerkin_limit_passage
---     LerayHopf.torusConvectionGap_exists
---     (torus3_NSForms_exist REMOVED — issue #22 — Nonempty Torus3NSForms is now the theorem
---      torus3_NSForms_exists, SWAPPED for the thinner torusConvectionGap_exists gap axiom via
---      the proved Torus3NSForms_of_gap)
---     (galerkin_ode_solution REMOVED — issue #24 — discharged via the axiom-free
---      galerkinSolutionData_torus over the finite-dim velocitySpan n; net torus project axioms now 3)
+--     LerayHopf.aubin_lions  (1 project axiom)
+--     (torus3_NSForms_exist REMOVED — issue #22 — now the theorem torus3_NSForms_exists)
+--     (galerkin_ode_solution REMOVED — issue #24 — discharged via galerkinSolutionData_torus)
+--     (torusConvectionGap_exists REMOVED — issue #53 — proved sorry-free as torusConvectionGap_holds)
+--     (galerkin_limit_passage REMOVED — this PR — replaced by proved theorems
+--      torus_galerkin_limit_passage_of_energyClass + torus_energyClass_of_aubinLions;
+--      net torus project axioms now 1)
 --
 --   exists_lerayHopf_r3_axiomatic — EXACTLY:
 --     propext  Classical.choice  Quot.sound
 --     LerayHopf.galerkin_limit_passage_R3
---     LerayHopf.r3ConvectionGapOp_exists
---     LerayHopf.galerkin_spacetime_precompact_R3
+--     LerayHopf.galerkin_spacetime_precompact_R3  (2 project axioms)
+--     (r3ConvectionGapOp_exists REMOVED — issue #56 — proved as r3ConvectionGapOp_holds)
 --     (spatial_compactness_R3 REMOVED — issue #2 — now a theorem via the FK chain)
 --     (r3GalerkinScheme_exists REMOVED — issue #21 — now a theorem, SWAPPED for the
 --      thinner curlSchwartzDense_holds density axiom)

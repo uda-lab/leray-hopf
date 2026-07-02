@@ -1,5 +1,7 @@
 import LerayHopf.TorusConvectionExtension
 import LerayHopf.TorusGalerkinODESolve
+import LerayHopf.TorusTraceEnergy
+import LerayHopf.TorusViscousLimit
 
 /-!
 # LerayHopf.TorusGalerkinODECapstone — discharge `galerkin_ode_solution` (issue #24)
@@ -14,22 +16,27 @@ Mirrors the ℝ³ template `LerayHopf/R3/GalerkinODECapstone.lean` (issue #10).
 
 ## Why this file exists (DAG position)
 
-`AxiomaticClosure.lean` (where the axiom is declared and `build_galerkin_package_of_galSeq` lives)
-is UPSTREAM of the torus solver chain (`TorusGalerkinScheme` → `TorusGalerkinODESolve` both import
-`AxiomaticClosure`).  The capstone needs to see BOTH `torus3_NSForms_exists`
-(`TorusConvectionForm`) AND the proved solver `galerkinSolutionData_torus`
-(`TorusGalerkinODESolve`), so it lands here, downstream of both — the shallowest acyclic point.
+`AxiomaticClosure.lean` (where the `aubin_lions` axiom is declared) is UPSTREAM of the torus solver
+chain (`TorusGalerkinScheme` → `TorusGalerkinODESolve` both import `AxiomaticClosure`).  The
+capstone needs to see BOTH `torus3_NSForms_exists` (`TorusConvectionForm`) AND the proved solver
+`galerkinSolutionData_torus` (`TorusGalerkinODESolve`), so it lands here, downstream of both —
+the shallowest acyclic point.  `build_galerkin_package_of_galSeq` also lives here (relocated from
+`AxiomaticClosure.lean`) so it can call the proved limit-passage theorems in `TorusTraceEnergy` and
+`TorusViscousLimit` without creating an import cycle.
 
 ## The axiom-set delta
 
 Routing the capstone through `galSeq_of_torus` (axiom-free, the proved solver) instead of the
 `galerkin_ode_solution` axiom drops EXACTLY that axiom from `exists_lerayHopf_torus3_axiomatic`'s
-`#print axioms`.  After issue #53 / PR #62 also proved `torusConvectionGap_exists`, the capstone
-rests on the two remaining torus project axioms: `aubin_lions`, `galerkin_limit_passage`.
+`#print axioms`.  After issue #53 / PR #62 proved `torusConvectionGap_exists`, and after this file replaces
+the former `galerkin_limit_passage` axiom with the proved theorems
+`torus_galerkin_limit_passage_of_energyClass` + `torus_energyClass_of_aubinLions`, the capstone
+rests on ONE remaining torus project axiom: `aubin_lions`.
 
 ## Declarations added
 
 - `galSeq_of_torus`                  — the proved, axiom-free per-`n` Galerkin sequence
+- `build_galerkin_package_of_galSeq` — core assembly A2 → proved limit passage (relocated from `AxiomaticClosure.lean`)
 - `build_galerkin_package_of_torus`  — full package via the axiom-free builder
 - `exists_lerayHopf_torus3_axiomatic` — main existence theorem (relocated from `TorusConvectionForm`)
 -/
@@ -47,10 +54,50 @@ noncomputable def galSeq_of_torus (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) 
     ∀ n, GalerkinSolutionData F ν u₀ n :=
   fun n => Torus.galerkinSolutionData_torus F ν hν u₀ n
 
+/-- **Assembly (axiom-free core, relocated from `AxiomaticClosure.lean`).**
+Build a `GalerkinCompactnessPackageFull` from an EXPLICIT Galerkin sequence `galSeq`,
+chaining A2 (with `rellich_L2Sigma`) → the proved limit passage.
+
+This is the body of `build_galerkin_package` factored from Step 2 onward (issue #24): it takes
+`galSeq` as a parameter instead of producing it via the `galerkin_ode_solution` axiom, so it
+carries NO dependency on A1.  Relocated here from `AxiomaticClosure.lean` so that it can call
+the proved theorems `torus_galerkin_limit_passage_of_energyClass` and
+`torus_energyClass_of_aubinLions` (which are downstream of `AxiomaticClosure`; keeping this def
+there would create an import cycle).
+
+The steps are:
+1. Apply `aubin_lions` (A2) with `spatial := rellich_L2Sigma` to get the Aubin–Lions package.
+2. Apply `torus_galerkin_limit_passage_of_energyClass` (proved) with the energy-class hypothesis
+   supplied by `torus_energyClass_of_aubinLions` (proved), to get the weak equation + energy
+   inequality + initial trace.  This replaces the former `galerkin_limit_passage` axiom (A3).
+3. Pack into `GalerkinCompactnessPackageFull`. -/
+noncomputable def build_galerkin_package_of_galSeq (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
+    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) :
+    GalerkinCompactnessPackageFull F ν T u₀ := by
+  -- Step 1 (A2): Aubin–Lions, with the spatial half discharged by `rellich_L2Sigma`.
+  have alPkg : AubinLionsPackage F ν T u₀ galSeq :=
+    aubin_lions F ν hν T hT u₀ galSeq rellich_L2Sigma
+  -- Step 2 (proved): limit passage via `torus_galerkin_limit_passage_of_energyClass`,
+  -- with the energy-class hypothesis supplied by `torus_energyClass_of_aubinLions`.
+  -- The goal is a `Type` (a structure), so the existential is unpacked with `Exists.choose`
+  -- rather than `obtain` (which only eliminates into `Prop`).  The a.e.-link conjunct
+  -- (`hspec.1`) is intentionally discarded.
+  have hex := torus_galerkin_limit_passage_of_energyClass F ν hν T hT u₀ galSeq alPkg
+                (torus_energyClass_of_aubinLions F ν hν T hT u₀ galSeq alPkg)
+  have hspec := hex.choose_spec
+  -- Step 3: pack into the proof-carrying structure.
+  exact
+    { limit := hex.choose
+      weak_eq_limit := hspec.2.1
+      energy_ineq_limit := hspec.2.2.1
+      initial_trace_limit := hspec.2.2.2.1
+      energy_class_limit := hspec.2.2.2.2 }
+
 /-- **Full Galerkin compactness package (issue #24).**  Assembles the proof-carrying
 `GalerkinCompactnessPackageFull` by feeding the axiom-free `galSeq_of_torus` into the axiom-free
-core builder `build_galerkin_package_of_galSeq` (A2 → A3).  Carries NO dependency on
-`galerkin_ode_solution`. -/
+core builder `build_galerkin_package_of_galSeq` (A2 → proved limit passage).  Carries NO
+dependency on `galerkin_ode_solution` or `galerkin_limit_passage`. -/
 noncomputable def build_galerkin_package_of_torus (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma) :
     GalerkinCompactnessPackageFull F ν T u₀ :=
@@ -67,10 +114,10 @@ from the axiom-free `galerkinSolutionData_torus` (over the finite-dim `velocityS
 `galerkin_ode_solution`.  The theorem name and statement are **byte-identical** to the original
 (only the package builder swapped: `build_galerkin_package` → `build_galerkin_package_of_torus`).
 
-The `_axiomatic` suffix advertises dependence on the TWO remaining torus project axioms
-(`aubin_lions`, `galerkin_limit_passage`).  `galerkin_ode_solution` and
-`torusConvectionGap_exists` are NO LONGER among them — discharged in issues #24 and #53; see
-`LerayHopf/Core.lean` for the axiom-free layer. -/
+The `_axiomatic` suffix advertises dependence on the ONE remaining torus project axiom
+(`aubin_lions`).  `galerkin_ode_solution`, `torusConvectionGap_exists`, and
+`galerkin_limit_passage` are NO LONGER among them — discharged in issues #24, #53, and this
+file respectively; see `LerayHopf/Core.lean` for the axiom-free layer. -/
 theorem exists_lerayHopf_torus3_axiomatic (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ F : Torus3NSForms, Nonempty (LerayHopfSolutionFull F ν T u₀) := by
