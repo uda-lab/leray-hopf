@@ -652,4 +652,167 @@ private theorem exists_ae_strong_subseq (F : Torus3NSForms) (ν : ℝ) (T : ℝ)
   obtain ⟨ns, hns, hae⟩ := hmeas.exists_seq_tendsto_ae
   exact ⟨ns, hns, hae⟩
 
+/-! ### Steps 3–4: the weakly-continuous good representative -/
+
+/-- **Master construction: the weakly-continuous representative** of the Aubin–Lions limit.
+
+Produces a curve `v : Time → L2Sigma` and a sub-subsequence `ρ` (of the Aubin–Lions
+subsequence `φ`) such that, writing `cₖ := galSeq (φ (ρ k))`:
+
+- (i)   `v = alPkg.u` a.e. on `[0, T]`,
+- (ii)  `cₖ(t) → alPkg.u(t)` strongly in `L2VF` at a.e. `t ∈ [0, T]`,
+- (iii) `⟪cₖ(t), z⟫ → ⟪v(t), z⟫` for **every** `t ∈ [0, T]` and every `z : L2VF`,
+- (iv)  `‖v(t)‖ ≤ ‖u₀‖` for every `t ∈ [0, T]`,
+- (v)   `v 0 = u₀` (endpoint pinning via `u_initial` + `velocityProjection_n_tendsto`),
+- (vi)  `t ↦ ⟪v(t), w⟫` is Lipschitz on `[0, T]` for every Galerkin test `w`.
+
+Construction: a.e.-strong subsequence (step 2) → per-test everywhere-Cauchy via
+equi-Lipschitz + density (steps 1, 3) → extension to all `z` by `L2Sigmaᗮ`-orthogonality
+and Galerkin-test density → Riesz assembly inside the closed submodule `L2Sigma` (step 4). -/
+private theorem exists_weak_representative (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
+    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq) :
+    ∃ (v : Time → L2Sigma) (ρ : ℕ → ℕ), StrictMono ρ ∧
+      (∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), v t = alPkg.u t) ∧
+      (∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
+        Tendsto (fun k => ((galSeq (alPkg.φ (ρ k))).u t : L2VF)) atTop
+          (𝓝 (alPkg.u t : L2VF))) ∧
+      (∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
+        Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z) atTop
+          (𝓝 (inner (𝕜 := ℝ) ((v t : L2VF)) z))) ∧
+      (∀ t, t ∈ Set.Icc (0 : ℝ) T → ‖(v t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖) ∧
+      v 0 = u₀ ∧
+      (∀ w : L2Sigma, IsGalerkinTest w → ∃ L : ℝ, 0 ≤ L ∧
+        ∀ s ∈ Set.Icc (0 : ℝ) T, ∀ t ∈ Set.Icc (0 : ℝ) T,
+          |inner (𝕜 := ℝ) ((v t : L2VF)) (w : L2VF)
+            - inner (𝕜 := ℝ) ((v s : L2VF)) (w : L2VF)| ≤ L * |t - s|) := by
+  classical
+  obtain ⟨ρ, hρ, hae_strong⟩ := exists_ae_strong_subseq F ν T hT u₀ galSeq alPkg
+  set c : ℕ → ℝ → L2VF := fun k t => ((galSeq (alPkg.φ (ρ k))).u t : L2VF) with hcdef
+  -- index growth: the Galerkin level of the k-th curve is ≥ k
+  have hlevel : ∀ k, k ≤ alPkg.φ (ρ k) := fun k =>
+    le_trans hρ.le_apply alPkg.φ_mono.le_apply
+  -- uniform H-bound
+  have hbd : ∀ k, ∀ t ∈ Set.Icc (0 : ℝ) T, ‖c k t‖ ≤ ‖(u₀ : L2VF)‖ := fun k t ht =>
+    torus_galerkin_norm_le_u0 F ν u₀ _ _ t ht.1
+  -- the a.e.-good (strong convergence) set
+  set S : Set ℝ := {t | Tendsto (fun k => c k t) atTop (𝓝 (alPkg.u t : L2VF))} with hSdef
+  have hS : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), t ∈ S := hae_strong
+  -- per-Galerkin-test Cauchy at EVERY t ∈ [0, T]
+  have hCauchy_test : ∀ (w : L2Sigma), IsGalerkinTest w → ∀ t, t ∈ Set.Icc (0 : ℝ) T →
+      CauchySeq (fun k => inner (𝕜 := ℝ) (c k t) (w : L2VF)) := by
+    intro w hw t ht
+    obtain ⟨n₀, hn₀⟩ := hw
+    obtain ⟨L, hL0, hLip⟩ := perTest_lipschitz F ν hν u₀ galSeq w n₀ hn₀
+    refine cauchySeq_of_equiLipschitz_of_dense (T := T)
+      (fun k s => inner (𝕜 := ℝ) (c k s) (w : L2VF)) L hL0 n₀ ?_ S ?_ ?_ ht
+    · intro k hk s hsI t' htI'
+      exact hLip (alPkg.φ (ρ k)) (le_trans hk (hlevel k))
+        s (Set.Icc_subset_Ici_self hsI) t' (Set.Icc_subset_Ici_self htI')
+    · intro u hu ε hε
+      exact exists_mem_of_ae_full hT S hS hu hε
+    · intro s hs'
+      have hstrong : Tendsto (fun k => c k s) atTop (𝓝 (alPkg.u s : L2VF)) := hs'.1
+      exact (hstrong.inner tendsto_const_nhds).cauchySeq
+  -- Cauchy for EVERY direction z : L2VF (orthogonal split + Galerkin density)
+  have hCauchy_all : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
+      CauchySeq (fun k => inner (𝕜 := ℝ) (c k t) z) := by
+    intro t ht z
+    -- kill the `L2Sigmaᗮ` part: `⟪cₖ(t), z⟫ = ⟪cₖ(t), Pσ z⟫`
+    set zσ : L2VF := L2Sigma.starProjection z with hzσ
+    have hzσmem : zσ ∈ L2Sigma := L2Sigma.starProjection_apply_mem z
+    have hsplit : ∀ k, inner (𝕜 := ℝ) (c k t) z = inner (𝕜 := ℝ) (c k t) zσ := by
+      intro k
+      have horth : z - zσ ∈ L2Sigmaᗮ := L2Sigma.sub_starProjection_mem_orthogonal z
+      have h0 : inner (𝕜 := ℝ) (c k t) (z - zσ) = 0 :=
+        (Submodule.mem_orthogonal L2Sigma _).mp horth _ (SetLike.coe_mem _)
+      rw [inner_sub_right] at h0
+      linarith
+    rw [show (fun k => inner (𝕜 := ℝ) (c k t) z)
+        = fun k => inner (𝕜 := ℝ) (c k t) zσ from funext hsplit]
+    -- approximate `zσ ∈ L2Sigma` by band-limited tests `Pₘ zσ`
+    refine cauchySeq_inner_extend (fun k => c k t) ‖(u₀ : L2VF)‖ (fun k => hbd k t ht) zσ ?_
+    intro ε hε
+    obtain ⟨m, hm⟩ := Metric.tendsto_atTop.mp (velocityProjection_n_tendsto zσ) ε hε
+    have hdist := hm m (le_refl m)
+    rw [dist_eq_norm] at hdist
+    refine ⟨velocityProjection_n m zσ, by rwa [norm_sub_rev] at hdist, ?_⟩
+    have hmem : velocityProjection_n m zσ ∈ L2Sigma :=
+      velocityProjection_n_preserves_L2Sigma m zσ hzσmem
+    have hfix : velocityProjection_n m (velocityProjection_n m zσ)
+        = velocityProjection_n m zσ := velocityProjection_n_idem m zσ
+    exact hCauchy_test ⟨velocityProjection_n m zσ, hmem⟩ ⟨m, hfix⟩ t ht
+  -- Riesz assembly of the weak limit at every t ∈ [0, T], inside L2Sigma
+  have hex : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∃ y : L2VF, y ∈ L2Sigma ∧
+      ‖y‖ ≤ ‖(u₀ : L2VF)‖ ∧
+      ∀ z : L2VF, Tendsto (fun k => inner (𝕜 := ℝ) (c k t) z) atTop
+        (𝓝 (inner (𝕜 := ℝ) y z)) := fun t ht =>
+    exists_weak_limit_in_submodule L2Sigma (fun k => c k t)
+      (fun k => SetLike.coe_mem _) ‖(u₀ : L2VF)‖ (fun k => hbd k t ht) (hCauchy_all t ht)
+  choose! y hyK hybd hyconv using hex
+  set v : Time → L2Sigma := fun t =>
+    if ht : t ∈ Set.Icc (0 : ℝ) T then ⟨y t, hyK t ht⟩ else alPkg.u t with hvdef
+  have hvcoe : ∀ t, t ∈ Set.Icc (0 : ℝ) T → (v t : L2VF) = y t := by
+    intro t ht
+    simp only [hvdef]
+    rw [dif_pos ht]
+  -- conclusion (iii): everywhere weak convergence to v
+  have hweak : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
+      Tendsto (fun k => inner (𝕜 := ℝ) (c k t) z) atTop
+        (𝓝 (inner (𝕜 := ℝ) ((v t : L2VF)) z)) := by
+    intro t ht z
+    rw [hvcoe t ht]
+    exact hyconv t ht z
+  -- conclusion (i): a.e. agreement with the Aubin–Lions limit
+  have hae : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), v t = alPkg.u t := by
+    filter_upwards [hae_strong, ae_restrict_mem measurableSet_Icc] with t htS htIcc
+    refine Subtype.ext ?_
+    refine ext_inner_right ℝ fun z => ?_
+    have h1 : Tendsto (fun k => inner (𝕜 := ℝ) (c k t) z) atTop
+        (𝓝 (inner (𝕜 := ℝ) ((v t : L2VF)) z)) := hweak t htIcc z
+    have h2 : Tendsto (fun k => inner (𝕜 := ℝ) (c k t) z) atTop
+        (𝓝 (inner (𝕜 := ℝ) ((alPkg.u t : L2VF)) z)) :=
+      htS.inner tendsto_const_nhds
+    exact tendsto_nhds_unique h1 h2
+  -- conclusion (v): endpoint pinning `v 0 = u₀`
+  have h0Icc : (0 : ℝ) ∈ Set.Icc (0 : ℝ) T := ⟨le_refl 0, hT.le⟩
+  have hv0 : v 0 = u₀ := by
+    have hck0 : ∀ k, c k 0 = velocityProjection_n (alPkg.φ (ρ k)) (u₀ : L2VF) := by
+      intro k
+      show ((galSeq (alPkg.φ (ρ k))).u 0 : L2VF) = _
+      rw [(galSeq (alPkg.φ (ρ k))).u_initial]
+    have hmono : StrictMono (fun k => alPkg.φ (ρ k)) := alPkg.φ_mono.comp hρ
+    have hP0 : Tendsto (fun k => c k 0) atTop (𝓝 (u₀ : L2VF)) := by
+      have h := (velocityProjection_n_tendsto (u₀ : L2VF)).comp hmono.tendsto_atTop
+      refine h.congr fun k => ?_
+      exact (hck0 k).symm
+    refine Subtype.ext ?_
+    refine ext_inner_right ℝ fun z => ?_
+    have h1 : Tendsto (fun k => inner (𝕜 := ℝ) (c k 0) z) atTop
+        (𝓝 (inner (𝕜 := ℝ) ((v 0 : L2VF)) z)) := hweak 0 h0Icc z
+    have h2 : Tendsto (fun k => inner (𝕜 := ℝ) (c k 0) z) atTop
+        (𝓝 (inner (𝕜 := ℝ) ((u₀ : L2VF)) z)) :=
+      hP0.inner tendsto_const_nhds
+    exact tendsto_nhds_unique h1 h2
+  -- conclusion (vi): per-Galerkin-test Lipschitz continuity of v
+  have hlip_v : ∀ w : L2Sigma, IsGalerkinTest w → ∃ L : ℝ, 0 ≤ L ∧
+      ∀ s ∈ Set.Icc (0 : ℝ) T, ∀ t ∈ Set.Icc (0 : ℝ) T,
+        |inner (𝕜 := ℝ) ((v t : L2VF)) (w : L2VF)
+          - inner (𝕜 := ℝ) ((v s : L2VF)) (w : L2VF)| ≤ L * |t - s| := by
+    intro w hw
+    obtain ⟨n₀, hn₀⟩ := hw
+    obtain ⟨L, hL0, hLip⟩ := perTest_lipschitz F ν hν u₀ galSeq w n₀ hn₀
+    refine ⟨L, hL0, fun s hsI t htI => ?_⟩
+    have h1 : Tendsto (fun k => inner (𝕜 := ℝ) (c k t) (w : L2VF)
+        - inner (𝕜 := ℝ) (c k s) (w : L2VF)) atTop
+        (𝓝 (inner (𝕜 := ℝ) ((v t : L2VF)) (w : L2VF)
+          - inner (𝕜 := ℝ) ((v s : L2VF)) (w : L2VF))) :=
+      (hweak t htI (w : L2VF)).sub (hweak s hsI (w : L2VF))
+    refine le_of_tendsto h1.abs ?_
+    refine Filter.eventually_atTop.mpr ⟨n₀, fun k hk => ?_⟩
+    exact hLip (alPkg.φ (ρ k)) (le_trans hk (hlevel k))
+      s (Set.Icc_subset_Ici_self hsI) t (Set.Icc_subset_Ici_self htI)
+  exact ⟨v, ρ, hρ, hae, hae_strong, hweak, fun t ht => (hvcoe t ht) ▸ hybd t ht, hv0, hlip_v⟩
+
 end LerayHopf
