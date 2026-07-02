@@ -168,7 +168,7 @@ private theorem galerkin_viscous_continuousOn (F : Torus3NSForms) (ν : ℝ) (u�
           (mFourierCoeff3 (L2VF_projComponentC j (gs.u s : L2VF)) k *
             starRingEnd ℂ (mFourierCoeff3 (L2VF_projComponentC j (gs.u s : L2VF)) k)).re := by
     intro s
-    rw [viscousFormSq_eq_mul, ← stokesTestPairing_diag,
+    rw [viscousFormSq_eq_mul, ← Torus.stokesTestPairing_diag,
       stokes_boxSum n (gs.u s : L2VF) (gs.u_inVn s).symm]
   simp only [hfin]
   refine continuousOn_const.mul ?_
@@ -220,7 +220,7 @@ theorem torus_galerkin_energy_identity (F : Torus3NSForms) (ν : ℝ) (u₀ : L2
     have hode := gs.u_ode s hs0 (gs.u s) (gs.u_inVn s)
     have hb := F.b_self_zero (gs.u s)
     have hdiag : stokesTestPairing (gs.u s : L2VF) (gs.u s : L2VF)
-        = viscousFormSq 1 (gs.u s : L2VF) := stokesTestPairing_diag _
+        = viscousFormSq 1 (gs.u s : L2VF) := Torus.stokesTestPairing_diag _
     have hval : (2 : ℝ) * inner (𝕜 := ℝ) (gs.u s : L2VF)
           (deriv (fun r => (gs.u r : L2VF)) s) * 2⁻¹
         = -(viscousFormSq ν (gs.u s : L2VF)) := by
