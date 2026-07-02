@@ -66,6 +66,12 @@ import LerayHopf.TorusGalerkinODECapstone
 -- T³ WeakFormNS limit passage (issue #25 conjunct 2: density-free, band-limited tests)
 import LerayHopf.TorusLimitPassage
 
+-- T³ trace + energy pillar (conjuncts 1+3: weakly-continuous representative, ∀t energy, strong trace)
+import LerayHopf.TorusTraceEnergy
+
+-- T³ galerkin_limit_passage removal: orthogonality calculus for velocityProjection_n (PR-1)
+import LerayHopf.TorusProjectionAdjoint
+
 -- R3 files not covered by Core (sorry-carrying or axiom-dependent)
 import LerayHopf.R3.GalerkinScheme
 import LerayHopf.R3.SchwartzDivFreeBasis
