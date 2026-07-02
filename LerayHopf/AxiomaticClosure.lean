@@ -322,16 +322,26 @@ structure AubinLionsPackage (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
   φ_mono : StrictMono φ
   /-- The limit curve. -/
   u : Time → L2Sigma
-  /-- **Strong `L²(0,T; L²_σ)` convergence** of the subsequence to the limit:
-  `∫₀ᵀ ‖uₙ(t) - u(t)‖²_{L²_σ} dt → 0` along the subsequence `φ`. This is the genuine
-  Aubin–Lions conclusion (NOT mere pointwise-in-time convergence) — it is exactly what
-  the nonlinear limit passage in `galerkin_limit_passage` consumes.
-  The convergence is stated against the PARAMETER `galSeq` (not an internal field),
-  enforcing chain faithfulness. -/
+  /-- **Strong `L²(0,T; L²_σ)` convergence** of the subsequence to the limit, in `eLpNorm`
+  form.  MIRRORS the ℝ³ fix (`AubinLionsPackage_R3.strong_convergence`): the earlier Bochner
+  `∫‖·‖²→0` form was "vacuous-shaped" (`integral_undef` collapses non-integrable integrands to
+  `0`), so it could not certify genuine L²-in-time convergence / `MemLp` of the limit.  The
+  `eLpNorm` form has no junk-`0` collapse and carries exactly the intended content; it
+  strengthens the field's *statement* (the axiom's type) WITHOUT adding any axiom. -/
   strong_convergence :
     Filter.Tendsto
-      (fun n => ∫ t in (0 : ℝ)..T, ‖((galSeq (φ n)).u t : L2VF) - (u t : L2VF)‖ ^ 2)
+      (fun n => MeasureTheory.eLpNorm
+        (fun t => ((galSeq (φ n)).u t : L2VF) - (u t : L2VF))
+        2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)))
       Filter.atTop (nhds 0)
+  /-- **AE strong measurability of the limit curve** `t ↦ (u t : L2VF)` on `[0,T]`.
+  Matches the ℝ³ sibling `AubinLionsPackage_R3.u_aestronglyMeasurable`; it is a standard,
+  true part of the Aubin–Lions conclusion (the limit of a bounded measurable sequence is
+  measurable) and is needed by the density-free WeakFormNS limit passage
+  (`TorusLimitPassage.lean`). -/
+  u_aestronglyMeasurable :
+    AEStronglyMeasurable (fun t => (u t : L2VF))
+      (MeasureTheory.volume.restrict (Set.Icc 0 T))
 
 /-! ### Axiom A2: Aubin–Lions (spatial half discharged by rellich_L2Sigma) -/
 
@@ -348,8 +358,8 @@ half is discharged by the proved `rellich_L2Sigma`, NOT axiomatized.
 
 **Precise remaining frontier (issue #23 audit, 2026-06-21).** The conclusion this axiom
 must produce is the `AubinLionsPackage.strong_convergence` field, i.e. strong
-`L²(0,T;L²_σ)` convergence of a subsequence:
-`∫₀ᵀ ‖(galSeq (φ n)).u t − u t‖²_{L²_σ} dt → 0`.  This is the classical Lions–Aubin
+`L²(0,T;L²_σ)` convergence of a subsequence via `eLpNorm`:
+`eLpNorm (fun t => uₙ t − u t) 2 (volume.restrict [0,T]) → 0`.  This is the classical Lions–Aubin
 time-compactness extraction and is NOT derivable from the currently-available lemmas:
 * the proved `rellich_L2Sigma` gives the SPATIAL embedding only (compactness in space,
   pointwise in time);
