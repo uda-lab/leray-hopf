@@ -19,7 +19,7 @@ assembles the full 5-conjunct existential and thereby completes the removal of t
    `TorusTraceEnergy`) from the Galerkin energy identity gives the a.e. H¹ regularity
    and integrated dissipation bound via monotone-convergence / lim-inf argument.
 
-**Axioms:** None.  The single `sorry` below is a scaffold placeholder.
+**Axioms:** None.  This file is sorry-free.
 
 NO import of `LerayHopf/Bochner/TimeSobolev*.lean`; no `W1pTime` witness is used.
 -/
