@@ -1100,7 +1100,12 @@ private theorem viscousEnn_lsc (ν : ℝ) (v : L2VF) (vk : ℕ → L2VF)
 /-- **Conjunct (1): `∀t` energy inequality for the good representative.**
 Kinetic term by squared-norm weak-lsc at every `t`; dissipation term by the a.e.
 spatial lsc of `viscousEnn` + Fatou in time; combined against the Galerkin energy
-identity via liminf superadditivity. -/
+identity via liminf superadditivity.
+
+The hypothesis `hInt` (integrable dissipation of `v` on `[0, T]`) keeps this statement
+honest — without it the real interval integral would junk-collapse to `0` in the
+non-integrable regime and the inequality would hold vacuously there (Codex P2 finding).
+The capstone discharges `hInt` from the energy-class conjunct (4) via a.e.-invariance. -/
 private theorem energy_ineq_of_representative (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
@@ -1112,7 +1117,9 @@ private theorem energy_ineq_of_representative (F : Torus3NSForms) (ν : ℝ) (h�
         (𝓝 (alPkg.u t : L2VF)))
     (hweak : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
       Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z) atTop
-        (𝓝 (inner (𝕜 := ℝ) ((v t : L2VF)) z))) :
+        (𝓝 (inner (𝕜 := ℝ) ((v t : L2VF)) z)))
+    (hInt : IntervalIntegrable (fun s => viscousFormSq ν (v s : L2VF))
+      MeasureTheory.volume 0 T) :
     ∀ t, 0 ≤ t → t ≤ T →
       (1 / 2 : ℝ) * ‖(v t : L2VF)‖ ^ 2 +
         ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF) ≤
@@ -1167,104 +1174,103 @@ private theorem energy_ineq_of_representative (F : Torus3NSForms) (ν : ℝ) (h�
         (Filter.Eventually.of_forall hbE)).isCoboundedUnder_ge
     have hliminfb0 : 0 ≤ Filter.liminf b atTop :=
       Filter.le_liminf_of_le hcobdd_b (Filter.Eventually.of_forall hb0)
-    by_cases hInt : IntervalIntegrable (fun s => viscousFormSq ν (v s : L2VF)) volume 0 t
-    case neg =>
-      rw [intervalIntegral.integral_undef hInt]
-      exact hliminfb0
-    case pos =>
-      have hfIntOn : MeasureTheory.IntegrableOn
-          (fun s => viscousFormSq ν (v s : L2VF)) (Set.Ioc 0 t) volume := hInt.1
-      -- real integral of the limit as a lintegral
-      have hreal : ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
-          = (∫⁻ s in Set.Ioc (0 : ℝ) t,
-              ENNReal.ofReal (viscousFormSq ν (v s : L2VF))).toReal := by
+    -- restrict the [0, T] integrability hypothesis to [0, t]
+    have hIntt : IntervalIntegrable (fun s => viscousFormSq ν (v s : L2VF)) volume 0 t :=
+      hInt.mono_set (Set.uIcc_subset_uIcc Set.left_mem_uIcc
+        (by rw [Set.uIcc_of_le hT.le]; exact Set.mem_Icc.mpr ⟨ht0, htT⟩))
+    have hfIntOn : MeasureTheory.IntegrableOn
+        (fun s => viscousFormSq ν (v s : L2VF)) (Set.Ioc 0 t) volume := hIntt.1
+    -- real integral of the limit as a lintegral
+    have hreal : ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
+        = (∫⁻ s in Set.Ioc (0 : ℝ) t,
+            ENNReal.ofReal (viscousFormSq ν (v s : L2VF))).toReal := by
+      rw [intervalIntegral.integral_of_le ht0]
+      exact integral_eq_lintegral_of_nonneg_ae
+        (Filter.Eventually.of_forall fun s => viscousFormSq_nonneg hν.le _)
+        hfIntOn.aestronglyMeasurable
+    -- transfer the a.e. facts to [0, t]
+    have hsub : Set.Ioc (0 : ℝ) t ⊆ Set.Icc (0 : ℝ) T := fun s hs =>
+      ⟨hs.1.le, hs.2.trans htT⟩
+    have hae' : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)), v s = alPkg.u s :=
+      ae_restrict_of_ae_restrict_of_subset hsub hae
+    have hstr' : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)),
+        Tendsto (fun k => c k s) atTop (𝓝 (alPkg.u s : L2VF)) :=
+      ae_restrict_of_ae_restrict_of_subset hsub hae_strong
+    -- a.e. pointwise lsc chain
+    have hae_lsc : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)),
+        ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+          ≤ Filter.liminf (fun k => ENNReal.ofReal (viscousFormSq ν (c k s))) atTop := by
+      filter_upwards [hae', hstr'] with s hveq hconv
+      have hpt : ∀ k, viscousEnn ν (c k s)
+          = ENNReal.ofReal (viscousFormSq ν (c k s)) := fun k =>
+        viscousEnn_eq_ofReal_of_bandlimited ν hν.le (alPkg.φ (ρ k)) (c k s)
+          ((galSeq (alPkg.φ (ρ k))).u_inVn s).symm
+      calc ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+          = ENNReal.ofReal (viscousFormSq ν (alPkg.u s : L2VF)) := by rw [hveq]
+        _ ≤ viscousEnn ν (alPkg.u s : L2VF) := ofReal_viscousFormSq_le ν hν.le _
+        _ ≤ Filter.liminf (fun k => viscousEnn ν (c k s)) atTop :=
+            viscousEnn_lsc ν _ _ hconv
+        _ = Filter.liminf (fun k => ENNReal.ofReal (viscousFormSq ν (c k s))) atTop := by
+            congr 1
+            funext k
+            exact hpt k
+    -- measurability of the approximant integrands
+    have hmeas_k : ∀ k, AEMeasurable
+        (fun s => ENNReal.ofReal (viscousFormSq ν (c k s)))
+        (volume.restrict (Set.Ioc (0 : ℝ) t)) := by
+      intro k
+      have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Ioc 0 t) :=
+        (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
+          fun s hs => hs.1.le
+      exact ENNReal.measurable_ofReal.comp_aemeasurable
+        (hcont.aemeasurable measurableSet_Ioc)
+    -- Fatou
+    have hFatou : ∫⁻ s in Set.Ioc (0 : ℝ) t,
+        ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+        ≤ Filter.liminf (fun k => ∫⁻ s in Set.Ioc (0 : ℝ) t,
+            ENNReal.ofReal (viscousFormSq ν (c k s))) atTop :=
+      le_trans (MeasureTheory.lintegral_mono_ae hae_lsc)
+        (MeasureTheory.lintegral_liminf_le' hmeas_k)
+    -- approximant lintegrals are ofReal of the real integrals
+    have hbk_eq : ∀ k, ∫⁻ s in Set.Ioc (0 : ℝ) t,
+        ENNReal.ofReal (viscousFormSq ν (c k s)) = ENNReal.ofReal (b k) := by
+      intro k
+      have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Icc 0 t) :=
+        (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
+          fun s hs => hs.1
+      have hint : MeasureTheory.IntegrableOn (fun s => viscousFormSq ν (c k s))
+          (Set.Ioc 0 t) volume := (hcont.intervalIntegrable_of_Icc ht0).1
+      have h1 : b k = (∫⁻ s in Set.Ioc (0 : ℝ) t,
+          ENNReal.ofReal (viscousFormSq ν (c k s))).toReal := by
+        rw [hbdef]
+        simp only
         rw [intervalIntegral.integral_of_le ht0]
         exact integral_eq_lintegral_of_nonneg_ae
           (Filter.Eventually.of_forall fun s => viscousFormSq_nonneg hν.le _)
-          hfIntOn.aestronglyMeasurable
-      -- transfer the a.e. facts to [0, t]
-      have hsub : Set.Ioc (0 : ℝ) t ⊆ Set.Icc (0 : ℝ) T := fun s hs =>
-        ⟨hs.1.le, hs.2.trans htT⟩
-      have hae' : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)), v s = alPkg.u s :=
-        ae_restrict_of_ae_restrict_of_subset hsub hae
-      have hstr' : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)),
-          Tendsto (fun k => c k s) atTop (𝓝 (alPkg.u s : L2VF)) :=
-        ae_restrict_of_ae_restrict_of_subset hsub hae_strong
-      -- a.e. pointwise lsc chain
-      have hae_lsc : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)),
-          ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
-            ≤ Filter.liminf (fun k => ENNReal.ofReal (viscousFormSq ν (c k s))) atTop := by
-        filter_upwards [hae', hstr'] with s hveq hconv
-        have hpt : ∀ k, viscousEnn ν (c k s)
-            = ENNReal.ofReal (viscousFormSq ν (c k s)) := fun k =>
-          viscousEnn_eq_ofReal_of_bandlimited ν hν.le (alPkg.φ (ρ k)) (c k s)
-            ((galSeq (alPkg.φ (ρ k))).u_inVn s).symm
-        calc ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
-            = ENNReal.ofReal (viscousFormSq ν (alPkg.u s : L2VF)) := by rw [hveq]
-          _ ≤ viscousEnn ν (alPkg.u s : L2VF) := ofReal_viscousFormSq_le ν hν.le _
-          _ ≤ Filter.liminf (fun k => viscousEnn ν (c k s)) atTop :=
-              viscousEnn_lsc ν _ _ hconv
-          _ = Filter.liminf (fun k => ENNReal.ofReal (viscousFormSq ν (c k s))) atTop := by
-              congr 1
-              funext k
-              exact hpt k
-      -- measurability of the approximant integrands
-      have hmeas_k : ∀ k, AEMeasurable
-          (fun s => ENNReal.ofReal (viscousFormSq ν (c k s)))
-          (volume.restrict (Set.Ioc (0 : ℝ) t)) := by
-        intro k
-        have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Ioc 0 t) :=
-          (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
-            fun s hs => hs.1.le
-        exact ENNReal.measurable_ofReal.comp_aemeasurable
-          (hcont.aemeasurable measurableSet_Ioc)
-      -- Fatou
-      have hFatou : ∫⁻ s in Set.Ioc (0 : ℝ) t,
-          ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
-          ≤ Filter.liminf (fun k => ∫⁻ s in Set.Ioc (0 : ℝ) t,
-              ENNReal.ofReal (viscousFormSq ν (c k s))) atTop :=
-        le_trans (MeasureTheory.lintegral_mono_ae hae_lsc)
-          (MeasureTheory.lintegral_liminf_le' hmeas_k)
-      -- approximant lintegrals are ofReal of the real integrals
-      have hbk_eq : ∀ k, ∫⁻ s in Set.Ioc (0 : ℝ) t,
-          ENNReal.ofReal (viscousFormSq ν (c k s)) = ENNReal.ofReal (b k) := by
-        intro k
-        have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Icc 0 t) :=
-          (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
-            fun s hs => hs.1
-        have hint : MeasureTheory.IntegrableOn (fun s => viscousFormSq ν (c k s))
-            (Set.Ioc 0 t) volume := (hcont.intervalIntegrable_of_Icc ht0).1
-        have h1 : b k = (∫⁻ s in Set.Ioc (0 : ℝ) t,
-            ENNReal.ofReal (viscousFormSq ν (c k s))).toReal := by
-          rw [hbdef]
-          simp only
-          rw [intervalIntegral.integral_of_le ht0]
-          exact integral_eq_lintegral_of_nonneg_ae
-            (Filter.Eventually.of_forall fun s => viscousFormSq_nonneg hν.le _)
-            hint.aestronglyMeasurable
-        have h2 : ∫⁻ s in Set.Ioc (0 : ℝ) t,
-            ENNReal.ofReal (viscousFormSq ν (c k s)) < ⊤ := hint.lintegral_lt_top
-        rw [h1, ENNReal.ofReal_toReal h2.ne]
-      -- ofReal commutes with the (bounded) real liminf
-      have hcomm : Filter.liminf (fun k => ENNReal.ofReal (b k)) atTop
-          = ENNReal.ofReal (Filter.liminf b atTop) := by
-        have hmono : Monotone ENNReal.ofReal := fun x y h => ENNReal.ofReal_le_ofReal h
-        exact (hmono.map_liminf_of_continuousAt b
-          ENNReal.continuous_ofReal.continuousAt hcobdd_b hbdd_below_b).symm
-      have hchain : ∫⁻ s in Set.Ioc (0 : ℝ) t,
-          ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
-          ≤ ENNReal.ofReal (Filter.liminf b atTop) := by
-        rw [← hcomm]
-        refine hFatou.trans (le_of_eq ?_)
-        congr 1
-        funext k
-        exact hbk_eq k
-      calc ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
-          = (∫⁻ s in Set.Ioc (0 : ℝ) t,
-              ENNReal.ofReal (viscousFormSq ν (v s : L2VF))).toReal := hreal
-        _ ≤ (ENNReal.ofReal (Filter.liminf b atTop)).toReal :=
-            ENNReal.toReal_mono ENNReal.ofReal_ne_top hchain
-        _ = Filter.liminf b atTop := ENNReal.toReal_ofReal hliminfb0
+          hint.aestronglyMeasurable
+      have h2 : ∫⁻ s in Set.Ioc (0 : ℝ) t,
+          ENNReal.ofReal (viscousFormSq ν (c k s)) < ⊤ := hint.lintegral_lt_top
+      rw [h1, ENNReal.ofReal_toReal h2.ne]
+    -- ofReal commutes with the (bounded) real liminf
+    have hcomm : Filter.liminf (fun k => ENNReal.ofReal (b k)) atTop
+        = ENNReal.ofReal (Filter.liminf b atTop) := by
+      have hmono : Monotone ENNReal.ofReal := fun x y h => ENNReal.ofReal_le_ofReal h
+      exact (hmono.map_liminf_of_continuousAt b
+        ENNReal.continuous_ofReal.continuousAt hcobdd_b hbdd_below_b).symm
+    have hchain : ∫⁻ s in Set.Ioc (0 : ℝ) t,
+        ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+        ≤ ENNReal.ofReal (Filter.liminf b atTop) := by
+      rw [← hcomm]
+      refine hFatou.trans (le_of_eq ?_)
+      congr 1
+      funext k
+      exact hbk_eq k
+    calc ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
+        = (∫⁻ s in Set.Ioc (0 : ℝ) t,
+            ENNReal.ofReal (viscousFormSq ν (v s : L2VF))).toReal := hreal
+      _ ≤ (ENNReal.ofReal (Filter.liminf b atTop)).toReal :=
+          ENNReal.toReal_mono ENNReal.ofReal_ne_top hchain
+      _ = Filter.liminf b atTop := ENNReal.toReal_ofReal hliminfb0
   -- ═══ combine: liminf superadditivity against the energy identity ═══
   have hbdd_above_a : Filter.IsBoundedUnder (· ≤ ·) atTop a :=
     Filter.isBoundedUnder_of_eventually_le (a := E) (Filter.Eventually.of_forall haE)
@@ -1336,7 +1342,16 @@ theorem torus_galerkin_limit_passage_of_energyClass
     exists_weak_representative F ν hν T hT u₀ galSeq alPkg
   have haeIcc : ∀ᵐ t ∂(volume : Measure ℝ), t ∈ Set.Icc (0 : ℝ) T → v t = alPkg.u t :=
     (ae_restrict_iff' measurableSet_Icc).mp hae
-  refine ⟨v, hae, ?_, ?_, ?_, ?_, ?_⟩
+  -- integrable dissipation for the representative, transferred from h4 (a.e.-invariance)
+  have hIntv : IntervalIntegrable (fun s => viscousFormSq ν (v s : L2VF))
+      MeasureTheory.volume 0 T := by
+    refine h4.2.congr_ae ?_
+    have h1 : ∀ᵐ s ∂(volume.restrict (Set.uIoc (0 : ℝ) T)), v s = alPkg.u s := by
+      rw [Set.uIoc_of_le hT.le]
+      exact ae_restrict_of_ae_restrict_of_subset Set.Ioc_subset_Icc_self hae
+    filter_upwards [h1] with s hs
+    rw [hs]
+  refine ⟨v, hae, ?_, ?_, ?_, ?_, hIntv⟩
   · -- conjunct (2): WeakFormNS transfer through the a.e.-equality
     have hW : WeakFormNS ν T (torus3Evolution F) alPkg.u :=
       torus_weakFormNS_of_strongConvergence F ν hν T hT u₀ galSeq alPkg
@@ -1350,19 +1365,12 @@ theorem torus_galerkin_limit_passage_of_energyClass
     rw [hx hxIcc]
   · -- conjunct (1): ∀t energy inequality
     exact energy_ineq_of_representative F ν hν T hT u₀ galSeq alPkg v ρ
-      hae hae_strong hweak
+      hae hae_strong hweak hIntv
   · -- conjunct (3): strong initial trace
     exact strong_trace_of_props T hT u₀ v hbd hv0 hlip
   · -- conjunct (4a): a.e. memH1VF, transferred
     filter_upwards [h4.1, hae] with t hmem hveq
     rw [hveq]
     exact hmem
-  · -- conjunct (4b): integrable dissipation, transferred
-    refine h4.2.congr_ae ?_
-    have h1 : ∀ᵐ s ∂(volume.restrict (Set.uIoc (0 : ℝ) T)), v s = alPkg.u s := by
-      rw [Set.uIoc_of_le hT.le]
-      exact ae_restrict_of_ae_restrict_of_subset Set.Ioc_subset_Icc_self hae
-    filter_upwards [h1] with s hs
-    rw [hs]
 
 end LerayHopf
