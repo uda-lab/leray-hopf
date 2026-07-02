@@ -978,14 +978,14 @@ private theorem strong_trace_of_props (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
 
 /-- The **honest ENNReal viscous sum** (no real-tsum junk-`0` collapse off `H¹`):
 `∑'_{(j,k)} ofReal (ν · (2π)² |k|² ‖ûⱼ(k)‖²)` over the product index. -/
-private noncomputable def viscousEnn (ν : ℝ) (u : L2VF) : ℝ≥0∞ :=
+noncomputable def viscousEnn (ν : ℝ) (u : L2VF) : ℝ≥0∞ :=
   ∑' p : Fin 3 × (Fin 3 → ℤ),
     ENNReal.ofReal (ν * ((2 * Real.pi) ^ 2 * (∑ i : Fin 3, (p.2 i : ℝ) ^ 2) *
       ‖mFourierCoeff3 (L2VF_projComponentC p.1 u) p.2‖ ^ 2))
 
 /-- The real viscous form is dominated by the honest ENNReal sum (equality on the
 summable set; the junk-`0` collapse only helps the inequality). -/
-private theorem ofReal_viscousFormSq_le (ν : ℝ) (hν : 0 ≤ ν) (u : L2VF) :
+theorem ofReal_viscousFormSq_le (ν : ℝ) (hν : 0 ≤ ν) (u : L2VF) :
     ENNReal.ofReal (viscousFormSq ν u) ≤ viscousEnn ν u := by
   classical
   set g : Fin 3 → (Fin 3 → ℤ) → ℝ := fun j k =>
@@ -1013,7 +1013,7 @@ private theorem ofReal_viscousFormSq_le (ν : ℝ) (hν : 0 ≤ ν) (u : L2VF) :
 
 /-- For a band-limited field the honest ENNReal sum EQUALS `ofReal` of the real viscous
 form: both collapse to the same finite `fourierBox` sum. -/
-private theorem viscousEnn_eq_ofReal_of_bandlimited (ν : ℝ) (hν : 0 ≤ ν) (n : ℕ) (u : L2VF)
+theorem viscousEnn_eq_ofReal_of_bandlimited (ν : ℝ) (hν : 0 ≤ ν) (n : ℕ) (u : L2VF)
     (hu : velocityProjection_n n u = u) :
     viscousEnn ν u = ENNReal.ofReal (viscousFormSq ν u) := by
   classical
@@ -1059,7 +1059,7 @@ private theorem viscousEnn_eq_ofReal_of_bandlimited (ν : ℝ) (hν : 0 ≤ ν) 
 
 /-- **Spatial lower semicontinuity of the honest viscous sum** under strong `L2VF`
 convergence: per-coefficient continuity + finite-subsum exhaustion (`tsum = ⨆ Finset`). -/
-private theorem viscousEnn_lsc (ν : ℝ) (v : L2VF) (vk : ℕ → L2VF)
+theorem viscousEnn_lsc (ν : ℝ) (v : L2VF) (vk : ℕ → L2VF)
     (hconv : Tendsto vk atTop (𝓝 v)) :
     viscousEnn ν v ≤ Filter.liminf (fun k => viscousEnn ν (vk k)) atTop := by
   classical
