@@ -815,4 +815,162 @@ private theorem exists_weak_representative (F : Torus3NSForms) (ν : ℝ) (hν :
       s (Set.Icc_subset_Ici_self hsI) t (Set.Icc_subset_Ici_self htI)
   exact ⟨v, ρ, hρ, hae, hae_strong, hweak, fun t ht => (hvcoe t ht) ▸ hybd t ht, hv0, hlip_v⟩
 
+/-! ### Conjunct (3): strong initial trace -/
+
+/-- **Weak initial trace against `u₀`:** `⟪v(t), u₀⟫ → ⟪u₀, u₀⟫` as `t → 0⁺`, from the
+per-Galerkin-test Lipschitz continuity, the endpoint value `v 0 = u₀`, band-limited
+approximation of `u₀`, and the uniform `H`-bound (ε/3 argument). -/
+private theorem weak_trace_inner (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma) (v : Time → L2Sigma)
+    (hbd : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ‖(v t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖)
+    (hv0 : v 0 = u₀)
+    (hlip : ∀ w : L2Sigma, IsGalerkinTest w → ∃ L : ℝ, 0 ≤ L ∧
+      ∀ s ∈ Set.Icc (0 : ℝ) T, ∀ t ∈ Set.Icc (0 : ℝ) T,
+        |inner (𝕜 := ℝ) ((v t : L2VF)) (w : L2VF)
+          - inner (𝕜 := ℝ) ((v s : L2VF)) (w : L2VF)| ≤ L * |t - s|) :
+    Tendsto (fun t => inner (𝕜 := ℝ) ((v t : L2VF)) (u₀ : L2VF))
+      (nhdsWithin 0 (Set.Ici 0))
+      (𝓝 (inner (𝕜 := ℝ) ((u₀ : L2VF)) (u₀ : L2VF))) := by
+  rw [Metric.tendsto_nhdsWithin_nhds]
+  intro ε hε
+  set M : ℝ := ‖(u₀ : L2VF)‖ with hMdef
+  have hM0 : 0 ≤ M := norm_nonneg _
+  -- band-limited approximation of u₀
+  obtain ⟨m, hm⟩ := Metric.tendsto_atTop.mp (velocityProjection_n_tendsto (u₀ : L2VF))
+    (ε / (4 * (M + 1))) (by positivity)
+  have hdist := hm m (le_refl m)
+  rw [dist_eq_norm] at hdist
+  have hmem : velocityProjection_n m (u₀ : L2VF) ∈ L2Sigma :=
+    velocityProjection_n_preserves_L2Sigma m _ (SetLike.coe_mem u₀)
+  set w : L2Sigma := ⟨velocityProjection_n m (u₀ : L2VF), hmem⟩ with hwdef
+  have hwtest : IsGalerkinTest w := ⟨m, velocityProjection_n_idem m _⟩
+  obtain ⟨L, hL0, hLipw⟩ := hlip w hwtest
+  refine ⟨min (ε / (4 * (L + 1))) T, lt_min (by positivity) hT, ?_⟩
+  intro x hx hxd
+  have hx0 : (0 : ℝ) ≤ x := hx
+  have hxval : dist x 0 = x := by rw [Real.dist_eq, sub_zero, abs_of_nonneg hx0]
+  have hxlt : x < ε / (4 * (L + 1)) := by
+    rw [hxval] at hxd
+    exact lt_of_lt_of_le hxd (min_le_left _ _)
+  have hxT : x ∈ Set.Icc (0 : ℝ) T := by
+    refine ⟨hx0, ?_⟩
+    have := lt_of_lt_of_le (hxval ▸ hxd) (min_le_right (ε / (4 * (L + 1))) T)
+    exact this.le
+  have h0Icc : (0 : ℝ) ∈ Set.Icc (0 : ℝ) T := ⟨le_refl 0, hT.le⟩
+  -- approximation bounds
+  have hwnorm : ‖(u₀ : L2VF) - (w : L2VF)‖ < ε / (4 * (M + 1)) := by
+    rw [hwdef]
+    rw [norm_sub_rev] at hdist
+    exact hdist
+  have hquarter : ∀ t', t' ∈ Set.Icc (0 : ℝ) T →
+      |inner (𝕜 := ℝ) ((v t' : L2VF)) ((u₀ : L2VF) - (w : L2VF))| ≤ ε / 4 := by
+    intro t' ht'
+    have h1 : |inner (𝕜 := ℝ) ((v t' : L2VF)) ((u₀ : L2VF) - (w : L2VF))|
+        ≤ M * ‖(u₀ : L2VF) - (w : L2VF)‖ :=
+      (abs_real_inner_le_norm _ _).trans
+        (mul_le_mul_of_nonneg_right (hbd t' ht') (norm_nonneg _))
+    have h2 : M * ‖(u₀ : L2VF) - (w : L2VF)‖ ≤ M * (ε / (4 * (M + 1))) :=
+      mul_le_mul_of_nonneg_left hwnorm.le hM0
+    have h3 : M * (ε / (4 * (M + 1))) ≤ ε / 4 := by
+      have heq : M * (ε / (4 * (M + 1))) = (M / (M + 1)) * (ε / 4) := by
+        field_simp
+      have hle1 : M / (M + 1) ≤ 1 := by
+        rw [div_le_one (by linarith : (0 : ℝ) < M + 1)]
+        linarith
+      calc M * (ε / (4 * (M + 1))) = (M / (M + 1)) * (ε / 4) := heq
+        _ ≤ 1 * (ε / 4) := mul_le_mul_of_nonneg_right hle1 (by positivity)
+        _ = ε / 4 := one_mul _
+    linarith
+  -- Lipschitz bound at the test w
+  have hLbound : |inner (𝕜 := ℝ) ((v x : L2VF)) (w : L2VF)
+      - inner (𝕜 := ℝ) ((v 0 : L2VF)) (w : L2VF)| ≤ ε / 4 := by
+    have h1 := hLipw 0 h0Icc x hxT
+    rw [sub_zero, abs_of_nonneg hx0] at h1
+    have h2 : L * x ≤ L * (ε / (4 * (L + 1))) := mul_le_mul_of_nonneg_left hxlt.le hL0
+    have h3 : L * (ε / (4 * (L + 1))) ≤ ε / 4 := by
+      have heq : L * (ε / (4 * (L + 1))) = (L / (L + 1)) * (ε / 4) := by
+        field_simp
+      have hle1 : L / (L + 1) ≤ 1 := by
+        rw [div_le_one (by linarith : (0 : ℝ) < L + 1)]
+        linarith
+      calc L * (ε / (4 * (L + 1))) = (L / (L + 1)) * (ε / 4) := heq
+        _ ≤ 1 * (ε / 4) := mul_le_mul_of_nonneg_right hle1 (by positivity)
+        _ = ε / 4 := one_mul _
+    linarith
+  -- decomposition and assembly
+  have hkey : inner (𝕜 := ℝ) ((v x : L2VF)) (u₀ : L2VF)
+      - inner (𝕜 := ℝ) ((u₀ : L2VF)) (u₀ : L2VF)
+      = inner (𝕜 := ℝ) ((v x : L2VF)) ((u₀ : L2VF) - (w : L2VF))
+        + (inner (𝕜 := ℝ) ((v x : L2VF)) (w : L2VF)
+          - inner (𝕜 := ℝ) ((v 0 : L2VF)) (w : L2VF))
+        - inner (𝕜 := ℝ) ((v 0 : L2VF)) ((u₀ : L2VF) - (w : L2VF)) := by
+    rw [hv0, inner_sub_right, inner_sub_right]
+    ring
+  rw [Real.dist_eq, hkey, hv0]
+  have hq1 := hquarter x hxT
+  have hq2 := hquarter 0 h0Icc
+  rw [hv0] at hLbound hq2
+  calc |inner (𝕜 := ℝ) ((v x : L2VF)) ((u₀ : L2VF) - (w : L2VF))
+        + (inner (𝕜 := ℝ) ((v x : L2VF)) (w : L2VF)
+          - inner (𝕜 := ℝ) ((u₀ : L2VF)) (w : L2VF))
+        - inner (𝕜 := ℝ) ((u₀ : L2VF)) ((u₀ : L2VF) - (w : L2VF))|
+      ≤ |inner (𝕜 := ℝ) ((v x : L2VF)) ((u₀ : L2VF) - (w : L2VF))
+        + (inner (𝕜 := ℝ) ((v x : L2VF)) (w : L2VF)
+          - inner (𝕜 := ℝ) ((u₀ : L2VF)) (w : L2VF))|
+        + |inner (𝕜 := ℝ) ((u₀ : L2VF)) ((u₀ : L2VF) - (w : L2VF))| := abs_sub _ _
+    _ ≤ |inner (𝕜 := ℝ) ((v x : L2VF)) ((u₀ : L2VF) - (w : L2VF))|
+        + |inner (𝕜 := ℝ) ((v x : L2VF)) (w : L2VF)
+          - inner (𝕜 := ℝ) ((u₀ : L2VF)) (w : L2VF)|
+        + |inner (𝕜 := ℝ) ((u₀ : L2VF)) ((u₀ : L2VF) - (w : L2VF))| := by
+        have := abs_add_le
+          (inner (𝕜 := ℝ) ((v x : L2VF)) ((u₀ : L2VF) - (w : L2VF)))
+          (inner (𝕜 := ℝ) ((v x : L2VF)) (w : L2VF)
+            - inner (𝕜 := ℝ) ((u₀ : L2VF)) (w : L2VF))
+        linarith
+    _ < ε := by linarith
+
+/-- **Conjunct (3): strong initial trace.**  The weakly-continuous representative attains
+`u₀` strongly at `0⁺`: weak trace (above) + the uniform bound `‖v(t)‖ ≤ ‖u₀‖` + the
+norm-expansion `‖v(t) − u₀‖² = ‖v(t)‖² − 2⟪v(t), u₀⟫ + ‖u₀‖² ≤ 2‖u₀‖² − 2⟪v(t), u₀⟫ → 0`. -/
+private theorem strong_trace_of_props (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
+    (v : Time → L2Sigma)
+    (hbd : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ‖(v t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖)
+    (hv0 : v 0 = u₀)
+    (hlip : ∀ w : L2Sigma, IsGalerkinTest w → ∃ L : ℝ, 0 ≤ L ∧
+      ∀ s ∈ Set.Icc (0 : ℝ) T, ∀ t ∈ Set.Icc (0 : ℝ) T,
+        |inner (𝕜 := ℝ) ((v t : L2VF)) (w : L2VF)
+          - inner (𝕜 := ℝ) ((v s : L2VF)) (w : L2VF)| ≤ L * |t - s|) :
+    Tendsto (fun t => (v t : L2VF)) (nhdsWithin 0 (Set.Ici 0)) (𝓝 (u₀ : L2VF)) := by
+  have hinner := weak_trace_inner T hT u₀ v hbd hv0 hlip
+  rw [Metric.tendsto_nhdsWithin_nhds] at hinner ⊢
+  intro ε hε
+  obtain ⟨δ₁, hδ₁, h₁⟩ := hinner (ε ^ 2 / 2) (by positivity)
+  refine ⟨min δ₁ T, lt_min hδ₁ hT, ?_⟩
+  intro x hx hxd
+  have hx0 : (0 : ℝ) ≤ x := hx
+  have hxδ₁ : dist x 0 < δ₁ := lt_of_lt_of_le hxd (min_le_left _ _)
+  have hxT : x ∈ Set.Icc (0 : ℝ) T := by
+    refine ⟨hx0, ?_⟩
+    have h := lt_of_lt_of_le hxd (min_le_right δ₁ T)
+    rw [Real.dist_eq, sub_zero, abs_of_nonneg hx0] at h
+    exact h.le
+  have hi := h₁ hx hxδ₁
+  rw [Real.dist_eq] at hi
+  have hself : inner (𝕜 := ℝ) ((u₀ : L2VF)) ((u₀ : L2VF)) = ‖(u₀ : L2VF)‖ ^ 2 :=
+    real_inner_self_eq_norm_sq _
+  have hlow : ‖(u₀ : L2VF)‖ ^ 2 - ε ^ 2 / 2
+      < inner (𝕜 := ℝ) ((v x : L2VF)) ((u₀ : L2VF)) := by
+    have habs := abs_lt.mp hi
+    rw [hself] at habs
+    linarith [habs.1]
+  have hnormsq : ‖(v x : L2VF) - (u₀ : L2VF)‖ ^ 2
+      = ‖(v x : L2VF)‖ ^ 2 - 2 * inner (𝕜 := ℝ) ((v x : L2VF)) ((u₀ : L2VF))
+        + ‖(u₀ : L2VF)‖ ^ 2 := norm_sub_sq_real _ _
+  have hbsq : ‖(v x : L2VF)‖ ^ 2 ≤ ‖(u₀ : L2VF)‖ ^ 2 :=
+    pow_le_pow_left₀ (norm_nonneg _) (hbd x hxT) 2
+  have hsq : ‖(v x : L2VF) - (u₀ : L2VF)‖ ^ 2 < ε ^ 2 := by
+    rw [hnormsq]
+    linarith
+  rw [dist_eq_norm]
+  nlinarith [norm_nonneg ((v x : L2VF) - (u₀ : L2VF))]
+
 end LerayHopf
