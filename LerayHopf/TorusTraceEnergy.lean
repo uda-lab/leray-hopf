@@ -59,6 +59,7 @@ No new axioms.
 
 import LerayHopf.TorusLimitPassage
 import Mathlib.MeasureTheory.Function.ConvergenceInMeasure
+import Mathlib.Topology.Algebra.Order.LiminfLimsup
 
 namespace LerayHopf
 
@@ -972,5 +973,330 @@ private theorem strong_trace_of_props (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
     linarith
   rw [dist_eq_norm]
   nlinarith [norm_nonneg ((v x : L2VF) - (u₀ : L2VF))]
+
+/-! ### Conjunct (1): viscous ENNReal machinery (junk-free lower semicontinuity) -/
+
+/-- The **honest ENNReal viscous sum** (no real-tsum junk-`0` collapse off `H¹`):
+`∑'_{(j,k)} ofReal (ν · (2π)² |k|² ‖ûⱼ(k)‖²)` over the product index. -/
+private noncomputable def viscousEnn (ν : ℝ) (u : L2VF) : ℝ≥0∞ :=
+  ∑' p : Fin 3 × (Fin 3 → ℤ),
+    ENNReal.ofReal (ν * ((2 * Real.pi) ^ 2 * (∑ i : Fin 3, (p.2 i : ℝ) ^ 2) *
+      ‖mFourierCoeff3 (L2VF_projComponentC p.1 u) p.2‖ ^ 2))
+
+/-- The real viscous form is dominated by the honest ENNReal sum (equality on the
+summable set; the junk-`0` collapse only helps the inequality). -/
+private theorem ofReal_viscousFormSq_le (ν : ℝ) (hν : 0 ≤ ν) (u : L2VF) :
+    ENNReal.ofReal (viscousFormSq ν u) ≤ viscousEnn ν u := by
+  classical
+  set g : Fin 3 → (Fin 3 → ℤ) → ℝ := fun j k =>
+    (2 * Real.pi) ^ 2 * (∑ i : Fin 3, (k i : ℝ) ^ 2) *
+      ‖mFourierCoeff3 (L2VF_projComponentC j u) k‖ ^ 2 with hgdef
+  have hg0 : ∀ j k, 0 ≤ g j k := fun j k => by positivity
+  have hEnn : viscousEnn ν u
+      = ∑ j : Fin 3, ∑' k : Fin 3 → ℤ, ENNReal.ofReal (ν * g j k) := by
+    unfold viscousEnn
+    rw [ENNReal.tsum_prod', tsum_fintype]
+  have hLHS : viscousFormSq ν u = ∑ j : Fin 3, ν * ∑' k : Fin 3 → ℤ, g j k := by
+    unfold viscousFormSq
+    rw [Finset.mul_sum]
+  rw [hLHS, hEnn]
+  have hsum0 : ∀ j ∈ (Finset.univ : Finset (Fin 3)), 0 ≤ ν * ∑' k, g j k := fun j _ =>
+    mul_nonneg hν (tsum_nonneg (hg0 j))
+  rw [ENNReal.ofReal_sum_of_nonneg hsum0]
+  refine Finset.sum_le_sum fun j _ => ?_
+  by_cases hs : Summable (g j)
+  · have hs' : Summable (fun k => ν * g j k) := hs.mul_left ν
+    have hmul : ν * ∑' k, g j k = ∑' k, ν * g j k := tsum_mul_left.symm
+    rw [hmul, ENNReal.ofReal_tsum_of_nonneg (fun k => mul_nonneg hν (hg0 j k)) hs']
+  · rw [tsum_eq_zero_of_not_summable hs, mul_zero, ENNReal.ofReal_zero]
+    exact zero_le'
+
+/-- For a band-limited field the honest ENNReal sum EQUALS `ofReal` of the real viscous
+form: both collapse to the same finite `fourierBox` sum. -/
+private theorem viscousEnn_eq_ofReal_of_bandlimited (ν : ℝ) (hν : 0 ≤ ν) (n : ℕ) (u : L2VF)
+    (hu : velocityProjection_n n u = u) :
+    viscousEnn ν u = ENNReal.ofReal (viscousFormSq ν u) := by
+  classical
+  set g : Fin 3 → (Fin 3 → ℤ) → ℝ := fun j k =>
+    (2 * Real.pi) ^ 2 * (∑ i : Fin 3, (k i : ℝ) ^ 2) *
+      ‖mFourierCoeff3 (L2VF_projComponentC j u) k‖ ^ 2 with hgdef
+  have hg0 : ∀ j k, 0 ≤ g j k := fun j k => by positivity
+  have hzero : ∀ (j : Fin 3) (k : Fin 3 → ℤ), k ∉ fourierBox n → g j k = 0 := by
+    intro j k hk
+    simp only [hgdef]
+    rw [coeff_zero_outside_box n u hu j k hk]
+    simp
+  -- LHS: product tsum collapses to the product finset
+  have hL : viscousEnn ν u
+      = ∑ p ∈ ((Finset.univ : Finset (Fin 3)) ×ˢ fourierBox n),
+          ENNReal.ofReal (ν * g p.1 p.2) := by
+    unfold viscousEnn
+    apply tsum_eq_sum
+    intro p hp
+    have hk : p.2 ∉ fourierBox n := by
+      intro hmem
+      exact hp (Finset.mem_product.mpr ⟨Finset.mem_univ _, hmem⟩)
+    have : g p.1 p.2 = 0 := hzero p.1 p.2 hk
+    simp only [hgdef] at this
+    rw [this, mul_zero, ENNReal.ofReal_zero]
+  -- RHS: per-j tsum collapses to the box sum
+  have hR : viscousFormSq ν u = ν * ∑ j : Fin 3, ∑ k ∈ fourierBox n, g j k := by
+    unfold viscousFormSq
+    congr 1
+    refine Finset.sum_congr rfl fun j _ => ?_
+    exact tsum_eq_sum fun k hk => hzero j k hk
+  rw [hL, hR]
+  -- distribute ν and ofReal through the finite sums
+  have hstep : ν * ∑ j : Fin 3, ∑ k ∈ fourierBox n, g j k
+      = ∑ j : Fin 3, ∑ k ∈ fourierBox n, ν * g j k := by
+    rw [Finset.mul_sum]
+    exact Finset.sum_congr rfl fun j _ => Finset.mul_sum _ _ _
+  rw [hstep, ENNReal.ofReal_sum_of_nonneg
+    (fun j _ => Finset.sum_nonneg fun k _ => mul_nonneg hν (hg0 j k))]
+  rw [Finset.sum_product]
+  exact Finset.sum_congr rfl fun j _ =>
+    (ENNReal.ofReal_sum_of_nonneg fun k _ => mul_nonneg hν (hg0 j k)).symm
+
+/-- **Spatial lower semicontinuity of the honest viscous sum** under strong `L2VF`
+convergence: per-coefficient continuity + finite-subsum exhaustion (`tsum = ⨆ Finset`). -/
+private theorem viscousEnn_lsc (ν : ℝ) (v : L2VF) (vk : ℕ → L2VF)
+    (hconv : Tendsto vk atTop (𝓝 v)) :
+    viscousEnn ν v ≤ Filter.liminf (fun k => viscousEnn ν (vk k)) atTop := by
+  classical
+  set G : Fin 3 × (Fin 3 → ℤ) → L2VF → ℝ≥0∞ := fun p x =>
+    ENNReal.ofReal (ν * ((2 * Real.pi) ^ 2 * (∑ i : Fin 3, (p.2 i : ℝ) ^ 2) *
+      ‖mFourierCoeff3 (L2VF_projComponentC p.1 x) p.2‖ ^ 2)) with hGdef
+  have hunfold : ∀ x : L2VF, viscousEnn ν x = ∑' p, G p x := fun x => rfl
+  rw [hunfold, ENNReal.tsum_eq_iSup_sum]
+  refine iSup_le fun s => ?_
+  -- each term is continuous in the field
+  have hGcont : ∀ p : Fin 3 × (Fin 3 → ℤ), Continuous (G p) := by
+    intro p
+    have h1 : Continuous (fun x : L2VF =>
+        mFourierCoeff3 (L2VF_projComponentC p.1 x) p.2) := by
+      have heq : (fun x : L2VF => mFourierCoeff3 (L2VF_projComponentC p.1 x) p.2)
+          = fun x => fourierCoeffCLM p.2 (L2VF_projComponentC p.1 x) := by
+        funext x
+        rw [fourierCoeffCLM_apply]
+      rw [heq]
+      exact (fourierCoeffCLM p.2).continuous.comp (L2VF_projComponentC p.1).continuous
+    have h2 : Continuous (fun x : L2VF =>
+        ν * ((2 * Real.pi) ^ 2 * (∑ i : Fin 3, (p.2 i : ℝ) ^ 2) *
+          ‖mFourierCoeff3 (L2VF_projComponentC p.1 x) p.2‖ ^ 2)) :=
+      continuous_const.mul (continuous_const.mul ((h1.norm).pow 2))
+    exact ENNReal.continuous_ofReal.comp h2
+  have hsum : Tendsto (fun k => ∑ p ∈ s, G p (vk k)) atTop (𝓝 (∑ p ∈ s, G p v)) :=
+    tendsto_finsetSum s fun p _ => ((hGcont p).tendsto v).comp hconv
+  have hle : ∀ k, ∑ p ∈ s, G p (vk k) ≤ viscousEnn ν (vk k) := fun k => by
+    rw [hunfold]
+    exact ENNReal.sum_le_tsum s
+  calc ∑ p ∈ s, G p v
+      = Filter.liminf (fun k => ∑ p ∈ s, G p (vk k)) atTop := hsum.liminf_eq.symm
+    _ ≤ Filter.liminf (fun k => viscousEnn ν (vk k)) atTop :=
+        Filter.liminf_le_liminf (Filter.Eventually.of_forall hle)
+
+/-! ### Conjunct (1): the pointwise-in-time energy inequality -/
+
+/-- **Conjunct (1): `∀t` energy inequality for the good representative.**
+Kinetic term by squared-norm weak-lsc at every `t`; dissipation term by the a.e.
+spatial lsc of `viscousEnn` + Fatou in time; combined against the Galerkin energy
+identity via liminf superadditivity. -/
+private theorem energy_ineq_of_representative (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
+    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq)
+    (v : Time → L2Sigma) (ρ : ℕ → ℕ)
+    (hae : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), v t = alPkg.u t)
+    (hae_strong : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
+      Tendsto (fun k => ((galSeq (alPkg.φ (ρ k))).u t : L2VF)) atTop
+        (𝓝 (alPkg.u t : L2VF)))
+    (hweak : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
+      Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z) atTop
+        (𝓝 (inner (𝕜 := ℝ) ((v t : L2VF)) z))) :
+    ∀ t, 0 ≤ t → t ≤ T →
+      (1 / 2 : ℝ) * ‖(v t : L2VF)‖ ^ 2 +
+        ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF) ≤
+      (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2 := by
+  intro t ht0 htT
+  have htIcc : t ∈ Set.Icc (0 : ℝ) T := ⟨ht0, htT⟩
+  set c : ℕ → ℝ → L2VF := fun k s => ((galSeq (alPkg.φ (ρ k))).u s : L2VF) with hcdef
+  set E : ℝ := (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2 with hEdef
+  set a : ℕ → ℝ := fun k => (1 / 2 : ℝ) * ‖c k t‖ ^ 2 with hadef
+  set b : ℕ → ℝ := fun k => ∫ s in (0 : ℝ)..t, viscousFormSq ν (c k s) with hbdef
+  -- per-approximant energy inequality
+  have hab : ∀ k, a k + b k ≤ E := fun k =>
+    torus_galerkin_energy_le F ν u₀ _ (galSeq (alPkg.φ (ρ k))) t ht0
+  have ha0 : ∀ k, 0 ≤ a k := fun k => by positivity
+  have hb0 : ∀ k, 0 ≤ b k := fun k =>
+    intervalIntegral.integral_nonneg ht0 fun s _ => viscousFormSq_nonneg hν.le _
+  have haE : ∀ k, a k ≤ E := fun k => by linarith [hab k, hb0 k]
+  have hbE : ∀ k, b k ≤ E := fun k => by linarith [hab k, ha0 k]
+  -- ═══ kinetic term: squared-norm weak-lsc at t ═══
+  have hkin_normSq : ‖(v t : L2VF)‖ ^ 2
+      ≤ Filter.liminf (fun k => ‖c k t‖ ^ 2) atTop := by
+    refine normSq_le_liminf_of_inner_tendsto ((v t : L2VF)) (fun k => c k t)
+      ‖(u₀ : L2VF)‖ (fun k => torus_galerkin_norm_le_u0 F ν u₀ _ _ t ht0) ?_
+    have h := hweak t htIcc ((v t : L2VF))
+    rwa [real_inner_self_eq_norm_sq] at h
+  have hbdd_above_n : Filter.IsBoundedUnder (· ≤ ·) atTop (fun k => ‖c k t‖ ^ 2) :=
+    Filter.isBoundedUnder_of_eventually_le (a := ‖(u₀ : L2VF)‖ ^ 2)
+      (Filter.Eventually.of_forall fun k =>
+        pow_le_pow_left₀ (norm_nonneg _) (torus_galerkin_norm_le_u0 F ν u₀ _ _ t ht0) 2)
+  have hbdd_below_n : Filter.IsBoundedUnder (· ≥ ·) atTop (fun k => ‖c k t‖ ^ 2) :=
+    Filter.isBoundedUnder_of_eventually_ge (a := 0)
+      (Filter.Eventually.of_forall fun k => by positivity)
+  have hkin : (1 / 2 : ℝ) * ‖(v t : L2VF)‖ ^ 2 ≤ Filter.liminf a atTop := by
+    have hmono : Monotone (fun r : ℝ => (1 / 2 : ℝ) * r) := fun x y hxy => by linarith
+    have hmap := hmono.map_liminf_of_continuousAt (fun k => ‖c k t‖ ^ 2)
+      (continuous_const.mul continuous_id).continuousAt
+      hbdd_above_n.isCoboundedUnder_ge hbdd_below_n
+    have hmap' : (1 / 2 : ℝ) * Filter.liminf (fun k => ‖c k t‖ ^ 2) atTop
+        = Filter.liminf a atTop := hmap
+    calc (1 / 2 : ℝ) * ‖(v t : L2VF)‖ ^ 2
+        ≤ (1 / 2 : ℝ) * Filter.liminf (fun k => ‖c k t‖ ^ 2) atTop := by
+          linarith [hkin_normSq]
+      _ = Filter.liminf a atTop := hmap'
+  -- ═══ dissipation term: a.e. spatial lsc + Fatou ═══
+  have hdiss : ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
+      ≤ Filter.liminf b atTop := by
+    have hbdd_below_b : Filter.IsBoundedUnder (· ≥ ·) atTop b :=
+      Filter.isBoundedUnder_of_eventually_ge (a := 0)
+        (Filter.Eventually.of_forall hb0)
+    have hcobdd_b : Filter.IsCoboundedUnder (· ≥ ·) atTop b :=
+      (Filter.isBoundedUnder_of_eventually_le (a := E)
+        (Filter.Eventually.of_forall hbE)).isCoboundedUnder_ge
+    have hliminfb0 : 0 ≤ Filter.liminf b atTop :=
+      Filter.le_liminf_of_le hcobdd_b (Filter.Eventually.of_forall hb0)
+    by_cases hInt : IntervalIntegrable (fun s => viscousFormSq ν (v s : L2VF)) volume 0 t
+    case neg =>
+      rw [intervalIntegral.integral_undef hInt]
+      exact hliminfb0
+    case pos =>
+      have hfIntOn : MeasureTheory.IntegrableOn
+          (fun s => viscousFormSq ν (v s : L2VF)) (Set.Ioc 0 t) volume := hInt.1
+      -- real integral of the limit as a lintegral
+      have hreal : ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
+          = (∫⁻ s in Set.Ioc (0 : ℝ) t,
+              ENNReal.ofReal (viscousFormSq ν (v s : L2VF))).toReal := by
+        rw [intervalIntegral.integral_of_le ht0]
+        exact integral_eq_lintegral_of_nonneg_ae
+          (Filter.Eventually.of_forall fun s => viscousFormSq_nonneg hν.le _)
+          hfIntOn.aestronglyMeasurable
+      -- transfer the a.e. facts to [0, t]
+      have hsub : Set.Ioc (0 : ℝ) t ⊆ Set.Icc (0 : ℝ) T := fun s hs =>
+        ⟨hs.1.le, hs.2.trans htT⟩
+      have hae' : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)), v s = alPkg.u s :=
+        ae_restrict_of_ae_restrict_of_subset hsub hae
+      have hstr' : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)),
+          Tendsto (fun k => c k s) atTop (𝓝 (alPkg.u s : L2VF)) :=
+        ae_restrict_of_ae_restrict_of_subset hsub hae_strong
+      -- a.e. pointwise lsc chain
+      have hae_lsc : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)),
+          ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+            ≤ Filter.liminf (fun k => ENNReal.ofReal (viscousFormSq ν (c k s))) atTop := by
+        filter_upwards [hae', hstr'] with s hveq hconv
+        have hpt : ∀ k, viscousEnn ν (c k s)
+            = ENNReal.ofReal (viscousFormSq ν (c k s)) := fun k =>
+          viscousEnn_eq_ofReal_of_bandlimited ν hν.le (alPkg.φ (ρ k)) (c k s)
+            ((galSeq (alPkg.φ (ρ k))).u_inVn s).symm
+        calc ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+            = ENNReal.ofReal (viscousFormSq ν (alPkg.u s : L2VF)) := by rw [hveq]
+          _ ≤ viscousEnn ν (alPkg.u s : L2VF) := ofReal_viscousFormSq_le ν hν.le _
+          _ ≤ Filter.liminf (fun k => viscousEnn ν (c k s)) atTop :=
+              viscousEnn_lsc ν _ _ hconv
+          _ = Filter.liminf (fun k => ENNReal.ofReal (viscousFormSq ν (c k s))) atTop := by
+              congr 1
+              funext k
+              exact hpt k
+      -- measurability of the approximant integrands
+      have hmeas_k : ∀ k, AEMeasurable
+          (fun s => ENNReal.ofReal (viscousFormSq ν (c k s)))
+          (volume.restrict (Set.Ioc (0 : ℝ) t)) := by
+        intro k
+        have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Ioc 0 t) :=
+          (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
+            fun s hs => hs.1.le
+        exact ENNReal.measurable_ofReal.comp_aemeasurable
+          (hcont.aemeasurable measurableSet_Ioc)
+      -- Fatou
+      have hFatou : ∫⁻ s in Set.Ioc (0 : ℝ) t,
+          ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+          ≤ Filter.liminf (fun k => ∫⁻ s in Set.Ioc (0 : ℝ) t,
+              ENNReal.ofReal (viscousFormSq ν (c k s))) atTop :=
+        le_trans (MeasureTheory.lintegral_mono_ae hae_lsc)
+          (MeasureTheory.lintegral_liminf_le' hmeas_k)
+      -- approximant lintegrals are ofReal of the real integrals
+      have hbk_eq : ∀ k, ∫⁻ s in Set.Ioc (0 : ℝ) t,
+          ENNReal.ofReal (viscousFormSq ν (c k s)) = ENNReal.ofReal (b k) := by
+        intro k
+        have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Icc 0 t) :=
+          (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
+            fun s hs => hs.1
+        have hint : MeasureTheory.IntegrableOn (fun s => viscousFormSq ν (c k s))
+            (Set.Ioc 0 t) volume := (hcont.intervalIntegrable_of_Icc ht0).1
+        have h1 : b k = (∫⁻ s in Set.Ioc (0 : ℝ) t,
+            ENNReal.ofReal (viscousFormSq ν (c k s))).toReal := by
+          rw [hbdef]
+          simp only
+          rw [intervalIntegral.integral_of_le ht0]
+          exact integral_eq_lintegral_of_nonneg_ae
+            (Filter.Eventually.of_forall fun s => viscousFormSq_nonneg hν.le _)
+            hint.aestronglyMeasurable
+        have h2 : ∫⁻ s in Set.Ioc (0 : ℝ) t,
+            ENNReal.ofReal (viscousFormSq ν (c k s)) < ⊤ := hint.lintegral_lt_top
+        rw [h1, ENNReal.ofReal_toReal h2.ne]
+      -- ofReal commutes with the (bounded) real liminf
+      have hcomm : Filter.liminf (fun k => ENNReal.ofReal (b k)) atTop
+          = ENNReal.ofReal (Filter.liminf b atTop) := by
+        have hmono : Monotone ENNReal.ofReal := fun x y h => ENNReal.ofReal_le_ofReal h
+        exact (hmono.map_liminf_of_continuousAt b
+          ENNReal.continuous_ofReal.continuousAt hcobdd_b hbdd_below_b).symm
+      have hchain : ∫⁻ s in Set.Ioc (0 : ℝ) t,
+          ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+          ≤ ENNReal.ofReal (Filter.liminf b atTop) := by
+        rw [← hcomm]
+        refine hFatou.trans (le_of_eq ?_)
+        congr 1
+        funext k
+        exact hbk_eq k
+      calc ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
+          = (∫⁻ s in Set.Ioc (0 : ℝ) t,
+              ENNReal.ofReal (viscousFormSq ν (v s : L2VF))).toReal := hreal
+        _ ≤ (ENNReal.ofReal (Filter.liminf b atTop)).toReal :=
+            ENNReal.toReal_mono ENNReal.ofReal_ne_top hchain
+        _ = Filter.liminf b atTop := ENNReal.toReal_ofReal hliminfb0
+  -- ═══ combine: liminf superadditivity against the energy identity ═══
+  have hbdd_above_a : Filter.IsBoundedUnder (· ≤ ·) atTop a :=
+    Filter.isBoundedUnder_of_eventually_le (a := E) (Filter.Eventually.of_forall haE)
+  have hbdd_below_a : Filter.IsBoundedUnder (· ≥ ·) atTop a :=
+    Filter.isBoundedUnder_of_eventually_ge (a := 0) (Filter.Eventually.of_forall ha0)
+  have hbdd_below_b : Filter.IsBoundedUnder (· ≥ ·) atTop b :=
+    Filter.isBoundedUnder_of_eventually_ge (a := 0) (Filter.Eventually.of_forall hb0)
+  have hcobdd_b : Filter.IsCoboundedUnder (· ≥ ·) atTop b :=
+    (Filter.isBoundedUnder_of_eventually_le (a := E)
+      (Filter.Eventually.of_forall hbE)).isCoboundedUnder_ge
+  have hsuper : Filter.liminf a atTop + Filter.liminf b atTop
+      ≤ Filter.liminf (a + b) atTop :=
+    le_liminf_add hbdd_below_a hbdd_above_a hbdd_below_b hcobdd_b
+  have habE : Filter.liminf (a + b) atTop ≤ E := by
+    have hboundedbelow : Filter.IsBoundedUnder (· ≥ ·) atTop (a + b) :=
+      Filter.isBoundedUnder_of_eventually_ge (a := 0)
+        (Filter.Eventually.of_forall fun k => by
+          have := ha0 k
+          have := hb0 k
+          simp only [Pi.add_apply]
+          linarith)
+    have h1 : Filter.liminf (a + b) atTop ≤ Filter.liminf (fun _ => E) atTop :=
+      Filter.liminf_le_liminf
+        (Filter.Eventually.of_forall fun k => by
+          have := hab k
+          simp only [Pi.add_apply]
+          linarith)
+        hboundedbelow
+        ((Filter.isBoundedUnder_of_eventually_le (a := E)
+          (Filter.Eventually.of_forall fun _ => le_refl E)).isCoboundedUnder_ge)
+    rwa [Filter.liminf_const] at h1
+  linarith [hkin, hdiss, hsuper, habE]
+
 
 end LerayHopf
