@@ -1299,4 +1299,70 @@ private theorem energy_ineq_of_representative (F : Torus3NSForms) (ν : ℝ) (h�
   linarith [hkin, hdiss, hsuper, habE]
 
 
+/-! ### Assembly: the good-representative existential -/
+
+/-- **Torus limit passage — the good-representative existential**, matching the conclusion
+of the project axiom `galerkin_limit_passage` byte-for-byte, PROVED from the trace+energy
+pillar, GIVEN the energy-class conjunct (4) for the raw Aubin–Lions limit `alPkg.u`
+(a.e. `memH1VF` + integrable dissipation on `[0, T]`; supplied by the separate
+viscous-limit development).  Conjuncts (0)/(1)/(3) are produced by the weakly-continuous
+representative construction of this file; conjunct (2) transfers from
+`torus_weakFormNS_of_strongConvergence` through the a.e.-equality (the WeakFormNS
+integrals only see a.e. values); conjunct (4) transfers from `h4` the same way. -/
+theorem torus_galerkin_limit_passage_of_energyClass
+    (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
+    (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq)
+    (h4 : (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)),
+        memH1VF (alPkg.u t : L2VF)) ∧
+      IntervalIntegrable (fun s => viscousFormSq ν (alPkg.u s : L2VF))
+        MeasureTheory.volume 0 T) :
+    ∃ u : Time → L2Sigma,
+    (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), u t = alPkg.u t) ∧
+    WeakFormNS ν T (torus3Evolution F) u ∧
+    (∀ t, 0 ≤ t → t ≤ T →
+      (1 / 2 : ℝ) * ‖(u t : L2VF)‖ ^ 2 +
+      ∫ s in (0 : ℝ)..t, viscousFormSq ν (u s : L2VF) ≤
+      (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2) ∧
+    Filter.Tendsto
+      (fun t => (u t : L2VF))
+      (nhdsWithin 0 (Set.Ici 0))
+      (nhds (u₀ : L2VF)) ∧
+    ((∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF (u t : L2VF)) ∧
+    IntervalIntegrable (fun s => viscousFormSq ν (u s : L2VF))
+      MeasureTheory.volume 0 T) := by
+  obtain ⟨v, ρ, hρ, hae, hae_strong, hweak, hbd, hv0, hlip⟩ :=
+    exists_weak_representative F ν hν T hT u₀ galSeq alPkg
+  have haeIcc : ∀ᵐ t ∂(volume : Measure ℝ), t ∈ Set.Icc (0 : ℝ) T → v t = alPkg.u t :=
+    (ae_restrict_iff' measurableSet_Icc).mp hae
+  refine ⟨v, hae, ?_, ?_, ?_, ?_, ?_⟩
+  · -- conjunct (2): WeakFormNS transfer through the a.e.-equality
+    have hW : WeakFormNS ν T (torus3Evolution F) alPkg.u :=
+      torus_weakFormNS_of_strongConvergence F ν hν T hT u₀ galSeq alPkg
+    intro ψ hψcs hψsupp hψC1 w hw
+    have h := hW ψ hψcs hψsupp hψC1 w hw
+    refine Eq.trans (intervalIntegral.integral_congr_ae ?_) h
+    filter_upwards [haeIcc] with x hx hxI
+    have hxIcc : x ∈ Set.Icc (0 : ℝ) T := by
+      rw [Set.uIoc_of_le hT.le] at hxI
+      exact ⟨hxI.1.le, hxI.2⟩
+    rw [hx hxIcc]
+  · -- conjunct (1): ∀t energy inequality
+    exact energy_ineq_of_representative F ν hν T hT u₀ galSeq alPkg v ρ
+      hae hae_strong hweak
+  · -- conjunct (3): strong initial trace
+    exact strong_trace_of_props T hT u₀ v hbd hv0 hlip
+  · -- conjunct (4a): a.e. memH1VF, transferred
+    filter_upwards [h4.1, hae] with t hmem hveq
+    rw [hveq]
+    exact hmem
+  · -- conjunct (4b): integrable dissipation, transferred
+    refine h4.2.congr_ae ?_
+    have h1 : ∀ᵐ s ∂(volume.restrict (Set.uIoc (0 : ℝ) T)), v s = alPkg.u s := by
+      rw [Set.uIoc_of_le hT.le]
+      exact ae_restrict_of_ae_restrict_of_subset Set.Ioc_subset_Icc_self hae
+    filter_upwards [h1] with s hs
+    rw [hs]
+
 end LerayHopf
