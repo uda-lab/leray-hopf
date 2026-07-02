@@ -601,10 +601,15 @@ private theorem perTest_lipschitz (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) 
       refine (hCb'bound (gs.u r) (gs.u r)).trans ?_
       have hn0 : 0 ≤ ‖(gs.u r : L2VF)‖ := norm_nonneg _
       have hu0 : 0 ≤ ‖(u₀ : L2VF)‖ := norm_nonneg _
-      nlinarith
+      have hsq : ‖(gs.u r : L2VF)‖ * ‖(gs.u r : L2VF)‖
+          ≤ ‖(u₀ : L2VF)‖ * ‖(u₀ : L2VF)‖ := mul_le_mul hnorm hnorm hn0 hu0
+      calc Cb' * ‖(gs.u r : L2VF)‖ * ‖(gs.u r : L2VF)‖
+          = Cb' * (‖(gs.u r : L2VF)‖ * ‖(gs.u r : L2VF)‖) := by ring
+        _ ≤ Cb' * (‖(u₀ : L2VF)‖ * ‖(u₀ : L2VF)‖) := mul_le_mul_of_nonneg_left hsq hCb'0
+        _ = Cb' * ‖(u₀ : L2VF)‖ ^ 2 := by ring
     calc |ν * stokesTestPairing (gs.u r : L2VF) (w : L2VF) + F.b (gs.u r) (gs.u r) w|
         ≤ |ν * stokesTestPairing (gs.u r : L2VF) (w : L2VF)|
-          + |F.b (gs.u r) (gs.u r) w| := abs_add _ _
+          + |F.b (gs.u r) (gs.u r) w| := abs_add_le _ _
       _ ≤ L := by rw [hLdef]; linarith
   -- MVT on the convex set `[0, ∞)`
   have hderiv : ∀ r ∈ Set.Ici (0 : ℝ),
@@ -612,7 +617,7 @@ private theorem perTest_lipschitz (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) 
         (-(ν * stokesTestPairing (gs.u r : L2VF) (w : L2VF) + F.b (gs.u r) (gs.u r) w))
         (Set.Ici 0) r :=
     fun r hr => (perTest_hasDerivAt F ν u₀ n gs w hwn r hr).hasDerivWithinAt
-  have hmvt := norm_image_sub_le_of_norm_hasDerivWithin_le hderiv hbound
+  have hmvt := Convex.norm_image_sub_le_of_norm_hasDerivWithin_le hderiv hbound
     (convex_Ici (0 : ℝ)) hs ht
   rwa [Real.norm_eq_abs, Real.norm_eq_abs] at hmvt
 
