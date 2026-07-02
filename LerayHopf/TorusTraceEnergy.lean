@@ -261,4 +261,390 @@ theorem torus_galerkin_energy_le (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma)
   have := pow_le_pow_left₀ (norm_nonneg _) hP 2
   linarith
 
+/-! ### Generic Hilbert-space weak-limit toolkit -/
+
+section HilbertToolkit
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+
+/-- **Squared-norm weak lower semicontinuity** (inner-product form): if `⟪xₖ, y⟫ → ‖y‖²` and
+`‖xₖ‖ ≤ M`, then `‖y‖² ≤ liminf ‖xₖ‖²`.  Trick: square the inner products
+(`⟪xₖ, y⟫² ≤ ‖xₖ‖² ‖y‖²`) and cancel `‖y‖²` at the liminf level. -/
+private theorem normSq_le_liminf_of_inner_tendsto (y : E) (x : ℕ → E) (M : ℝ)
+    (hM : ∀ k, ‖x k‖ ≤ M)
+    (h : Tendsto (fun k => inner (𝕜 := ℝ) (x k) y) atTop (𝓝 (‖y‖ ^ 2))) :
+    ‖y‖ ^ 2 ≤ Filter.liminf (fun k => ‖x k‖ ^ 2) atTop := by
+  have hbdd_above : Filter.IsBoundedUnder (· ≤ ·) atTop (fun k => ‖x k‖ ^ 2) :=
+    Filter.isBoundedUnder_of_eventually_le (a := M ^ 2)
+      (Filter.Eventually.of_forall fun k => pow_le_pow_left₀ (norm_nonneg _) (hM k) 2)
+  have hbdd_below : Filter.IsBoundedUnder (· ≥ ·) atTop (fun k => ‖x k‖ ^ 2) :=
+    Filter.isBoundedUnder_of_eventually_ge (a := 0)
+      (Filter.Eventually.of_forall fun k => by positivity)
+  rcases eq_or_ne (‖y‖) 0 with hy | hy
+  · rw [hy]
+    rw [show (0 : ℝ) ^ 2 = 0 by norm_num]
+    exact Filter.le_liminf_of_le hbdd_above.isCoboundedUnder_ge
+      (Filter.Eventually.of_forall fun k => by positivity)
+  · have hypos : (0 : ℝ) < ‖y‖ ^ 2 := by positivity
+    -- squared inner products converge to `(‖y‖²)²`
+    have hsq : Tendsto (fun k => (inner (𝕜 := ℝ) (x k) y) ^ 2) atTop (𝓝 ((‖y‖ ^ 2) ^ 2)) :=
+      h.pow 2
+    -- bound: `⟪xₖ, y⟫² ≤ ‖xₖ‖² ‖y‖²`
+    have hb : ∀ k, (inner (𝕜 := ℝ) (x k) y) ^ 2 ≤ ‖x k‖ ^ 2 * ‖y‖ ^ 2 := by
+      intro k
+      have h1 : |inner (𝕜 := ℝ) (x k) y| ≤ ‖x k‖ * ‖y‖ := abs_real_inner_le_norm _ _
+      calc (inner (𝕜 := ℝ) (x k) y) ^ 2 = |inner (𝕜 := ℝ) (x k) y| ^ 2 := (sq_abs _).symm
+        _ ≤ (‖x k‖ * ‖y‖) ^ 2 := pow_le_pow_left₀ (abs_nonneg _) h1 2
+        _ = ‖x k‖ ^ 2 * ‖y‖ ^ 2 := by ring
+    have hlim1 : (‖y‖ ^ 2) ^ 2 = Filter.liminf (fun k => (inner (𝕜 := ℝ) (x k) y) ^ 2) atTop :=
+      hsq.liminf_eq.symm
+    have hbdd_below_rhs : Filter.IsBoundedUnder (· ≥ ·) atTop
+        (fun k => ‖x k‖ ^ 2 * ‖y‖ ^ 2) :=
+      Filter.isBoundedUnder_of_eventually_ge (a := 0)
+        (Filter.Eventually.of_forall fun k => by positivity)
+    have hbdd_above_rhs : Filter.IsBoundedUnder (· ≤ ·) atTop
+        (fun k => ‖x k‖ ^ 2 * ‖y‖ ^ 2) :=
+      Filter.isBoundedUnder_of_eventually_le (a := M ^ 2 * ‖y‖ ^ 2)
+        (Filter.Eventually.of_forall fun k =>
+          mul_le_mul_of_nonneg_right
+            (pow_le_pow_left₀ (norm_nonneg _) (hM k) 2) (by positivity))
+    have hbdd_below_inner : Filter.IsBoundedUnder (· ≥ ·) atTop
+        (fun k => (inner (𝕜 := ℝ) (x k) y) ^ 2) :=
+      Filter.isBoundedUnder_of_eventually_ge (a := 0)
+        (Filter.Eventually.of_forall fun k => by positivity)
+    have hle : Filter.liminf (fun k => (inner (𝕜 := ℝ) (x k) y) ^ 2) atTop
+        ≤ Filter.liminf (fun k => ‖x k‖ ^ 2 * ‖y‖ ^ 2) atTop :=
+      Filter.liminf_le_liminf (Filter.Eventually.of_forall hb)
+        hbdd_below_inner hbdd_above_rhs.isCoboundedUnder_ge
+    -- pull the constant `‖y‖²` out of the liminf via the monotone map `· * ‖y‖²`
+    have hmap : (Filter.liminf (fun k => ‖x k‖ ^ 2) atTop) * ‖y‖ ^ 2
+        = Filter.liminf (fun k => ‖x k‖ ^ 2 * ‖y‖ ^ 2) atTop := by
+      have hmono : Monotone (fun r : ℝ => r * ‖y‖ ^ 2) :=
+        fun a b hab => mul_le_mul_of_nonneg_right hab (by positivity)
+      exact hmono.map_liminf_of_continuousAt (fun k => ‖x k‖ ^ 2)
+        (continuous_mul_const _).continuousAt hbdd_above.isCoboundedUnder_ge hbdd_below
+    have hchain : (‖y‖ ^ 2) * (‖y‖ ^ 2)
+        ≤ (Filter.liminf (fun k => ‖x k‖ ^ 2) atTop) * ‖y‖ ^ 2 := by
+      calc (‖y‖ ^ 2) * (‖y‖ ^ 2) = (‖y‖ ^ 2) ^ 2 := by ring
+        _ = Filter.liminf (fun k => (inner (𝕜 := ℝ) (x k) y) ^ 2) atTop := hlim1
+        _ ≤ Filter.liminf (fun k => ‖x k‖ ^ 2 * ‖y‖ ^ 2) atTop := hle
+        _ = (Filter.liminf (fun k => ‖x k‖ ^ 2) atTop) * ‖y‖ ^ 2 := hmap.symm
+    exact le_of_mul_le_mul_right hchain hypos
+
+/-- **Cauchy extension along norm-approximation:** if `‖xₖ‖ ≤ M` and `z` can be approximated
+in norm by vectors `z'` for which `k ↦ ⟪xₖ, z'⟫` is Cauchy, then `k ↦ ⟪xₖ, z⟫` is Cauchy. -/
+private theorem cauchySeq_inner_extend (x : ℕ → E) (M : ℝ) (hM : ∀ k, ‖x k‖ ≤ M)
+    (z : E)
+    (happrox : ∀ ε : ℝ, 0 < ε → ∃ z' : E, ‖z - z'‖ < ε ∧
+      CauchySeq (fun k => inner (𝕜 := ℝ) (x k) z')) :
+    CauchySeq (fun k => inner (𝕜 := ℝ) (x k) z) := by
+  have hM0 : 0 ≤ M := le_trans (norm_nonneg (x 0)) (hM 0)
+  rw [Metric.cauchySeq_iff]
+  intro ε hε
+  obtain ⟨z', hz', hC⟩ := happrox (ε / (3 * (M + 1))) (by positivity)
+  rw [Metric.cauchySeq_iff] at hC
+  obtain ⟨N, hN⟩ := hC (ε / 3) (by positivity)
+  refine ⟨N, fun m hm n hn => ?_⟩
+  have hdist := hN m hm n hn
+  rw [Real.dist_eq] at hdist ⊢
+  have hcross : ∀ k, |inner (𝕜 := ℝ) (x k) z - inner (𝕜 := ℝ) (x k) z'| ≤ M * ‖z - z'‖ := by
+    intro k
+    rw [← inner_sub_right]
+    exact (abs_real_inner_le_norm _ _).trans
+      (mul_le_mul_of_nonneg_right (hM k) (norm_nonneg _))
+  have hMz : M * ‖z - z'‖ ≤ M * (ε / (3 * (M + 1))) :=
+    mul_le_mul_of_nonneg_left hz'.le hM0
+  have hMz2 : M * (ε / (3 * (M + 1))) ≤ ε / 3 := by
+    have h2 : M * (ε / (3 * (M + 1))) = (M / (M + 1)) * (ε / 3) := by
+      field_simp
+    have h3 : M / (M + 1) ≤ 1 := by
+      rw [div_le_one (by linarith : (0 : ℝ) < M + 1)]
+      linarith
+    calc M * (ε / (3 * (M + 1))) = (M / (M + 1)) * (ε / 3) := h2
+      _ ≤ 1 * (ε / 3) := mul_le_mul_of_nonneg_right h3 (by positivity)
+      _ = ε / 3 := one_mul _
+  calc |inner (𝕜 := ℝ) (x m) z - inner (𝕜 := ℝ) (x n) z|
+      ≤ |inner (𝕜 := ℝ) (x m) z - inner (𝕜 := ℝ) (x m) z'|
+        + |inner (𝕜 := ℝ) (x m) z' - inner (𝕜 := ℝ) (x n) z| := abs_sub_le _ _ _
+    _ ≤ |inner (𝕜 := ℝ) (x m) z - inner (𝕜 := ℝ) (x m) z'|
+        + (|inner (𝕜 := ℝ) (x m) z' - inner (𝕜 := ℝ) (x n) z'|
+          + |inner (𝕜 := ℝ) (x n) z' - inner (𝕜 := ℝ) (x n) z|) := by
+        gcongr
+        exact abs_sub_le _ _ _
+    _ < ε := by
+        have h1 := hcross m
+        have h2 := hcross n
+        rw [abs_sub_comm (inner (𝕜 := ℝ) (x n) z') (inner (𝕜 := ℝ) (x n) z)] at *
+        linarith [hcross n]
+
+/-- **Weak limit inside a closed submodule.**  If `xₖ ∈ K`, `‖xₖ‖ ≤ M`, and every inner-product
+sequence `k ↦ ⟪xₖ, z⟫` is Cauchy, then there is `y ∈ K` with `‖y‖ ≤ M` and `⟪xₖ, z⟫ → ⟪y, z⟫`
+for every `z` (Riesz representation of the limit functional; membership by the
+orthogonal-projection argument). -/
+private theorem exists_weak_limit_in_submodule [CompleteSpace E] (K : Submodule ℝ E)
+    [K.HasOrthogonalProjection] (x : ℕ → E) (hxK : ∀ k, x k ∈ K) (M : ℝ)
+    (hM : ∀ k, ‖x k‖ ≤ M)
+    (hC : ∀ z : E, CauchySeq (fun k => inner (𝕜 := ℝ) (x k) z)) :
+    ∃ y : E, y ∈ K ∧ ‖y‖ ≤ M ∧
+      ∀ z : E, Tendsto (fun k => inner (𝕜 := ℝ) (x k) z) atTop (𝓝 (inner (𝕜 := ℝ) y z)) := by
+  have hlim : ∀ z : E, ∃ l : ℝ, Tendsto (fun k => inner (𝕜 := ℝ) (x k) z) atTop (𝓝 l) :=
+    fun z => cauchySeq_tendsto_of_complete (hC z)
+  choose φ hφ using hlim
+  have hadd : ∀ z z' : E, φ (z + z') = φ z + φ z' := by
+    intro z z'
+    refine tendsto_nhds_unique (hφ (z + z')) ?_
+    refine ((hφ z).add (hφ z')).congr fun k => ?_
+    rw [← inner_add_right]
+  have hsmul : ∀ (c : ℝ) (z : E), φ (c • z) = c * φ z := by
+    intro c z
+    refine tendsto_nhds_unique (hφ (c • z)) ?_
+    refine ((hφ z).const_mul c).congr fun k => ?_
+    rw [real_inner_smul_right]
+  have hbound : ∀ z : E, |φ z| ≤ M * ‖z‖ := by
+    intro z
+    refine le_of_tendsto (hφ z).abs (Filter.Eventually.of_forall fun k => ?_)
+    exact (abs_real_inner_le_norm _ _).trans
+      (mul_le_mul_of_nonneg_right (hM k) (norm_nonneg _))
+  set Lf : E →ₗ[ℝ] ℝ :=
+    { toFun := φ
+      map_add' := hadd
+      map_smul' := fun c z => by simpa using hsmul c z } with hLf
+  set L : E →L[ℝ] ℝ := Lf.mkContinuous M (fun z => by
+    rw [Real.norm_eq_abs]; exact hbound z) with hL
+  set y : E := (InnerProductSpace.toDual ℝ E).symm L with hydef
+  have hyz : ∀ z : E, inner (𝕜 := ℝ) y z = φ z := by
+    intro z
+    have happ : (InnerProductSpace.toDual ℝ E) y = L :=
+      (InnerProductSpace.toDual ℝ E).apply_symm_apply L
+    calc inner (𝕜 := ℝ) y z = (InnerProductSpace.toDual ℝ E) y z := rfl
+      _ = L z := by rw [happ]
+      _ = φ z := rfl
+  -- membership: `y = starProjection K y ∈ K`
+  have hyK : y ∈ K := by
+    have hop : K.starProjection y ∈ K := K.starProjection_apply_mem y
+    have hoth : y - K.starProjection y ∈ Kᗮ := K.sub_starProjection_mem_orthogonal y
+    have hz : ∀ k, inner (𝕜 := ℝ) (x k) (y - K.starProjection y) = 0 := fun k =>
+      (Submodule.mem_orthogonal K _).mp hoth (x k) (hxK k)
+    have hφ0 : φ (y - K.starProjection y) = 0 := by
+      refine tendsto_nhds_unique (hφ (y - K.starProjection y)) ?_
+      simpa [hz] using (tendsto_const_nhds : Tendsto (fun _ : ℕ => (0 : ℝ)) atTop (𝓝 0))
+    have h1 : inner (𝕜 := ℝ) y (y - K.starProjection y) = 0 := by rw [hyz]; exact hφ0
+    have h2 : inner (𝕜 := ℝ) (K.starProjection y) (y - K.starProjection y) = 0 :=
+      (Submodule.mem_orthogonal K _).mp hoth _ hop
+    have hnorm0 : ‖y - K.starProjection y‖ ^ 2 = 0 := by
+      rw [← real_inner_self_eq_norm_sq, inner_sub_left, h1, h2, sub_zero]
+    have heq : y = K.starProjection y := by
+      have hsub0 : y - K.starProjection y = 0 :=
+        norm_eq_zero.mp (pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hnorm0)
+      exact sub_eq_zero.mp hsub0
+    rw [heq]; exact hop
+  -- norm bound: `‖y‖² = φ y ≤ M ‖y‖`
+  have hM0 : 0 ≤ M := le_trans (norm_nonneg (x 0)) (hM 0)
+  have hybd : ‖y‖ ≤ M := by
+    rcases eq_or_lt_of_le (norm_nonneg y) with h0 | hpos
+    · rw [← h0]; exact hM0
+    · have h1 : ‖y‖ ^ 2 = φ y := by rw [← hyz y, real_inner_self_eq_norm_sq]
+      have h2 : ‖y‖ ^ 2 ≤ M * ‖y‖ := h1 ▸ ((le_abs_self _).trans (hbound y))
+      nlinarith
+  exact ⟨y, hyK, hybd, fun z => (hyz z) ▸ hφ z⟩
+
+end HilbertToolkit
+
+/-! ### Density of an a.e.-full subset of `[0, T]` -/
+
+/-- A set of full measure in `[0, T]` meets every `ε`-neighborhood of every point of `[0, T]`. -/
+private theorem exists_mem_of_ae_full {T : ℝ} (hT : 0 < T) (S : Set ℝ)
+    (hS : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), t ∈ S)
+    {t : ℝ} (ht : t ∈ Set.Icc (0 : ℝ) T) {ε : ℝ} (hε : 0 < ε) :
+    ∃ s ∈ S ∩ Set.Icc (0 : ℝ) T, |s - t| < ε := by
+  by_contra hcon
+  push_neg at hcon
+  set a : ℝ := max 0 (t - ε / 2) with ha
+  set b : ℝ := min T (t + ε / 2) with hb
+  have hab : a < b := by
+    rw [ha, hb, max_lt_iff, lt_min_iff, lt_min_iff]
+    exact ⟨⟨hT, by linarith [ht.1]⟩, ⟨by linarith [ht.2], by linarith⟩⟩
+  -- `Ioo a b ⊆ [0,T]` and every point of it is `ε`-close to `t`, hence outside `S` by `hcon`.
+  have hIcc : Set.Ioo a b ⊆ Set.Icc (0 : ℝ) T := fun x hx =>
+    ⟨le_trans (le_max_left 0 (t - ε / 2)) hx.1.le, le_trans hx.2.le (min_le_left T (t + ε / 2))⟩
+  have hclose : ∀ x ∈ Set.Ioo a b, |x - t| < ε := by
+    intro x hx
+    have h1 : t - ε / 2 < x := lt_of_le_of_lt (le_max_right 0 (t - ε / 2)) hx.1
+    have h2 : x < t + ε / 2 := lt_of_lt_of_le hx.2 (min_le_right T (t + ε / 2))
+    rw [abs_sub_lt_iff]
+    constructor <;> linarith
+  have hnotS : ∀ x ∈ Set.Ioo a b, x ∉ S := by
+    intro x hx hxS
+    exact absurd (hcon x ⟨hxS, hIcc hx⟩) (not_le.mpr (hclose x hx))
+  -- measure contradiction
+  have hnull : volume.restrict (Set.Icc (0 : ℝ) T) {x | x ∉ S} = 0 := by
+    have := hS
+    rwa [MeasureTheory.ae_iff] at this
+  have hle : volume.restrict (Set.Icc (0 : ℝ) T) (Set.Ioo a b) = 0 :=
+    measure_mono_null (fun x hx => hnotS x hx) hnull
+  have hval : volume.restrict (Set.Icc (0 : ℝ) T) (Set.Ioo a b)
+      = ENNReal.ofReal (b - a) := by
+    rw [Measure.restrict_apply measurableSet_Ioo,
+      Set.inter_eq_self_of_subset_left hIcc, Real.volume_Ioo]
+  rw [hval] at hle
+  exact absurd hle (ENNReal.ofReal_pos.mpr (sub_pos.mpr hab)).ne'
+
+/-! ### Equi-Lipschitz + dense convergence ⇒ Cauchy everywhere -/
+
+/-- A family of eventually-equi-Lipschitz real functions on `[0, T]` that is Cauchy on a
+dense-in-`[0,T]` subset is Cauchy at every point of `[0, T]`. -/
+private theorem cauchySeq_of_equiLipschitz_of_dense {T : ℝ} (f : ℕ → ℝ → ℝ) (L : ℝ) (hL : 0 ≤ L)
+    (K : ℕ)
+    (hLip : ∀ k, K ≤ k → ∀ s ∈ Set.Icc (0 : ℝ) T, ∀ t' ∈ Set.Icc (0 : ℝ) T,
+      |f k t' - f k s| ≤ L * |t' - s|)
+    (S : Set ℝ)
+    (hdense : ∀ u ∈ Set.Icc (0 : ℝ) T, ∀ ε : ℝ, 0 < ε → ∃ s ∈ S ∩ Set.Icc (0 : ℝ) T, |s - u| < ε)
+    (hconv : ∀ s ∈ S ∩ Set.Icc (0 : ℝ) T, CauchySeq (fun k => f k s))
+    {t : ℝ} (ht : t ∈ Set.Icc (0 : ℝ) T) :
+    CauchySeq (fun k => f k t) := by
+  rw [Metric.cauchySeq_iff]
+  intro ε hε
+  obtain ⟨s, hsS, hst⟩ := hdense t ht (ε / (3 * (L + 1))) (by positivity)
+  have hCs := hconv s hsS
+  rw [Metric.cauchySeq_iff] at hCs
+  obtain ⟨N₁, hN₁⟩ := hCs (ε / 3) (by positivity)
+  refine ⟨max N₁ K, fun m hm n hn => ?_⟩
+  have h1 := hN₁ m (le_trans (le_max_left _ _) hm) n (le_trans (le_max_left _ _) hn)
+  have h2 := hLip m (le_trans (le_max_right _ _) hm) s hsS.2 t ht
+  have h3 := hLip n (le_trans (le_max_right _ _) hn) s hsS.2 t ht
+  rw [Real.dist_eq] at h1 ⊢
+  have habs : |t - s| < ε / (3 * (L + 1)) := by rw [abs_sub_comm]; exact hst
+  have hL1 : L * |t - s| < ε / 3 := by
+    have hstep : L * |t - s| ≤ L * (ε / (3 * (L + 1))) :=
+      mul_le_mul_of_nonneg_left habs.le hL
+    have hstep2 : L * (ε / (3 * (L + 1))) < ε / 3 := by
+      have h2 : L * (ε / (3 * (L + 1))) = (L / (L + 1)) * (ε / 3) := by
+        field_simp
+      have h3 : L / (L + 1) < 1 := by
+        rw [div_lt_one (by linarith : (0 : ℝ) < L + 1)]
+        linarith
+      calc L * (ε / (3 * (L + 1))) = (L / (L + 1)) * (ε / 3) := h2
+        _ < 1 * (ε / 3) := mul_lt_mul_of_pos_right h3 (by positivity)
+        _ = ε / 3 := one_mul _
+    linarith
+  calc |f m t - f n t|
+      ≤ |f m t - f m s| + |f m s - f n t| := abs_sub_le _ _ _
+    _ ≤ |f m t - f m s| + (|f m s - f n s| + |f n s - f n t|) := by
+        gcongr
+        exact abs_sub_le _ _ _
+    _ < ε := by
+        rw [abs_sub_comm (f n s) (f n t)] at *
+        linarith
+
+/-! ### Step 1: per-test scalar derivative and uniform Lipschitz bound -/
+
+/-- The scalar test curve `t ↦ ⟪uₙ(t), w⟫` has derivative
+`-(ν·stokesTestPairing(uₙ t, w) + b(uₙ t, uₙ t, w))` at forward times, for tests fixed at
+level `n` (from `u_hasDeriv` + `u_ode`). -/
+private theorem perTest_hasDerivAt (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma) (n : ℕ)
+    (gs : GalerkinSolutionData F ν u₀ n) (w : L2Sigma)
+    (hwn : velocityProjection_n n (w : L2VF) = (w : L2VF)) (t : ℝ) (ht : 0 ≤ t) :
+    HasDerivAt (fun s => inner (𝕜 := ℝ) ((gs.u s : L2VF)) (w : L2VF))
+      (-(ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) + F.b (gs.u t) (gs.u t) w)) t := by
+  have hda := (gs.u_hasDeriv t ht).inner (𝕜 := ℝ) (hasDerivAt_const t (w : L2VF))
+  simp only [inner_zero_right, zero_add] at hda
+  have hode := gs.u_ode t ht w hwn.symm
+  have hval : inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF)) t) (w : L2VF)
+      = -(ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) + F.b (gs.u t) (gs.u t) w) := by
+    linarith
+  rwa [hval] at hda
+
+/-- **Per-test uniform Lipschitz bound** (uniform in the Galerkin level `n ≥ n₀`): for a
+test `w` fixed at level `n₀`, all Galerkin scalar curves at levels `n ≥ n₀` are
+`L(w)`-Lipschitz on `[0, ∞)`, with `L(w) = ν·Cs(w)·‖u₀‖ + Cb(w)·‖u₀‖²` independent of `n`.
+This is the torus form of R3-spike obligation 2; the level-promotion is
+`velocityProjection_n_eq_of_le` (the R3 nesting blocker is absent here). -/
+private theorem perTest_lipschitz (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) (w : L2Sigma) (n₀ : ℕ)
+    (hn₀ : velocityProjection_n n₀ (w : L2VF) = (w : L2VF)) :
+    ∃ L : ℝ, 0 ≤ L ∧ ∀ n, n₀ ≤ n → ∀ s ∈ Set.Ici (0 : ℝ), ∀ t ∈ Set.Ici (0 : ℝ),
+      |inner (𝕜 := ℝ) (((galSeq n).u t : L2VF)) (w : L2VF)
+        - inner (𝕜 := ℝ) (((galSeq n).u s : L2VF)) (w : L2VF)| ≤ L * |t - s| := by
+  obtain ⟨Cs, hCs0, hCs⟩ := stokes_abs_le' n₀ (w : L2VF) hn₀
+  obtain ⟨Cb, hCb⟩ := F.b_bound w ⟨n₀, hn₀⟩
+  set Cb' : ℝ := |Cb| with hCb'
+  have hCb'0 : 0 ≤ Cb' := abs_nonneg _
+  have hCb'bound : ∀ u v : L2Sigma, |F.b u v w| ≤ Cb' * ‖(u : L2VF)‖ * ‖(v : L2VF)‖ := by
+    intro u v
+    refine (hCb u v).trans ?_
+    have h1 := le_abs_self Cb
+    nlinarith [norm_nonneg (u : L2VF), norm_nonneg (v : L2VF),
+      mul_nonneg (norm_nonneg (u : L2VF)) (norm_nonneg (v : L2VF))]
+  set L : ℝ := ν * Cs * ‖(u₀ : L2VF)‖ + Cb' * ‖(u₀ : L2VF)‖ ^ 2 with hLdef
+  have hL0 : 0 ≤ L := by
+    have h1 : 0 ≤ ν * Cs * ‖(u₀ : L2VF)‖ :=
+      mul_nonneg (mul_nonneg hν.le hCs0) (norm_nonneg _)
+    have h2 : 0 ≤ Cb' * ‖(u₀ : L2VF)‖ ^ 2 := mul_nonneg hCb'0 (sq_nonneg _)
+    linarith
+  refine ⟨L, hL0, fun n hn s hs t ht => ?_⟩
+  set gs := galSeq n with hgs
+  have hwn : velocityProjection_n n (w : L2VF) = (w : L2VF) :=
+    TorusConvectionExtension.velocityProjection_n_eq_of_le hn (w : L2VF) hn₀
+  -- uniform derivative bound on `[0, ∞)`
+  have hbound : ∀ r ∈ Set.Ici (0 : ℝ),
+      ‖-(ν * stokesTestPairing (gs.u r : L2VF) (w : L2VF) + F.b (gs.u r) (gs.u r) w)‖
+        ≤ L := by
+    intro r hr
+    rw [Real.norm_eq_abs, abs_neg]
+    have hnorm := torus_galerkin_norm_le_u0 F ν u₀ n gs r hr
+    have h1 : |ν * stokesTestPairing (gs.u r : L2VF) (w : L2VF)|
+        ≤ ν * Cs * ‖(u₀ : L2VF)‖ := by
+      rw [abs_mul, abs_of_pos hν, mul_assoc]
+      refine mul_le_mul_of_nonneg_left ?_ hν.le
+      exact (hCs _).trans (mul_le_mul_of_nonneg_left hnorm hCs0)
+    have h2 : |F.b (gs.u r) (gs.u r) w| ≤ Cb' * ‖(u₀ : L2VF)‖ ^ 2 := by
+      refine (hCb'bound (gs.u r) (gs.u r)).trans ?_
+      have hn0 : 0 ≤ ‖(gs.u r : L2VF)‖ := norm_nonneg _
+      have hu0 : 0 ≤ ‖(u₀ : L2VF)‖ := norm_nonneg _
+      nlinarith
+    calc |ν * stokesTestPairing (gs.u r : L2VF) (w : L2VF) + F.b (gs.u r) (gs.u r) w|
+        ≤ |ν * stokesTestPairing (gs.u r : L2VF) (w : L2VF)|
+          + |F.b (gs.u r) (gs.u r) w| := abs_add _ _
+      _ ≤ L := by rw [hLdef]; linarith
+  -- MVT on the convex set `[0, ∞)`
+  have hderiv : ∀ r ∈ Set.Ici (0 : ℝ),
+      HasDerivWithinAt (fun s' => inner (𝕜 := ℝ) ((gs.u s' : L2VF)) (w : L2VF))
+        (-(ν * stokesTestPairing (gs.u r : L2VF) (w : L2VF) + F.b (gs.u r) (gs.u r) w))
+        (Set.Ici 0) r :=
+    fun r hr => (perTest_hasDerivAt F ν u₀ n gs w hwn r hr).hasDerivWithinAt
+  have hmvt := norm_image_sub_le_of_norm_hasDerivWithin_le hderiv hbound
+    (convex_Ici (0 : ℝ)) hs ht
+  rwa [Real.norm_eq_abs, Real.norm_eq_abs] at hmvt
+
+/-! ### Step 2: a.e.-strong subsequence from the eLpNorm convergence -/
+
+/-- **A.e.-strong subsequence:** the eLpNorm strong convergence of the Aubin–Lions package
+yields a further subsequence whose curves converge strongly in `L2VF` at a.e. `t ∈ [0, T]`
+(`tendstoInMeasure_of_tendsto_eLpNorm` + `TendstoInMeasure.exists_seq_tendsto_ae`). -/
+private theorem exists_ae_strong_subseq (F : Torus3NSForms) (ν : ℝ) (T : ℝ) (hT : 0 < T)
+    (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq) :
+    ∃ ρ : ℕ → ℕ, StrictMono ρ ∧
+      ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
+        Tendsto (fun k => ((galSeq (alPkg.φ (ρ k))).u t : L2VF)) atTop
+          (𝓝 (alPkg.u t : L2VF)) := by
+  set μ : Measure ℝ := volume.restrict (Set.Icc (0 : ℝ) T) with hμ
+  set f : ℕ → ℝ → L2VF := fun N t => ((galSeq (alPkg.φ N)).u t : L2VF) with hfdef
+  set g : ℝ → L2VF := fun t => (alPkg.u t : L2VF) with hgdef
+  have hfm : ∀ N, AEStronglyMeasurable (f N) μ := by
+    intro N
+    have hcont : ContinuousOn (f N) (Set.Icc 0 T) := fun t ht =>
+      (((galSeq (alPkg.φ N)).u_hasDeriv t ht.1).continuousAt).continuousWithinAt
+    rw [hμ]
+    exact hcont.aestronglyMeasurable measurableSet_Icc
+  have hgm : AEStronglyMeasurable g μ := by
+    rw [hμ, hgdef]
+    exact alPkg.u_aestronglyMeasurable
+  have hconv : Tendsto (fun N => eLpNorm (f N - g) 2 μ) atTop (𝓝 0) :=
+    alPkg.strong_convergence
+  have hmeas : TendstoInMeasure μ f atTop g :=
+    tendstoInMeasure_of_tendsto_eLpNorm (by norm_num : (2 : ℝ≥0∞) ≠ 0) hfm hgm hconv
+  obtain ⟨ns, hns, hae⟩ := hmeas.exists_seq_tendsto_ae
+  exact ⟨ns, hns, hae⟩
+
 end LerayHopf
