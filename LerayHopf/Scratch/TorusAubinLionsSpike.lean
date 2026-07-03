@@ -62,7 +62,12 @@ Cauchy. Scalar-elementary; no Bochner machinery. -/
 theorem exists_uniform_subseq_of_lipschitz_family
     (T : ℝ) (hT : 0 < T) (f : ℕ → ℕ → ℝ → ℝ) (B L : ℕ → ℝ)
     (hb : ∀ m n t, t ∈ Icc (0 : ℝ) T → |f m n t| ≤ B m)
-    (hlip : ∀ m n s t, s ∈ Icc (0 : ℝ) T → t ∈ Icc (0 : ℝ) T → s ≤ t →
+    -- EVENTUAL Lipschitz (codex P2 on PR #77): the Galerkin application supplies the
+    -- Lipschitz estimate only for `n` past the test's band-limit cutoff (`m ≤ n` in
+    -- P0.3); finite prefixes are analytically harmless (uniform convergence along a
+    -- subsequence is a tail property), so the engine takes a per-family cutoff `n₀ m`.
+    (hlip : ∀ m, ∃ n₀ : ℕ, ∀ n, n₀ ≤ n → ∀ s t,
+      s ∈ Icc (0 : ℝ) T → t ∈ Icc (0 : ℝ) T → s ≤ t →
       |f m n t - f m n s| ≤ L m * (t - s)) :
     ∃ φ : ℕ → ℕ, StrictMono φ ∧
       ∀ m, ∃ g : ℝ → ℝ,
