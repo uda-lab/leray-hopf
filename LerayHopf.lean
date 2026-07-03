@@ -102,6 +102,7 @@ import LerayHopf.R3.TensorIntersection   -- issue #56: S⊗V ∩ V⊗S = S⊗S l
 import LerayHopf.R3.GalerkinCurveBounds  -- issue #46 PR-1: Galerkin curve/pairing library (File B)
 import LerayHopf.R3.GalerkinTrilinearBound  -- issue #46 PR-2: Galerkin trilinear/energy-class bounds (File C)
 import LerayHopf.R3.GalerkinTimeModulus  -- issue #46 PR-3: good-sampling + master uniform sampling-error bound (File D)
+import LerayHopf.R3.SpacetimePrecompact  -- issue #46 PR-4: assembled LOCAL spacetime precompactness (File E)
 
 -- Bochner layer (sorry-carrying)
 import LerayHopf.Bochner.GelfandTriple
