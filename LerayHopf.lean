@@ -97,6 +97,7 @@ import LerayHopf.R3.SobolevEmbedding
 import LerayHopf.R3.EnergyClassConvection
 import LerayHopf.R3.ConvectionExtension  -- issue #56: determined-form ConvectionGapOp construction
 import LerayHopf.R3.TensorIntersection   -- issue #56: S⊗V ∩ V⊗S = S⊗S linear-algebra lemma
+import LerayHopf.R3.GalerkinCurveBounds  -- issue #46 PR-1: Galerkin curve/pairing library (File B)
 
 -- Bochner layer (sorry-carrying)
 import LerayHopf.Bochner.GelfandTriple
@@ -105,3 +106,4 @@ import LerayHopf.Bochner.TimeSobolevAC
 import LerayHopf.Bochner.TimeConvolution
 import LerayHopf.Bochner.TimeMollifierInterval
 import LerayHopf.Bochner.TimeMollification
+import LerayHopf.Bochner.StepFunctionCompactness  -- issue #46 PR-1: generic step-curve Lp compactness (File A)
