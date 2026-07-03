@@ -101,6 +101,7 @@ import LerayHopf.R3.ConvectionExtension  -- issue #56: determined-form Convectio
 import LerayHopf.R3.TensorIntersection   -- issue #56: S⊗V ∩ V⊗S = S⊗S linear-algebra lemma
 import LerayHopf.R3.GalerkinCurveBounds  -- issue #46 PR-1: Galerkin curve/pairing library (File B)
 import LerayHopf.R3.GalerkinTrilinearBound  -- issue #46 PR-2: Galerkin trilinear/energy-class bounds (File C)
+import LerayHopf.R3.GalerkinTimeModulus  -- issue #46 PR-3: good-sampling + master uniform sampling-error bound (File D)
 
 -- Bochner layer (sorry-carrying)
 import LerayHopf.Bochner.GelfandTriple
