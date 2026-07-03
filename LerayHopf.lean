@@ -110,3 +110,4 @@ import LerayHopf.Bochner.TimeMollifierInterval
 import LerayHopf.Bochner.TimeMollification
 import LerayHopf.Bochner.StepFunctionCompactness  -- issue #46 PR-1: generic step-curve Lp compactness (File A)
 import LerayHopf.Bochner.ScalarEquicontinuity     -- T-AL-2 (#23): domain-neutral scalar equicontinuity engine
+import LerayHopf.TorusModeCompactness             -- T-AL-3 (#23): mode-wise extraction (equi-Lipschitz + engine assembly)
