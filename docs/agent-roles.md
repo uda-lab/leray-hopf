@@ -10,19 +10,26 @@ Read `AGENTS.md` (hard rules), `docs/guardrails.md` (rationale), and
 
 ## Roster and model assignment
 
-Model assignment is fixed by purpose: **fable** drives proof construction, **Codex
-(GPT-5.x, effort `xhigh`)** is the external mathematical/formal reviewer, and **sonnet**
-runs everything else.
+Model assignment is fixed by purpose: **fable** owns route decisions and the hardest
+proof construction, **Codex (GPT-5.x, effort `xhigh`)** is the external
+mathematical/formal reviewer, and **sonnet** runs everything mechanical.
 
 | Role | Form | Model | Edits | One-line contract |
 |---|---|---|---|---|
-| `lean-planner` | subagent | sonnet | `docs/scratch/` only | Milestone → ordered Lean task contract |
-| `lean-prover` | subagent | **fable** | **proof bodies only** | Make fixed statements `sorry`-free |
-| `lean-coder` | subagent | sonnet | structure/signatures/imports | Stand up files, statements, scaffolding |
+| `lean-architect` | subagent / permanent teammate | **fable** | `docs/scratch/` + `LerayHopf/Scratch/` | Route decisions, feasibility spikes, campaign plans, exact target statements |
+| `lean-planner` | subagent | sonnet | `docs/scratch/` only | Architect-approved campaign phase → dispatch-ready task contract |
+| `lean-prover` | subagent | **fable** default; campaign tier table may set sonnet/opus per node | **proof bodies only** | Make fixed statements `sorry`-free |
+| `lean-coder` | subagent | sonnet | structure/signatures/imports | Stand up files, statements (verbatim from the architect), scaffolding |
 | `pr-reviewer` | subagent | sonnet | none (read-only) | In-house guardrail gate on the diff |
 | `modularity-reviewer` | subagent | sonnet | none (read-only) | Architecture / dependency-direction review |
 | `sot-researcher` | subagent | sonnet | `docs/references/` only | Verified SSoT reference list |
 | `codex-reviewer` | **orchestrator protocol** (not a subagent) | **Codex GPT-5.x `xhigh`** | none (review-only) | External soundness review of statements & proofs |
+
+**Division of intelligence:** `lean-architect` (fable) concentrates the expensive
+reasoning into *artifacts* — campaign docs, spikes, frozen statements — so that the
+runtime orchestration loop can be driven by a cheaper model without route judgment.
+`lean-planner` does not make mathematical route decisions; it sequences within an
+architect-approved campaign.
 
 ## Edit-ownership matrix
 
@@ -33,9 +40,11 @@ of edit:**
 |---|---|---|
 | Proof body (`:= by …`) | `lean-prover` | read-only |
 | Theorem/def signature, structure, imports, lakefile | `lean-coder` | read-only |
-| Planning docs (`docs/scratch/`) | `lean-planner` | read-only |
+| Campaign plans (`docs/scratch/<campaign>.md`) + spike verdicts | `lean-architect` | read-only |
+| Phase task contracts (other `docs/scratch/`) | `lean-planner` | read-only |
+| Scratch spikes (`LerayHopf/Scratch/`, `-- SCRATCH` header) | `lean-architect` | read-only |
 | Reference list (`docs/references/`) | `sot-researcher` | read-only |
-| Lean sources (any) | `lean-prover` / `lean-coder` | reviewers & researcher never edit Lean |
+| Lean sources (production, outside `LerayHopf/Scratch/`) | `lean-prover` / `lean-coder` | reviewers, researcher, and architect never edit production Lean |
 
 This is what makes the No-theorem-renaming and No-statement-weakening rules real: the
 `lean-prover` cannot change a statement (it only edits proof bodies), and reviewers
@@ -84,13 +93,54 @@ These subagents are plain `.claude/agents/*.md` definitions, so they work two wa
   definitions can back independent teammate sessions. The role contracts and edit-ownership
   matrix above are identical in both modes.
 
-### Typical milestone loop
+### Typical campaign loop
 
-1. `lean-planner` → task contract in `docs/scratch/`.
+0. `lean-architect` → feasibility spike (`LerayHopf/Scratch/`) + campaign plan
+   (`docs/scratch/<campaign>.md`) with GO/NO-GO verdict, tier table, kill criteria.
+   **No scaffold before GO.**
+1. `lean-planner` → per-phase task contract from the campaign doc.
 2. (optional) `sot-researcher` → references for the milestone.
-3. `lean-coder` → files + statements + scaffolding; requests Codex review of new statements.
-4. Orchestrator → `/codex:adversarial-review --effort xhigh` on the new statements; routes findings.
-5. `lean-prover` → proofs for must-prove targets; requests Codex review of non-trivial proofs.
+3. `lean-coder` → files + statements (verbatim from the architect) + scaffolding.
+4. Orchestrator → `/codex:adversarial-review --effort xhigh` on the new statements
+   (the statement gate); routes findings **to the architect** if a statement is refuted.
+5. `lean-prover` (model per the campaign tier table) → proofs for must-prove targets.
 6. Orchestrator → Codex review of the proofs; routes findings.
 7. `pr-reviewer` + `modularity-reviewer` (parallel) → guardrail + architecture gates.
-8. Land the PR only when build is green, reviewers pass, and Codex findings are resolved.
+8. Land the PR only when the LOCAL incremental build is green, reviewers pass, and Codex
+   findings are resolved.
+
+## Campaign doctrine (anti-failure-mode rules, binding on the orchestrator)
+
+Distilled from this project's recorded failures (unsound thin-swaps #44/#46, the R3
+conjunct-2 wall discovered mid-build behind PR #69, false-green build reports, worktree
+collisions, premature fable shutdowns). These rules bind the ORCHESTRATOR most of all.
+
+- **D1 — Statement-first.** No proof dispatch until the statement typechecks in place and
+  has passed the codex statement gate. Statements are frozen by `lean-architect`; provers
+  never edit them; the orchestrator never "fixes" one to unblock a lane.
+- **D2 — Spike-first, all conjuncts.** Every axiom-removal campaign starts with an
+  architect spike that states EVERY field/conjunct of the target's conclusion against the
+  real interfaces. A spike that validates a subset is not a GO.
+- **D3 — No route improvisation.** On any premise failure (a planned statement does not
+  typecheck, a planned lemma turns out false or unprovable-from-interface, codex refutes
+  a step), the orchestrator STOPS that lane and returns it to `lean-architect`. The
+  orchestrator never invents an alternative mathematical route, never weakens, never
+  re-scopes, never "tries one more thing" past the plan.
+- **D4 — Tiering with explicit escalation.** The campaign doc's tier table decides each
+  node's model. Escalate sonnet→opus→fable after a bounded stall (default: ~1.5h of
+  thrash or 2 failed attempts), explicitly and with the failure evidence attached — never
+  silently retry the same tier, never keep a stalled tier grinding (the 3.4h Sonnet
+  thrash of #47 is the cautionary precedent).
+- **D5 — Fable permanence.** `lean-architect` / fable provers are permanent teammates for
+  the campaign's duration: never casually shut down, never given mechanical chores; give
+  them sonnet chore subordinates instead (disjoint file ownership). Re-engage idle
+  mid-work agents rather than terminate+redispatch.
+- **D6 — One writer per file; sequenced handoffs.** Never dispatch a second agent onto a
+  live agent's worktree/branch; commit+push+confirm-stopped before a fresh dispatch;
+  never `git add -A` in a shared tree.
+- **D7 — Trust builds, not reports.** A worker's "build green" claim is unverified until
+  the orchestrator sees the local incremental build (or CI) pass itself. Sorry-free
+  claims require `#print axioms` / `check-axioms-live.sh` evidence.
+- **D8 — Build discipline.** Local INCREMENTAL builds only (flock-serialized, warm
+  `.lake`); full/cold builds are forbidden on this host; do not offload the gate to CI
+  (see `docs/build-and-checks.md` and the STATUS build policy).
