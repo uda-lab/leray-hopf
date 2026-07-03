@@ -232,6 +232,12 @@ P0.3 (T-AL-3), the coefficient-functional-as-inner-product Riesz upgrade for P0.
 None of these is a statement risk. Next action: T-AL-1 (coder transcribes S1 + the
 test-family statements from the spike verbatim into `LerayHopf/TorusTestFamily.lean`).
 
+STATEMENT-GATE AMENDMENT (codex P2, PR #77 round 1): P0.4's Lipschitz hypothesis is
+**eventual** — `∀ m, ∃ n₀, ∀ n ≥ n₀, …` (per-family band-limit cutoff), because P0.3
+supplies the estimate only for `n ≥ m`. Boundedness stays universal (`energy_bound`
+holds for all n). Conclusion unchanged (tail property). The spike file carries the
+corrected statement; T-AL-2 must implement THIS form.
+
 ---
 
 ## 3. PR sequence (after GO), owners, and gates
