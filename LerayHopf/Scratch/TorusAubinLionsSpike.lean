@@ -57,25 +57,14 @@ theorem galerkin_test_pairing_lipschitz
 
 /-! ## P0.4 (S3) — the scalar compactness engine (domain-neutral)
 
-Uniformly bounded + per-family uniformly Lipschitz countable family of real curve
-sequences on `[0,T]` ⇒ ONE subsequence along which every family member converges
-uniformly. Bolzano–Weierstrass on `ℚ ∩ [0,T]` + Cantor diagonal + Lipschitz ⇒ uniform
-Cauchy. Scalar-elementary; no Bochner machinery. -/
-
-theorem exists_uniform_subseq_of_lipschitz_family
-    (T : ℝ) (hT : 0 < T) (f : ℕ → ℕ → ℝ → ℝ) (B L : ℕ → ℝ)
-    (hb : ∀ m n t, t ∈ Icc (0 : ℝ) T → |f m n t| ≤ B m)
-    -- EVENTUAL Lipschitz (codex P2 on PR #77): the Galerkin application supplies the
-    -- Lipschitz estimate only for `n` past the test's band-limit cutoff (`m ≤ n` in
-    -- P0.3); finite prefixes are analytically harmless (uniform convergence along a
-    -- subsequence is a tail property), so the engine takes a per-family cutoff `n₀ m`.
-    (hlip : ∀ m, ∃ n₀ : ℕ, ∀ n, n₀ ≤ n → ∀ s t,
-      s ∈ Icc (0 : ℝ) T → t ∈ Icc (0 : ℝ) T → s ≤ t →
-      |f m n t - f m n s| ≤ L m * (t - s)) :
-    ∃ φ : ℕ → ℕ, StrictMono φ ∧
-      ∀ m, ∃ g : ℝ → ℝ,
-        TendstoUniformlyOn (fun n t => f m (φ n) t) g atTop (Icc (0 : ℝ) T) := by
-  sorry -- ALLOW_SORRY: scratch spike (Phase-0, torus-aubinlions-modewise-plan §2 P0.4)
+GRADUATED to production: `LerayHopf.exists_uniform_subseq_of_lipschitz_family`,
+proved sorry-free in `LerayHopf/Bochner/ScalarEquicontinuity.lean` (T-AL-2, PR #79,
+merged 85079d4) with the eventual-Lipschitz `hlip` (codex P2 on PR #77) intact.
+The Phase-0 placeholder that used to live here has been DELETED (codex P3 on PR #80):
+keeping a same-name sorried twin inside `namespace Scratch` silently SHADOWED the
+merged engine in the T-AL-3 capstone wiring below, so the spike's "wiring verified"
+claim was anchored to the placeholder rather than the production interface.  The
+capstone now calls the merged engine fully qualified (`_root_.LerayHopf.…`). -/
 
 /-! ## P0.5 (S4) — Riesz limit curve from uniformly convergent test pairings
 
@@ -233,8 +222,10 @@ theorem exists_galerkin_modewise_extraction
   -- Per-test Lipschitz constants from P0.3 (fires for `n` past the cutoff).
   choose L hL using fun m =>
     galerkin_test_pairing_lipschitz F ν hν u₀ galSeq (w m) (Classical.choose (hwtest m)) (hcut m)
-  -- The T-AL-2 engine over `f m n t := ⟪u_n(t), w m⟫`.
-  obtain ⟨φ, hφ, hconv⟩ := exists_uniform_subseq_of_lipschitz_family T hT
+  -- The MERGED T-AL-2 engine over `f m n t := ⟪u_n(t), w m⟫` — fully qualified so the
+  -- wiring is checked against the production interface, never a Scratch shadow
+  -- (codex P3 on PR #80).
+  obtain ⟨φ, hφ, hconv⟩ := _root_.LerayHopf.exists_uniform_subseq_of_lipschitz_family T hT
     (fun m n t => inner (𝕜 := ℝ) (((galSeq n).u t : L2VF)) ((w m : L2VF)))
     (fun m => ‖(u₀ : L2VF)‖ * ‖((w m : L2Sigma) : L2VF)‖) L
     (fun m n t ht =>
