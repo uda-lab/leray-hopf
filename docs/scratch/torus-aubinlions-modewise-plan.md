@@ -207,6 +207,37 @@ missing-interface fact that cannot be stated. **NO-GO handling:** the failing it
 back to the architect (fable) for route revision — the orchestrator does NOT improvise an
 alternative route (doctrine §D3, `docs/agent-roles.md`).
 
+### ★ PHASE-0 VERDICT (architect/fable, 2026-07-03): **GO**
+
+`LerayHopf/Scratch/TorusAubinLionsSpike.lean` — ALL 11 statements typecheck on the first
+build (`flock … lake build LerayHopf.Scratch.TorusAubinLionsSpike`, EXIT=0, 2953 jobs,
+only the expected marked-sorry warnings; module NOT in the default build target).
+Covered: P0.2 (S1 stokes bound), P0.1 (test family — finite-SPANNING design adopted
+instead of ONB: weak→strong in finite-dim and `t ↦ P_N(u t)` continuity need only a
+finite spanning set of each `velocitySpan N`; `velocitySpan_finiteDimensional` verified
+present), P0.3 (equi-Lipschitz, forward-only), P0.4 (S3 scalar engine, domain-neutral
+statement), P0.5 (S4 Riesz limit curve: ∀t weak conv against `L2Sigma` tests + ball
+bound + AEStronglyMeasurable — all three package-relevant conclusions stated), P0.6a/b/b′/c
+(vector tail identity; H¹ domination gated on `memH1VF` so the `tsum` junk-0 trap is
+closed; `h1EnergySq`-continuity for band-limited curves to consume `reg_bound` soundly;
+ENNReal tail lsc under WEAK convergence for the limit curve), P0.8 (eLpNorm conversion),
+P0.7 (conclusion dry run: `torusAubinLionsPackage_of_galSeq` with the axiom's binder
+list byte-copied INCLUDING `spatial`, conclusion `AubinLionsPackage F ν T u₀ galSeq` —
+all five fields reachable from the pieces above).
+
+Residual proof-time (not statement-time) items, flagged for the owning PRs: pin the
+exact mathlib names for bounded-real Bolzano–Weierstrass (T-AL-2), the MVT/FTC step for
+P0.3 (T-AL-3), the coefficient-functional-as-inner-product Riesz upgrade for P0.6c
+(T-AL-5), and the `eLpNorm`↔`lintegral` bridge (T-AL-6; copy the #44/#47 patterns).
+None of these is a statement risk. Next action: T-AL-1 (coder transcribes S1 + the
+test-family statements from the spike verbatim into `LerayHopf/TorusTestFamily.lean`).
+
+STATEMENT-GATE AMENDMENT (codex P2, PR #77 round 1): P0.4's Lipschitz hypothesis is
+**eventual** — `∀ m, ∃ n₀, ∀ n ≥ n₀, …` (per-family band-limit cutoff), because P0.3
+supplies the estimate only for `n ≥ m`. Boundedness stays universal (`energy_bound`
+holds for all n). Conclusion unchanged (tail property). The spike file carries the
+corrected statement; T-AL-2 must implement THIS form.
+
 ---
 
 ## 3. PR sequence (after GO), owners, and gates
