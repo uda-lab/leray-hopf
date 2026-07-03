@@ -60,6 +60,8 @@ import LerayHopf.TorusConvectionForm
 
 -- T³ Galerkin ODE solver + capstone wiring (issue #24: removes galerkin_ode_solution axiom)
 import LerayHopf.TorusGalerkinScheme
+-- T-AL-1 (#23): torus test family
+import LerayHopf.TorusTestFamily
 import LerayHopf.TorusGalerkinODESolve
 import LerayHopf.TorusGalerkinODECapstone
 
