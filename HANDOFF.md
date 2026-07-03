@@ -1,7 +1,9 @@
 # HANDOFF — Leray–Hopf weak existence (Lean 4 + mathlib)
 
 Self-contained handoff for picking up this project (fresh session or new contributor).
-Last updated: 2026-06-24. Default branch: `main`; work lands via per-issue lane branches + Codex-reviewed PRs.
+Last updated: 2026-07-03. Default branch: `main`; work lands via per-issue lane branches + Codex-reviewed PRs.
+Canonical current axiom frontier: `scripts/check-axioms-live.sh` (ℝ³ = **2** project axioms,
+𝕋³ = **1** project axiom). Where any statement below conflicts with the live pin, the pin wins.
 
 ---
 
@@ -26,15 +28,19 @@ theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < 
 equation (`WeakFormNS`, over canonical Schwartz/smooth div-free tests), the energy inequality on
 `[0,T]`, the initial trace, and the energy class `u ∈ L²(0,T;H¹_σ)`.
 
-- T³ and ℝ³ each closed modulo **3 axioms** (+ 3 kernel: `propext`/`Classical.choice`/`Quot.sound`).
+- Current frontier (2026-07-03): ℝ³ closed modulo **2 axioms**
+  (`galerkin_spacetime_precompact_R3`, `galerkin_limit_passage_R3`); T³ closed modulo **1 axiom**
+  (`aubin_lions`) — each + 3 kernel (`propext`/`Classical.choice`/`Quot.sound`).
 - The entire **spatial+regularity layer** on both domains is built **axiom-free**.
 - Each axiom set passed a **Codex `--effort xhigh` adversarial soundness audit** (T³: 8 rounds;
   ℝ³: 2 rounds + a final faithfulness fix) → **approve**.
-- **R3-d:** the `r3ConvectionGapOp_exists` axiom's analytic content is **proved axiom-free** in
-  `LerayHopf/R3/TrilinearEstimate.lean` — 11 lemmas on `convIntegralSchwartz` (multilinearity, integrability,
-  IBP, antisymmetry under div-free, and the genuine `b_bound` shape `|b(u,v,w)| ≤ C(w)·‖u‖₂·‖v‖₂`), each
-  `#print axioms`-clean. The axiom itself remains (defining `b` on **all** of L²_σ still needs the `(u·∇)v`
-  operator), but its justification prose is no longer admitted — it is verified.
+- **Both convection gap axioms are gone — proved theorem content:**
+  `r3ConvectionGapOp_exists` PROVED as `r3ConvectionGapOp_holds` (determined-form BLT
+  construction, issue #56 / PR #60; built on the R3-d `TrilinearEstimate.lean` lemmas), and
+  `torusConvectionGap_exists` PROVED as `torusConvectionGap_holds` (issue #53 / PR #62).
+- **T³ `galerkin_limit_passage` REMOVED** (issue #25 / PR #75) — proved via
+  `torus_galerkin_limit_passage_of_energyClass` + `torus_energyClass_of_aubinLions`.
+  T³ is **not unconditional**: `aubin_lions` remains live.
 
 ## 2. How to verify (commands)
 
@@ -48,9 +54,11 @@ echo 'import LerayHopf.R3.GalerkinODECapstone
 open LerayHopf
 #print axioms exists_lerayHopf_r3_axiomatic' > /tmp/chk.lean && lake env lean /tmp/chk.lean
 ```
-Toolchain: `leanprover/lean4:v4.31.0-rc2` (see `lean-toolchain`). Only repo `sorry` is the deliberate
-scaffold target `Statement.lean:exists_lerayHopf_torus3_statement` (kept by the no-rename rule;
-superseded by the proved `exists_lerayHopf_torus3_axiomatic`).
+Toolchain: `leanprover/lean4:v4.31.0-rc2` (see `lean-toolchain`). The two capstones are
+`sorryAx`-free (asserted by the live pin). Marked `ALLOW_SORRY` frontier/scaffold debt exists in
+non-capstone files (e.g. `Statement.lean:exists_lerayHopf_torus3_statement`, the deliberate
+scaffold target kept by the no-rename rule, and the `Bochner/`/campaign scaffolds); see
+`docs/STATUS.md` for the ledger — none of it leaks into the capstones.
 
 ## 3. Repository map
 
@@ -67,9 +75,9 @@ superseded by the proved `exists_lerayHopf_torus3_axiomatic`).
 | `LerayHopf/R3/Domain.lean` | ℝ³ L² spaces, component projections | 0 |
 | `LerayHopf/R3/DivergenceFree.lean` | ℝ³ `L2Sigma_R3 := ⨅ φ, ker(divTestFunctional φ)` (weak div × Schwartz), Leray proj | 0 |
 | `LerayHopf/R3/Regularity.lean` | `memH1VF_R3` (MemSobolev), Fourier-integral viscous forms, Schwartz test class | 0 |
-| `LerayHopf/R3/AxiomaticClosure.lean` | ℝ³ axioms + package builder; capstone assembly in `R3/GalerkinODECapstone.lean` (**3 live project axioms**) | 3 |
-| `LerayHopf/TorusGalerkinODECapstone.lean` | T³ capstone `exists_lerayHopf_torus3_axiomatic` (**3 live project axioms**) | 3 |
-| `LerayHopf/R3/GalerkinODECapstone.lean` | ℝ³ capstone `exists_lerayHopf_r3_axiomatic` (**3 live project axioms**) | 3 |
+| `LerayHopf/R3/AxiomaticClosure.lean` | ℝ³ axioms + package builder; capstone assembly in `R3/GalerkinODECapstone.lean` (**2 live project axioms**) | 2 |
+| `LerayHopf/TorusGalerkinODECapstone.lean` | T³ capstone `exists_lerayHopf_torus3_axiomatic` (**1 live project axiom**) | 1 |
+| `LerayHopf/R3/GalerkinODECapstone.lean` | ℝ³ capstone `exists_lerayHopf_r3_axiomatic` (**2 live project axioms**) | 2 |
 | `docs/STATUS.md` | axiom ledger + Codex audit log (per round) | — |
 | `docs/REPORT.md` | narrative final report (T³ + ℝ³) | — |
 | `docs/formalization-review-ja.md` | **Japanese** deep review: key lemmas w/ NL-proof translations, non-trivial tactics, NL↔Lean gaps | — |
@@ -83,34 +91,55 @@ concrete convection integral so `b=0` (secretly-Stokes) is excluded.
 
 | Role | T³ | ℝ³ | Underlying gap |
 |---|---|---|---|
-| Convection form `b` exists (pinned to concrete `∫(u·∇)v·w`) | `torusConvectionGap_exists` | `r3ConvectionGapOp_exists` | no `(u·∇)v` operator / IBP for `Lp` fields |
 | Spacetime precompactness / Aubin–Lions (time half; spatial half **proved** on both) | `aubin_lions` | `galerkin_spacetime_precompact_R3` | Bochner–Sobolev in time + Aubin–Lions lemma |
-| Limit passage (existential good representative, a.e.-linked) | `galerkin_limit_passage` | `galerkin_limit_passage_R3` | nonlinear passage + weak-in-time continuity |
+| Limit passage (existential good representative, a.e.-linked) | **REMOVED** (#25 / PR #75 — proved) | `galerkin_limit_passage_R3` | nonlinear passage + weak-in-time continuity |
+| Convection form `b` exists (pinned to concrete `∫(u·∇)v·w`) | **PROVED** `torusConvectionGap_holds` (#53 / PR #62) | **PROVED** `r3ConvectionGapOp_holds` (#56 / PR #60) | determined-form BLT constructions closed the gap |
 
-Removed axioms (now proved theorems — do NOT list as live):
+Removed axioms (now proved theorem content — do NOT list as live):
 `galerkin_ode_solution` / `galerkin_ode_solution_R3` (issues #24 / #10), `spatial_compactness_R3` (#2),
 `r3GalerkinScheme_exists` (#21), `aubin_lions_R3` (#15/#44), `galerkin_weakLimit_R3` (#47),
-`curlSchwartzDense_holds` (#3), `torus3_NSForms_exist` → swapped for `torusConvectionGap_exists` (#22).
+`curlSchwartzDense_holds` (#3), `torus3_NSForms_exist` → swapped for `torusConvectionGap_exists` (#22),
+`torusConvectionGap_exists` (#53 / PR #62), `r3ConvectionGapOp_exists` (#56 / PR #60),
+T³ `galerkin_limit_passage` (#25 / PR #75).
 
 ## 5. De-axiomatizing: the cost, and why heavy
 
 Each axiom is a thin interface over a **missing mathlib infrastructure pillar**:
 
-- **P1** weak derivatives + `(u·∇)v` operator + IBP/divergence on `Lp` + 3D trilinear estimate — *very heavy* (the convection axioms; deepest "new calculus").
-- **P2** Bochner–Sobolev `W^{1,2}(0,T;X)` + weak time-derivative + **Aubin–Lions lemma** — *heavy* (A2, A3's good representative).
+- **P1** weak derivatives + `(u·∇)v` operator + IBP/divergence on `Lp` + 3D trilinear estimate —
+  **DISCHARGED at the capstone level** (determined-form BLT constructions, #53/#56); no convection
+  axiom is live.
+- **P2** Bochner–Sobolev `W^{1,2}(0,T;X)` + weak time-derivative + **Aubin–Lions lemma** — *heavy*
+  (the remaining `aubin_lions` / `galerkin_spacetime_precompact_R3` content; on T³ being attacked
+  instead via the mode-wise spectral route, issue #23).
 - **P3** **Rellich–Kondrachov** on bounded domains — **PROVED** (ℝ³ FK chain, issue #2; T³ Fourier tails).
-- **P4** nonlinear limit passage (the actual Leray argument) — *heavy*, gated on P1+P2.
+- **P4** nonlinear limit passage (the actual Leray argument) — T³ **PROVED** (#25 / PR #75);
+  ℝ³ (`galerkin_limit_passage_R3`) still live, gated on P2.
 - **P5** ℝ³ Galerkin scheme (Hermite basis / freq projector) — **PROVED** (issue #21, curl-density route).
 
 Full de-axiomatization ≈ **a multi-person-year mathlib sub-chapter**. This is *why* the project
 axiomatizes the frontier cleanly (true, minimal, referenced building blocks) and captures the
 **logical architecture** soundly instead of grinding it out.
 
-## 6. Strategic options for going further
+## 6. Current work queues and strategic options
 
-- **Axiomatize-and-stop** (current state): correct for *this* theorem's architecture. Cost-effective.
-- **Grind one axiom**: best first target is **P5** (ℝ³ Hermite Galerkin scheme — self-contained), or
-  the concrete trilinear bound (we already have `convIntegralSchwartz`).
+**Active next actions (2026-07-03):**
+
+- **T³ (`aubin_lions`, issue #23):** continue the mode-wise spectral campaign after PR #80
+  (T-AL-3 mode-wise Galerkin extraction). Landed, all sorry-free and axiom-neutral: PR #76
+  (replan), #77 (Phase-0 statement gate), #78 (T-AL-1 torus test family + Stokes pairing
+  bound), #79 (T-AL-2 scalar equicontinuity engine), #80. Target: the final rewiring PR that
+  removes `aubin_lions` → unconditional T³. Not done yet.
+- **ℝ³ (2 axioms):** continue the issue #46 `galerkin_spacetime_precompact_R3` campaign
+  (PR #74 step-curve Lp compactness + Galerkin curve library and PR #81 File C Galerkin
+  trilinear bound chain merged, axiom-neutral; PR-3/PR-4 remain) and the #69 / 
+  `galerkin_limit_passage_R3` draft work (open, pin-neutral).
+
+**Strategic options:**
+
+- **Axiomatize-and-stop** (earlier posture): correct for *this* theorem's architecture. Cost-effective.
+- **Grind the frontier** (current posture): the removals to date (ℝ³ 6 → 2, T³ 4 → 1) came from
+  exactly this — pick one axiom, build its missing sub-library, rewire the capstone.
 - **Build a reusable analysis library** (pays off at ≳3–5 downstream PDE/numerical results). Recommended
   **spine, in order**: (1) weak derivatives + `Wᵏ′ᵖ` + grad/div/trace; (2) Lax–Milgram + abstract
   Galerkin/Ritz (cheap, high-leverage, gives FEM scaffold); (3) Rellich–Kondrachov + Aubin–Lions;

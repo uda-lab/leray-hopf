@@ -7,10 +7,11 @@ debt**, never merged sibling files.
 ## Current capstone footprint
 
 `#print axioms exists_lerayHopf_r3_axiomatic` = **2 project axioms + 3 kernel** (no sorryAx).
+`#print axioms exists_lerayHopf_torus3_axiomatic` = **1 project axiom + 3 kernel** (no sorryAx).
 Live R3 axioms: `galerkin_spacetime_precompact_R3`, `galerkin_limit_passage_R3`.
-Live T³ axioms: `aubin_lions`, `galerkin_limit_passage`.
+Live T³ axiom: `aubin_lions`.
 
-**Removed so far (original 6 → current 2):**
+**Removed so far (R3: original 6 → current 2; T³: original 4 → current 1):**
 - `spatial_compactness_R3` (#2) — Fréchet–Kolmogorov chain
 - `galerkin_ode_solution_R3` (#10) — finite-dim ODE solver
 - `aubin_lions_R3` → split → time content became `galerkinSpaceTimeExtraction_R3` → PROVED (#15/#44)
@@ -19,6 +20,8 @@ Live T³ axioms: `aubin_lions`, `galerkin_limit_passage`.
 - `curlSchwartzDense_holds` (#3) — Fourier route
 - `r3ConvectionGapOp_exists` (#56/PR #60) — determined-form BLT construction (`r3ConvectionGapOp_holds`)
 - `torusConvectionGap_exists` (#53/PR #62) — determined-form torus construction (`torusConvectionGap_holds`)
+- T³ `galerkin_limit_passage` (#25/PR #75) — proved via `torus_galerkin_limit_passage_of_energyClass`
+  + `torus_energyClass_of_aubinLions`; T³ frontier 2 → 1
 
 The `check-axioms-live.sh` script is the canonical live pin.
 
@@ -67,10 +70,17 @@ L²-Fourier base for A/B/γ.
   in the two solution slots at fixed Schwartz tests, not a canonical continuous pure-`L²³`
   operator.
 - **Stream D — Bochner–Sobolev-in-time (P-δ), abstract.** The Gelfand-triple time-Sobolev +
-  Aubin–Lions library. Orthogonal (time direction). **Unblocks `aubin_lions`/`limit_passage`
-  on BOTH ℝ³ and T³.** Highest leverage, largest.
-- **(Stream T — T³ substantiation, optional/lower priority.** T³ is now at **2 axioms** (same as ℝ³);
-  shares the abstract layer + Stream D.)
+  Aubin–Lions library. Orthogonal (time direction). **Unblocks the remaining ℝ³ pair
+  (`galerkin_spacetime_precompact_R3`, `galerkin_limit_passage_R3`) via the Bochner/Simon
+  route.** Highest leverage, largest.
+- **Stream T — T³ `aubin_lions` removal (issue #23), active.** T³ is now at **1 axiom**
+  (`aubin_lions`; `galerkin_limit_passage` removed by #25/PR #75). No longer riding the
+  generic Bochner Aubin–Lions route of Stream D: since the PR #76 replan it has its own
+  **mode-wise spectral campaign** (Fourier-mode equicontinuity + diagonal extraction).
+  Landed so far (axiom-neutral infrastructure, sorry-free): PR #77 (Phase-0 statement gate),
+  PR #78 (T-AL-1 torus test family + Stokes pairing bound), PR #79 (T-AL-2 domain-neutral
+  scalar equicontinuity engine), PR #80 (T-AL-3 mode-wise Galerkin extraction). Remaining:
+  the final assembly/rewiring PR(s) that remove `aubin_lions` → potential unconditional T³.
 
 Parallel-safety: the completed A/B/C files remain separate from the live D work; the only shared
 read-only base is `FourierL2`. The remaining capstone work is sequential.
@@ -96,9 +106,15 @@ interleavable with ongoing streams.
 
 ## Honest horizon (no over-promising)
 
-- **Already achieved:** Streams A and B + C0/track3 + #47 + C3 completed → **6 → 2 axioms** (ℝ³).
-- **Months-class sub-projects (remaining):** Stream D (Bochner-time / Aubin–Lions–Simon). It gates
-  the remaining 2 axioms. Full axiom-free completion ⟺ D done = the multi-person-year mathlib
-  PDE sub-chapter.
-- Realistic dent of a sustained push from the current frontier: **2 → 0 axioms** (Stream D removes
-  the time-compactness + limit-passage pair).
+- **Already achieved:** Streams A and B + C0/track3 + #47 + C3 completed → **6 → 2 axioms** (ℝ³);
+  on T³, #24 + #53 + #25 → **4 → 1 axiom** (`aubin_lions` only).
+- **The two remaining endpoints are now on distinct routes:**
+  - **ℝ³ (2 axioms):** `galerkin_spacetime_precompact_R3` and `galerkin_limit_passage_R3` still
+    need the Bochner/Simon (Stream D) route — issue #46 is building the precompactness
+    infrastructure (PRs #74, #81 merged, axiom-neutral so far) and #69 (open/draft, pin-neutral)
+    carries the `galerkin_limit_passage_R3` work.
+  - **T³ (1 axiom):** `aubin_lions` has a specific active mode-wise spectral campaign
+    (issue #23, PRs #76–#80 landed); its completion would make T³ **unconditional**.
+    Not achieved yet — `aubin_lions` is live until the final rewiring PR.
+- Full axiom-free ℝ³ completion ⟺ Stream D done = the multi-person-year mathlib PDE sub-chapter;
+  realistic dent of a sustained push: ℝ³ **2 → 0** and T³ **1 → 0**.
