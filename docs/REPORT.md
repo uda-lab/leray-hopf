@@ -1,11 +1,12 @@
 # Autonomous run — final report
 
 > **Historical snapshot.** This report describes the original autonomous run (T³, branch
-> `autorun/leray-hopf-torus3`). For the *current* axiom frontier and status see
-> [`STATUS.md`](STATUS.md) and the repo [`README`](../README.md). As of 2026-06-30 the ℝ³ capstone rests on **2 project axioms**
-> (`r3ConvectionGapOp_exists` proved as `r3ConvectionGapOp_holds`, issue #56/PR #60) and
-> the 𝕋³ capstone rests on **2 project axioms**
-> (`torusConvectionGap_exists` proved as `torusConvectionGap_holds`, issue #53/PR #62).
+> `autorun/leray-hopf-torus3`) and is NOT updated to track the frontier. For the *current*
+> axiom frontier and status see [`STATUS.md`](STATUS.md), the repo [`README`](../README.md),
+> and the canonical live pin `scripts/check-axioms-live.sh`. As of 2026-07-03 the ℝ³ capstone
+> rests on **2 project axioms** (`galerkin_spacetime_precompact_R3`,
+> `galerkin_limit_passage_R3`) and the 𝕋³ capstone rests on **1 project axiom**
+> (`aubin_lions`; `galerkin_limit_passage` removed by issue #25/PR #75).
 
 Leray–Hopf weak existence on the real 3-torus, built bottom-up on mathlib.
 Branch `autorun/leray-hopf-torus3`, 10 milestone commits on top of `9232c05`.
