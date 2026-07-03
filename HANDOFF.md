@@ -1,8 +1,8 @@
 # HANDOFF — Leray–Hopf weak existence (Lean 4 + mathlib)
 
 Self-contained handoff for picking up this project (fresh session or new contributor).
-Last updated: 2026-07-03. Default branch: `main`; work lands via per-issue lane branches + Codex-reviewed PRs.
-Canonical current axiom frontier: `scripts/check-axioms-live.sh` (ℝ³ = **2** project axioms,
+Last updated: 2026-07-04. Default branch: `main`; work lands via per-issue lane branches + Codex-reviewed PRs.
+Canonical current axiom frontier: `scripts/check-axioms-live.sh` (ℝ³ = **1** project axiom,
 𝕋³ = **1** project axiom). Where any statement below conflicts with the live pin, the pin wins.
 
 ---
@@ -28,8 +28,8 @@ theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < 
 equation (`WeakFormNS`, over canonical Schwartz/smooth div-free tests), the energy inequality on
 `[0,T]`, the initial trace, and the energy class `u ∈ L²(0,T;H¹_σ)`.
 
-- Current frontier (2026-07-03): ℝ³ closed modulo **2 axioms**
-  (`galerkin_spacetime_precompact_R3`, `galerkin_limit_passage_R3`); T³ closed modulo **1 axiom**
+- Current frontier (2026-07-04): ℝ³ closed modulo **1 axiom**
+  (`galerkin_limit_passage_R3`); T³ closed modulo **1 axiom**
   (`aubin_lions`) — each + 3 kernel (`propext`/`Classical.choice`/`Quot.sound`).
 - The entire **spatial+regularity layer** on both domains is built **axiom-free**.
 - Each axiom set passed a **Codex `--effort xhigh` adversarial soundness audit** (T³: 8 rounds;
@@ -41,6 +41,10 @@ equation (`WeakFormNS`, over canonical Schwartz/smooth div-free tests), the ener
 - **T³ `galerkin_limit_passage` REMOVED** (issue #25 / PR #75) — proved via
   `torus_galerkin_limit_passage_of_energyClass` + `torus_energyClass_of_aubinLions`.
   T³ is **not unconditional**: `aubin_lions` remains live.
+- **ℝ³ `galerkin_spacetime_precompact_R3` DISCHARGED** (axiom → theorem, issue #46 PR-4,
+  2026-07-04) — the LOCAL Aubin–Lions–Simon spacetime precompactness is now assembled
+  sorry-free via File E `LerayHopf/R3/SpacetimePrecompact.lean`
+  (`galerkin_spacetime_precompact_of_goodSampling`); ℝ³ frontier 2 → 1.
 
 ## 2. How to verify (commands)
 
@@ -75,9 +79,9 @@ scaffold target kept by the no-rename rule, and the `Bochner/`/campaign scaffold
 | `LerayHopf/R3/Domain.lean` | ℝ³ L² spaces, component projections | 0 |
 | `LerayHopf/R3/DivergenceFree.lean` | ℝ³ `L2Sigma_R3 := ⨅ φ, ker(divTestFunctional φ)` (weak div × Schwartz), Leray proj | 0 |
 | `LerayHopf/R3/Regularity.lean` | `memH1VF_R3` (MemSobolev), Fourier-integral viscous forms, Schwartz test class | 0 |
-| `LerayHopf/R3/AxiomaticClosure.lean` | ℝ³ axioms + package builder; capstone assembly in `R3/GalerkinODECapstone.lean` (**2 live project axioms**) | 2 |
+| `LerayHopf/R3/AxiomaticClosure.lean` | ℝ³ axioms + package builder; capstone assembly in `R3/GalerkinODECapstone.lean` (**1 live project axiom**) | 1 |
 | `LerayHopf/TorusGalerkinODECapstone.lean` | T³ capstone `exists_lerayHopf_torus3_axiomatic` (**1 live project axiom**) | 1 |
-| `LerayHopf/R3/GalerkinODECapstone.lean` | ℝ³ capstone `exists_lerayHopf_r3_axiomatic` (**2 live project axioms**) | 2 |
+| `LerayHopf/R3/GalerkinODECapstone.lean` | ℝ³ capstone `exists_lerayHopf_r3_axiomatic` (**1 live project axiom**) | 1 |
 | `docs/STATUS.md` | axiom ledger + Codex audit log (per round) | — |
 | `docs/REPORT.md` | narrative final report (T³ + ℝ³) | — |
 | `docs/formalization-review-ja.md` | **Japanese** deep review: key lemmas w/ NL-proof translations, non-trivial tactics, NL↔Lean gaps | — |
@@ -91,7 +95,7 @@ concrete convection integral so `b=0` (secretly-Stokes) is excluded.
 
 | Role | T³ | ℝ³ | Underlying gap |
 |---|---|---|---|
-| Spacetime precompactness / Aubin–Lions (time half; spatial half **proved** on both) | `aubin_lions` | `galerkin_spacetime_precompact_R3` | Bochner–Sobolev in time + Aubin–Lions lemma |
+| Spacetime precompactness / Aubin–Lions (time half; spatial half **proved** on both) | `aubin_lions` | **DISCHARGED** (#46 PR-4, 2026-07-04 — theorem via File E `SpacetimePrecompact.lean`) | Bochner–Sobolev in time + Aubin–Lions lemma (T³ side only) |
 | Limit passage (existential good representative, a.e.-linked) | **REMOVED** (#25 / PR #75 — proved) | `galerkin_limit_passage_R3` | nonlinear passage + weak-in-time continuity |
 | Convection form `b` exists (pinned to concrete `∫(u·∇)v·w`) | **PROVED** `torusConvectionGap_holds` (#53 / PR #62) | **PROVED** `r3ConvectionGapOp_holds` (#56 / PR #60) | determined-form BLT constructions closed the gap |
 
@@ -100,7 +104,8 @@ Removed axioms (now proved theorem content — do NOT list as live):
 `r3GalerkinScheme_exists` (#21), `aubin_lions_R3` (#15/#44), `galerkin_weakLimit_R3` (#47),
 `curlSchwartzDense_holds` (#3), `torus3_NSForms_exist` → swapped for `torusConvectionGap_exists` (#22),
 `torusConvectionGap_exists` (#53 / PR #62), `r3ConvectionGapOp_exists` (#56 / PR #60),
-T³ `galerkin_limit_passage` (#25 / PR #75).
+T³ `galerkin_limit_passage` (#25 / PR #75), `galerkin_spacetime_precompact_R3`
+(#46 PR-4, 2026-07-04).
 
 ## 5. De-axiomatizing: the cost, and why heavy
 
@@ -109,9 +114,9 @@ Each axiom is a thin interface over a **missing mathlib infrastructure pillar**:
 - **P1** weak derivatives + `(u·∇)v` operator + IBP/divergence on `Lp` + 3D trilinear estimate —
   **DISCHARGED at the capstone level** (determined-form BLT constructions, #53/#56); no convection
   axiom is live.
-- **P2** Bochner–Sobolev `W^{1,2}(0,T;X)` + weak time-derivative + **Aubin–Lions lemma** — *heavy*
-  (the remaining `aubin_lions` / `galerkin_spacetime_precompact_R3` content; on T³ being attacked
-  instead via the mode-wise spectral route, issue #23).
+- **P2** Bochner–Sobolev `W^{1,2}(0,T;X)` + weak time-derivative + **Aubin–Lions lemma** — the ℝ³
+  half (`galerkin_spacetime_precompact_R3`) **DISCHARGED** (#46 PR-4, step-curve route, File E);
+  remaining: the T³ `aubin_lions` content, attacked via the mode-wise spectral route (issue #23).
 - **P3** **Rellich–Kondrachov** on bounded domains — **PROVED** (ℝ³ FK chain, issue #2; T³ Fourier tails).
 - **P4** nonlinear limit passage (the actual Leray argument) — T³ **PROVED** (#25 / PR #75);
   ℝ³ (`galerkin_limit_passage_R3`) still live, gated on P2.
@@ -123,22 +128,23 @@ axiomatizes the frontier cleanly (true, minimal, referenced building blocks) and
 
 ## 6. Current work queues and strategic options
 
-**Active next actions (2026-07-03):**
+**Active next actions (2026-07-04):**
 
 - **T³ (`aubin_lions`, issue #23):** continue the mode-wise spectral campaign after PR #80
   (T-AL-3 mode-wise Galerkin extraction). Landed, all sorry-free and axiom-neutral: PR #76
   (replan), #77 (Phase-0 statement gate), #78 (T-AL-1 torus test family + Stokes pairing
   bound), #79 (T-AL-2 scalar equicontinuity engine), #80. Target: the final rewiring PR that
   removes `aubin_lions` → unconditional T³. Not done yet.
-- **ℝ³ (2 axioms):** continue the issue #46 `galerkin_spacetime_precompact_R3` campaign
-  (PR #74 step-curve Lp compactness + Galerkin curve library and PR #81 File C Galerkin
-  trilinear bound chain merged, axiom-neutral; PR-3/PR-4 remain) and the #69 / 
-  `galerkin_limit_passage_R3` draft work (open, pin-neutral).
+- **ℝ³ (1 axiom):** the issue #46 `galerkin_spacetime_precompact_R3` campaign is
+  **COMPLETE** (PR #74 step-curve Lp compactness + Galerkin curve library, PR #81 File C
+  trilinear bound chain, PR #86 File D time-sampling modulus, PR-4 File E discharge on
+  2026-07-04: axiom → theorem). Remaining: the #69 `galerkin_limit_passage_R3` work
+  (open, pin-neutral) — the last ℝ³ axiom.
 
 **Strategic options:**
 
 - **Axiomatize-and-stop** (earlier posture): correct for *this* theorem's architecture. Cost-effective.
-- **Grind the frontier** (current posture): the removals to date (ℝ³ 6 → 2, T³ 4 → 1) came from
+- **Grind the frontier** (current posture): the removals to date (ℝ³ 6 → 1, T³ 4 → 1) came from
   exactly this — pick one axiom, build its missing sub-library, rewire the capstone.
 - **Build a reusable analysis library** (pays off at ≳3–5 downstream PDE/numerical results). Recommended
   **spine, in order**: (1) weak derivatives + `Wᵏ′ᵖ` + grad/div/trace; (2) Lax–Milgram + abstract

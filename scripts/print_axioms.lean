@@ -22,8 +22,7 @@
 --
 --   exists_lerayHopf_r3_axiomatic — EXACTLY:
 --     propext  Classical.choice  Quot.sound
---     LerayHopf.galerkin_limit_passage_R3
---     LerayHopf.galerkin_spacetime_precompact_R3  (2 project axioms)
+--     LerayHopf.galerkin_limit_passage_R3  (1 project axiom)
 --     (r3ConvectionGapOp_exists REMOVED — issue #56 — proved as r3ConvectionGapOp_holds)
 --     (spatial_compactness_R3 REMOVED — issue #2 — now a theorem via the FK chain)
 --     (r3GalerkinScheme_exists REMOVED — issue #21 — now a theorem, SWAPPED for the
@@ -50,6 +49,9 @@
 --      b_cont_fixedTest ≡ b_bound so the fixed-test bound is still assumed, not proved;
 --      what genuinely becomes theorem content: multilinear algebra + density;
 --      net R3 project axioms still 3)
+--     (galerkin_spacetime_precompact_R3 REMOVED — issue #46 PR-4 — converted to a THEOREM in
+--      ArzelaAscoliTime.lean by delegation to galerkin_spacetime_precompact_of_goodSampling
+--      (File E, SpacetimePrecompact.lean); net R3 project axioms now 1)
 --
 --   lower_bound_from_inverse_square_lifespan (Core representative) — EXACTLY:
 --     propext  Classical.choice  Quot.sound  (no project axioms)

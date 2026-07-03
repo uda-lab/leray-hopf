@@ -34,9 +34,11 @@ pointwise-in-time strong equicontinuity. The Mathlib extraction chain is:
 
 ## Declarations (dependency order)
 
-### Group A — One sound residual axiom
+### Group A — Local Aubin–Lions–Simon precompactness (THEOREM)
 
-- `galerkin_spacetime_precompact_R3`  (axiom A)  — Aubin–Lions–Simon L²-in-time precompactness
+- `galerkin_spacetime_precompact_R3`  — Aubin–Lions–Simon L²-in-time precompactness; converted
+    from `axiom` to `theorem` (issue #46 PR-4), discharged by File E
+    (`galerkin_spacetime_precompact_of_goodSampling`).
 
 ### Local plumbing helpers (proved)
 
@@ -60,24 +62,27 @@ pointwise-in-time strong equicontinuity. The Mathlib extraction chain is:
 
 - `u_lim_aestronglyMeasurable`   — calls diag_ae_subseq + galerkin_weakLimit_R3
 
-## Assumptions (axioms introduced here — issue #47 PR-A after cleanup)
+## Assumptions (axioms introduced here — issue #46 PR-4 after discharge)
 
-1. `galerkin_spacetime_precompact_R3` — ALLOW_AXIOM (REFINE-CAPABLE): LOCAL Aubin–Lions–Simon
-   spacetime precompactness on ℝ³ — for EVERY input subsequence ψ and every ball radius k:ℕ,
-   the per-ball Galerkin curve sequence along ψ has a FURTHER subsequence ρ converging to zero
-   in the L²(0,T; L²(B_k)) Bochner norm (eLpNorm of (restrictToBall k ∘ galSeq ∘ ψ ∘ ρ - g_k)
-   → 0). SOUND/LOCAL: no tightness, no pointwise equicontinuity, no global-L² claim. Refine-
-   capability (ψ input) is essential for the Cantor-diagonal tower. Mathlib lacks the Bochner-
-   valued Aubin–Lions/Fréchet–Kolmogorov theorem in L²(0,T;X); scheme-independent; reusable
-   for torus #23.
+This file now introduces **ZERO axioms**.
 
-Net R3 project axioms from this file: 1 (galerkin_spacetime_precompact_R3).
-Combined with galerkin_limit_passage_R3 and r3_NSForms_exist (from AxiomaticClosure): 3 total.
+The former residual axiom `galerkin_spacetime_precompact_R3` (REFINE-CAPABLE LOCAL Aubin–Lions–
+Simon spacetime precompactness on ℝ³) was DISCHARGED on 2026-07-04 (issue #46 PR-4): it is now a
+`theorem` proved by delegation to `galerkin_spacetime_precompact_of_goodSampling` (File E,
+`LerayHopf/R3/SpacetimePrecompact.lean`), which assembles it sorry-free from the step-curve
+total-boundedness engine (the `n`-uniform integrated sampling modulus + Rellich ball-compactness).
+
+Net R3 project axioms from this file: 0.
+The remaining R3 project axiom is `galerkin_limit_passage_R3` (from `AxiomaticClosure`).
 -/
 
 import LerayHopf.R3.AxiomaticClosure   -- GalerkinSolutionData_R3, R3GalerkinScheme, R3NSForms
 import LerayHopf.R3.SpatialCompactness -- LocalRellichInput, L2ballR3, restrictToBall
 import LerayHopf.R3.DivergenceFree     -- L2VF_R3_separable, L2Sigma_R3_weaklyClosed (WL-1, WL-4)
+-- E2 galerkin_spacetime_precompact_of_goodSampling — discharges galerkin_spacetime_precompact_R3
+-- (issue #46 PR-4). SpacetimePrecompact sits STRICTLY UPSTREAM: it does NOT import this file,
+-- so there is no import cycle (gate-checked: no transitive edge back to ArzelaAscoliTime).
+import LerayHopf.R3.SpacetimePrecompact
 
 -- tendstoInMeasure_of_tendsto_eLpNorm, TendstoInMeasure.exists_seq_tendsto_ae
 import Mathlib.MeasureTheory.Function.ConvergenceInMeasure
@@ -94,9 +99,11 @@ namespace LerayHopf
 
 open MeasureTheory Filter Topology Metric
 
-/-! ### Group A — Residual axioms and abstract FA primitives -/
+/-! ### Group A — Local Aubin–Lions–Simon precompactness and abstract FA primitives -/
 
-/-- **Axiom A — LOCAL Aubin–Lions–Simon spacetime precompactness on ℝ³ (REFINE-CAPABLE).**
+/-- **`galerkin_spacetime_precompact_R3` — LOCAL Aubin–Lions–Simon spacetime precompactness on
+ℝ³ (REFINE-CAPABLE).**  [issue #46 PR-4: converted from `axiom` to `theorem`, discharged by
+`galerkin_spacetime_precompact_of_goodSampling` (File E, `SpacetimePrecompact.lean`).]
 
 For every input subsequence `ψ : ℕ → ℕ` (strictly monotone) and every ball radius `k : ℕ`,
 there is a FURTHER strictly-monotone `ρ : ℕ → ℕ` and a measurable limit curve
@@ -105,7 +112,7 @@ there is a FURTHER strictly-monotone `ρ : ℕ → ℕ` and a measurable limit c
 
 **Why refine-capable?** The Cantor-diagonal construction in `diag_ae_subseq` builds the tower
 `φ_0 = ρ_0`, `φ_{k+1} = φ_k ∘ ρ_{k+1}` inductively, where at each step we extract a FURTHER
-subsequence of the CURRENT one. This requires applying the compactness axiom to the composition
+subsequence of the CURRENT one. This requires applying the compactness result to the composition
 `galSeq ∘ φ_k` — but `galSeq n : GalerkinSolutionData_R3 … n` has the level `n` baked into
 its dependent type, making reindexing `n ↦ galSeq (φ_k n)` type-incorrect as a new `galSeq`.
 The refine-capable form avoids reindexing by keeping `galSeq` fixed and instead taking the
@@ -119,8 +126,13 @@ holds for every input `ψ`.
 
 **Mathematical content:** Aubin–Lions–Simon compactness theorem in `L²(0,T; L²(B_k))`.
 SOUND/LOCAL: no tightness, no pointwise-in-time equicontinuity, no global-L² claim.
-Mathlib lacks the Bochner-valued Aubin–Lions/Fréchet–Kolmogorov theorem in L²(0,T;X). -/
-axiom galerkin_spacetime_precompact_R3 -- ALLOW_AXIOM: LOCAL Aubin–Lions–Simon spacetime precompactness on ℝ³, REFINE-CAPABLE form — for EVERY subsequence ψ and every ball radius k:ℕ, the per-ball Galerkin curve sequence (along ψ) has a FURTHER subsequence ρ converging to zero in the L²(0,T;L²(B_k)) Bochner norm. SOUND/LOCAL (any subseq of the bounded Galerkin sequence is still per-ball precompact ⇒ has a convergent sub-subseq): no tightness, no strong-norm time-equicontinuity, no global-L² claim. Refine-capability (the ψ input) is what enables the Cantor-diagonal nesting across balls. Mathlib lacks Bochner Aubin–Lions/Fréchet–Kolmogorov in L²(0,T;X); scheme-independent; reusable for torus #23.
+Mathlib lacks the Bochner-valued Aubin–Lions/Fréchet–Kolmogorov theorem in L²(0,T;X); the
+concrete route (step-curve total-boundedness via the `n`-uniform integrated sampling modulus +
+Rellich ball-compactness) is assembled sorry-free in `SpacetimePrecompact.lean`.
+
+**Proof:** delegated to `galerkin_spacetime_precompact_of_goodSampling` (E2), which has the
+BYTE-IDENTICAL statement. -/
+theorem galerkin_spacetime_precompact_R3
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
@@ -131,7 +143,8 @@ axiom galerkin_spacetime_precompact_R3 -- ALLOW_AXIOM: LOCAL Aubin–Lions–Sim
         (fun n => eLpNorm
           (fun t => restrictToBall k ((galSeq (ψ (ρ n))).u t : L2VF_R3) - g_k t)
           2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)))
-        Filter.atTop (nhds 0)
+        Filter.atTop (nhds 0) :=
+  galerkin_spacetime_precompact_of_goodSampling 𝔊 F ν hν T hT u₀ galSeq ψ hψ k
 
 /-- **WL-5 — Weak limits of sequences in `L2Sigma_R3` remain in `L2Sigma_R3`.**
 

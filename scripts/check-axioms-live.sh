@@ -25,10 +25,9 @@
 #           assembled in TorusGalerkinODECapstone.lean (relocated to avoid import cycle).
 #           Net 𝕋³ project axioms now 1.
 #
-#   exists_lerayHopf_r3_axiomatic — exactly 5 axioms:
+#   exists_lerayHopf_r3_axiomatic — exactly 4 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
-#     LerayHopf.galerkin_limit_passage_R3
-#     LerayHopf.galerkin_spacetime_precompact_R3  (2 project)
+#     LerayHopf.galerkin_limit_passage_R3  (1 project)
 #     NOTE: spatial_compactness_R3 REMOVED (issue #2) — now a theorem via the FK chain.
 #     NOTE: r3GalerkinScheme_exists REMOVED (issue #21) — now a theorem, SWAPPED for the
 #           thinner curlSchwartzDense_holds density axiom.
@@ -63,6 +62,12 @@
 #     NOTE: r3ConvectionGapOp_exists REMOVED (issue #56) — proved sorry-free as
 #           r3ConvectionGapOp_holds by the determined-form BLT construction. Net R3 project axioms
 #           now 2.
+#     NOTE: galerkin_spacetime_precompact_R3 REMOVED (issue #46 PR-4, 2026-07-04) — converted to a
+#           THEOREM in ArzelaAscoliTime.lean by delegation to
+#           galerkin_spacetime_precompact_of_goodSampling (File E, SpacetimePrecompact.lean),
+#           which assembles the LOCAL Aubin–Lions–Simon precompactness sorry-free from the
+#           step-curve total-boundedness engine (n-uniform integrated sampling modulus + Rellich
+#           ball-compactness). Net R3 project axioms now 1.
 #
 #   lower_bound_from_inverse_square_lifespan (Core torus) — exactly 3 kernel axioms,
 #     no project axioms, no sorryAx.
@@ -195,7 +200,7 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 #   (determined-form convection operator, ConvectionExtension.lean C11). Net R3 project axioms now 2.
 # ---------------------------------------------------------------------------
 # Pin 2: exists_lerayHopf_r3_axiomatic
-#   2 project axioms + 3 kernel = 5 total
+#   1 project axiom + 3 kernel = 4 total
 #   (spatial_compactness_R3 removed — issue #2 — now a theorem via the FK chain)
 #   (r3GalerkinScheme_exists removed — issue #21 — now a theorem, SWAPPED for the
 #    thinner curlSchwartzDense_holds density axiom)
@@ -222,11 +227,14 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 #   (galerkin_weakLimit_R3 REMOVED — issue #47 PR-A — proved as a theorem via the strong
 #    ball-exhaustion + Mazur route; L2VF_R3_weakSeqCompact_closedBall deleted as dead code.
 #    Net R3 project axioms now 3.)
+#   (galerkin_spacetime_precompact_R3 REMOVED — issue #46 PR-4 — converted to a theorem in
+#    ArzelaAscoliTime.lean by delegation to galerkin_spacetime_precompact_of_goodSampling
+#    (File E, SpacetimePrecompact.lean), assembled sorry-free from the step-curve
+#    total-boundedness engine. Net R3 project axioms now 1.)
 # ---------------------------------------------------------------------------
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
   "propext Classical.choice Quot.sound
-   LerayHopf.galerkin_limit_passage_R3
-   LerayHopf.galerkin_spacetime_precompact_R3"
+   LerayHopf.galerkin_limit_passage_R3"
 
 # ---------------------------------------------------------------------------
 # Pin 3: Core torus representative — no project axioms, no sorryAx
@@ -244,4 +252,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets (R3: 2 project axioms, 𝕋³: 1 project axiom)."
+echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets (R3: 1 project axiom, 𝕋³: 1 project axiom)."
