@@ -467,6 +467,227 @@ theorem eLpNorm_three_le_interp_pub {G : Type*} [NormedAddCommGroup G] (f : Doma
 
 /-! ### C4 — energy-class trilinear bound on `convIntegralSchwartz` -/
 
+/-- Local scalar Schwartz product used in the C4 Hölder estimate. -/
+private noncomputable def schwartzMul_energy
+    (f g : SchwartzMap Domain3 ℝ) : SchwartzMap Domain3 ℝ :=
+  SchwartzMap.bilinLeftCLM (ContinuousLinearMap.mul ℝ ℝ) g.hasTemperateGrowth f
+
+@[simp] private theorem schwartzMul_energy_apply (f g : SchwartzMap Domain3 ℝ) (x : Domain3) :
+    schwartzMul_energy f g x = f x * g x := by
+  simp [schwartzMul_energy, ContinuousLinearMap.mul_apply']
+
+/-- L¹ Cauchy-Schwarz for two scalar Schwartz functions. -/
+private theorem schwartz_integral_abs_mul_le_energy (f g : SchwartzMap Domain3 ℝ) :
+    (∫ x : Domain3, |f x| * |g x| ∂(volume : Measure Domain3))
+      ≤ ‖f.toLp 2 (volume : Measure Domain3)‖ * ‖g.toLp 2 (volume : Measure Domain3)‖ := by
+  have hf : MemLp (f : Domain3 → ℝ) (ENNReal.ofReal 2) (volume : Measure Domain3) := by
+    have := f.memLp 2 (volume : Measure Domain3)
+    simpa using this
+  have hg : MemLp (g : Domain3 → ℝ) (ENNReal.ofReal 2) (volume : Measure Domain3) := by
+    have := g.memLp 2 (volume : Measure Domain3)
+    simpa using this
+  have hmain := MeasureTheory.integral_mul_norm_le_Lp_mul_Lq
+    (μ := (volume : Measure Domain3)) (f := (f : Domain3 → ℝ)) (g := (g : Domain3 → ℝ))
+    (Real.HolderConjugate.two_two) hf hg
+  have hnf : ‖f.toLp 2 (volume : Measure Domain3)‖
+      = (∫ x : Domain3, ‖f x‖ ^ (2 : ℝ) ∂(volume : Measure Domain3)) ^ (1 / (2 : ℝ)) := by
+    rw [SchwartzMap.norm_toLp' (by simp) (by simp)]
+    norm_num
+  have hng : ‖g.toLp 2 (volume : Measure Domain3)‖
+      = (∫ x : Domain3, ‖g x‖ ^ (2 : ℝ) ∂(volume : Measure Domain3)) ^ (1 / (2 : ℝ)) := by
+    rw [SchwartzMap.norm_toLp' (by simp) (by simp)]
+    norm_num
+  rw [hnf, hng]
+  calc (∫ x : Domain3, |f x| * |g x| ∂(volume : Measure Domain3))
+      = ∫ x : Domain3, ‖f x‖ * ‖g x‖ ∂(volume : Measure Domain3) := by
+        simp only [Real.norm_eq_abs]
+    _ ≤ _ := hmain
+
+/-- The `(3,6) -> 2` Hölder step for a product of two Schwartz factors. -/
+private theorem schwartz_mul_L2_norm_le_L3_L6_energy (f h : SchwartzMap Domain3 ℝ) :
+    ‖(schwartzMul_energy f h).toLp 2 (volume : Measure Domain3)‖
+      ≤ (eLpNorm (f : Domain3 → ℝ) 3 (volume : Measure Domain3)).toReal
+        * (eLpNorm (h : Domain3 → ℝ) 6 (volume : Measure Domain3)).toReal := by
+  haveI : ENNReal.HolderTriple 3 6 2 := by
+    have h : Real.HolderTriple (3 : ℝ) (6 : ℝ) (2 : ℝ) := by constructor <;> norm_num
+    simpa only [ENNReal.ofReal_ofNat] using h.ennrealOfReal
+  have hholder : eLpNorm (fun x : Domain3 => f x * h x) 2 (volume : Measure Domain3)
+      ≤ eLpNorm (f : Domain3 → ℝ) 3 (volume : Measure Domain3)
+        * eLpNorm (h : Domain3 → ℝ) 6 (volume : Measure Domain3) := by
+    have := MeasureTheory.eLpNorm_le_eLpNorm_mul_eLpNorm_of_nnnorm (p := (3 : ENNReal))
+      (q := (6 : ENNReal)) (r := (2 : ENNReal))
+      (μ := (volume : Measure Domain3))
+      f.continuous.aestronglyMeasurable h.continuous.aestronglyMeasurable
+      (fun a b : ℝ => a * b) 1
+      (Filter.Eventually.of_forall fun x => by
+        simp only [nnnorm_mul, one_mul]
+        exact le_refl _)
+    simpa only [ENNReal.coe_one, one_mul] using this
+  rw [SchwartzMap.norm_toLp, ← ENNReal.toReal_mul]
+  refine ENNReal.toReal_mono ?_ ?_
+  · exact ENNReal.mul_ne_top (SchwartzMap.eLpNorm_lt_top f 3 (volume : Measure Domain3)).ne
+      (SchwartzMap.eLpNorm_lt_top h 6 (volume : Measure Domain3)).ne
+  · refine (eLpNorm_congr_norm_ae (Filter.Eventually.of_forall fun x => ?_)).le.trans hholder
+    simp [schwartzMul_energy]
+
+/-- Per-term `(3,2,6)` Hölder bound for a scalar Schwartz triple. -/
+private theorem schwartz_trilinear_bound_L326_energy (f g h : SchwartzMap Domain3 ℝ) :
+    |∫ x : Domain3, (f x) * (g x) * (h x) ∂(volume : Measure Domain3)|
+      ≤ (eLpNorm (f : Domain3 → ℝ) 3 (volume : Measure Domain3)).toReal
+        * ‖g.toLp 2 (volume : Measure Domain3)‖
+        * (eLpNorm (h : Domain3 → ℝ) 6 (volume : Measure Domain3)).toReal := by
+  have hint : Integrable
+      (fun x : Domain3 => (f x) * (g x) * (h x)) (volume : Measure Domain3) := by
+    have hi := (schwartzMul_energy (schwartzMul_energy f g) h).integrable
+      (μ := (volume : Measure Domain3))
+    refine hi.congr ?_
+    filter_upwards with x
+    simp [mul_assoc]
+  calc |∫ x : Domain3, (f x) * (g x) * (h x) ∂(volume : Measure Domain3)|
+      = ‖∫ x : Domain3, (f x) * (g x) * (h x) ∂(volume : Measure Domain3)‖ := by
+        rw [Real.norm_eq_abs]
+    _ ≤ ∫ x : Domain3, ‖(f x) * (g x) * (h x)‖ ∂(volume : Measure Domain3) :=
+        MeasureTheory.norm_integral_le_integral_norm _
+    _ = ∫ x : Domain3, |(schwartzMul_energy f h) x| * |g x| ∂(volume : Measure Domain3) := by
+        refine MeasureTheory.integral_congr_ae ?_
+        filter_upwards with x
+        simp [abs_mul, Real.norm_eq_abs, mul_left_comm, mul_comm]
+    _ ≤ ‖(schwartzMul_energy f h).toLp 2 (volume : Measure Domain3)‖
+        * ‖g.toLp 2 (volume : Measure Domain3)‖ :=
+        schwartz_integral_abs_mul_le_energy (schwartzMul_energy f h) g
+    _ ≤ ((eLpNorm (f : Domain3 → ℝ) 3 (volume : Measure Domain3)).toReal
+        * (eLpNorm (h : Domain3 → ℝ) 6 (volume : Measure Domain3)).toReal)
+        * ‖g.toLp 2 (volume : Measure Domain3)‖ := by
+        exact mul_le_mul_of_nonneg_right (schwartz_mul_L2_norm_le_L3_L6_energy f h)
+          (norm_nonneg _)
+    _ = (eLpNorm (f : Domain3 → ℝ) 3 (volume : Measure Domain3)).toReal
+        * ‖g.toLp 2 (volume : Measure Domain3)‖
+        * (eLpNorm (h : Domain3 → ℝ) 6 (volume : Measure Domain3)).toReal := by ring
+
+/-- The lifted Euclidean component projection is norm-nonincreasing on `L²`. -/
+private theorem L2VF_projComponent_R3_norm_le_energy (j : Fin 3) (u : L2VF_R3) :
+    ‖L2VF_projComponent_R3 j u‖ ≤ ‖u‖ := by
+  apply MeasureTheory.Lp.norm_le_norm_of_ae_le
+  filter_upwards [show (L2VF_projComponent_R3 j u : Domain3 → ℝ)
+      =ᵐ[volume] fun x => (EuclideanSpace.proj (𝕜 := ℝ) j) (u x) by
+        simpa [L2VF_projComponent_R3] using
+          (EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL (p := 2)
+            (μ := (volume : Measure Domain3)) u] with x hx
+  rw [hx]
+  simpa [EuclideanSpace.coe_proj] using
+    (PiLp.norm_apply_le ((u : Domain3 → EuclideanSpace ℝ (Fin 3)) x) j)
+
+private theorem rpow_const_sqrt_quarter_energy {C V : ℝ} (hC : 0 ≤ C) (hV : 0 ≤ V) :
+    (C * Real.sqrt V) ^ (1 / 2 : ℝ) = Real.sqrt C * V ^ (1 / 4 : ℝ) := by
+  rw [Real.mul_rpow hC (Real.sqrt_nonneg _)]
+  rw [← Real.sqrt_eq_rpow C]
+  rw [Real.sqrt_eq_rpow V]
+  rw [← Real.rpow_mul hV]
+  norm_num
+
+private theorem eLpNorm_six_toReal_le_energy
+    (C₆ : ℝ) (hC₆0 : 0 ≤ C₆)
+    (hC₆ : ∀ (v : L2VF_R3) (ψ : Fin 3 → SchwartzMap Domain3 ℝ),
+        (∀ j : Fin 3,
+          L2VF_projComponent_R3 j v = (ψ j).toLp 2 (volume : Measure Domain3)) →
+        ∀ i : Fin 3,
+          eLpNorm ((ψ i : Domain3 → ℝ)) 6 (volume : Measure Domain3)
+            ≤ ENNReal.ofReal (C₆ * Real.sqrt (viscousFormSq_R3 1 v)))
+    (v : L2VF_R3) (ψ : Fin 3 → SchwartzMap Domain3 ℝ)
+    (hψ : ∀ j : Fin 3,
+      L2VF_projComponent_R3 j v = (ψ j).toLp 2 (volume : Measure Domain3))
+    (i : Fin 3) :
+    (eLpNorm ((ψ i : Domain3 → ℝ)) 6 (volume : Measure Domain3)).toReal
+      ≤ C₆ * Real.sqrt (viscousFormSq_R3 1 v) := by
+  have hnon : 0 ≤ C₆ * Real.sqrt (viscousFormSq_R3 1 v) :=
+    mul_nonneg hC₆0 (Real.sqrt_nonneg _)
+  have hle := hC₆ v ψ hψ i
+  have hreal := ENNReal.toReal_mono (by simp) hle
+  rwa [ENNReal.toReal_ofReal hnon] at hreal
+
+private theorem lineDeriv_toLp_norm_le_sqrt_viscous_energy
+    (v : L2VF_R3) (ψ : Fin 3 → SchwartzMap Domain3 ℝ)
+    (hψ : ∀ j : Fin 3,
+      L2VF_projComponent_R3 j v = (ψ j).toLp 2 (volume : Measure Domain3))
+    (i a : Fin 3) :
+    ‖((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+        (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψ i)).toLp
+      2 (volume : Measure Domain3))‖
+      ≤ Real.sqrt (viscousFormSq_R3 1 v) := by
+  set B : ℝ := ‖((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+        (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψ i)).toLp
+      2 (volume : Measure Domain3))‖ with hB
+  have hBsq_le : B ^ 2 ≤ viscousFormSq_R3 1 v := by
+    rw [← sum_gradSq_eq_viscousFormSq_of_schwartzRep v ψ hψ]
+    have hinner : B ^ 2 ≤ ∑ a' : Fin 3,
+        ‖((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+            (EuclideanSpace.single a' (1 : ℝ) : Domain3) (ψ i)).toLp
+          2 (volume : Measure Domain3))‖ ^ 2 := by
+      rw [hB]
+      exact Finset.single_le_sum
+        (f := fun a' : Fin 3 => ‖((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+            (EuclideanSpace.single a' (1 : ℝ) : Domain3) (ψ i)).toLp
+          2 (volume : Measure Domain3))‖ ^ 2)
+        (fun a' _ => sq_nonneg _) (Finset.mem_univ a)
+    exact hinner.trans <|
+      Finset.single_le_sum
+        (f := fun i' : Fin 3 => ∑ a' : Fin 3,
+          ‖((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+              (EuclideanSpace.single a' (1 : ℝ) : Domain3) (ψ i')).toLp
+            2 (volume : Measure Domain3))‖ ^ 2)
+        (fun i' _ => Finset.sum_nonneg (fun a' _ => sq_nonneg _)) (Finset.mem_univ i)
+  calc B = Real.sqrt (B ^ 2) := (Real.sqrt_sq (by rw [hB]; exact norm_nonneg _)).symm
+    _ ≤ Real.sqrt (viscousFormSq_R3 1 v) := Real.sqrt_le_sqrt hBsq_le
+
+private theorem eLpNorm_three_component_toReal_le_energy
+    (C₆ : ℝ) (hC₆0 : 0 ≤ C₆)
+    (hC₆ : ∀ (v : L2VF_R3) (ψ : Fin 3 → SchwartzMap Domain3 ℝ),
+        (∀ j : Fin 3,
+          L2VF_projComponent_R3 j v = (ψ j).toLp 2 (volume : Measure Domain3)) →
+        ∀ i : Fin 3,
+          eLpNorm ((ψ i : Domain3 → ℝ)) 6 (volume : Measure Domain3)
+            ≤ ENNReal.ofReal (C₆ * Real.sqrt (viscousFormSq_R3 1 v)))
+    (u : L2VF_R3) (ψ : Fin 3 → SchwartzMap Domain3 ℝ)
+    (hψ : ∀ j : Fin 3,
+      L2VF_projComponent_R3 j u = (ψ j).toLp 2 (volume : Measure Domain3))
+    (a : Fin 3) :
+    (eLpNorm ((ψ a : Domain3 → ℝ)) 3 (volume : Measure Domain3)).toReal
+      ≤ Real.sqrt C₆ * ‖u‖ ^ (1 / 2 : ℝ) * (viscousFormSq_R3 1 u) ^ (1 / 4 : ℝ) := by
+  have h2 : MemLp ((ψ a : Domain3 → ℝ)) 2 (volume : Measure Domain3) := by
+    simpa using (ψ a).memLp 2 (volume : Measure Domain3)
+  have h6 : MemLp ((ψ a : Domain3 → ℝ)) 6 (volume : Measure Domain3) := by
+    simpa using (ψ a).memLp 6 (volume : Measure Domain3)
+  have hinterp := eLpNorm_three_le_interp_pub ((ψ a : Domain3 → ℝ)) h2 h6
+  have hfin_rhs : ((eLpNorm ((ψ a : Domain3 → ℝ)) 2 (volume : Measure Domain3)) ^ (1 / 2 : ℝ)
+        * (eLpNorm ((ψ a : Domain3 → ℝ)) 6 (volume : Measure Domain3)) ^ (1 / 2 : ℝ)) ≠ ⊤ := by
+    apply ENNReal.mul_ne_top
+    · exact (ENNReal.rpow_lt_top_of_nonneg (by norm_num)
+        (SchwartzMap.eLpNorm_lt_top (ψ a) 2 (volume : Measure Domain3)).ne).ne
+    · exact (ENNReal.rpow_lt_top_of_nonneg (by norm_num)
+        (SchwartzMap.eLpNorm_lt_top (ψ a) 6 (volume : Measure Domain3)).ne).ne
+  have hreal := ENNReal.toReal_mono hfin_rhs hinterp
+  rw [ENNReal.toReal_mul, ← ENNReal.toReal_rpow, ← ENNReal.toReal_rpow] at hreal
+  rw [← (SchwartzMap.norm_toLp (f := ψ a) (p := (2 : ENNReal))
+    (μ := (volume : Measure Domain3)))] at hreal
+  have hL2 : ‖(ψ a).toLp 2 (volume : Measure Domain3)‖ ≤ ‖u‖ := by
+    rw [← hψ a]
+    exact L2VF_projComponent_R3_norm_le_energy a u
+  have hL6 := eLpNorm_six_toReal_le_energy C₆ hC₆0 hC₆ u ψ hψ a
+  have hu_nn : 0 ≤ ‖u‖ := norm_nonneg _
+  have hV_nn : 0 ≤ viscousFormSq_R3 1 u := viscousFormSq_R3_nonneg zero_le_one u
+  calc (eLpNorm ((ψ a : Domain3 → ℝ)) 3 (volume : Measure Domain3)).toReal
+      ≤ ‖(ψ a).toLp 2 (volume : Measure Domain3)‖ ^ (1 / 2 : ℝ)
+          * (eLpNorm ((ψ a : Domain3 → ℝ)) 6 (volume : Measure Domain3)).toReal ^ (1 / 2 : ℝ) := hreal
+    _ ≤ ‖u‖ ^ (1 / 2 : ℝ) * (C₆ * Real.sqrt (viscousFormSq_R3 1 u)) ^ (1 / 2 : ℝ) := by
+        exact mul_le_mul
+          (Real.rpow_le_rpow (norm_nonneg _) hL2 (by norm_num))
+          (Real.rpow_le_rpow (ENNReal.toReal_nonneg) hL6 (by norm_num))
+          (Real.rpow_nonneg ENNReal.toReal_nonneg _)
+          (Real.rpow_nonneg hu_nn _)
+    _ = Real.sqrt C₆ * ‖u‖ ^ (1 / 2 : ℝ) * (viscousFormSq_R3 1 u) ^ (1 / 4 : ℝ) := by
+        rw [rpow_const_sqrt_quarter_energy hC₆0 hV_nn]
+        ring
+
 /-- **C4 (Codex-gated statement).** Energy-class bound on the Schwartz convection integral:
 there is an absolute constant `C_b ≥ 0` such that for ALL triples of `L²`-fields `u v w`
 with Schwartz representatives `ψu ψv ψw` (componentwise `toLp` equalities),
@@ -493,7 +714,68 @@ theorem convIntegralSchwartz_bound_energy :
         |convIntegralSchwartz ψu ψv ψw|
           ≤ C_b * ‖u‖ ^ (1 / 2 : ℝ) * (viscousFormSq_R3 1 u) ^ (1 / 4 : ℝ)
               * Real.sqrt (viscousFormSq_R3 1 v) * Real.sqrt (viscousFormSq_R3 1 w) := by
-  sorry -- ALLOW_SORRY: PR-2 scaffold; statement gate precedes proof (this PR)
+  classical
+  obtain ⟨C₆, hC₆0, hC₆⟩ := eLpNorm_six_le_of_schwartzRep
+  refine ⟨9 * (Real.sqrt C₆ * C₆), ?_, ?_⟩
+  · exact mul_nonneg (by norm_num) (mul_nonneg (Real.sqrt_nonneg _) hC₆0)
+  intro u v w ψu ψv ψw hψu hψv hψw
+  set D : ℝ := Real.sqrt C₆ * C₆ * ‖u‖ ^ (1 / 2 : ℝ)
+    * (viscousFormSq_R3 1 u) ^ (1 / 4 : ℝ)
+    * Real.sqrt (viscousFormSq_R3 1 v) * Real.sqrt (viscousFormSq_R3 1 w) with hD
+  have hterm : ∀ i a : Fin 3,
+      |∫ x : Domain3,
+        (ψu a x) *
+        ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+            (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψv i)) x) *
+        (ψw i x) ∂(volume : Measure Domain3)| ≤ D := by
+    intro i a
+    set dg : SchwartzMap Domain3 ℝ := lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+      (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψv i) with hdg
+    have hbase := schwartz_trilinear_bound_L326_energy (ψu a) dg (ψw i)
+    rw [hdg] at hbase
+    have hu3 := eLpNorm_three_component_toReal_le_energy C₆ hC₆0 hC₆ u ψu hψu a
+    have hv2 := lineDeriv_toLp_norm_le_sqrt_viscous_energy v ψv hψv i a
+    have hw6 := eLpNorm_six_toReal_le_energy C₆ hC₆0 hC₆ w ψw hψw i
+    have hu3_rhs_nonneg : 0 ≤ Real.sqrt C₆ * ‖u‖ ^ (1 / 2 : ℝ)
+        * (viscousFormSq_R3 1 u) ^ (1 / 4 : ℝ) := by
+      exact mul_nonneg
+        (mul_nonneg (Real.sqrt_nonneg _) (Real.rpow_nonneg (norm_nonneg _) _))
+        (Real.rpow_nonneg (viscousFormSq_R3_nonneg zero_le_one u) _)
+    have hAB : (eLpNorm ((ψu a : Domain3 → ℝ)) 3 (volume : Measure Domain3)).toReal
+        * ‖((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+            (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψv i)).toLp
+          2 (volume : Measure Domain3))‖
+        ≤ (Real.sqrt C₆ * ‖u‖ ^ (1 / 2 : ℝ)
+            * (viscousFormSq_R3 1 u) ^ (1 / 4 : ℝ))
+          * Real.sqrt (viscousFormSq_R3 1 v) := by
+      exact mul_le_mul hu3 hv2 (norm_nonneg _) hu3_rhs_nonneg
+    have hABC : (eLpNorm ((ψu a : Domain3 → ℝ)) 3 (volume : Measure Domain3)).toReal
+        * ‖((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+            (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψv i)).toLp
+          2 (volume : Measure Domain3))‖
+        * (eLpNorm ((ψw i : Domain3 → ℝ)) 6 (volume : Measure Domain3)).toReal
+        ≤ ((Real.sqrt C₆ * ‖u‖ ^ (1 / 2 : ℝ)
+            * (viscousFormSq_R3 1 u) ^ (1 / 4 : ℝ))
+          * Real.sqrt (viscousFormSq_R3 1 v))
+          * (C₆ * Real.sqrt (viscousFormSq_R3 1 w)) := by
+      exact mul_le_mul hAB hw6 ENNReal.toReal_nonneg
+        (mul_nonneg hu3_rhs_nonneg (Real.sqrt_nonneg _))
+    exact hbase.trans <| hABC.trans_eq (by rw [hD]; ring)
+  calc |convIntegralSchwartz ψu ψv ψw|
+      ≤ ∑ i : Fin 3, ∑ a : Fin 3, D := by
+        unfold convIntegralSchwartz
+        refine le_trans (Finset.abs_sum_le_sum_abs _ _) ?_
+        refine Finset.sum_le_sum (fun i _ => ?_)
+        refine le_trans (Finset.abs_sum_le_sum_abs _ _) ?_
+        exact Finset.sum_le_sum (fun a _ => hterm i a)
+    _ = 9 * D := by
+        simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+        ring
+    _ = (9 * (Real.sqrt C₆ * C₆)) * ‖u‖ ^ (1 / 2 : ℝ)
+          * (viscousFormSq_R3 1 u) ^ (1 / 4 : ℝ)
+          * Real.sqrt (viscousFormSq_R3 1 v) * Real.sqrt (viscousFormSq_R3 1 w) := by
+        rw [hD]
+        ring
 
 /-! ### C5 — `n`-uniform trilinear bound for the abstract form `F.b` -/
 
