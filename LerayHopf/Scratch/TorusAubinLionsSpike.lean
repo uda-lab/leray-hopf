@@ -5,6 +5,9 @@
 -- Each `sorry` here is a scratch placeholder for a statement whose PROVABILITY is
 -- argued in the plan doc; the spike's job is that the statements TYPECHECK as stated.
 import LerayHopf.TorusGalerkinODESolve
+-- T-AL-3 section: the merged T-AL-2 engine (`exists_uniform_subseq_of_lipschitz_family`),
+-- imported so the composed-capstone WIRING is verified for real, not just statement-typed.
+import LerayHopf.Bochner.ScalarEquicontinuity
 
 open MeasureTheory Filter Topology Set
 
@@ -171,6 +174,79 @@ noncomputable def torusAubinLionsPackage_of_galSeq
         Filter.Tendsto (fun n => z (ψ n)) Filter.atTop (nhds g)) :
     AubinLionsPackage F ν T u₀ galSeq := by
   sorry -- ALLOW_SORRY: scratch spike (Phase-0, torus-aubinlions-modewise-plan §2 P0.7)
+
+/-! ## T-AL-3 statement freeze (Step A+B wiring; architect gate, 2026-07-03)
+
+Frozen statements for the production file `LerayHopf/TorusModeCompactness.lean`
+(plan §3 row T-AL-3).  P0.3 above (`galerkin_test_pairing_lipschitz`) is CONFIRMED
+as-frozen: its `0 ≤ s → s ≤ t` time domain is exactly what the engine's `hlip`
+needs (Icc-membership supplies `0 ≤ s`), and its `m ≤ n` cutoff is the engine's
+eventual-`n₀` (flag d: do NOT strengthen to all-`n`).
+
+The capstone `exists_galerkin_modewise_extraction` below carries a REAL wiring
+body (engine application + choice packaging), so the T-AL-3 assembly is verified
+end-to-end in this spike; only the three leaf lemmas (P0.3, P0.9a, P0.9b) remain
+for `lean-prover` in the production PR. -/
+
+/-- (P0.9a) Continuity export [architect flag (a)]: the Galerkin curve is
+norm-continuous on `[0,∞)`.  From `u_hasDeriv`: each forward time `t ≥ 0` has a
+genuine `HasDerivAt` (full-neighborhood), hence `ContinuousAt`, hence
+`ContinuousOn` on `Ici 0` via `ContinuousAt.continuousWithinAt`.  P0.5's `hcont`
+is the `.mono Icc_subset_Ici_self` restriction to `Icc 0 T`. -/
+theorem galerkin_u_continuousOn
+    (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma) (n : ℕ)
+    (D : GalerkinSolutionData F ν u₀ n) :
+    ContinuousOn (fun t => (D.u t : L2VF)) (Ici (0 : ℝ)) := by
+  sorry -- ALLOW_SORRY: scratch spike (T-AL-3 statement freeze, P0.9a)
+
+/-- (P0.9b) Ball-bound export [architect flag (c)]: uniform n-independent bound
+`‖u_n(t)‖ ≤ ‖u₀‖` for forward times, from `energy_bound` +
+`Torus.velocityProjection_n_norm_le`.  P0.5's `hb` instantiates
+`M := ‖(u₀ : L2VF)‖`. -/
+theorem galerkin_u_norm_le
+    (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma) (n : ℕ)
+    (D : GalerkinSolutionData F ν u₀ n) :
+    ∀ t : ℝ, 0 ≤ t → ‖(D.u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖ := by
+  sorry -- ALLOW_SORRY: scratch spike (T-AL-3 statement freeze, P0.9b)
+
+/-- (P0.9c) T-AL-3 capstone [architect flags (b)+(d)]: ONE strictly monotone
+extraction `φ` and ONE packaged limit function `g : ℕ → ℝ → ℝ` such that every
+test pairing `t ↦ ⟪u_{φ(n)}(t), w m⟫` converges uniformly on `[0,T]` to `g m`.
+The conclusion is in the reindexed single-`g` form that drops verbatim into
+P0.5 `exists_weak_limit_curve`'s `hconv` with `v := fun n => (galSeq (φ n)).u`.
+
+The body below is the REAL wiring (not a placeholder): Classical band-limit
+cutoffs from `IsGalerkinTest`, P0.3 Lipschitz constants, `B m = ‖u₀‖·‖w m‖`
+via P0.9b + Cauchy–Schwarz, then the T-AL-2 engine + `choose`. -/
+theorem exists_galerkin_modewise_extraction
+    (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
+    (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    (w : ℕ → L2Sigma) (hwtest : ∀ m, IsGalerkinTest (w m)) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∃ g : ℕ → ℝ → ℝ, ∀ m,
+      TendstoUniformlyOn
+        (fun n t => inner (𝕜 := ℝ) (((galSeq (φ n)).u t : L2VF)) ((w m : L2VF)))
+        (g m) atTop (Icc (0 : ℝ) T) := by
+  classical
+  -- Per-test band-limit cutoff from `IsGalerkinTest` (flag d: the engine's `n₀ m`).
+  have hcut : ∀ m, velocityProjection_n (Classical.choose (hwtest m)) ((w m : L2Sigma) : L2VF)
+      = ((w m : L2Sigma) : L2VF) := fun m => Classical.choose_spec (hwtest m)
+  -- Per-test Lipschitz constants from P0.3 (fires for `n` past the cutoff).
+  choose L hL using fun m =>
+    galerkin_test_pairing_lipschitz F ν hν u₀ galSeq (w m) (Classical.choose (hwtest m)) (hcut m)
+  -- The T-AL-2 engine over `f m n t := ⟪u_n(t), w m⟫`.
+  obtain ⟨φ, hφ, hconv⟩ := exists_uniform_subseq_of_lipschitz_family T hT
+    (fun m n t => inner (𝕜 := ℝ) (((galSeq n).u t : L2VF)) ((w m : L2VF)))
+    (fun m => ‖(u₀ : L2VF)‖ * ‖((w m : L2Sigma) : L2VF)‖) L
+    (fun m n t ht =>
+      -- uniform bound: Cauchy–Schwarz + P0.9b (forward time from `ht.1`)
+      le_trans (abs_real_inner_le_norm _ _)
+        (mul_le_mul_of_nonneg_right (galerkin_u_norm_le F ν u₀ n (galSeq n) t ht.1)
+          (norm_nonneg _)))
+    (fun m => ⟨Classical.choose (hwtest m), fun n hn s t hs ht hst =>
+      hL m n hn s t hs.1 hst⟩)
+  -- Package the per-`m` limits into a single function (flag b).
+  choose g hg using hconv
+  exact ⟨φ, hφ, g, hg⟩
 
 end Scratch
 end LerayHopf
