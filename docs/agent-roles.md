@@ -40,9 +40,11 @@ of edit:**
 |---|---|---|
 | Proof body (`:= by …`) | `lean-prover` | read-only |
 | Theorem/def signature, structure, imports, lakefile | `lean-coder` | read-only |
-| Planning docs (`docs/scratch/`) | `lean-planner` | read-only |
+| Campaign plans (`docs/scratch/<campaign>.md`) + spike verdicts | `lean-architect` | read-only |
+| Phase task contracts (other `docs/scratch/`) | `lean-planner` | read-only |
+| Scratch spikes (`LerayHopf/Scratch/`, `-- SCRATCH` header) | `lean-architect` | read-only |
 | Reference list (`docs/references/`) | `sot-researcher` | read-only |
-| Lean sources (any) | `lean-prover` / `lean-coder` | reviewers & researcher never edit Lean |
+| Lean sources (production, outside `LerayHopf/Scratch/`) | `lean-prover` / `lean-coder` | reviewers, researcher, and architect never edit production Lean |
 
 This is what makes the No-theorem-renaming and No-statement-weakening rules real: the
 `lean-prover` cannot change a statement (it only edits proof bodies), and reviewers

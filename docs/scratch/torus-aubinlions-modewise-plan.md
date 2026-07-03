@@ -22,12 +22,14 @@ spectral scheme's band-limited tests fire `u_ode` directly).
 `(F : Torus3NSForms) (ν) (hν : 0 < ν) (T) (hT : 0 < T) (u₀ : L2Sigma)`
 `(galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)` `(spatial : …rellich-shaped…)`.
 Conclusion: **`AubinLionsPackage F ν T u₀ galSeq`** — a `Type`-valued structure
-(`AxiomaticClosure.lean:311–338`) with exactly **four** fields:
+(`AxiomaticClosure.lean:311–338`) with exactly **five** fields, each a separate
+pressure-test obligation for the P0.7 dry run:
 
-1. `φ : ℕ → ℕ`, 2. `φ_mono : StrictMono φ`,
-3. `u : Time → L2Sigma` with `strong_convergence :`
-   `Tendsto (fun n => eLpNorm (fun t => ((galSeq (φ n)).u t : L2VF) - (u t : L2VF)) 2 (volume.restrict (Icc 0 T))) atTop (𝓝 0)`,
-4. `u_aestronglyMeasurable : AEStronglyMeasurable (fun t => (u t : L2VF)) (volume.restrict (Icc 0 T))`.
+1. `φ : ℕ → ℕ`,
+2. `φ_mono : StrictMono φ`,
+3. `u : Time → L2Sigma`,
+4. `strong_convergence : Tendsto (fun n => eLpNorm (fun t => ((galSeq (φ n)).u t : L2VF) - (u t : L2VF)) 2 (volume.restrict (Icc 0 T))) atTop (𝓝 0)`,
+5. `u_aestronglyMeasurable : AEStronglyMeasurable (fun t => (u t : L2VF)) (volume.restrict (Icc 0 T))`.
 
 Sole consumer: `build_galerkin_package_of_galSeq` (`TorusGalerkinODECapstone.lean:77–95`),
 which passes `spatial := rellich_L2Sigma` (already proved). The replacement is a
