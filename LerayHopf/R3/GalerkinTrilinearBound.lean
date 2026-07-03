@@ -44,9 +44,10 @@ this file keeping the name `galerkin_pairing_FTC` (plan §3 B9 note authorizes t
 
 ## Assumptions
 
-No axioms are introduced by this file (`axiom` count: 0).  All proof bodies are
-PR-2 scaffold placeholders (`sorry`, each `ALLOW_SORRY`-marked); the statement gate
-precedes the proofs, which are discharged by `lean-prover` in a later slice of PR-2.
+No axioms are introduced by this file (`axiom` count: 0), and the file is `sorry`-free
+(0 `sorry`): C1–C6 and B9 are all discharged.  C5 (`bForm_galerkin_abs_le`), C6
+(`galerkin_bForm_curve_continuousOn`), and B9 (`galerkin_pairing_FTC`) were completed in
+the PR-2 prover slice, reusing the C1–C4 private helper library.
 -/
 
 import LerayHopf.R3.GalerkinCurveBounds     -- B6, B10, GalerkinSolutionData_R3, R3NSForms, viscousFormSq_R3, stokesTestPairing_R3
@@ -802,7 +803,59 @@ theorem bForm_galerkin_abs_le :
               * (viscousFormSq_R3 1 (u : L2VF_R3)) ^ (1 / 4 : ℝ)
               * Real.sqrt (viscousFormSq_R3 1 (v : L2VF_R3))
               * Real.sqrt (viscousFormSq_R3 1 (w : L2VF_R3)) := by
-  sorry -- ALLOW_SORRY: PR-2 scaffold; statement gate precedes proof (this PR)
+  classical
+  obtain ⟨C_b, hC_b0, hC_b⟩ := convIntegralSchwartz_bound_energy
+  refine ⟨C_b, hC_b0, ?_⟩
+  intro n u v w hu hv hw
+  -- Schwartz representatives of the level-`n` states, transported through the projection pin.
+  obtain ⟨ψu, hψu⟩ := 𝔊.range_schwartz n (u : L2VF_R3)
+  obtain ⟨ψv, hψv⟩ := 𝔊.range_schwartz n (v : L2VF_R3)
+  obtain ⟨ψw, hψw⟩ := 𝔊.range_schwartz n (w : L2VF_R3)
+  have hψu' : ∀ j : Fin 3,
+      L2VF_projComponent_R3 j (u : L2VF_R3) = (ψu j).toLp 2 (volume : Measure Domain3) := by
+    intro j; rw [hu]; exact hψu j
+  have hψv' : ∀ j : Fin 3,
+      L2VF_projComponent_R3 j (v : L2VF_R3) = (ψv j).toLp 2 (volume : Measure Domain3) := by
+    intro j; rw [hv]; exact hψv j
+  have hψw' : ∀ j : Fin 3,
+      L2VF_projComponent_R3 j (w : L2VF_R3) = (ψw j).toLp 2 (volume : Measure Domain3) := by
+    intro j; rw [hw]; exact hψw j
+  -- The `F.b_galerkin` pin identifies `F.b` with `convIntegralSchwartz`, then C4 applies.
+  rw [F.b_galerkin ψu ψv ψw u v w hψu' hψv' hψw']
+  exact hC_b (u : L2VF_R3) (v : L2VF_R3) (w : L2VF_R3) ψu ψv ψw hψu' hψv' hψw'
+
+/-! ### C6 helpers — bilinearity on differences, level-`n` closure, rpow continuity -/
+
+/-- Additivity/homogeneity in the FIRST slot specialize to subtraction. -/
+private theorem bForm_sub_1 (F : R3NSForms 𝔊) (u u' v w : L2Sigma_R3) :
+    F.b (u - u') v w = F.b u v w - F.b u' v w := by
+  rw [sub_eq_add_neg u u', ← neg_one_smul ℝ u', F.b_add_1, F.b_smul_1]; ring
+
+/-- Additivity/homogeneity in the SECOND slot specialize to subtraction. -/
+private theorem bForm_sub_2 (F : R3NSForms 𝔊) (u v v' w : L2Sigma_R3) :
+    F.b u (v - v') w = F.b u v w - F.b u v' w := by
+  rw [sub_eq_add_neg v v', ← neg_one_smul ℝ v', F.b_add_2, F.b_smul_2]; ring
+
+/-- The diagonal increment of `b` splits into two one-sided differences. -/
+private theorem bForm_diag_increment (F : R3NSForms 𝔊) (x y w : L2Sigma_R3) :
+    F.b x x w - F.b y y w = F.b (x - y) x w + F.b y (x - y) w := by
+  rw [bForm_sub_1 F x y x w, bForm_sub_2 F y x y w]; ring
+
+/-- Level-`n` states are closed under subtraction: `𝔊.P n` is linear, so the difference of
+two curve values stays fixed by `𝔊.P n`. -/
+private theorem galerkinCurve_sub_inVn (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (σ σ' : ℝ) :
+    ((gs.u σ - gs.u σ' : L2Sigma_R3) : L2VF_R3)
+      = 𝔊.P n ((gs.u σ - gs.u σ' : L2Sigma_R3) : L2VF_R3) := by
+  rw [Submodule.coe_sub, map_sub, ← gs.u_inVn σ, ← gs.u_inVn σ']
+
+/-- If `f → 0` and `p > 0`, then `f ^ p → 0` (real rpow, base approaching `0` from nonneg). -/
+private theorem tendsto_rpow_of_tendsto_zero {α : Type*} {l : Filter α} {f : α → ℝ}
+    {p : ℝ} (hp : 0 < p) (hf : Filter.Tendsto f l (nhds 0)) :
+    Filter.Tendsto (fun x => (f x) ^ p) l (nhds 0) := by
+  have hc : ContinuousAt (fun x : ℝ => x ^ p) 0 :=
+    Real.continuousAt_rpow_const 0 p (Or.inr hp.le)
+  have hcomp := (hc.tendsto).comp hf
+  simpa [Function.comp_def, Real.zero_rpow hp.ne'] using hcomp
 
 /-! ### C6 — continuity of the `b`-integrand along the Galerkin curve -/
 
@@ -818,7 +871,121 @@ This is the interval-integrability input consumed by B9. -/
 theorem galerkin_bForm_curve_continuousOn (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n)
     (w : L2Sigma_R3) (hw : (w : L2VF_R3) = 𝔊.P n (w : L2VF_R3)) :
     ContinuousOn (fun σ => F.b (gs.u σ) (gs.u σ) w) (Set.Ici 0) := by
-  sorry -- ALLOW_SORRY: PR-2 scaffold; statement gate precedes proof (this PR)
+  obtain ⟨C_b, _hC_b0, hC_b⟩ := bForm_galerkin_abs_le (𝔊 := 𝔊) (F := F)
+  intro σ₀ hσ₀
+  have hσ₀0 : 0 ≤ σ₀ := hσ₀
+  -- coercion of the L2Sigma difference commutes with subtraction in L2VF
+  have hcoe : ∀ σ : ℝ, ((gs.u σ - gs.u σ₀ : L2Sigma_R3) : L2VF_R3)
+      = (gs.u σ : L2VF_R3) - (gs.u σ₀ : L2VF_R3) := by
+    intro σ; rw [Submodule.coe_sub]
+  -- B1: L²-continuity of the curve at σ₀
+  have hcont_u : Filter.Tendsto (fun σ => (gs.u σ : L2VF_R3))
+      (nhdsWithin σ₀ (Set.Ici 0)) (nhds (gs.u σ₀ : L2VF_R3)) :=
+    (galerkinCurve_continuousOn gs) σ₀ hσ₀
+  -- ‖u σ − u σ₀‖ → 0
+  have hnorm_d : Filter.Tendsto
+      (fun σ => ‖((gs.u σ - gs.u σ₀ : L2Sigma_R3) : L2VF_R3)‖)
+      (nhdsWithin σ₀ (Set.Ici 0)) (nhds 0) := by
+    have hsub : Filter.Tendsto (fun σ => (gs.u σ : L2VF_R3) - (gs.u σ₀ : L2VF_R3))
+        (nhdsWithin σ₀ (Set.Ici 0)) (nhds 0) := by
+      simpa using hcont_u.sub (tendsto_const_nhds (x := (gs.u σ₀ : L2VF_R3)))
+    have hnorm0 : Filter.Tendsto (fun σ => ‖(gs.u σ : L2VF_R3) - (gs.u σ₀ : L2VF_R3)‖)
+        (nhdsWithin σ₀ (Set.Ici 0)) (nhds 0) := by simpa using hsub.norm
+    exact hnorm0.congr (fun σ => by rw [hcoe σ])
+  -- B6: V₁(u σ − u σ₀) → 0
+  have hVd : Filter.Tendsto
+      (fun σ => viscousFormSq_R3 1 ((gs.u σ - gs.u σ₀ : L2Sigma_R3) : L2VF_R3))
+      (nhdsWithin σ₀ (Set.Ici 0)) (nhds 0) := by
+    exact (galerkin_curve_H1_continuousOn gs σ₀ hσ₀0).congr (fun σ => by rw [hcoe σ])
+  -- B5: V₁(u σ) → V₁(u σ₀)
+  have hVu : Filter.Tendsto (fun σ => viscousFormSq_R3 1 (gs.u σ : L2VF_R3))
+      (nhdsWithin σ₀ (Set.Ici 0)) (nhds (viscousFormSq_R3 1 (gs.u σ₀ : L2VF_R3))) :=
+    (galerkin_viscous_curve_continuousOn gs) σ₀ hσ₀
+  -- fractional-power limits at 0
+  have h1 : Filter.Tendsto
+      (fun σ => ‖((gs.u σ - gs.u σ₀ : L2Sigma_R3) : L2VF_R3)‖ ^ (1 / 2 : ℝ))
+      (nhdsWithin σ₀ (Set.Ici 0)) (nhds 0) :=
+    tendsto_rpow_of_tendsto_zero (by norm_num) hnorm_d
+  have h2 : Filter.Tendsto
+      (fun σ => (viscousFormSq_R3 1 ((gs.u σ - gs.u σ₀ : L2Sigma_R3) : L2VF_R3)) ^ (1 / 4 : ℝ))
+      (nhdsWithin σ₀ (Set.Ici 0)) (nhds 0) :=
+    tendsto_rpow_of_tendsto_zero (by norm_num) hVd
+  have h3 : Filter.Tendsto (fun σ => Real.sqrt (viscousFormSq_R3 1 (gs.u σ : L2VF_R3)))
+      (nhdsWithin σ₀ (Set.Ici 0)) (nhds (Real.sqrt (viscousFormSq_R3 1 (gs.u σ₀ : L2VF_R3)))) :=
+    hVu.sqrt
+  have h4 : Filter.Tendsto
+      (fun σ => Real.sqrt (viscousFormSq_R3 1 ((gs.u σ - gs.u σ₀ : L2Sigma_R3) : L2VF_R3)))
+      (nhdsWithin σ₀ (Set.Ici 0)) (nhds 0) := by
+    simpa [Real.sqrt_zero] using hVd.sqrt
+  -- the two C5 bound terms each tend to 0
+  have hterm1 : Filter.Tendsto (fun σ =>
+      C_b * ‖((gs.u σ - gs.u σ₀ : L2Sigma_R3) : L2VF_R3)‖ ^ (1 / 2 : ℝ)
+        * (viscousFormSq_R3 1 ((gs.u σ - gs.u σ₀ : L2Sigma_R3) : L2VF_R3)) ^ (1 / 4 : ℝ)
+        * Real.sqrt (viscousFormSq_R3 1 (gs.u σ : L2VF_R3))
+        * Real.sqrt (viscousFormSq_R3 1 (w : L2VF_R3)))
+      (nhdsWithin σ₀ (Set.Ici 0)) (nhds 0) := by
+    have hmul := ((((tendsto_const_nhds (x := C_b)).mul h1).mul h2).mul h3).mul
+      (tendsto_const_nhds (x := Real.sqrt (viscousFormSq_R3 1 (w : L2VF_R3))))
+    simpa using hmul
+  have hterm2 : Filter.Tendsto (fun σ =>
+      C_b * ‖(gs.u σ₀ : L2VF_R3)‖ ^ (1 / 2 : ℝ)
+        * (viscousFormSq_R3 1 (gs.u σ₀ : L2VF_R3)) ^ (1 / 4 : ℝ)
+        * Real.sqrt (viscousFormSq_R3 1 ((gs.u σ - gs.u σ₀ : L2Sigma_R3) : L2VF_R3))
+        * Real.sqrt (viscousFormSq_R3 1 (w : L2VF_R3)))
+      (nhdsWithin σ₀ (Set.Ici 0)) (nhds 0) := by
+    have hmul := ((((tendsto_const_nhds (x := C_b)).mul
+        (tendsto_const_nhds (x := ‖(gs.u σ₀ : L2VF_R3)‖ ^ (1 / 2 : ℝ)))).mul
+        (tendsto_const_nhds (x := (viscousFormSq_R3 1 (gs.u σ₀ : L2VF_R3)) ^ (1 / 4 : ℝ)))).mul
+        h4).mul
+      (tendsto_const_nhds (x := Real.sqrt (viscousFormSq_R3 1 (w : L2VF_R3))))
+    simpa using hmul
+  -- the sum of the two bound terms tends to 0
+  have hbtend := hterm1.add hterm2
+  rw [add_zero] at hbtend
+  -- squeeze the increment to 0, then reassemble
+  have key : Filter.Tendsto
+      (fun σ => F.b (gs.u σ) (gs.u σ) w - F.b (gs.u σ₀) (gs.u σ₀) w)
+      (nhdsWithin σ₀ (Set.Ici 0)) (nhds 0) := by
+    refine squeeze_zero_norm (fun σ => ?_) hbtend
+    rw [Real.norm_eq_abs, bForm_diag_increment F (gs.u σ) (gs.u σ₀) w]
+    refine (abs_add_le _ _).trans (add_le_add ?_ ?_)
+    · exact hC_b n (gs.u σ - gs.u σ₀) (gs.u σ) w
+        (galerkinCurve_sub_inVn gs σ σ₀) (gs.u_inVn σ) hw
+    · exact hC_b n (gs.u σ₀) (gs.u σ - gs.u σ₀) w
+        (gs.u_inVn σ₀) (galerkinCurve_sub_inVn gs σ σ₀) hw
+  have h2 := key.add (tendsto_const_nhds (x := F.b (gs.u σ₀) (gs.u σ₀) w))
+  rw [zero_add] at h2
+  exact h2.congr (fun σ => by ring)
+
+/-- H¹ regularity of any level-`n` state (its range is Schwartz).  Local copy of
+`galerkinCurve_reg_mem` (`GalerkinODE.lean`, DOWNSTREAM of this file's imports); proof route
+identical (B10-style Schwartz reps + `SchwartzMap.memSobolev`). -/
+private theorem memH1VF_R3_of_projFixed (𝔊 : R3GalerkinScheme) (n : ℕ) (v : L2VF_R3)
+    (hv : v = 𝔊.P n v) : memH1VF_R3 v := by
+  obtain ⟨ψ, hψ⟩ := 𝔊.range_schwartz n v
+  intro j
+  set g : SchwartzMap Domain3 ℂ := (ψ j).postcompCLM (RCLike.ofRealCLM (K := ℂ)) with hg
+  have hcomp : L2VF_projComponentC_R3 j v = g.toLp 2 (volume : Measure Domain3) := by
+    have hreal : L2VF_projComponent_R3 j v = (ψ j).toLp 2 (volume : Measure Domain3) := by
+      rw [hv]; exact hψ j
+    apply Lp.ext
+    have h1 : (L2VF_projComponentC_R3 j v : Domain3 → ℂ)
+        =ᵐ[volume] fun a => (RCLike.ofRealCLM (K := ℂ)) ((L2VF_projComponent_R3 j v) a) := by
+      rw [L2VF_projComponentC_R3]
+      exact ContinuousLinearMap.coeFn_compLpL _ _
+    rw [hreal] at h1
+    have hpsi : ((ψ j).toLp 2 (volume : Measure Domain3) : Domain3 → ℝ) =ᵐ[volume] ⇑(ψ j) :=
+      SchwartzMap.coeFn_toLp (ψ j) 2 (volume : Measure Domain3)
+    have h2 : (g.toLp 2 (volume : Measure Domain3) : Domain3 → ℂ)
+        =ᵐ[volume] fun a => (RCLike.ofRealCLM (K := ℂ)) ((ψ j) a) := by
+      refine (SchwartzMap.coeFn_toLp g 2 (volume : Measure Domain3)).trans ?_
+      filter_upwards with a
+      rw [hg, SchwartzMap.postcompCLM_apply]
+    refine h1.trans (Filter.EventuallyEq.trans ?_ h2.symm)
+    filter_upwards [hpsi] with a ha
+    rw [ha]
+  rw [hcomp, MeasureTheory.Lp.toTemperedDistribution_toLp_eq]
+  exact SchwartzMap.memSobolev (s := (1 : ℝ)) (p := 2) g
 
 /-! ### B9 — pairing FTC (deferred here from PR-1) -/
 
@@ -838,6 +1005,66 @@ theorem galerkin_pairing_FTC (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n)
       = ∫ σ in a..b,
           (-ν * stokesTestPairing_R3 (gs.u σ : L2VF_R3) (w : L2VF_R3)
             - F.b (gs.u σ) (gs.u σ) w) := by
-  sorry -- ALLOW_SORRY: PR-2 scaffold; statement gate precedes proof (this PR)
+  -- the cell `[a,b]` lies in forward time
+  have huIcc : Set.uIcc a b ⊆ Set.Ici (0 : ℝ) := by
+    rw [Set.uIcc_of_le hab]; exact fun x hx => le_trans ha hx.1
+  -- `w` is H¹ (a level-`n` state has Schwartz representatives)
+  have hwmem : memH1VF_R3 (w : L2VF_R3) := memH1VF_R3_of_projFixed 𝔊 n (w : L2VF_R3) hw
+  -- scalar FTC on `g σ = ⟪u σ, w⟫`; the derivative is the ODE right-hand side tested at `w`
+  have hderiv : ∀ σ ∈ Set.uIcc a b,
+      HasDerivAt (fun s => inner (𝕜 := ℝ) (gs.u s : L2VF_R3) (w : L2VF_R3))
+        (-ν * stokesTestPairing_R3 (gs.u σ : L2VF_R3) (w : L2VF_R3)
+          - F.b (gs.u σ) (gs.u σ) w) σ := by
+    intro σ hσ
+    have hσ0 : 0 ≤ σ := huIcc hσ
+    have hbase : HasDerivAt (fun s => inner (𝕜 := ℝ) (gs.u s : L2VF_R3) (w : L2VF_R3))
+        (inner (𝕜 := ℝ) (gs.u σ : L2VF_R3) (0 : L2VF_R3)
+          + inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF_R3)) σ) (w : L2VF_R3)) σ :=
+      (gs.u_hasDeriv σ hσ0).inner ℝ (hasDerivAt_const σ (w : L2VF_R3))
+    have hval : inner (𝕜 := ℝ) (gs.u σ : L2VF_R3) (0 : L2VF_R3)
+        + inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF_R3)) σ) (w : L2VF_R3)
+        = -ν * stokesTestPairing_R3 (gs.u σ : L2VF_R3) (w : L2VF_R3)
+          - F.b (gs.u σ) (gs.u σ) w := by
+      rw [inner_zero_right, zero_add, neg_mul]
+      have hode := gs.u_ode σ hσ0 w hw
+      linarith [hode]
+    rw [hval] at hbase
+    exact hbase
+  -- interval-integrability of the RHS via continuity (stokes term + `b` term)
+  have hstokes_cont : ContinuousOn
+      (fun σ => stokesTestPairing_R3 (gs.u σ : L2VF_R3) (w : L2VF_R3)) (Set.uIcc a b) := by
+    have heq : ∀ σ, stokesTestPairing_R3 (gs.u σ : L2VF_R3) (w : L2VF_R3)
+        = ∑ j : Fin 3, (inner (𝕜 := ℂ)
+            (weightedFourierComponent (w : L2VF_R3) hwmem j)
+            (weightedFourierComponent (gs.u σ : L2VF_R3) (gs.reg_mem σ) j)).re :=
+      fun σ => stokesTestPairing_eq_sum_inner_wFC (gs.u σ : L2VF_R3) (w : L2VF_R3)
+        (gs.reg_mem σ) hwmem
+    refine ContinuousOn.congr ?_ (fun σ _ => heq σ)
+    refine continuousOn_finsetSum _ (fun j _ => ?_)
+    have hj : ContinuousOn
+        (fun σ => weightedFourierComponent (gs.u σ : L2VF_R3) (gs.reg_mem σ) j)
+        (Set.uIcc a b) := (gs.viscous_curve_continuous j).mono huIcc
+    have hinner : ContinuousOn
+        (fun σ => inner (𝕜 := ℂ)
+          (weightedFourierComponent (w : L2VF_R3) hwmem j)
+          (weightedFourierComponent (gs.u σ : L2VF_R3) (gs.reg_mem σ) j)) (Set.uIcc a b) :=
+      continuousOn_const.inner hj
+    exact Complex.continuous_re.comp_continuousOn hinner
+  have hRHS_cont : ContinuousOn (fun σ =>
+      -ν * stokesTestPairing_R3 (gs.u σ : L2VF_R3) (w : L2VF_R3) - F.b (gs.u σ) (gs.u σ) w)
+      (Set.uIcc a b) := by
+    have h1 : ContinuousOn
+        (fun σ => -ν * stokesTestPairing_R3 (gs.u σ : L2VF_R3) (w : L2VF_R3)) (Set.uIcc a b) :=
+      continuousOn_const.mul hstokes_cont
+    have h2 : ContinuousOn (fun σ => F.b (gs.u σ) (gs.u σ) w) (Set.uIcc a b) :=
+      (galerkin_bForm_curve_continuousOn gs w hw).mono huIcc
+    exact h1.sub h2
+  have hint : IntervalIntegrable
+      (fun σ => -ν * stokesTestPairing_R3 (gs.u σ : L2VF_R3) (w : L2VF_R3)
+        - F.b (gs.u σ) (gs.u σ) w) volume a b :=
+    hRHS_cont.intervalIntegrable
+  have hFTC := intervalIntegral.integral_eq_sub_of_hasDerivAt hderiv hint
+  rw [inner_sub_left]
+  exact hFTC.symm
 
 end LerayHopf
