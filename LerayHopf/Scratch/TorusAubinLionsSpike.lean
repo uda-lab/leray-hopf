@@ -12,10 +12,10 @@
 -- to placeholders instead of the real interfaces.  Wiring bodies additionally call
 -- production theorems fully qualified (`_root_.LerayHopf.…`) as a second guard.
 
--- Single import: `TorusModeCompactness` (T-AL-3, merged PR #80) transitively provides
--- everything the remaining statements and wiring need — `TorusGalerkinODESolve`
--- (GalerkinSolutionData, velocityProjection_n, Fourier layer), `TorusTestFamily`
--- (exists_galerkin_test_family), and `Bochner.ScalarEquicontinuity` (T-AL-2 engine).
+-- Single import: `TorusModeCompactness` (T-AL-3 PR #80 + T-AL-4 PR #85) transitively
+-- provides everything the remaining statements and wiring need — `TorusGalerkinODESolve`
+-- (GalerkinSolutionData, velocityProjection_n, Fourier layer, h1EnergySq/memH1VF),
+-- `TorusTestFamily`, and `Bochner.ScalarEquicontinuity`.
 import LerayHopf.TorusModeCompactness
 
 open MeasureTheory Filter Topology Set
@@ -35,40 +35,22 @@ namespace Scratch
 * **P0.3 + P0.9a/b/c (T-AL-3 freeze)** `galerkin_test_pairing_lipschitz`,
   `galerkin_u_continuousOn`, `galerkin_u_norm_le`, `exists_galerkin_modewise_extraction`
   — proved in `LerayHopf/TorusModeCompactness.lean` (T-AL-3, PR #80, merged e7c8a9c).
+* **P0.5 + P0.10 + P0.11 (T-AL-4 freeze)** `exists_weak_limit_curve`,
+  `integral_sq_proj_tendsto_zero_of_weak`, `exists_limit_curve_of_galSeq`
+  — proved in `LerayHopf/TorusModeCompactness.lean` (T-AL-4, PR #85, merged 3be04d5).
 -/
 
-/-! ## P0.5 (S4) — Riesz limit curve from uniformly convergent test pairings
+/-! ## P0.6 — tail bounds (T-AL-5 leaves)
 
-Conclusions: weak convergence at EVERY `t ∈ [0,T]` (against `L2Sigma` tests — the
-`L2VF` upgrade goes through `lerayProjection` later), the `‖u₀‖`-ball bound, and strong
-measurability (pointwise limit of the continuous finite-dimensional curves
-`t ↦ P_N (u t)`, whose coordinates are uniform limits of continuous pairings).
+T-AL-5 GATE (architect, 2026-07-03): all four CONFIRMED AS-FROZEN, verbatim from
+Phase-0.  Division of labor between (b) and (c) re-audited at this gate:
 
-T-AL-4 GATE (architect, 2026-07-03): CONFIRMED AS-FROZEN — this is the production
-Step-C statement, verbatim.  The instantiation with the merged T-AL-1/T-AL-3 outputs
-type-composes; see the `exists_limit_curve_of_galSeq` wiring below. -/
-
-theorem exists_weak_limit_curve
-    (T : ℝ) (hT : 0 < T) (M : ℝ)
-    (v : ℕ → ℝ → L2Sigma)
-    (hb : ∀ n t, t ∈ Icc (0 : ℝ) T → ‖(v n t : L2VF)‖ ≤ M)
-    (hcont : ∀ n, ContinuousOn (fun t => (v n t : L2VF)) (Icc (0 : ℝ) T))
-    (w : ℕ → L2Sigma) (hwtest : ∀ m, IsGalerkinTest (w m))
-    (hspan : ∀ N : ℕ, ∃ s : Finset ℕ,
-      velocitySpan N ≤ Submodule.span ℝ ((fun m => ((w m : L2Sigma) : L2VF)) '' ↑s))
-    (g : ℕ → ℝ → ℝ)
-    (hconv : ∀ m, TendstoUniformlyOn
-      (fun n t => inner (𝕜 := ℝ) ((v n t : L2VF)) ((w m : L2VF))) (g m) atTop
-      (Icc (0 : ℝ) T)) :
-    ∃ u : Time → L2Sigma,
-      (∀ t ∈ Icc (0 : ℝ) T, ∀ z : L2Sigma,
-        Tendsto (fun n => inner (𝕜 := ℝ) ((v n t : L2VF)) ((z : L2VF))) atTop
-          (𝓝 (inner (𝕜 := ℝ) ((u t : L2VF)) ((z : L2VF))))) ∧
-      (∀ t ∈ Icc (0 : ℝ) T, ‖(u t : L2VF)‖ ≤ M) ∧
-      AEStronglyMeasurable (fun t => (u t : L2VF)) (volume.restrict (Icc (0 : ℝ) T)) := by
-  sorry -- ALLOW_SORRY: scratch spike (Phase-0, torus-aubinlions-modewise-plan §2 P0.5)
-
-/-! ## P0.6 — tail bounds -/
+* the GALERKIN curves take route (b) — `reg_mem` supplies `memH1VF (u_n t)` at every
+  `t` (all-`t` field, no forward restriction needed), so the `h1EnergySq` `tsum` is
+  honestly summable and the real-valued domination is sound;
+* the LIMIT curve does NOT get (b) — no `memH1VF (u t)` is available (and must NOT be
+  smuggled in); it goes through the ENNReal Fatou route (c), where the mode sums are
+  well-defined without any summability side condition. -/
 
 /-- (a) Vector tail identity: Pythagoras + componentwise
 `L2C_norm_sub_fourierProjection_sq` through `L2VF_norm_sq_eq_sum_componentC`
@@ -139,117 +121,120 @@ noncomputable def torusAubinLionsPackage_of_galSeq
     AubinLionsPackage F ν T u₀ galSeq := by
   sorry -- ALLOW_SORRY: scratch spike (Phase-0, torus-aubinlions-modewise-plan §2 P0.7)
 
-/-! ## T-AL-4 statement freeze (Step C+D; architect gate, 2026-07-03)
+/-! ## T-AL-5 statement freeze (Step E — tails; architect gate, 2026-07-03)
 
-Frozen statements for the production file `LerayHopf/TorusModeCompactness.lean`
-(plan §3 row T-AL-4, the soundness-critical node).  Three production targets:
+Frozen statements for the production T-AL-5 PR (recommended NEW file
+`LerayHopf/TorusModeTail.lean`, importing `TorusModeCompactness`; `TorusModeCompactness`
+is already ~600 lines).  Production targets: the four P0.6 leaves above
+(CONFIRMED AS-FROZEN) + the four new statements below (P0.12–P0.15).
 
-1. **P0.5 `exists_weak_limit_curve` (Step C)** — CONFIRMED AS-FROZEN, verbatim from
-   Phase-0 (above).  Soundness audit at this gate:
-   * ∀t-vs-a.e.: the weak-convergence conclusion is at EVERY `t ∈ Icc 0 T` — required
-     (Step D's DCT needs pointwise convergence at each `t`); do NOT weaken to a.e.
-   * `AEStronglyMeasurable` is honestly reachable: each `t ↦ ⟪u t, w m⟫ = g m t` is a
-     uniform limit of continuous pairings, hence continuous; `t ↦ P_N (u t)` is then a
-     continuous finite-dim curve (spanning finsets from `hspan` + `velocityProjection_n`
-     CLM), and `u t = lim_N P_N (u t)` pointwise (`velocityProjection_n_tendsto`), so
-     `u` is an a.e.- (in fact everywhere-) pointwise limit of continuous curves on
-     `Icc 0 T` — `aestronglyMeasurable_of_tendsto_ae` shape.  Nothing smuggled.
-   * Forward-only: every conclusion reads `u` on `Icc 0 T` only; `u : Time → L2Sigma`
-     is junk outside `[0,T]` by design.
-   * Measure: `volume.restrict (Icc (0:ℝ) T)` — matches the package field 5 verbatim.
+Design decisions at this gate:
 
-2. **P0.10 Step D** (`integral_sq_proj_tendsto_zero_of_weak`): finite-dim strong part.
-   Route (verified interfaces): `velocityProjection_n` is a CLM
-   (`VelocityGalerkin.lean:86`); self-adjointness `velocityProjection_n_inner_symm` +
-   `velocityProjection_n_inner_of_fixed` (`TorusProjectionAdjoint.lean:85,99`) turn
-   weak convergence against `L2Sigma` tests into coordinate convergence on the
-   finite-dimensional `velocitySpan N` (`velocitySpan_finiteDimensional`,
-   `velocitySpan_le_sigma`); finite-dim Parseval gives
-   `‖P_N(v n t) − P_N(u t)‖ → 0` at every `t ∈ Icc 0 T`, dominated by `(2M)²`; DCT in
-   `t` (integrand AESM via the CLM composition; the interval integral reads only
-   `Ioc 0 T ⊆ Icc 0 T`, so `u` is never read outside `[0,T]`).
-   The interval-integral conclusion shape matches P0.8's `hint` input verbatim
-   (Step F consumes it through the Pythagoras split).
+* **Two composed lemmas, not one** (P0.14 Galerkin-side / P0.15 limit-side): Step F's
+  Pythagoras split consumes them at DIFFERENT indices (P0.14 at every `φ n`, P0.15
+  once), and P0.14 is also the Fatou input INSIDE P0.15's proof.
+* **P0.12** is the `L2Sigma → L2VF` weak-convergence upgrade (the T-AL-4 pre-flag):
+  it is what makes P0.6c's `hweak (∀ y : L2VF)` premise reachable from the capstone's
+  `L2Sigma`-test conclusion.  Route (anchors re-verified in source):
+  `x = lerayProjection x` for `x ∈ L2Sigma` (`lerayProjection_fixes_divFree`,
+  `Leray.lean:159`), then `⟪x, y⟫ = ⟪lerayProjection x, y⟫ = ⟪x, lerayProjection y⟫`
+  (`lerayProjection_isSymmetric`, `Leray.lean:172`), so the `L2Sigma` test
+  `z := lerayProjection y` carries the limit.
+* **P0.13** is the ENNReal bridge that makes P0.6c consumable against the REAL-valued
+  integrals: `ofReal (‖v − P_N v‖²) =` the ENNReal tail mode sum.  Honesty: the real
+  mode tail is genuinely summable for EVERY `v : L2VF` (it is a sub-family of the
+  Parseval family — `summable_norm_mFourierCoeff3_sq`, `TorusGalerkinODESolve.lean:1007`
+  — so P0.6a + the `ENNReal.ofReal`/`tsum` exchange close it); NO `memH1VF` needed
+  here, the H¹ weight never enters.
+* **P0.15 takes `hν : 0 < ν`** — used (beyond feeding P0.14) to know the RHS bound is
+  nonnegative in the `ENNReal.toReal`/`ofReal` round-trip; P0.14 does NOT take it
+  (its chain runs entirely through the `reg_bound` field, sign-blind).
+* Forward-only + measure convention: both integrals are `∫ t in (0:ℝ)..T` (reading
+  `Ioc 0 T` only, matching `reg_bound` and P0.8's `hint` input); P0.15's measurability
+  hypothesis is on `volume.restrict (Icc (0:ℝ) T)`, byte-matching the T-AL-4 capstone
+  output. -/
 
-3. **P0.11 capstone** (`exists_limit_curve_of_galSeq`): the single clean handle for
-   T-AL-5/6 — extraction ∘ Step C ∘ Step D over `galSeq`, ball constant explicit
-   (`M = ‖u₀‖`).  Weak convergence is stated against `L2Sigma` tests; the `L2VF`
-   upgrade for the Step-E tail Fatou goes through `lerayProjection_isSymmetric` +
-   `lerayProjection_fixes_divFree` (`Leray.lean:172,159` — verified present) and is
-   T-AL-5's first lemma, NOT re-stated here.
-   Package-field coverage check (all five): φ ✓, φ_mono ✓, u ✓,
-   u_aestronglyMeasurable ✓ (conjunct 4, byte-matching measure), strong_convergence
-   reachable = conjunct 5 (Step D, ∀N) + P0.6 tails (T-AL-5) + P0.8 (T-AL-6).
+/-- (P0.12) Weak-convergence upgrade `L2Sigma` tests → all `L2VF` tests, via the Leray
+projection: for div-free `v n, u`, testing against `y : L2VF` equals testing against
+`lerayProjection y ∈ L2Sigma`.  Makes P0.6c's premise reachable from the T-AL-4
+capstone's weak-convergence conjunct. -/
+theorem tendsto_inner_L2VF_of_tendsto_inner_L2Sigma
+    (v : ℕ → L2Sigma) (u : L2Sigma)
+    (h : ∀ z : L2Sigma, Tendsto (fun n => inner (𝕜 := ℝ) ((v n : L2VF)) ((z : L2VF)))
+      atTop (𝓝 (inner (𝕜 := ℝ) ((u : L2VF)) ((z : L2VF)))))
+    (y : L2VF) :
+    Tendsto (fun n => inner (𝕜 := ℝ) ((v n : L2VF)) y) atTop
+      (𝓝 (inner (𝕜 := ℝ) ((u : L2VF)) y)) := by
+  sorry -- ALLOW_SORRY: scratch spike (T-AL-5 statement freeze, P0.12)
 
-The capstone body below is the REAL wiring against the MERGED production theorems
-(fully qualified), so the T-AL-4 assembly and the P0.5 instantiation are verified
-end-to-end; the prover work in the production PR is exactly P0.5 and P0.10. -/
+/-- (P0.13) ENNReal bridge for the tail identity: valid for EVERY `v : L2VF` (the mode
+tail is a sub-family of the always-summable Parseval family; no `memH1VF` needed).
+Connects the real integrals of P0.14/P0.15 to P0.6c's ENNReal mode sums. -/
+theorem ofReal_tail_sq_eq_tailEnn (N : ℕ) (v : L2VF) :
+    ENNReal.ofReal (‖v - velocityProjection_n N v‖ ^ 2) =
+      ∑ j : Fin 3, ∑' k : {k : Fin 3 → ℤ // k ∉ fourierBox N},
+        ENNReal.ofReal (‖mFourierCoeff3 (L2VF_projComponentC j v) k‖ ^ 2) := by
+  sorry -- ALLOW_SORRY: scratch spike (T-AL-5 statement freeze, P0.13)
 
-/-- (P0.10) Step D — finite-dim strong part.  Weak convergence at every `t ∈ [0,T]`
-plus uniform ball bounds give strong convergence of the level-`N` projections in
-`L²(0,T)`: coordinates against the finite-dimensional `velocitySpan N` converge
-pointwise (projection self-adjointness), `‖P_N(v n t − u t)‖ ≤ 2M` dominates, DCT.
-Conclusion shape = P0.8's `hint` input (interval integral over `0..T`). -/
-theorem integral_sq_proj_tendsto_zero_of_weak
-    (T : ℝ) (hT : 0 < T) (M : ℝ) (N : ℕ)
-    (v : ℕ → ℝ → L2Sigma) (u : ℝ → L2Sigma)
-    (hb : ∀ n t, t ∈ Icc (0 : ℝ) T → ‖(v n t : L2VF)‖ ≤ M)
-    (hub : ∀ t ∈ Icc (0 : ℝ) T, ‖(u t : L2VF)‖ ≤ M)
-    (hmeas_v : ∀ n, AEStronglyMeasurable (fun t => (v n t : L2VF))
-      (volume.restrict (Icc (0 : ℝ) T)))
-    (hmeas_u : AEStronglyMeasurable (fun t => (u t : L2VF))
+/-- (P0.14) Step E, Galerkin side — the n-UNIFORM tail integral bound.  Pointwise
+P0.6b (fed by `reg_mem : ∀ t, memH1VF (u_n t)`), interval-integral monotonicity
+(integrands continuous: `galerkin_u_continuousOn` + CLM for the LHS, P0.6b′ for the
+majorant), then the `reg_bound` field divided by `1 + N²`.  No `0 < ν` binder: the
+chain runs entirely through `reg_bound`. -/
+theorem integral_tail_sq_galerkin_le
+    (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma) (n : ℕ)
+    (D : GalerkinSolutionData F ν u₀ n) (T : ℝ) (hT : 0 < T) (N : ℕ) :
+    ∫ t in (0 : ℝ)..T,
+        ‖(D.u t : L2VF) - velocityProjection_n N ((D.u t : L2VF))‖ ^ 2
+      ≤ (T * ‖(u₀ : L2VF)‖ ^ 2 + ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν)) / (1 + (N : ℝ) ^ 2) := by
+  sorry -- ALLOW_SORRY: scratch spike (T-AL-5 statement freeze, P0.14)
+
+/-- (P0.15) Step E, limit side — the SAME tail bound for the limit curve, WITHOUT any
+`memH1VF (u t)` (none is available; smuggling it would be unsound).  Route: P0.13 turns
+the pointwise tails into ENNReal mode sums; P0.12 upgrades `hweak` to `L2VF` tests;
+P0.6c gives pointwise-in-`t` lsc under the weak convergence; `lintegral` Fatou in `t`;
+P0.14 bounds the Galerkin side; `hν` + `hub`/`hmeas` close the `toReal` round-trip
+(bound nonneg; limit tail integrable from the `2‖u₀‖` bound on the finite measure). -/
+theorem integral_tail_sq_limit_le
+    (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
+    (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    (φ : ℕ → ℕ) (u : Time → L2Sigma)
+    (hub : ∀ t ∈ Icc (0 : ℝ) T, ‖(u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖)
+    (hmeas : AEStronglyMeasurable (fun t => (u t : L2VF))
       (volume.restrict (Icc (0 : ℝ) T)))
     (hweak : ∀ t ∈ Icc (0 : ℝ) T, ∀ z : L2Sigma,
-      Tendsto (fun n => inner (𝕜 := ℝ) ((v n t : L2VF)) ((z : L2VF))) atTop
-        (𝓝 (inner (𝕜 := ℝ) ((u t : L2VF)) ((z : L2VF))))) :
-    Tendsto (fun n => ∫ t in (0 : ℝ)..T,
-        ‖velocityProjection_n N ((v n t : L2VF)) -
-          velocityProjection_n N ((u t : L2VF))‖ ^ 2)
-      atTop (𝓝 0) := by
-  sorry -- ALLOW_SORRY: scratch spike (T-AL-4 statement freeze, P0.10 Step D)
+      Tendsto (fun n => inner (𝕜 := ℝ) (((galSeq (φ n)).u t : L2VF)) ((z : L2VF)))
+        atTop (𝓝 (inner (𝕜 := ℝ) ((u t : L2VF)) ((z : L2VF)))))
+    (N : ℕ) :
+    ∫ t in (0 : ℝ)..T,
+        ‖(u t : L2VF) - velocityProjection_n N ((u t : L2VF))‖ ^ 2
+      ≤ (T * ‖(u₀ : L2VF)‖ ^ 2 + ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν)) / (1 + (N : ℝ) ^ 2) := by
+  sorry -- ALLOW_SORRY: scratch spike (T-AL-5 statement freeze, P0.15)
 
-/-- (P0.11) T-AL-4 capstone: extraction + limit curve for `galSeq`, the clean handle
-for T-AL-5/6.  Conjuncts: strict monotonicity, weak convergence at EVERY `t ∈ [0,T]`
-against `L2Sigma` tests, the explicit `‖u₀‖`-ball bound, AE strong measurability
-(package field 5, byte-matching measure), and the Step-D finite-dim strong part for
-every level `N`.
-
-The body is the REAL wiring against the merged T-AL-1/T-AL-3 production theorems
-(fully qualified) + the sorried P0.5/P0.10 above — it verifies that the P0.5
-instantiation with the production outputs type-composes exactly as claimed. -/
-theorem exists_limit_curve_of_galSeq
+/-- Boundary check (T-AL-5 → T-AL-6): REAL wiring, no sorry of its own.  Consumes the
+MERGED production T-AL-4 capstone (fully qualified) + the sorried P0.14/P0.15 above and
+produces exactly Step F's raw materials — the Step-D convergence, the n-uniform
+Galerkin tail bound along `φ`, and the limit tail bound — verifying the hypothesis
+shapes compose across the PR boundary. -/
+example
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) :
     ∃ (φ : ℕ → ℕ) (u : Time → L2Sigma), StrictMono φ ∧
-      (∀ t ∈ Icc (0 : ℝ) T, ∀ z : L2Sigma,
-        Tendsto (fun n => inner (𝕜 := ℝ) (((galSeq (φ n)).u t : L2VF)) ((z : L2VF)))
-          atTop (𝓝 (inner (𝕜 := ℝ) ((u t : L2VF)) ((z : L2VF))))) ∧
-      (∀ t ∈ Icc (0 : ℝ) T, ‖(u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖) ∧
-      AEStronglyMeasurable (fun t => (u t : L2VF)) (volume.restrict (Icc (0 : ℝ) T)) ∧
-      ∀ N : ℕ, Tendsto (fun n => ∫ t in (0 : ℝ)..T,
+      (∀ N : ℕ, Tendsto (fun n => ∫ t in (0 : ℝ)..T,
           ‖velocityProjection_n N (((galSeq (φ n)).u t : L2VF)) -
-            velocityProjection_n N ((u t : L2VF))‖ ^ 2)
-        atTop (𝓝 0) := by
-  classical
-  -- T-AL-1: the countable spanning Galerkin test family (production, fully qualified).
-  obtain ⟨w, hwtest, hspan⟩ := _root_.LerayHopf.exists_galerkin_test_family
-  -- T-AL-3: the mode-wise extraction over that family (production, fully qualified).
-  obtain ⟨φ, hφ, g, hconv⟩ :=
-    _root_.LerayHopf.exists_galerkin_modewise_extraction F ν hν T hT u₀ galSeq w hwtest
-  -- T-AL-3 exports: ball bound (flag c) and continuity (flag a) for the reindexed curves.
-  have hb : ∀ n t, t ∈ Icc (0 : ℝ) T → ‖((galSeq (φ n)).u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖ :=
-    fun n t ht => _root_.LerayHopf.galerkin_u_norm_le F ν u₀ (φ n) (galSeq (φ n)) t ht.1
-  have hcont : ∀ n, ContinuousOn (fun t => ((galSeq (φ n)).u t : L2VF)) (Icc (0 : ℝ) T) :=
-    fun n => (_root_.LerayHopf.galerkin_u_continuousOn F ν u₀ (φ n) (galSeq (φ n))).mono
-      Icc_subset_Ici_self
-  -- Step C: P0.5 instantiated with the T-AL-3 outputs (the composition under test).
-  obtain ⟨u, hweak, hub, hmeas⟩ := exists_weak_limit_curve T hT (‖(u₀ : L2VF)‖)
-    (fun n => (galSeq (φ n)).u) hb hcont w hwtest hspan g hconv
-  refine ⟨φ, u, hφ, hweak, hub, hmeas, fun N => ?_⟩
-  -- Step D: P0.10 at level N (v-measurability from continuity on the compact Icc).
-  exact integral_sq_proj_tendsto_zero_of_weak T hT (‖(u₀ : L2VF)‖) N
-    (fun n => (galSeq (φ n)).u) u hb hub
-    (fun n => (hcont n).aestronglyMeasurable measurableSet_Icc) hmeas hweak
+            velocityProjection_n N ((u t : L2VF))‖ ^ 2) atTop (𝓝 0)) ∧
+      (∀ n N : ℕ, ∫ t in (0 : ℝ)..T,
+          ‖((galSeq (φ n)).u t : L2VF) -
+            velocityProjection_n N (((galSeq (φ n)).u t : L2VF))‖ ^ 2
+        ≤ (T * ‖(u₀ : L2VF)‖ ^ 2 + ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν)) / (1 + (N : ℝ) ^ 2)) ∧
+      (∀ N : ℕ, ∫ t in (0 : ℝ)..T,
+          ‖(u t : L2VF) - velocityProjection_n N ((u t : L2VF))‖ ^ 2
+        ≤ (T * ‖(u₀ : L2VF)‖ ^ 2 + ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν)) / (1 + (N : ℝ) ^ 2)) := by
+  obtain ⟨φ, u, hφ, hweak, hub, hmeas, hD⟩ :=
+    _root_.LerayHopf.exists_limit_curve_of_galSeq F ν hν T hT u₀ galSeq
+  exact ⟨φ, u, hφ, hD,
+    fun n N => integral_tail_sq_galerkin_le F ν u₀ (φ n) (galSeq (φ n)) T hT N,
+    fun N => integral_tail_sq_limit_le F ν hν T hT u₀ galSeq φ u hub hmeas hweak N⟩
 
 end Scratch
 end LerayHopf
