@@ -7,8 +7,8 @@ T-AL-6 assembly step.
 
 Plan reference: `docs/scratch/torus-aubinlions-modewise-plan.md` §3 row T-AL-5.
 
-These statements were frozen by the architect gate 2026-07-03 (spike
-`LerayHopf/Scratch/TorusAubinLionsSpike.lean`, T-AL-5 section, commit d69883b).
+These statements were frozen by the architect gate 2026-07-03 (originally in the campaign spike,
+now deleted — T-AL-5 section, commit d69883b; see PR history).
 All eight are LEAF lemmas, discharged `sorry`-free by `lean-prover` (one private helper
 `tendsto_real_functional_of_weak` added for the weak-lsc coefficient convergence).
 

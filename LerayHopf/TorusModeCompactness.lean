@@ -6,10 +6,10 @@ mode-wise Galerkin extraction — equi-Lipschitz test pairings + T-AL-2 engine a
 
 Plan reference: `docs/scratch/torus-aubinlions-modewise-plan.md` §3 row T-AL-3.
 
-Statements frozen by architect gate 2026-07-03 (spike `LerayHopf/Scratch/TorusAubinLionsSpike.lean`,
-T-AL-3 section, commit bb02ea7).  Three leaf lemmas (P0.3, P0.9a, P0.9b) are now discharged
-(`lean-prover`); the capstone wiring (P0.9c, `exists_galerkin_modewise_extraction`) is the
-architect-verified glue body.  Every term is sorry-free.
+Statements frozen by architect gate 2026-07-03 (originally in the campaign spike, now deleted —
+T-AL-3 section, commit bb02ea7; see PR history).  Three leaf lemmas (P0.3, P0.9a, P0.9b) are
+discharged (`lean-prover`); the capstone wiring (P0.9c, `exists_galerkin_modewise_extraction`) is
+the architect-verified glue body.  Every term is sorry-free.
 
 Assumptions: none (no project axioms, no opaque/unsafe; all leaves proved).
 -/

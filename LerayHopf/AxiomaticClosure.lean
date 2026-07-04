@@ -45,7 +45,7 @@ sound for all `u : L2VF`.  The energy-inequality fields use `viscousFormSq ν` d
   `u_hasDeriv`/`u_ode` forward-only `∀ t, 0 ≤ t →`, matching the merged ℝ³ sibling — the all-`t`
   form was an un-physical over-claim, see those fields' SOUNDNESS comments)
 - `AubinLionsPackage`               : structure carrying the compactness subsequence (parameterized by the Galerkin sequence)
-- `aubin_lions`                     : axiom — Aubin–Lions with spatial half discharged
+- (no project axioms remain in this file — `aubin_lions` REMOVED, issue #23 T-AL-6)
 - `LerayHopfSolutionFull`           : proof-carrying Leray–Hopf solution structure
 - `GalerkinCompactnessPackageFull`  : proof-carrying Galerkin compactness package
 - `exists_lerayHopf_from_package_full` : copies proofs from package to solution
@@ -54,19 +54,16 @@ sound for all `u : L2VF`.  The energy-inequality fields use `viscousFormSq ν` d
 
 ## Assumptions
 
-One axiom is added in this file (names below with one-line justifications).  The former
-`torusConvectionGap_exists` project axiom has been **removed** (issue #53 / PR #62): it is now
+**No project axioms remain in this file** — every former project axiom has been removed.
+The former `torusConvectionGap_exists` project axiom has been **removed** (issue #53 / PR #62): it is now
 the theorem re-exported from `TorusConvectionExtension.lean`.  The former `galerkin_ode_solution`
 has also been **removed** (issue #24): the finite-dim torus Galerkin ODE is solved
 unconditionally by the proved `galerkinSolutionData_torus`.  The former `galerkin_limit_passage`
-has been **removed** (this change): it is replaced by the proved theorems
+has been **removed**: it is replaced by the proved theorems
 `torus_galerkin_limit_passage_of_energyClass` + `torus_energyClass_of_aubinLions`, assembled in
 `TorusGalerkinODECapstone.lean` (the consumer had to move downstream to avoid an import cycle).
-
-1. `aubin_lions` — Aubin–Lions time compactness; the spatial half is an explicit hypothesis
-   discharged by the proved `rellich_L2Sigma`, so this axiom covers ONLY the Bochner-time
-   half.  TRUE: classical Aubin–Lions/Lions–Aubin.  Blocked by missing Bochner-Sobolev
-   time-derivative bounds in Lean.  Temam III.2.1.
+The former `aubin_lions` project axiom has been **removed** (issue #23, this change): it is now
+the proved def `torusAubinLionsPackage_of_galSeq` in `TorusAubinLionsAssembly.lean`.
 -/
 
 namespace LerayHopf
@@ -232,7 +229,8 @@ noncomputable def torus3Evolution (F : Torus3NSForms) : DissipativeEvolution whe
 
 Packages: the solution curve, initial condition, subspace-range property, differentiability,
 the projected ODE, H¹ regularity, and uniform (n-independent) energy and regularity bounds.
-Every field is used in the Aubin–Lions assembly (`aubin_lions`) or the proved limit passage
+Every field is used in the Aubin–Lions assembly (`torusAubinLionsPackage_of_galSeq`, proved;
+formerly the `aubin_lions` axiom, removed issue #23) or the proved limit passage
 (`torus_galerkin_limit_passage_of_energyClass`). -/
 structure GalerkinSolutionData (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma) (n : ℕ) where
   /-- The Galerkin solution curve. -/
@@ -303,11 +301,12 @@ Carries: the extracted subsequence `φ`, its strict monotonicity, a limit curve
 the squared `L²_σ`-distance between the subsequence and the limit tends to `0`.
 
 `galSeq` is a **structure parameter** (not a field), so the convergence statement is
-type-enforced against the same sequence passed to `aubin_lions` and the proved limit passage,
+type-enforced against the same sequence passed to `torusAubinLionsPackage_of_galSeq` (the
+proved replacement for the former `aubin_lions` axiom) and the proved limit passage,
 tying the A1 → A2 → A3 chain on one sequence.
 
 The spatial compactness half is NOT in this package — it is supplied as an explicit
-hypothesis to `aubin_lions` and discharged by `rellich_L2Sigma`. -/
+hypothesis to `torusAubinLionsPackage_of_galSeq` and discharged by `rellich_L2Sigma`. -/
 structure AubinLionsPackage (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) where
   /-- The strictly monotone extraction index. -/
@@ -337,53 +336,10 @@ structure AubinLionsPackage (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
     AEStronglyMeasurable (fun t => (u t : L2VF))
       (MeasureTheory.volume.restrict (Set.Icc 0 T))
 
-/-! ### Axiom A2: Aubin–Lions (spatial half discharged by rellich_L2Sigma) -/
-
-/-- **Axiom A2:** Aubin–Lions time compactness.
-
-Takes the Galerkin sequence `galSeq`, its uniform bounds (from A1), and an explicit
-spatial-compactness hypothesis `spatial` (whose type matches `rellich_L2Sigma`'s conclusion
-exactly, so the assembly can pass `rellich_L2Sigma` directly).
-
-This axiom covers ONLY the genuinely-missing Bochner-time compactness half.  The spatial
-half is discharged by the proved `rellich_L2Sigma`, NOT axiomatized.
-
-**The `spatial` hypothesis type is byte-identical to `rellich_L2Sigma`'s conclusion shape.**
-
-**Precise remaining frontier (issue #23 audit, 2026-06-21).** The conclusion this axiom
-must produce is the `AubinLionsPackage.strong_convergence` field, i.e. strong
-`L²(0,T;L²_σ)` convergence of a subsequence via `eLpNorm`:
-`eLpNorm (fun t => uₙ t − u t) 2 (volume.restrict [0,T]) → 0`.  This is the classical Lions–Aubin
-time-compactness extraction and is NOT derivable from the currently-available lemmas:
-* the proved `rellich_L2Sigma` gives the SPATIAL embedding only (compactness in space,
-  pointwise in time);
-* the Stream-D sublibrary (`aeStronglyMeasurable_of_spaceTimeL2`,
-  `kineticEnergy_lsc_transfer`, `isWeakTimeDeriv_unique`, `W1pTime.ofHValuedDeriv`,
-  `GelfandTriple.*`) supplies measurable-representative extraction and norm-lsc transfer
-  *given* an already-`L²`-convergent sequence — it does NOT produce the relative
-  compactness (the strongly-`L²(0,T;L²_σ)`-convergent subsequence) from the uniform
-  `L²(0,T;H¹)` + time-derivative bounds.
-The genuinely-missing pillar is the time-equicontinuity/Steklov interval-averaging
-assembly: from the integrated `reg_bound` (NOT a pointwise H¹ bound), build the uniform
-time modulus, Jensen-bound the Steklov averages' H¹ seminorm, feed `rellich_L2Sigma` at
-the δ-mesh base-points, and diagonalize over δ→0 with a boundary-strip estimate.  The
-strictly-more-built ℝ³ sibling `aubinLionsPackage_R3_of_timeCompactness`
-(`R3/AubinLionsLimitPassage.lean`) — which is GIVEN a `TimeCompactnessInput` and has the
-Steklov helpers proved axiom-free — STILL carries an open `sorry` for exactly this
-`strong_convergence` centerpiece (its C2), so the torus side (which lacks even the
-`TimeCompactnessInput` scaffolding) is not closer.  Axiom KEPT this cycle per the
-no-fake-removal floor.  Temam III.2.1. -/
-axiom aubin_lions -- ALLOW_AXIOM: Aubin–Lions time compactness; spatial half discharged by rellich_L2Sigma (proved); axiom adds only Bochner-time half; TRUE and MINIMAL; Temam III.2.1
-    (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
-    (u₀ : L2Sigma)
-    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    (spatial : ∀ (M : ℝ) (z : ℕ → L2VF),
-      (∀ n, z n ∈ L2Sigma) →
-      (∀ n, memH1VF (z n)) →
-      (∀ n, h1EnergySq (z n) ≤ M ^ 2) →
-      ∃ (ψ : ℕ → ℕ) (g : L2VF), StrictMono ψ ∧ g ∈ L2Sigma ∧
-        Filter.Tendsto (fun n => z (ψ n)) Filter.atTop (nhds g)) :
-    AubinLionsPackage F ν T u₀ galSeq
+-- NOTE: `aubin_lions` (former Axiom A2) was REMOVED in issue #23 (T-AL-6 Stage C).
+-- Its content is now the proved def `torusAubinLionsPackage_of_galSeq` in
+-- `LerayHopf/TorusAubinLionsAssembly.lean`.  The `AubinLionsPackage` structure (above)
+-- remains as the shared type; only the axiom that produced it is gone.
 
 /-! ### Proof-carrying solution structures -/
 

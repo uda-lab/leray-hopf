@@ -10,9 +10,8 @@ open MeasureTheory Filter Topology
 This file belongs to the `T-AL-1` node of the torus `aubin_lions` mode-wise
 de-axiomatization campaign; see `docs/scratch/torus-aubinlions-modewise-plan.md`.
 
-Two statements are transcribed VERBATIM from the Phase-0 spike
-`LerayHopf/Scratch/TorusAubinLionsSpike.lean`; proof bodies are left for `lean-prover`
-in this same PR.
+Two statements were transcribed VERBATIM from the Phase-0 campaign spike (now deleted;
+see PR history); proof bodies were discharged by `lean-prover`.
 
 * `stokesTestPairing_bound_of_galerkinTest` (plan §2 P0.2 / S1):
   the Stokes test pairing with a Galerkin test is bounded by `C(w)·‖u‖`.

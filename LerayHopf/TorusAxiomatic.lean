@@ -12,7 +12,7 @@ existence argument.  The capstone declaration is:
 
 (relocated to `LerayHopf/TorusGalerkinODECapstone.lean` in issue #24), which depends on one
 project axiom:
-- `aubin_lions` (AX-2): Aubin–Lions time compactness (spatial half proved)
+- (all torus project axioms REMOVED — `aubin_lions` discharged by `torusAubinLionsPackage_of_galSeq`, issue #23)
 
 The former `galerkin_ode_solution` axiom (Picard–Lindelöf on finite-dim Vₙ) has been **removed**
 (issue #24): the finite-dim torus Galerkin ODE is now solved unconditionally by the proved
