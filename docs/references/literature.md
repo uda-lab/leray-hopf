@@ -34,8 +34,10 @@ Full text confirmed accessible at the URL above.
 **Relevance:** Proves Leray–Hopf existence on bounded/periodic domains using Galerkin
 approximations. The T³ capstone `exists_lerayHopf_torus3_axiomatic` follows the Hopf
 construction: finite-dim Galerkin ODE → Aubin–Lions compactness → limit passage.
-Axioms `aubin_lions` and `galerkin_limit_passage` (T³) and their R³ analogues are exactly
-the two non-constructive steps Hopf leaves implicit.
+The former axioms `aubin_lions` (now the proved def `torusAubinLionsPackage_of_galSeq`,
+issue #23) and `galerkin_limit_passage` (now proved, #25) (T³) and their R³ analogues
+were exactly the two non-constructive steps Hopf leaves implicit; both T³ steps are now
+discharged.
 
 **Verification status:** DOI resolves. Year and page range confirmed via SCIRP reference
 database entry and Springer link page (abstract visible without paywall).
@@ -49,8 +51,9 @@ database entry and Springer link page (abstract visible without paywall).
 
 **Relevance:** Earliest statement of what became the Aubin–Lions lemma: if a sequence is
 bounded in W^{1,p}(0,T;X) then it is relatively compact in L^p(0,T;H) for H compactly
-embedded in X. Directly motivates axiom `aubin_lions` (T³) and
-`galerkin_spacetime_precompact_R3` (R³, PR #45).
+embedded in X. Directly motivates the former axiom `aubin_lions` (T³, now the proved def
+`torusAubinLionsPackage_of_galSeq`, issue #23) and `galerkin_spacetime_precompact_R3`
+(R³, now proved, #46/PR-4).
 
 **Verification status:** Verified via SCIRP citation index entry (title, journal, year,
 pages confirmed). Full text not freely accessible; bibliographic data confirmed from two
@@ -133,10 +136,11 @@ uncontroversial.
 
 **Relevance:**
 - §III.2.1: Aubin–Lions compactness on bounded domains with the energy-bound setup.
-  Referenced by axiom `aubin_lions` (`AxiomaticClosure.lean`, T³).
+  Referenced by the former axiom `aubin_lions` (T³, now the proved def
+  `torusAubinLionsPackage_of_galSeq`, issue #23).
 - §III.3: Galerkin limit passage — constructing a weak solution from the compactness
-  output. Referenced by axioms `galerkin_limit_passage` (T³) and
-  `galerkin_limit_passage_R3` (R³).
+  output. Referenced by the former axiom `galerkin_limit_passage` (T³, now proved, #25)
+  and the live axiom `galerkin_limit_passage_R3` (R³).
 - §II.§1: Bilinear form b(u,v,w) on torus/bounded domain, antisymmetry, bounds.
   Referenced by axioms `torusConvectionGap_exists` and `r3_NSForms_exist`.
 

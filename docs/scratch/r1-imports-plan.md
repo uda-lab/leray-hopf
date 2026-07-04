@@ -11,7 +11,7 @@
 Issue #1 finding 2 names three files:
 
 - `LerayHopf.lean` (the root re-export module)
-- `LerayHopf/AxiomaticClosure.lean` (T³ axiomatic closure — carries `axiom aubin_lions` and `axiom galerkin_limit_passage`)
+- `LerayHopf/AxiomaticClosure.lean` (T³ axiomatic closure — formerly carried `axiom aubin_lions` and `axiom galerkin_limit_passage`; both REMOVED as of 2026-07-04: `aubin_lions` by #23/PR #89, `galerkin_limit_passage` by #25/PR #75; T³ now unconditional)
 - `LerayHopf/R3/AxiomaticClosure.lean` (ℝ³ axiomatic closure — carries `axiom r3_NSForms_exist` and `axiom galerkin_limit_passage_R3`)
 
 The concern: any file that writes `import LerayHopf` transitively inherits every project axiom, even if it only needs axiom-free pieces like `LerayHopf.Core`.
@@ -27,9 +27,9 @@ The Wave-0 refactor introduced a three-layer import surface, documented in both 
 | Import | Content | Axioms |
 |---|---|---|
 | `import LerayHopf.Core` | axiom-free, sorryAx-free | 0 project axioms |
-| `import LerayHopf.TorusAxiomatic` | T³ capstone chain | 3 (aubin_lions, galerkin_limit_passage, torusConvectionGap_exists) |
-| `import LerayHopf.R3Axiomatic` | ℝ³ capstone chain | 5 (r3_NSForms_exist, galerkin_limit_passage_R3, curlSchwartzDense_holds, galerkinSpaceTimeExtraction_R3, galerkin_weakLimit_R3) |
-| `import LerayHopf` | all three | 8 project axioms total |
+| `import LerayHopf.TorusAxiomatic` | T³ capstone chain | 0 project axioms (all three former axioms now proved: `torusConvectionGap_exists` → #53/PR#62, `galerkin_limit_passage` → #25/PR#75, `aubin_lions` → #23/PR#89) |
+| `import LerayHopf.R3Axiomatic` | ℝ³ capstone chain | 1 (`galerkin_limit_passage_R3`; former axioms `r3_NSForms_exist`, `curlSchwartzDense_holds`, `galerkinSpaceTimeExtraction_R3`, `galerkin_weakLimit_R3`, `galerkin_spacetime_precompact_R3` all proved) |
+| `import LerayHopf` | all three | 1 project axiom total (`galerkin_limit_passage_R3`; T³ unconditional) |
 
 The root `LerayHopf.lean` is an intentional full-surface re-export. Its docstring says so explicitly. `LerayHopf.Core` exists precisely for consumers who want the axiom-free layer.
 

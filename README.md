@@ -23,11 +23,14 @@ theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < 
       Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)
 ```
 
-The current project-axiom frontier is **𝕋³ = 1 axiom, ℝ³ = 1 axiom**, pinned exactly by
-`scripts/check-axioms-live.sh` (a CI gate that runs `#print axioms` and fails on any
-unexpected or missing axiom, or any `sorryAx`):
+The current project-axiom frontier is **𝕋³ = 0 project axioms (unconditional), ℝ³ = 1 axiom**,
+pinned exactly by `scripts/check-axioms-live.sh` (a CI gate that runs `#print axioms` and
+fails on any unexpected or missing axiom, or any `sorryAx`):
 
-- **𝕋³:** `aubin_lions`
+- **𝕋³:** no project axioms — `#print axioms` returns kernel axioms only (`propext`,
+  `Classical.choice`, `Quot.sound`). `aubin_lions` was REMOVED (issue #23, PR #89) and is
+  now the proved `noncomputable def torusAubinLionsPackage_of_galSeq`
+  (`LerayHopf/TorusAubinLionsAssembly.lean`) via the mode-wise spectral route.
 - **ℝ³:** `galerkin_limit_passage_R3`
 
 (The former 𝕋³ `galerkin_limit_passage` axiom was removed by PR #75 / issue #25 — it is
@@ -42,20 +45,18 @@ Aubin–Lions-in-time diagonalization, Helmholtz/curl density (Fourier route), t
 Mazur weak-limit closure, and the determined-form convection extensions — is
 **proved sorry-free**, not assumed.
 
-> **Honest scope.** This repository does **not** establish *unconditional* existence.
-> Although the 𝕋³ capstone no longer has a live limit-passage axiom, it is still
-> conditional: `aubin_lions` (Bochner Aubin–Lions–Simon time compactness) remains live,
-> currently targeted by the mode-wise spectral removal campaign (issue #23, PRs #76–#80).
-> The remaining ℝ³ axiom (`galerkin_limit_passage_R3`) is a genuine analytic fact
-> that Mathlib currently lacks (Lions–Magenes/good-representative limit passage);
-> the former Aubin–Lions–Simon spacetime-precompactness axiom is now a proved
-> theorem (issue #46, PR-4). The convection forms are proof-carrying total trilinear extensions
-> pinned to the genuine Schwartz/Galerkin test-class forms, with fixed-test continuity;
-> they are not claims of a canonical continuous convection operator on all pure
-> `L² × L² × L²` triples. No regularity, uniqueness, or
-> non-uniqueness claim is made. The project's goal is to drive the axiom count to zero;
-> the current frontier and remaining work are tracked in the open GitHub issues and
-> [`docs/STATUS.md`](docs/STATUS.md).
+> **Honest scope.** The 𝕋³ capstone `exists_lerayHopf_torus3_axiomatic` is now
+> **unconditional** (`#print axioms` returns kernel axioms only; `aubin_lions` was removed
+> via the mode-wise spectral route, issue #23 / PR #89). The remaining ℝ³ axiom
+> (`galerkin_limit_passage_R3`) is a genuine analytic fact that Mathlib currently lacks
+> (Lions–Magenes/good-representative limit passage); the former Aubin–Lions–Simon
+> spacetime-precompactness axiom is now a proved theorem (issue #46, PR-4). The convection
+> forms are proof-carrying total trilinear extensions pinned to the genuine
+> Schwartz/Galerkin test-class forms, with fixed-test continuity; they are not claims of
+> a canonical continuous convection operator on all pure `L² × L² × L²` triples.
+> No regularity, uniqueness, or non-uniqueness claim is made. The project's goal is to
+> drive the ℝ³ axiom count to zero; the current frontier and remaining work are tracked
+> in the open GitHub issues and [`docs/STATUS.md`](docs/STATUS.md).
 
 Public summaries should cite the proof-carrying `LerayHopfSolutionFull` /
 `LerayHopfSolutionFull_R3` structures and the `_axiomatic` capstones above. The older

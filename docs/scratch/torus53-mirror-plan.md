@@ -3,7 +3,7 @@
 **Milestone / issue:** #53 — genuinely remove the torus project axiom
 `torusConvectionGap_exists : Nonempty TorusConvectionGap`, reducing the 𝕋³ capstone
 `exists_lerayHopf_torus3_axiomatic` from **3 → 2** project axioms
-(`aubin_lions`, `galerkin_limit_passage` remain).
+(`aubin_lions`, `galerkin_limit_passage` remain). *(NOTE 2026-07-04: both remaining axioms are now also REMOVED — `galerkin_limit_passage` by #25/PR #75 and `aubin_lions` by #23/PR #89; T³ is unconditional. This doc is historical.)*
 
 **Template:** ℝ³ #56 (merged PR #60). Files studied on `main`:
 `LerayHopf/R3/{SobolevEmbedding,EnergyClassConvection,TensorIntersection,ConvectionForm,ConvectionExtension}.lean`.
@@ -252,8 +252,8 @@ automatically once the axiom becomes a theorem.
 AGENTS.md Rule #8 is to **leave the statement intact + `-- TODO:` the blocker and stop**, NOT to
 re-axiomatize. The whole point of #53 is that the torus Fourier route makes these *provable*
 (div-free identity for antisymmetry; finite support for the bound) — this is the de-risking content
-of PR-0. The capstone's two surviving axioms (`aubin_lions`, `galerkin_limit_passage`) are
-out of scope and untouched.
+of PR-0. The capstone's two then-surviving axioms (`aubin_lions`, `galerkin_limit_passage`) were
+out of scope for #53 and untouched. (Both subsequently removed: `galerkin_limit_passage` by #25/PR #75, `aubin_lions` by #23/PR #89.)
 
 ---
 
@@ -284,7 +284,7 @@ these are the exact traps codex caught on R3 #56/#48 and torus #22):
    density genuinely separated out.
 6. **PR-6 axiom flip** — confirm `#print axioms exists_lerayHopf_torus3_axiomatic` shows exactly
    `propext Classical.choice Quot.sound aubin_lions galerkin_limit_passage` (no
-   `torusConvectionGap_exists`, no `sorryAx`) before merge.
+   `torusConvectionGap_exists`, no `sorryAx`) before merge. *(Historical: `aubin_lions` and `galerkin_limit_passage` were subsequently removed by #23/PR #89 and #25/PR #75 respectively.)*
 
 ---
 
