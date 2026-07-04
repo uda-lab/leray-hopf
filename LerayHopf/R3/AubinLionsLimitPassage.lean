@@ -2377,6 +2377,166 @@ trilinear Schwartz-tail bound for `F.b`/`convIntegralSchwartz` (the `‖x‖>R` 
 All three stand on already-proved pieces; the structural reduction (time-IBP + dominated convergence
 in time) is in hand. -/
 
+/-- **Stokes-pairing continuity along a Galerkin curve.**  For a Galerkin test `w` with a Schwartz
+witness `ψw`, `t ↦ stokesTestPairing_R3 (gs.u t) w` is continuous on forward time `Ici 0`.
+
+The negative-Laplacian reformulation `stokesTestPairing_R3_eq_sum_inner_negLap` exhibits the pairing
+as a finite sum of `L²`-inner products of the (CLM) component projections of the curve against FIXED
+Schwartz elements, so continuity is `(component CLM ∘ curve).inner const`. -/
+private theorem stokes_curve_continuousOn_R3
+    {𝔊 : R3GalerkinScheme} {F : R3NSForms 𝔊} {ν : ℝ} {u₀ : L2Sigma_R3} {n : ℕ}
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (w : L2Sigma_R3)
+    (ψw : Fin 3 → SchwartzMap Domain3 ℝ)
+    (hψw : ∀ j : Fin 3,
+      L2VF_projComponent_R3 j (w : L2VF_R3) = (ψw j).toLp 2 (volume : Measure Domain3)) :
+    ContinuousOn (fun s => stokesTestPairing_R3 (gs.u s : L2VF_R3) (w : L2VF_R3)) (Set.Ici 0) := by
+  have hcurve : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
+    galerkin_curve_continuous 𝔊 F ν u₀ n gs
+  simp only [stokesTestPairing_R3_eq_sum_inner_negLap _ (w : L2VF_R3) ψw hψw]
+  refine continuousOn_finsetSum _ (fun j _ => ?_)
+  exact ((L2VF_projComponent_R3 j).continuous.comp_continuousOn hcurve).inner continuousOn_const
+
+/-- **Convection-form continuity along a Galerkin curve** (Schwartz-test form).  For any
+Schwartz-div-free test `w`, `t ↦ F.b (gs.u t) (gs.u t) w` is continuous on forward time `Ici 0`.
+
+Unlike `galerkin_bForm_curve_continuousOn`, this does NOT require `w` to be fixed by `𝔊.P n`; it
+builds the jointly-continuous bilinear form `(u,v) ↦ b u v w` directly from `b_bound` (as a
+`mkContinuous₂` CLM) and composes with the `L²`-continuous curve. -/
+private theorem bForm_curve_continuousOn_of_schwartz
+    {𝔊 : R3GalerkinScheme} {F : R3NSForms 𝔊} {ν : ℝ} {u₀ : L2Sigma_R3} {n : ℕ}
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (w : L2Sigma_R3) (hw : IsSchwartzDivFree_R3 w) :
+    ContinuousOn (fun s => F.b (gs.u s) (gs.u s) w) (Set.Ici 0) := by
+  obtain ⟨Cb, hCb⟩ := F.b_bound w hw
+  let b_blin : L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] ℝ :=
+    LinearMap.mk₂ ℝ (fun u v => F.b u v w)
+      (fun u u' v => F.b_add_1 u u' v w)
+      (fun c u v => (F.b_smul_1 c u v w).trans (smul_eq_mul c _).symm)
+      (fun u v v' => F.b_add_2 u v v' w)
+      (fun c u v => (F.b_smul_2 c u v w).trans (smul_eq_mul c _).symm)
+  have hb_norm : ∀ u v : L2Sigma_R3, ‖b_blin u v‖ ≤ |Cb| * ‖u‖ * ‖v‖ := fun u v => by
+    show ‖F.b u v w‖ ≤ |Cb| * ‖u‖ * ‖v‖
+    rw [Real.norm_eq_abs]
+    calc |F.b u v w| ≤ Cb * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖ := hCb u v
+      _ ≤ |Cb| * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖ := by gcongr; exact le_abs_self _
+      _ = |Cb| * ‖u‖ * ‖v‖ := by rw [Submodule.coe_norm, Submodule.coe_norm]
+  let b_clm : L2Sigma_R3 →L[ℝ] L2Sigma_R3 →L[ℝ] ℝ := b_blin.mkContinuous₂ |Cb| hb_norm
+  have hcurve_sigma : ContinuousOn (fun s => gs.u s) (Set.Ici 0) := by
+    have hiso : Isometry (fun x : L2Sigma_R3 => (x : L2VF_R3)) := by
+      rw [isometry_iff_dist_eq]; intro x y
+      simp only [dist_eq_norm, ← AddSubgroupClass.coe_sub, Submodule.coe_norm]
+    exact hiso.isUniformInducing.isInducing.continuousOn_iff.mpr
+      (galerkin_curve_continuous 𝔊 F ν u₀ n gs)
+  exact (b_clm.continuous₂.comp_continuousOn (hcurve_sigma.prodMk hcurve_sigma)).congr
+    (fun s _ => rfl)
+
+/-- **Weak-form integrand continuity along a Galerkin curve.**  For a Schwartz-div-free test `w`
+and a `C¹` weight `ψ`, the WeakFormNS integrand `t ↦ -⟪uₙ t, w⟫ ψ'(t) + ψ(t)(ν stokes + b)` is
+continuous on forward time `Ici 0`.  Assembled from `stokes_curve_continuousOn_R3`,
+`bForm_curve_continuousOn_of_schwartz`, and inner-product continuity. -/
+private theorem weakFormNS_integrand_continuousOn_R3
+    {𝔊 : R3GalerkinScheme} {F : R3NSForms 𝔊} {ν : ℝ} {u₀ : L2Sigma_R3} {n : ℕ}
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (w : L2Sigma_R3) (hw : IsSchwartzDivFree_R3 w)
+    (ψ : Time → ℝ) (hψC1 : ContDiff ℝ 1 ψ) :
+    ContinuousOn (fun t =>
+        -(inner (𝕜 := ℝ) (gs.u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+          ψ t * (ν * stokesTestPairing_R3 (gs.u t : L2VF_R3) (w : L2VF_R3) +
+            F.b (gs.u t) (gs.u t) w)) (Set.Ici 0) := by
+  obtain ⟨ψw, hψw⟩ := hw
+  have hcurve : ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
+    galerkin_curve_continuous 𝔊 F ν u₀ n gs
+  have hinner : ContinuousOn (fun s => inner (𝕜 := ℝ) (gs.u s : L2VF_R3) (w : L2VF_R3))
+      (Set.Ici 0) := hcurve.inner continuousOn_const
+  have hstokes := stokes_curve_continuousOn_R3 gs w ψw hψw
+  have hb := bForm_curve_continuousOn_of_schwartz gs w ⟨ψw, hψw⟩
+  exact (hinner.neg.mul hψC1.continuous_deriv_one.continuousOn).add
+    (hψC1.continuous.continuousOn.mul ((continuousOn_const.mul hstokes).add hb))
+
+set_option maxHeartbeats 800000 in
+/-- **Per-level WeakFormNS identity.**  For a Galerkin level `n` and a test `w` fixed by `𝔊.P n`,
+the level-`n` approximant integrand integrates to `0` over `[0,T]`.
+
+Time-IBP via the product-rule FTC on `h(t) := ⟪uₙ t, w⟫ ψ(t)`: the integrand equals `-h'(t)` (using
+the ODE field `u_ode` to rewrite `ν stokes + b = -⟪uₙ'(t), w⟫`), and the boundary terms vanish since
+`tsupport ψ ⊆ Ioo 0 T`.  Mirrors the T³ `galerkin_weakFormNS_zero`. -/
+private theorem galerkin_weakFormNS_zero_R3
+    {𝔊 : R3GalerkinScheme} {F : R3NSForms 𝔊} {ν : ℝ} {u₀ : L2Sigma_R3} {n : ℕ}
+    (T : ℝ) (hT : 0 < T)
+    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (w : L2Sigma_R3)
+    (hw : (w : L2VF_R3) = 𝔊.P n (w : L2VF_R3))
+    (ψ : Time → ℝ) (hψsupp : tsupport ψ ⊆ Set.Ioo 0 T) (hψC1 : ContDiff ℝ 1 ψ) :
+    ∫ t in (0 : ℝ)..T,
+      (-(inner (𝕜 := ℝ) (gs.u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+        ψ t * (ν * stokesTestPairing_R3 (gs.u t : L2VF_R3) (w : L2VF_R3) +
+          F.b (gs.u t) (gs.u t) w)) = 0 := by
+  -- Schwartz witness of `w` (from the range-Schwartz field at the fixing level `n`).
+  have hsdf : IsSchwartzDivFree_R3 w := by
+    obtain ⟨ψw, hψw⟩ := 𝔊.range_schwartz n (w : L2VF_R3)
+    exact ⟨ψw, fun j => by rw [hw]; exact hψw j⟩
+  obtain ⟨ψw, hψw⟩ := hsdf
+  -- Boundary values vanish.
+  have hψ0 : ψ 0 = 0 :=
+    image_eq_zero_of_notMem_tsupport (fun h => absurd (hψsupp h).1 (lt_irrefl 0))
+  have hψT : ψ T = 0 :=
+    image_eq_zero_of_notMem_tsupport (fun h => absurd (hψsupp h).2 (lt_irrefl T))
+  -- ODE at forward times, and `ψ` is everywhere differentiable.
+  have hode : ∀ t, 0 ≤ t →
+      inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF_R3)) t) (w : L2VF_R3) +
+        ν * stokesTestPairing_R3 (gs.u t : L2VF_R3) (w : L2VF_R3) + F.b (gs.u t) (gs.u t) w = 0 :=
+    fun t ht => gs.u_ode t ht w hw
+  have hψderiv : ∀ x, HasDerivAt ψ (deriv ψ x) x :=
+    fun x => hψC1.differentiable_one.differentiableAt.hasDerivAt
+  -- Product rule for `h(t) = ⟪uₙ t, w⟫ ψ(t)` on forward time.
+  have hprod : ∀ t ∈ Set.uIcc (0 : ℝ) T,
+      HasDerivAt (fun s => inner (𝕜 := ℝ) (gs.u s : L2VF_R3) (w : L2VF_R3) * ψ s)
+        (inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF_R3)) t) (w : L2VF_R3) * ψ t +
+          inner (𝕜 := ℝ) (gs.u t : L2VF_R3) (w : L2VF_R3) * deriv ψ t) t := by
+    intro t ht
+    rw [Set.uIcc_of_le hT.le, Set.mem_Icc] at ht
+    have hinner : HasDerivAt (fun s => inner (𝕜 := ℝ) (gs.u s : L2VF_R3) (w : L2VF_R3))
+        (inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF_R3)) t) (w : L2VF_R3)) t := by
+      have hda := (gs.u_hasDeriv t ht.1).inner (𝕜 := ℝ) (hasDerivAt_const t (w : L2VF_R3))
+      simpa only [inner_zero_right, add_zero, zero_add] using hda
+    exact hinner.mul (hψderiv t)
+  -- The integrand equals `-h'(t)` on `[0,T]` (via the ODE).
+  have hcongr : Set.EqOn
+      (fun t => -(inner (𝕜 := ℝ) (gs.u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+        ψ t * (ν * stokesTestPairing_R3 (gs.u t : L2VF_R3) (w : L2VF_R3) +
+          F.b (gs.u t) (gs.u t) w))
+      (fun t => -(inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF_R3)) t) (w : L2VF_R3) * ψ t +
+        inner (𝕜 := ℝ) (gs.u t : L2VF_R3) (w : L2VF_R3) * deriv ψ t))
+      (Set.uIcc (0 : ℝ) T) := by
+    intro t ht
+    rw [Set.uIcc_of_le hT.le, Set.mem_Icc] at ht
+    have hns : ν * stokesTestPairing_R3 (gs.u t : L2VF_R3) (w : L2VF_R3) + F.b (gs.u t) (gs.u t) w
+        = -(inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF_R3)) t) (w : L2VF_R3)) := by
+      have h := hode t ht.1; linarith
+    simp only []; rw [hns]; ring
+  -- Interval integrability of `h'` via continuity.
+  have hAcont : ContinuousOn
+      (fun t => inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF_R3)) t) (w : L2VF_R3))
+      (Set.Icc 0 T) := by
+    have hst := (stokes_curve_continuousOn_R3 gs w ψw hψw).mono (Set.Icc_subset_Ici_self : Set.Icc (0:ℝ) T ⊆ Set.Ici 0)
+    have hb := (bForm_curve_continuousOn_of_schwartz gs w ⟨ψw, hψw⟩).mono (Set.Icc_subset_Ici_self : Set.Icc (0:ℝ) T ⊆ Set.Ici 0)
+    have hrhs : ContinuousOn
+        (fun t => -(ν * stokesTestPairing_R3 (gs.u t : L2VF_R3) (w : L2VF_R3) +
+          F.b (gs.u t) (gs.u t) w)) (Set.Icc 0 T) :=
+      ((continuousOn_const.mul hst).add hb).neg
+    refine hrhs.congr (fun t ht => ?_)
+    have h := hode t ht.1; linarith
+  have hinner_cont : ContinuousOn (fun t => inner (𝕜 := ℝ) (gs.u t : L2VF_R3) (w : L2VF_R3))
+      (Set.Icc 0 T) :=
+    ((galerkin_curve_continuous 𝔊 F ν u₀ n gs).inner continuousOn_const).mono (Set.Icc_subset_Ici_self : Set.Icc (0:ℝ) T ⊆ Set.Ici 0)
+  have hh'_ii : IntervalIntegrable
+      (fun t => inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF_R3)) t) (w : L2VF_R3) * ψ t +
+        inner (𝕜 := ℝ) (gs.u t : L2VF_R3) (w : L2VF_R3) * deriv ψ t) volume 0 T :=
+    ((hAcont.mul hψC1.continuous.continuousOn).add
+      (hinner_cont.mul hψC1.continuous_deriv_one.continuousOn)).intervalIntegrable_of_Icc hT.le
+  -- FTC: `∫ h' = h T - h 0`, boundary terms vanish.
+  have hFTC := intervalIntegral.integral_eq_sub_of_hasDerivAt hprod hh'_ii
+  rw [intervalIntegral.integral_congr hcongr, intervalIntegral.integral_neg, hFTC, hψ0, hψT]
+  ring
+
+set_option maxHeartbeats 1600000 in
 /-- **W1: weak identity for the Aubin–Lions limit against a FIXED Galerkin test** (n→∞).
 
 For a test `w` that is already a Galerkin test of the scheme `𝔊` (i.e. `𝔊.P N w = w` for
@@ -2402,7 +2562,157 @@ theorem weakFormNS_galerkinTest_limit
       (-(inner (𝕜 := ℝ) ((alPkg.u t : L2VF_R3)) (w : L2VF_R3)) * deriv ψ t +
         ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (w : L2VF_R3) +
           F.b (alPkg.u t) (alPkg.u t) w)) = 0 := by
-  sorry -- ALLOW_SORRY: scaffold (issue #4 PR-1 W1 — lean-prover fills)
+  classical
+  obtain ⟨m, hm⟩ := hw
+  -- Global Schwartz witness of the Galerkin test `w`.
+  have hsdf : IsSchwartzDivFree_R3 w := by
+    obtain ⟨ψ, hψ⟩ := 𝔊.range_schwartz m (w : L2VF_R3)
+    exact ⟨ψ, fun j => by rw [← hm]; exact hψ j⟩
+  obtain ⟨ψw, hψw⟩ := hsdf
+  set M : ℝ := ‖(u₀ : L2VF_R3)‖ with hMdef
+  have hM0 : 0 ≤ M := norm_nonneg _
+  -- The Stokes functional as an inner product against a FIXED element `vElt`.
+  obtain ⟨E, hE⟩ : ∃ E : Fin 3 → Lp ℝ 2 (volume : Measure Domain3),
+      ∀ x : L2VF_R3, stokesTestPairing_R3 x (w : L2VF_R3)
+        = ∑ j : Fin 3, inner (𝕜 := ℝ) (L2VF_projComponent_R3 j x) (E j) :=
+    ⟨_, fun x => stokesTestPairing_R3_eq_sum_inner_negLap x (w : L2VF_R3) ψw hψw⟩
+  set vElt : L2VF_R3 :=
+    ∑ j : Fin 3, (L2VF_projComponent_R3 j).adjoint (E j) with hvElt
+  have hstokes_inner : ∀ x : L2VF_R3,
+      stokesTestPairing_R3 x (w : L2VF_R3) = inner (𝕜 := ℝ) vElt x := by
+    intro x
+    rw [hE x, hvElt, sum_inner]
+    exact Finset.sum_congr rfl fun j _ => by
+      rw [ContinuousLinearMap.adjoint_inner_left]; exact real_inner_comm _ _
+  -- Convection-form bound constant (made nonnegative).
+  obtain ⟨Cb, hCb⟩ := F.b_bound w ⟨ψw, hψw⟩
+  set Cb' : ℝ := |Cb| with hCb'def
+  have hCb'0 : 0 ≤ Cb' := abs_nonneg _
+  have hbbound : ∀ u v : L2Sigma_R3,
+      |F.b u v w| ≤ Cb' * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖ := fun u v =>
+    (hCb u v).trans (by gcongr; exact le_abs_self _)
+  -- Sup bounds for `ψ`, `ψ'` on `[0,T]`.
+  obtain ⟨Mψ, hMψ⟩ := (isCompact_Icc (a := (0 : ℝ)) (b := T)).exists_bound_of_continuousOn
+    hψC1.continuous.continuousOn
+  obtain ⟨Mψ', hMψ'⟩ := (isCompact_Icc (a := (0 : ℝ)) (b := T)).exists_bound_of_continuousOn
+    hψC1.continuous_deriv_one.continuousOn
+  have hMψ0 : 0 ≤ Mψ := le_trans (norm_nonneg _) (hMψ 0 ⟨le_refl 0, hT.le⟩)
+  -- Finite time measure and interval/measure bridge.
+  set μ : Measure ℝ := volume.restrict (Set.Icc (0 : ℝ) T) with hμ
+  haveI hμfin : IsFiniteMeasure μ := by
+    rw [hμ]; refine isFiniteMeasure_restrict.2 ?_
+    rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top
+  have hbridge : ∀ g : ℝ → ℝ, ∫ t in (0 : ℝ)..T, g t = ∫ t, g t ∂μ := fun g => by
+    rw [intervalIntegral.integral_of_le hT.le, hμ, Measure.restrict_congr_set Ioc_ae_eq_Icc]
+  -- Approximant and limit integrands.
+  set Fseq : ℕ → ℝ → ℝ := fun n t =>
+    -(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+      ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
+        F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w) with hFseq
+  set flim : ℝ → ℝ := fun t =>
+    -(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+      ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (w : L2VF_R3) +
+        F.b (alPkg.u t) (alPkg.u t) w) with hflim
+  -- Constant dominator.
+  set D : ℝ := M * ‖(w : L2VF_R3)‖ * Mψ' + Mψ * (ν * ‖vElt‖ * M + Cb' * M * M) with hD
+  -- (1) Measurability of each approximant integrand.
+  have hcontFseq : ∀ n, ContinuousOn (Fseq n) (Set.Icc (0 : ℝ) T) := by
+    intro n
+    have hc := (weakFormNS_integrand_continuousOn_R3 (galSeq (alPkg.φ n)) w ⟨ψw, hψw⟩ ψ hψC1).mono
+      (Set.Icc_subset_Ici_self : Set.Icc (0:ℝ) T ⊆ Set.Ici 0)
+    simpa only [hFseq] using hc
+  have hmeasFseq : ∀ n, AEStronglyMeasurable (Fseq n) μ := fun n => by
+    rw [hμ]; exact (hcontFseq n).aestronglyMeasurable measurableSet_Icc
+  -- (2) Uniform dominator bound.
+  have hae_ge : ∀ᵐ t ∂μ, (0 : ℝ) ≤ t := by
+    rw [hμ]; exact ae_restrict_of_forall_mem measurableSet_Icc fun t ht => ht.1
+  have hae_Icc : ∀ᵐ t ∂μ, t ∈ Set.Icc (0 : ℝ) T := by
+    rw [hμ]; exact ae_restrict_mem measurableSet_Icc
+  have hbound : ∀ n, ∀ᵐ t ∂μ, ‖Fseq n t‖ ≤ D := by
+    intro n
+    filter_upwards [hae_ge, hae_Icc] with t htg htIcc
+    have hUn : ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ≤ M := by
+      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) htg
+    have hψb : |ψ t| ≤ Mψ := by rw [← Real.norm_eq_abs]; exact hMψ t htIcc
+    have hψ'b : |deriv ψ t| ≤ Mψ' := by rw [← Real.norm_eq_abs]; exact hMψ' t htIcc
+    have hinb : |inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
+        ≤ M * ‖(w : L2VF_R3)‖ := (abs_real_inner_le_norm _ _).trans (by gcongr)
+    have hstok : |stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
+        ≤ ‖vElt‖ * M := by
+      rw [hstokes_inner]; exact (abs_real_inner_le_norm _ _).trans (by gcongr)
+    have hbb : |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| ≤ Cb' * M * M := by
+      refine (hbbound _ _).trans ?_; gcongr
+    rw [hFseq, Real.norm_eq_abs]
+    calc |(-(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))) * deriv ψ t +
+            ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
+              F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)|
+        ≤ |(-(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))) * deriv ψ t|
+          + |ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
+              F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)| := abs_add_le _ _
+      _ ≤ M * ‖(w : L2VF_R3)‖ * Mψ' + Mψ * (ν * ‖vElt‖ * M + Cb' * M * M) := by
+          refine add_le_add ?_ ?_
+          · rw [abs_mul, abs_neg]
+            exact mul_le_mul hinb hψ'b (abs_nonneg _) (mul_nonneg hM0 (norm_nonneg _))
+          · rw [abs_mul]
+            refine mul_le_mul hψb ?_ (abs_nonneg _) hMψ0
+            calc |ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
+                    F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w|
+                ≤ |ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
+                  + |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| := abs_add_le _ _
+              _ = ν * |stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
+                  + |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| := by
+                    rw [abs_mul, abs_of_nonneg hν.le]
+              _ ≤ ν * (‖vElt‖ * M) + Cb' * M * M :=
+                    add_le_add (mul_le_mul_of_nonneg_left hstok hν.le) hbb
+              _ = ν * ‖vElt‖ * M + Cb' * M * M := by ring
+      _ = D := by rw [hD]
+  have hDint : Integrable (fun _ : ℝ => D) μ := integrable_const _
+  -- (3) Pointwise a.e.-t convergence of the integrands.
+  have hballconv : ∀ᵐ t ∂μ, ∀ k : ℕ,
+      Filter.Tendsto (fun n => restrictToBall (k : ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+        Filter.atTop (nhds (restrictToBall (k : ℝ) (alPkg.u t : L2VF_R3))) := by
+    rw [hμ]; exact ae_all_iff.2 fun k => alPkg.strong_convergence_ae k
+  have hnormlim : ∀ᵐ t ∂μ, ‖(alPkg.u t : L2VF_R3)‖ ≤ M := by
+    rw [hμ]
+    filter_upwards [kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq alPkg] with t ht
+    have hsq : ‖(alPkg.u t : L2VF_R3)‖ ^ 2 ≤ M ^ 2 := by rw [hMdef]; nlinarith [ht]
+    exact le_of_sq_le_sq hsq hM0
+  have hpt : ∀ᵐ t ∂μ, Filter.Tendsto (fun n => Fseq n t) Filter.atTop (nhds (flim t)) := by
+    filter_upwards [hballconv, hnormlim, hae_ge] with t hball hnorm htg
+    have hbd : ∀ n, ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ≤ M := fun n => by
+      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) htg
+    have hlin : Filter.Tendsto
+        (fun n => inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))
+        Filter.atTop (nhds (inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (w : L2VF_R3))) := by
+      have h := inner_tendsto_of_perball (w : L2VF_R3)
+        (fun n => ((galSeq (alPkg.φ n)).u t : L2VF_R3)) (alPkg.u t : L2VF_R3) M hM0 hbd hnorm hball
+      simpa only [real_inner_comm (w : L2VF_R3)] using h
+    have hstk : Filter.Tendsto
+        (fun n => stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))
+        Filter.atTop (nhds (stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (w : L2VF_R3))) := by
+      simp only [hstokes_inner]
+      exact inner_tendsto_of_perball vElt
+        (fun n => ((galSeq (alPkg.φ n)).u t : L2VF_R3)) (alPkg.u t : L2VF_R3) M hM0 hbd hnorm hball
+    have hnl : Filter.Tendsto (fun n => F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)
+        Filter.atTop (nhds (F.b (alPkg.u t) (alPkg.u t) w)) :=
+      fb_tendsto_of_perball F w ⟨ψw, hψw⟩ (fun n => (galSeq (alPkg.φ n)).u t) (alPkg.u t)
+        M hM0 hbd hnorm hball
+    simp only [hFseq, hflim]
+    exact (hlin.neg.mul_const (deriv ψ t)).add
+      (((hstk.const_mul ν).add hnl).const_mul (ψ t))
+  -- (4) Dominated convergence: approximant integrals converge to the limit integral.
+  have hlim := tendsto_integral_of_dominated_convergence (fun _ => D) hmeasFseq hDint hbound hpt
+  -- (5) The approximant integrals are eventually `0` (per-level IBP identity).
+  have hzero_ev : ∀ᶠ n in Filter.atTop, ∫ t, Fseq n t ∂μ = 0 := by
+    filter_upwards [Filter.eventually_ge_atTop m] with n hn
+    have hproj : (w : L2VF_R3) = 𝔊.P (alPkg.φ n) (w : L2VF_R3) :=
+      (𝔊.mono_range m (alPkg.φ n) (le_trans hn alPkg.φ_mono.le_apply) (w : L2VF_R3) hm).symm
+    rw [← hbridge (Fseq n)]; simp only [hFseq]
+    exact galerkin_weakFormNS_zero_R3 T hT (galSeq (alPkg.φ n)) w hproj ψ hψsupp hψC1
+  have hlim0 : Filter.Tendsto (fun n => ∫ t, Fseq n t ∂μ) Filter.atTop (nhds 0) :=
+    Filter.Tendsto.congr' (hzero_ev.mono fun n h => h.symm) tendsto_const_nhds
+  have hflim0 : ∫ t, flim t ∂μ = 0 := tendsto_nhds_unique hlim hlim0
+  rw [hbridge flim]; exact hflim0
 
 /-- **WeakFormNS limit passage (conjunct 2 of `galerkin_limit_passage_R3`).**
 
