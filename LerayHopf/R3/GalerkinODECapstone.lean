@@ -1,4 +1,5 @@
 import LerayHopf.R3.CurlDensityCapstone   -- nonempty_schwartzGalerkinBasis (proved, issue #3 / #21)
+import LerayHopf.R3.CurlDensityH1         -- curl_approx_H1 (issue #4 PR-2, H¹ curl-approx kernel)
 import LerayHopf.R3.GalerkinODESolve
 import LerayHopf.R3.AubinLionsAssembly   -- build_galerkin_package_R3_of_galSeq (relocated, issue #15)
 import LerayHopf.R3.ConvectionExtension    -- r3_NSForms_exists (proved theorem, issue #56 rewire)
