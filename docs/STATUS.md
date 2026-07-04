@@ -6,12 +6,13 @@
 > `galerkin_spacetime_precompact_R3` DISCHARGED (issue #46 PR-4, 2026-07-04 — axiom →
 > theorem, assembled sorry-free via File E `LerayHopf/R3/SpacetimePrecompact.lean`;
 > R3 frontier 2 → 1).
-> T³ capstone = **1** project axiom (`aubin_lions`);
-> `torusConvectionGap_exists` PROVED as `torusConvectionGap_holds` (issue #53, PR #62);
-> `galerkin_limit_passage` REMOVED (issue #25, PR #75 — proved via
-> `torus_galerkin_limit_passage_of_energyClass` + `torus_energyClass_of_aubinLions`).
-> `aubin_lions` removal is in flight via the mode-wise spectral campaign (issue #23,
-> PRs #76–#80 merged, axiom-neutral so far).
+> **T³ capstone = 0 project axioms — UNCONDITIONAL (kernel-only).**
+> `aubin_lions` REMOVED (issue #23, T-AL-6 Stage C, 2026-07-04) via the mode-wise
+> spectral route (`torusAubinLionsPackage_of_galSeq`, `TorusAubinLionsAssembly.lean`);
+> `#print axioms exists_lerayHopf_torus3_axiomatic` = `[propext, Classical.choice, Quot.sound]`
+> only — no project axioms, no `sorryAx`.  T³ frontier 1 → 0.
+> Previous T³ removals: `galerkin_limit_passage` (issue #25 / PR #75),
+> `torusConvectionGap_exists` (issue #53 / PR #62), `galerkin_ode_solution` (issue #24).
 > Live pin: `bash scripts/check-axioms-live.sh`.
 > Milestone-table and ledger rows below are historical (dated by their PR/issue refs);
 > where a row's axiom count conflicts with this banner, the banner wins.
@@ -52,8 +53,8 @@ maintains this ledger as the final report.
 | M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | **done** (axiom-free) |
 | M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | **done** (axiom-free) |
 | M4 | Finite-dim Galerkin ODE + energy identity | **abstract done** (axiom-free); concrete = frontier |
-| M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | **Rellich done** (axiom-free); limit passage PROVED (#25 / PR #75); time-compactness (`aubin_lions`) = the sole remaining T³ frontier |
-| M6 | **Sound minimal-axiom closure of T³ existence** (`exists_lerayHopf_torus3_axiomatic`) | **DONE** — originally closed modulo 4 project axioms, since burned down to exactly **1** (`aubin_lions`): `galerkin_ode_solution` proved (issue #24), `torusConvectionGap_exists` proved as `torusConvectionGap_holds` (issue #53 / PR #62), `galerkin_limit_passage` removed (issue #25 / PR #75); abstract evolution framework for R³ reuse |
+| M5–7 | Compactness + Aubin–Lions on T³ + limit passage → unconditional T³ | **DONE** — Rellich axiom-free; limit passage PROVED (#25 / PR #75); `aubin_lions` REMOVED (issue #23 T-AL-6, mode-wise spectral route) → T³ existence is now **UNCONDITIONAL** (zero project axioms) |
+| M6 | **Sound minimal-axiom closure of T³ existence** (`exists_lerayHopf_torus3_axiomatic`) | **DONE (UNCONDITIONAL)** — closed modulo 4 project axioms; all four burned to zero: `galerkin_ode_solution` proved (#24), `torusConvectionGap_exists` proved (#53 / PR #62), `galerkin_limit_passage` proved (#25 / PR #75), `aubin_lions` proved via mode-wise spectral route (#23, T-AL-6 Stage C, `torusAubinLionsPackage_of_galSeq`); `#print axioms` = kernel-only; abstract evolution framework reused by R³ |
 | R3 | **Whole-space ℝ³ Leray–Hopf existence** (`exists_lerayHopf_r3_axiomatic`) — the real target (Leray 1934) | **DONE** — proved modulo exactly **1** project axiom (`galerkin_limit_passage_R3`; was 3 — `r3ConvectionGapOp_exists` PROVED as `r3ConvectionGapOp_holds`, issue #56, PR #60; `galerkin_spacetime_precompact_R3` DISCHARGED axiom → theorem, issue #46 PR-4, 2026-07-04, File E `SpacetimePrecompact.lean`); ℝ³ spatial+regularity layer built axiom-free; abstract layer reused unmodified |
 | Wave-0 | **Infra unblocker** — flock build-lock, Skill grant, `Core.lean` split, `_axiomatic` naming, CI axiom-leak gate | **DONE** — 5 items complete; GelfandTriple signature fix (item 1) deferred to Stream D (issue #4); tsum safe APIs (item 5) and componentwise extraction (item 6) deferred to hygiene pass |
 | R3-d | **Concrete trilinear convection estimate** (`LerayHopf/R3/TrilinearEstimate.lean`) — upgrades the former `r3ConvectionGapOp_exists` axiom's *justification prose* into 11 proved, axiom-free lemmas about `convIntegralSchwartz` | **DONE** (axiom-free) — multilinearity (6), integrability, direct H¹ bound, **IBP identity**, **antisymmetry under div-free**, and the genuine **`b_bound` shape** `\|b(u,v,w)\| ≤ C(w)·‖u‖₂·‖v‖₂`; each `#print axioms`-clean (only propext/Classical.choice/Quot.sound). This did not by itself remove the axiom at that time; issue #56 later removed it via the determined-form construction. |
@@ -92,31 +93,21 @@ compactness is *not* axiomatized — it is the proved `rellich_seq_compact`/`rel
 discharged into the Aubin–Lions axiom as an explicit hypothesis. Every axiom passed a Codex
 `--effort xhigh` soundness audit (8 rounds; see the Codex log).
 
-The **one** live T³ axiom (in `LerayHopf/AxiomaticClosure.lean`; `## Assumptions` section there;
-`galerkin_ode_solution`, `torusConvectionGap_exists`, and `galerkin_limit_passage` are now
-**proved theorem content** — issues #24, #53, and #25):
+**No live T³ project axioms remain.**  All four former T³ axioms are now proved theorem content
+(`galerkin_ode_solution` — issue #24; `torusConvectionGap_exists` — issue #53 / PR #62;
+`galerkin_limit_passage` — issue #25 / PR #75; `aubin_lions` — issue #23, T-AL-6 Stage C).
 
-| Axiom | Statement (informal) | Why TRUE / NON-VACUOUS | Reference |
-|---|---|---|---|
-| `aubin_lions` | from a Galerkin sequence + uniform bounds + an explicit **spatial-compactness hypothesis** (= `rellich_L2Sigma`, discharged), extract a subsequence converging strongly in `L²(0,T;L²_σ)` | classical Aubin–Lions; axiom adds ONLY the missing Bochner-time half (spatial half proved) | Temam III.2.1 |
-
-Removed from the T³ axiom set (now proved theorem content):
-- ~~`galerkin_limit_passage`~~ **REMOVED (#25 / PR #75)** — proved via
-  `torus_galerkin_limit_passage_of_energyClass` + `torus_energyClass_of_aubinLions`,
-  assembled in `TorusGalerkinODECapstone.lean`; T³ frontier 2 → 1.
-- ~~`torusConvectionGap_exists`~~ **PROVED (#53 / PR #62)** as `torusConvectionGap_holds`
-  (determined-form torus construction).
-- ~~`galerkin_ode_solution`~~ **PROVED (#24)** via the axiom-free `galerkinSolutionData_torus`.
+| Axiom | Status |
+|---|---|
+| ~~`aubin_lions`~~ | **REMOVED (issue #23, T-AL-6 Stage C, 2026-07-04)** — proved as `torusAubinLionsPackage_of_galSeq` (`LerayHopf/TorusAubinLionsAssembly.lean`) via the mode-wise spectral route (equi-Lipschitz test pairings + scalar Bolzano–Weierstrass diagonal + Riesz + H¹ tail); spatial half discharged by `rellich_L2Sigma`; `#print axioms` clean. T³ frontier 1 → 0. |
+| ~~`galerkin_limit_passage`~~ | **REMOVED (#25 / PR #75)** — proved via `torus_galerkin_limit_passage_of_energyClass` + `torus_energyClass_of_aubinLions`; T³ frontier 2 → 1. |
+| ~~`torusConvectionGap_exists`~~ | **PROVED (#53 / PR #62)** as `torusConvectionGap_holds` (determined-form torus construction). |
+| ~~`galerkin_ode_solution`~~ | **PROVED (#24)** via the axiom-free `galerkinSolutionData_torus`. |
 
 `b(u,u,u)=0` is a **proved lemma** (`Torus3NSForms.b_self_zero`) from antisymmetry, NOT an axiom.
-`#print axioms exists_lerayHopf_torus3_axiomatic` → exactly `aubin_lions` +
-`propext`/`Classical.choice`/`Quot.sound`
-(no `sorryAx`). Renamed from `exists_lerayHopf_torus3` in Wave-0 (Issue #1 item 3).
-The `aubin_lions` removal campaign (issue #23, mode-wise spectral route replanned in PR #76)
-has landed its Phase-0 statement gate (PR #77) and three sorry-free infrastructure PRs
-(#78 T-AL-1 torus test family + Stokes pairing bound, #79 T-AL-2 domain-neutral scalar
-equicontinuity engine, #80 T-AL-3 mode-wise Galerkin extraction); `aubin_lions` remains
-live until the final rewiring PR removes it.
+`#print axioms exists_lerayHopf_torus3_axiomatic` → `[propext, Classical.choice, Quot.sound]`
+only — **zero project axioms, no `sorryAx`**.
+Renamed from `exists_lerayHopf_torus3` in Wave-0 (Issue #1 item 3).
 
 ### ℝ³ (whole-space) — the 1 axiom (`LerayHopf/R3/GalerkinODECapstone.lean`) (now 1 — see top banner)
 
@@ -306,10 +297,11 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
   (a good representative exists);
   (v7) the existential became untethered (≈ standalone existence) ⇒ added the a.e.-link
   `∀ᵐ t, u t = alPkg.u t` to the Aubin–Lions limit; (v8) **approve**.
-  Final assembly proved sorry-free; current `#print axioms exists_lerayHopf_torus3_axiomatic` =
-  the 1 project axiom (`aubin_lions`) + `propext`/`Classical.choice`/`Quot.sound`
-  (`galerkin_ode_solution` proved in #24; `torusConvectionGap_exists` proved in #53;
-  `galerkin_limit_passage` removed in #25 / PR #75).
+  Final assembly proved sorry-free; `#print axioms exists_lerayHopf_torus3_axiomatic` at time of
+  M6 closure = 1 project axiom (`aubin_lions`) + `propext`/`Classical.choice`/`Quot.sound`
+  (`galerkin_ode_solution` proved #24; `torusConvectionGap_exists` proved #53;
+  `galerkin_limit_passage` removed #25 / PR #75). **`aubin_lions` subsequently REMOVED
+  (issue #23 T-AL-6 Stage C)** — T³ is now kernel-only; see top banner.
 - **R3 ℝ³ axiomatic closure** (`/codex:adversarial-review --effort xhigh`, `R3/AxiomaticClosure.lean`):
   **2 rounds** → **`approve`** (the T³ audit lessons applied preemptively converged it fast). Codex
   caught and forced fixes to: (v1-crit) `R3GalerkinScheme` admitting the identity map (which collapsed
@@ -327,10 +319,11 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
 
 - `exists_lerayHopf_torus3_statement` (in `Statement.lean`) is intentionally a marked `sorry`
   (the original scaffold target). It is superseded by the genuinely proved
-  `exists_lerayHopf_torus3_axiomatic` (in `TorusGalerkinODECapstone.lean`), which carries the proof-carrying
-  `LerayHopfSolutionFull` (weak form, energy inequality, initial trace, energy class) modulo
-  the 1 remaining project axiom (`aubin_lions`). The scaffold `sorry` is kept (no-rename rule)
-  and is not frontier debt.
+  `exists_lerayHopf_torus3_axiomatic` (in `TorusGalerkinODECapstone.lean`), which carries the
+  proof-carrying `LerayHopfSolutionFull` (weak form, energy inequality, initial trace, energy
+  class) **unconditionally** — all T³ project axioms removed (issue #23 T-AL-6 finish line;
+  `#print axioms` = kernel-only). The scaffold `sorry` is kept (no-rename rule) and is not
+  frontier debt.
   (`exists_lerayHopf_torus3_axiomatic` was renamed from `exists_lerayHopf_torus3` in Wave-0.)
 - **Next:** pivot to R³ — instantiate the abstract `DissipativeEvolution`/`WeakFormNS` + the
   abstract A1–A3 pattern; R³ needs its OWN spatial-compactness axiom (Rellich FAILS on ℝ³ —

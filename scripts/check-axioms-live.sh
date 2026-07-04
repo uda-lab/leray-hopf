@@ -8,9 +8,8 @@
 #
 # Expected axiom sets (kernel axioms shared by all):
 #
-#   exists_lerayHopf_torus3_axiomatic — exactly 4 axioms:
-#     propext  Classical.choice  Quot.sound  (3 kernel)
-#     LerayHopf.aubin_lions  (1 project)
+#   exists_lerayHopf_torus3_axiomatic — exactly 3 axioms:
+#     propext  Classical.choice  Quot.sound  (3 kernel, 0 project)
 #     NOTE: torus3_NSForms_exist REMOVED (issue #22) — Nonempty Torus3NSForms is now the theorem
 #           torus3_NSForms_exists, routed through the TorusConvectionGap interface and the proved
 #           Torus3NSForms_of_gap.
@@ -20,10 +19,12 @@
 #     NOTE: torusConvectionGap_exists REMOVED (issue #53) — proved sorry-free as
 #           torusConvectionGap_holds (determined-form construction, TorusConvectionExtension.lean);
 #           re-exported as LerayHopf.torusConvectionGap_exists (theorem, not axiom).
-#     NOTE: galerkin_limit_passage REMOVED (this change) — replaced by the proved theorems
+#     NOTE: galerkin_limit_passage REMOVED — replaced by the proved theorems
 #           torus_galerkin_limit_passage_of_energyClass + torus_energyClass_of_aubinLions,
 #           assembled in TorusGalerkinODECapstone.lean (relocated to avoid import cycle).
-#           Net 𝕋³ project axioms now 1.
+#     NOTE: aubin_lions REMOVED (issue #23, T-AL-6 Stage C) — discharged by the proved def
+#           torusAubinLionsPackage_of_galSeq (TorusAubinLionsAssembly.lean, mode-wise campaign).
+#           Net 𝕋³ project axioms now 0.  THE TORUS IS KERNEL-ONLY.
 #
 #   exists_lerayHopf_r3_axiomatic — exactly 4 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel)
@@ -186,15 +187,15 @@ assert_core_clean() {
 
 # ---------------------------------------------------------------------------
 # Pin 1: exists_lerayHopf_torus3_axiomatic
-#   1 project axiom + 3 kernel = 4 total
+#   0 project axioms + 3 kernel = 3 total  (KERNEL-ONLY — issue #23 T-AL-6 finish line)
 #   (galerkin_ode_solution removed, issue #24)
 #   (torusConvectionGap_exists REMOVED, issue #53 — proved as torusConvectionGap_holds)
-#   (galerkin_limit_passage REMOVED, this change — proved via torus_galerkin_limit_passage_of_energyClass
+#   (galerkin_limit_passage REMOVED — proved via torus_galerkin_limit_passage_of_energyClass
 #    + torus_energyClass_of_aubinLions, assembled in TorusGalerkinODECapstone.lean)
+#   (aubin_lions REMOVED, issue #23 — proved as torusAubinLionsPackage_of_galSeq)
 # ---------------------------------------------------------------------------
 assert_axioms "exists_lerayHopf_torus3_axiomatic" \
-  "propext Classical.choice Quot.sound
-   LerayHopf.aubin_lions"
+  "propext Classical.choice Quot.sound"
 
 # NOTE: r3ConvectionGapOp_exists REMOVED (issue #56) — proved sorry-free as r3ConvectionGapOp_holds
 #   (determined-form convection operator, ConvectionExtension.lean C11). Net R3 project axioms now 2.
@@ -252,4 +253,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets (R3: 1 project axiom, 𝕋³: 1 project axiom)."
+echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets (R3: 1 project axiom, 𝕋³: 0 project axioms — KERNEL-ONLY)."
