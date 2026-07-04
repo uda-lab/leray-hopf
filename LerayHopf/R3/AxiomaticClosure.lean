@@ -229,6 +229,24 @@ test class used in the weak NS formulation. -/
 def IsGalerkinTest_R3 (𝔊 : R3GalerkinScheme) (w : L2Sigma_R3) : Prop :=
   ∃ n : ℕ, 𝔊.P n (w : L2VF_R3) = (w : L2VF_R3)
 
+/-- The H¹(graph-norm) test-approximation property for an `R3GalerkinScheme`.
+
+Every canonical Schwartz divergence-free test `w` is approximable, in the combined
+`L² + viscousFormSq` graph seminorm, by Galerkin test fields of the scheme `𝔊`.
+This is the hypothesis threaded into `galerkin_limit_passage_R3` (issue #4 PR-3/PR-4)
+to bridge the `WeakFormNS` test extension step (W2): `𝔊.tendsto_id` is L²-only and
+does not control `viscousFormSq_R3(P_N w − w)`.
+
+The predicate lives here — upstream of `AubinLionsLimitPassage` and the capstone chain —
+so it can be imported by both without introducing a cycle.  It is NOT a structure field
+of `R3GalerkinScheme` (route decision R2 in the architect plan, issue #93). -/
+def R3TestApproxH1 (𝔊 : R3GalerkinScheme) : Prop :=
+  ∀ w : L2Sigma_R3, IsSchwartzDivFree_R3 w →
+    ∀ ε : ℝ, 0 < ε →
+      ∃ v : L2Sigma_R3, IsGalerkinTest_R3 𝔊 v ∧ IsSchwartzDivFree_R3 v ∧
+        ‖(v : L2VF_R3) - (w : L2VF_R3)‖ < ε ∧
+        viscousFormSq_R3 1 ((v : L2VF_R3) - (w : L2VF_R3)) < ε
+
 /-! ### AX-4: ℝ³ Navier–Stokes forms structure -/
 
 /-- The bundle of ℝ³ Navier–Stokes forms: only the trilinear convection form `b`
