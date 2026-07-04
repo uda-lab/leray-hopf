@@ -229,6 +229,114 @@ private theorem fourier_cxify_potOf (a : ℝ) (ha : 0 < a) (wh : Fin 3 → Schwa
     (𝓕 (cxifyH1 (potOf a ha wh hHerm k)) : SchwartzMap Domain3 ℂ) = symbolHatOf a ha wh k := by
   rw [cxify_potOf a ha wh hHerm k, fourier_fourierInv_eq]
 
+/-! ## Stage 2 — the curl Fourier symbol `𝓕(curl ψ_a)_j = ‖ξ‖²/(a²+‖ξ‖²) · ŵ_j` -/
+
+/-- `(cxify f).toLp` is the real-to-complex embedding of `f.toLp` (local copy of the private
+`CurlDensity.toLp_schwartzC_eq`). -/
+private theorem toLp_cxifyH1 (f : SchwartzMap Domain3 ℝ) :
+    (cxifyH1 f).toLp 2 (volume : Measure Domain3)
+      = (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
+          (f.toLp 2 (volume : Measure Domain3)) := by
+  haveI : Fact ((1 : ENNReal) ≤ 2) := ⟨by norm_num⟩
+  refine Lp.ext ?_
+  filter_upwards [(cxifyH1 f).coeFn_toLp 2 (volume : Measure Domain3),
+    (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL (f.toLp 2 (volume : Measure Domain3)),
+    f.coeFn_toLp 2 (volume : Measure Domain3)] with x hx hc hf
+  rw [hx, hc, hf, cxifyH1_apply, RCLike.ofRealCLM_apply]
+  rfl
+
+/-- `potentialComponentC ψ k` is the complex L²-class of the complexified potential. -/
+private theorem potentialComponentC_cxifyH1 (ψ : Fin 3 → SchwartzMap Domain3 ℝ) (k : Fin 3) :
+    potentialComponentC ψ k = (cxifyH1 (ψ k)).toLp 2 (volume : Measure Domain3) := by
+  rw [potentialComponentC, toLp_cxifyH1]
+
+/-- The Fourier transform of the `k`-th potential component (as an `L²`-class) is a.e. the
+regularized symbol `ψ̂_k`. -/
+private theorem fourier_potentialComponentC_potOf (a : ℝ) (ha : 0 < a)
+    (wh : Fin 3 → SchwartzMap Domain3 ℂ)
+    (hHerm : ∀ b : Fin 3, ∀ v : Domain3, wh b (-v) = (starRingEnd ℂ) (wh b v)) (k : Fin 3) :
+    ((𝓕 (potentialComponentC (potOf a ha wh hHerm) k) : L2C_R3) : Domain3 → ℂ)
+      =ᵐ[volume] ((symbolHatOf a ha wh k : SchwartzMap Domain3 ℂ) : Domain3 → ℂ) := by
+  have h1 : (𝓕 (potentialComponentC (potOf a ha wh hHerm) k) : L2C_R3)
+      = (𝓕 (cxifyH1 (potOf a ha wh hHerm k))).toLp 2 (volume : Measure Domain3) := by
+    rw [potentialComponentC_cxifyH1]
+    exact SchwartzMap.toLp_fourier_eq (cxifyH1 (potOf a ha wh hHerm k))
+  rw [h1, fourier_cxify_potOf a ha wh hHerm k]
+  exact (symbolHatOf a ha wh k).coeFn_toLp 2 (volume : Measure Domain3)
+
+/-- `‖ξ‖² = ξ₀² + ξ₁² + ξ₂²` on `Domain3`. -/
+private theorem norm_sq_eq_sum (ξ : Domain3) :
+    ‖ξ‖ ^ 2 = ξ 0 ^ 2 + ξ 1 ^ 2 + ξ 2 ^ 2 := by
+  rw [EuclideanSpace.norm_eq, Real.sq_sqrt (by positivity), Fin.sum_univ_three]
+  simp [Real.norm_eq_abs, sq_abs]
+
+/-- **BAC-CAB in the cyclic `Fin 3` convention.**  Given transversality
+`∑ ξ_i wh_i = 0`, the double cross `(ξ × (ξ × ŵ))_j = -‖ξ‖² ŵ_j`. -/
+private theorem baccab (ξ : Domain3) (wh : Fin 3 → SchwartzMap Domain3 ℂ) (j : Fin 3)
+    (htr : (ξ 0 : ℂ) * wh 0 ξ + (ξ 1 : ℂ) * wh 1 ξ + (ξ 2 : ℂ) * wh 2 ξ = 0) :
+    (ξ (j + 1) : ℂ) * ((ξ (j + 2 + 1) : ℂ) * wh (j + 2 + 2) ξ
+        - (ξ (j + 2 + 2) : ℂ) * wh (j + 2 + 1) ξ)
+      - (ξ (j + 2) : ℂ) * ((ξ (j + 1 + 1) : ℂ) * wh (j + 1 + 2) ξ
+        - (ξ (j + 1 + 2) : ℂ) * wh (j + 1 + 1) ξ)
+      = -((ξ 0 : ℂ) ^ 2 + (ξ 1 : ℂ) ^ 2 + (ξ 2 : ℂ) ^ 2) * wh j ξ := by
+  fin_cases j
+  · simp only [Fin.isValue, Fin.reduceFinMk, Fin.reduceAdd]
+    linear_combination (ξ 0 : ℂ) * htr
+  · simp only [Fin.isValue, Fin.reduceFinMk, Fin.reduceAdd]
+    linear_combination (ξ 1 : ℂ) * htr
+  · simp only [Fin.isValue, Fin.reduceFinMk, Fin.reduceAdd]
+    linear_combination (ξ 2 : ℂ) * htr
+
+/-- The curl multiplier evaluated on the regularized potential symbol equals
+`‖ξ‖²/(a²+‖ξ‖²) · ŵ_j`, using transversality of `ŵ` at `ξ`. -/
+private theorem crossWithIξ_symbolHat_eq (a : ℝ) (ha : 0 < a)
+    (wh : Fin 3 → SchwartzMap Domain3 ℂ) (ξ : Domain3) (j : Fin 3)
+    (htr : ∑ i : Fin 3, (ξ i : ℂ) * wh i ξ = 0) :
+    crossWithIξ ξ (fun k => symbolHatOf a ha wh k ξ) j
+      = ((‖ξ‖ ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2) : ℝ) : ℂ) * wh j ξ := by
+  have hc : (2 * Real.pi * Complex.I) ≠ 0 := by
+    simp [Real.pi_ne_zero, Complex.I_ne_zero]
+  have htr3 : (ξ 0 : ℂ) * wh 0 ξ + (ξ 1 : ℂ) * wh 1 ξ + (ξ 2 : ℂ) * wh 2 ξ = 0 := by
+    rw [← Fin.sum_univ_three (fun i => (ξ i : ℂ) * wh i ξ)]; exact htr
+  have hexp : crossWithIξ ξ (fun k => symbolHatOf a ha wh k ξ) j
+      = (-(((a ^ 2 + ‖ξ‖ ^ 2)⁻¹ : ℝ) : ℂ)) *
+        ((ξ (j + 1) : ℂ) * ((ξ (j + 2 + 1) : ℂ) * wh (j + 2 + 2) ξ
+            - (ξ (j + 2 + 2) : ℂ) * wh (j + 2 + 1) ξ)
+          - (ξ (j + 2) : ℂ) * ((ξ (j + 1 + 1) : ℂ) * wh (j + 1 + 2) ξ
+            - (ξ (j + 1 + 2) : ℂ) * wh (j + 1 + 1) ξ)) := by
+    simp only [crossWithIξ, symbolHatOf_apply, crossHatOf_apply, symbolMul, yukawaMul]
+    field_simp
+    ring
+  rw [hexp, baccab ξ wh j htr3]
+  have hnsC : ((‖ξ‖ ^ 2 : ℝ) : ℂ) = (ξ 0 : ℂ) ^ 2 + (ξ 1 : ℂ) ^ 2 + (ξ 2 : ℂ) ^ 2 := by
+    rw [norm_sq_eq_sum]; push_cast; ring
+  rw [← hnsC]
+  push_cast [div_eq_mul_inv]
+  ring
+
+/-- **Stage 2 result.**  The `j`-th complex-component Fourier transform of the curl of the
+regularized potential is a.e. `‖ξ‖²/(a²+‖ξ‖²) · ŵ_j`. -/
+private theorem fourier_curl_potOf_ae (a : ℝ) (ha : 0 < a)
+    (wh : Fin 3 → SchwartzMap Domain3 ℂ)
+    (hHerm : ∀ b : Fin 3, ∀ v : Domain3, wh b (-v) = (starRingEnd ℂ) (wh b v))
+    (htr : ∀ᵐ ξ ∂(volume : Measure Domain3), ∑ i : Fin 3, (ξ i : ℂ) * wh i ξ = 0) (j : Fin 3) :
+    ((𝓕 (L2VF_projComponentC_R3 j (curlSchwartzL2 (potOf a ha wh hHerm))) : L2C_R3) : Domain3 → ℂ)
+      =ᵐ[volume] fun ξ => ((‖ξ‖ ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2) : ℝ) : ℂ) * wh j ξ := by
+  have hcross := fourier_curlSchwartz_eq_cross (potOf a ha wh hHerm) j
+  have hp0 := fourier_potentialComponentC_potOf a ha wh hHerm 0
+  have hp1 := fourier_potentialComponentC_potOf a ha wh hHerm 1
+  have hp2 := fourier_potentialComponentC_potOf a ha wh hHerm 2
+  filter_upwards [hcross, hp0, hp1, hp2, htr] with ξ hx h0 h1 h2 htrξ
+  rw [hx]
+  have hpk : ∀ k : Fin 3, (𝓕 (potentialComponentC (potOf a ha wh hHerm) k) : L2C_R3) ξ
+      = symbolHatOf a ha wh k ξ := by
+    intro k; fin_cases k
+    · exact h0
+    · exact h1
+    · exact h2
+  simp only [hpk]
+  exact crossWithIξ_symbolHat_eq a ha wh ξ j htrξ
+
 /-! ## Main theorem (spike S6 verbatim, production name `curl_approx_H1`) -/
 
 /-- Every Schwartz divergence-free field `w ∈ L2Sigma_R3` can be approximated in the H¹
