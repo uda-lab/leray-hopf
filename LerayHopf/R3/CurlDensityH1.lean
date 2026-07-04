@@ -337,6 +337,125 @@ private theorem fourier_curl_potOf_ae (a : ℝ) (ha : 0 < a)
   simp only [hpk]
   exact crossWithIξ_symbolHat_eq a ha wh ξ j htrξ
 
+/-! ## Stage 3 — Parseval error bridge and dominated convergence in the scale `a`
+
+Local re-proofs of the private CurlDensity Parseval helpers, then the L² and viscous
+error expressions in Fourier form and their `a → 0` limits. -/
+
+/-- Complex inner product of two real-to-complex embeddings equals the cast of the real
+inner product (local copy of the private `CurlDensity.complexInner_compLpL_ofReal`). -/
+private theorem complexInner_compLpL_ofReal_H1
+    (a b : Lp ℝ 2 (volume : Measure Domain3)) :
+    (inner ℂ ((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) a)
+        ((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) b) : ℂ)
+      = ((inner ℝ a b : ℝ) : ℂ) := by
+  have hreal : (inner ℝ a b : ℝ)
+      = ∫ x, (a : Domain3 → ℝ) x * (b : Domain3 → ℝ) x ∂(volume : Measure Domain3) := by
+    rw [MeasureTheory.L2.inner_def]
+    refine integral_congr_ae ?_
+    filter_upwards with x
+    rw [RCLike.inner_apply, conj_trivial]
+    ring
+  rw [MeasureTheory.L2.inner_def, hreal]
+  calc (∫ x, (inner ℂ
+        (((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) a : Domain3 → ℂ) x)
+        (((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) b : Domain3 → ℂ) x) : ℂ)
+          ∂(volume : Measure Domain3))
+      = ∫ x, (((a : Domain3 → ℝ) x * (b : Domain3 → ℝ) x : ℝ) : ℂ)
+          ∂(volume : Measure Domain3) := by
+        refine integral_congr_ae ?_
+        filter_upwards [(RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL a,
+          (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL b] with x hax hbx
+        rw [hax, hbx]
+        simp only [RCLike.ofRealCLM_apply, RCLike.inner_apply, RCLike.conj_ofReal]
+        rw [mul_comm]
+        norm_cast
+    _ = ((∫ x, (a : Domain3 → ℝ) x * (b : Domain3 → ℝ) x ∂(volume : Measure Domain3) : ℝ) : ℂ) :=
+        integral_ofReal
+
+/-- The real inner product on `L2VF_R3` decomposes as a sum over the three components (local
+copy of the private `CurlDensity.inner_L2VF_eq_sum_component`). -/
+private theorem inner_L2VF_eq_sum_component_H1 (a b : L2VF_R3) :
+    (inner ℝ a b : ℝ)
+      = ∑ j : Fin 3, (inner ℝ (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b) : ℝ) := by
+  have hcomp : ∀ j : Fin 3,
+      (inner ℝ (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b) : ℝ)
+        = ∫ x, (L2VF_projComponent_R3 j a : Domain3 → ℝ) x
+            * (L2VF_projComponent_R3 j b : Domain3 → ℝ) x ∂(volume : Measure Domain3) := by
+    intro j
+    rw [MeasureTheory.L2.inner_def]
+    refine integral_congr_ae ?_
+    filter_upwards with x
+    simp only [RCLike.inner_apply, conj_trivial]; ring
+  have hint : ∀ j : Fin 3, Integrable (fun x => (L2VF_projComponent_R3 j a : Domain3 → ℝ) x
+      * (L2VF_projComponent_R3 j b : Domain3 → ℝ) x) (volume : Measure Domain3) := by
+    intro j
+    have hI := MeasureTheory.L2.integrable_inner (𝕜 := ℝ)
+      (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b)
+    refine hI.congr ?_
+    filter_upwards with x
+    simp only [RCLike.inner_apply, conj_trivial]; ring
+  simp_rw [hcomp]
+  rw [← integral_finsetSum _ (fun j _ => hint j), MeasureTheory.L2.inner_def]
+  refine integral_congr_ae ?_
+  have hcoe : ∀ᵐ x ∂(volume : Measure Domain3), ∀ j : Fin 3,
+      (L2VF_projComponent_R3 j a : Domain3 → ℝ) x = (a : Domain3 → EuclideanSpace ℝ (Fin 3)) x j
+        ∧ (L2VF_projComponent_R3 j b : Domain3 → ℝ) x
+            = (b : Domain3 → EuclideanSpace ℝ (Fin 3)) x j := by
+    rw [MeasureTheory.ae_all_iff]
+    intro j
+    filter_upwards [(EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL a,
+      (EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL b] with x hax hbx
+    exact ⟨hax, hbx⟩
+  filter_upwards [hcoe] with x hx
+  rw [PiLp.inner_apply]
+  refine Finset.sum_congr rfl ?_
+  intro j _
+  rw [RCLike.inner_apply, conj_trivial, (hx j).1, (hx j).2]
+  ring
+
+/-- **Vector Parseval bridge** (local copy of the private
+`CurlDensity.inner_L2VF_eq_integral_sum_fourier`). -/
+private theorem inner_L2VF_eq_integral_sum_fourier_H1 (a b : L2VF_R3) :
+    ((inner ℝ a b : ℝ) : ℂ)
+      = ∫ ξ : Domain3, ∑ j : Fin 3,
+          (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j a) : L2C_R3) ξ)
+            * (𝓕 (L2VF_projComponentC_R3 j b) : L2C_R3) ξ
+        ∂(volume : Measure Domain3) := by
+  have hcomp : ∀ j : Fin 3,
+      ((inner ℝ (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b) : ℝ) : ℂ)
+        = ∫ ξ : Domain3,
+            (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j a) : L2C_R3) ξ)
+              * (𝓕 (L2VF_projComponentC_R3 j b) : L2C_R3) ξ ∂(volume : Measure Domain3) := by
+    intro j
+    rw [← complexInner_compLpL_ofReal_H1 (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b)]
+    rw [show (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
+            (L2VF_projComponent_R3 j a) = L2VF_projComponentC_R3 j a from
+          (ContinuousLinearMap.comp_apply _ _ _).symm,
+      show (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
+            (L2VF_projComponent_R3 j b) = L2VF_projComponentC_R3 j b from
+          (ContinuousLinearMap.comp_apply _ _ _).symm]
+    rw [← MeasureTheory.Lp.inner_fourier_eq, MeasureTheory.L2.inner_def]
+    refine integral_congr_ae ?_
+    filter_upwards with ξ
+    simp only [RCLike.inner_apply]; ring
+  have hint : ∀ j : Fin 3, Integrable
+      (fun ξ : Domain3 => (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j a) : L2C_R3) ξ)
+        * (𝓕 (L2VF_projComponentC_R3 j b) : L2C_R3) ξ) (volume : Measure Domain3) := by
+    intro j
+    have hI := MeasureTheory.L2.integrable_inner (𝕜 := ℂ)
+      (𝓕 (L2VF_projComponentC_R3 j a)) (𝓕 (L2VF_projComponentC_R3 j b))
+    refine hI.congr ?_
+    filter_upwards with ξ
+    simp only [RCLike.inner_apply]; ring
+  rw [show ((inner ℝ a b : ℝ) : ℂ)
+        = ((∑ j : Fin 3, (inner ℝ (L2VF_projComponent_R3 j a)
+            (L2VF_projComponent_R3 j b) : ℝ) : ℝ) : ℂ) from by
+          rw [inner_L2VF_eq_sum_component_H1]]
+  push_cast
+  rw [Finset.sum_congr rfl (fun j _ => hcomp j)]
+  rw [integral_finsetSum _ (fun j _ => hint j)]
+
 /-! ## Main theorem (spike S6 verbatim, production name `curl_approx_H1`) -/
 
 /-- Every Schwartz divergence-free field `w ∈ L2Sigma_R3` can be approximated in the H¹
