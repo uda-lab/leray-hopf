@@ -54,17 +54,16 @@ sound for all `u : L2VF`.  The energy-inequality fields use `viscousFormSq ν` d
 
 ## Assumptions
 
-One axiom is added in this file (names below with one-line justifications).  The former
-`torusConvectionGap_exists` project axiom has been **removed** (issue #53 / PR #62): it is now
+**No project axioms remain in this file** — every former project axiom has been removed.
+The former `torusConvectionGap_exists` project axiom has been **removed** (issue #53 / PR #62): it is now
 the theorem re-exported from `TorusConvectionExtension.lean`.  The former `galerkin_ode_solution`
 has also been **removed** (issue #24): the finite-dim torus Galerkin ODE is solved
 unconditionally by the proved `galerkinSolutionData_torus`.  The former `galerkin_limit_passage`
-has been **removed** (this change): it is replaced by the proved theorems
+has been **removed**: it is replaced by the proved theorems
 `torus_galerkin_limit_passage_of_energyClass` + `torus_energyClass_of_aubinLions`, assembled in
 `TorusGalerkinODECapstone.lean` (the consumer had to move downstream to avoid an import cycle).
-
--- (No axioms added in this file.  The former `aubin_lions` axiom (issue #23) is now the
---  proved def `torusAubinLionsPackage_of_galSeq` in `TorusAubinLionsAssembly.lean`.)
+The former `aubin_lions` project axiom has been **removed** (issue #23, this change): it is now
+the proved def `torusAubinLionsPackage_of_galSeq` in `TorusAubinLionsAssembly.lean`.
 -/
 
 namespace LerayHopf
