@@ -11,9 +11,14 @@ open scoped Topology RealInnerProductSpace FourierTransform
 
 **Campaign:** discharge `galerkin_limit_passage_R3` (issue #4, last project axiom).
 
-This file contains the new analytic kernel `curl_approx_H1`: every Schwartz divergence-free
-field `w ∈ L2Sigma_R3` is approximated in the `L² + viscousFormSq` (H¹ graph) seminorm by a
-curl of a Schwartz potential `ψ : Fin 3 → 𝓢(ℝ³, ℝ)`.
+This file contains the new analytic kernel `curl_approx_H1`: for every Schwartz
+divergence-free field `w ∈ L2Sigma_R3` and every `ε > 0` there is a curl of a Schwartz
+potential `ψ : Fin 3 → 𝓢(ℝ³, ℝ)` that satisfies **two separate `< ε` bounds** — the `L²`
+error `‖curl ψ − w‖ < ε` and the viscous/gradient seminorm error
+`viscousFormSq_R3 1 (curl ψ − w) < ε`. Together these are H¹-graph approximation (the *same*
+approximant achieves both bounds, so a combined `‖·‖² + viscousFormSq · < ε` bound follows by
+allocating `ε/2` to each under the `∀ε ∃ψ` quantifier). This two-bound shape is exactly what
+`R3TestApproxH1` (PR-3) consumes; it is not a single pre-combined graph-norm inequality.
 
 **Proof route (Yukawa regularization — the low-frequency cutoff simplified):**
 1. `ŵ` is transverse a.e. (`mem_sigma_iff_fourier_transverse`, `CurlDensity.lean:952`, proved).
@@ -642,12 +647,20 @@ private theorem visc_err_eq (a : ℝ) (ha : 0 < a)
 
 /-! ## Main theorem (spike S6 verbatim, production name `curl_approx_H1`) -/
 
-/-- Every Schwartz divergence-free field `w ∈ L2Sigma_R3` can be approximated in the H¹
-graph seminorm (`L²` norm + `viscousFormSq_R3 1`) by a curl `curlSchwartzL2 ψ` of a
-Schwartz potential `ψ : Fin 3 → SchwartzMap Domain3 ℝ`.
+/-- For every Schwartz divergence-free field `w ∈ L2Sigma_R3` and every `ε > 0` there is a
+curl `curlSchwartzL2 ψ` of a Schwartz potential `ψ : Fin 3 → SchwartzMap Domain3 ℝ` that
+achieves **two separate `< ε` bounds**: the `L²` error `‖curlSchwartzL2 ψ − w‖ < ε` *and*
+the viscous/gradient seminorm error `viscousFormSq_R3 1 (curlSchwartzL2 ψ − w) < ε`.
+
+This is the intended H¹-graph-approximation contract: the conclusion is a conjunction of two
+independent `< ε` inequalities, **not** a single pre-combined graph-norm inequality
+`‖·‖² + viscousFormSq · < ε`. The two forms are equivalent under the `∀ε ∃ψ` quantifier — the
+same approximant witnesses both, so a combined bound follows by allocating `ε/2` to each — and
+the two-bound shape is exactly what the downstream consumer `R3TestApproxH1` (PR-3) requires
+(spike S2). The statement is byte-identical to the frozen spike-S6 target.
 
 This is the analytic kernel needed to discharge `R3TestApproxH1` for the strengthened
-concrete Galerkin basis (issue #4 PR-3). Proof: Fourier low-frequency cutoff construction
+concrete Galerkin basis (issue #4 PR-3). Proof: Yukawa-regularized Fourier construction
 (see module doc); filled by lean-prover (issue #4 PR-2). -/
 theorem curl_approx_H1 (w : L2Sigma_R3) (hw : IsSchwartzDivFree_R3 w)
     (ε : ℝ) (hε : 0 < ε) :
