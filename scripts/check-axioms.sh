@@ -87,8 +87,6 @@ AXIOMATIC_FILES=(
   "LerayHopf/TorusConvectionForm.lean"
 )
 
-pattern='^[[:space:]]*(@\[[^]]*\][[:space:]]*)*((private|protected|noncomputable|scoped|local)[[:space:]]+)*(axiom|constant|opaque|unsafe)[[:space:]]'
-
 for f in "${AXIOMATIC_FILES[@]}"; do
   if [ ! -f "$f" ]; then
     echo "ERROR: expected axiomatic file '$f' does not exist." >&2
@@ -96,28 +94,21 @@ for f in "${AXIOMATIC_FILES[@]}"; do
     continue
   fi
   # All axiom/opaque/unsafe lines must carry ALLOW_AXIOM markers.
-  # Distinguish grep "no match" (1) from tool/read failure (>1): the previous
-  # `grep … 2>/dev/null || true` form converted a read/tool failure into an
-  # empty match set, i.e. a false "all annotated" audit result (fail-open).
-  status=0
-  matches="$(grep -nE "$pattern" -- "$f")" || status=$?
-  if [ "$status" -gt 1 ]; then
-    echo "ERROR: axiom-audit scan failed on '$f' (grep exit $status)." >&2
-    exit 1
+  # Single awk pass per file (plain command substitution): a read/tool
+  # failure makes the assignment non-zero and `set -e` aborts the guard.
+  # The previous `grep … 2>/dev/null || true` + here-string loop could
+  # convert a tool failure or here-string temp-file failure into an empty
+  # match set — a false "all annotated" audit result (fail-open).
+  bad="$(awk '
+    /^[[:space:]]*(@\[[^]]*\][[:space:]]*)*((private|protected|noncomputable|scoped|local)[[:space:]]+)*(axiom|constant|opaque|unsafe)[[:space:]]/ && !/ALLOW_AXIOM:/ {
+      printf "%s:%d:%s\n", FILENAME, FNR, $0
+    }
+  ' "$f")"
+  if [ -n "$bad" ]; then
+    echo "ERROR: undocumented axiom/constant/opaque/unsafe in '$f':" >&2
+    printf '%s\n' "$bad" >&2
+    FAIL=1
   fi
-  [ -n "$matches" ] || continue
-  while IFS= read -r match; do
-    lineno="${match%%:*}"
-    content="${match#*:}"
-    case "$content" in
-      *ALLOW_AXIOM:*) : ;;  # documented assumption — OK
-      *)
-        echo "ERROR: $f:$lineno: undocumented axiom/constant/opaque/unsafe" >&2
-        echo "  $content" >&2
-        FAIL=1
-        ;;
-    esac
-  done <<< "$matches"
 done
 
 # ---------------------------------------------------------------------------
