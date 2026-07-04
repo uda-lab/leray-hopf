@@ -15,17 +15,23 @@ This file contains the new analytic kernel `curl_approx_H1`: every Schwartz dive
 field `w ∈ L2Sigma_R3` is approximated in the `L² + viscousFormSq` (H¹ graph) seminorm by a
 curl of a Schwartz potential `ψ : Fin 3 → 𝓢(ℝ³, ℝ)`.
 
-**Proof route (Fourier low-frequency cutoff, issue #93 §1b / PR-2):**
-1. `ŵ` is transverse (`mem_sigma_iff_fourier_transverse`, `CurlDensity.lean:952`, proved).
-2. Set `ψ̂_δ(ξ) := χ_δ(ξ)·(ξ × ŵ(ξ))/(2πi‖ξ‖²)` with smooth radial cutoff `χ_δ`
-   (`0` near `0`, `1` on `‖ξ‖ ≥ δ`).
-3. `𝓕(curl ψ_δ) = χ_δ·ŵ` (BAC-CAB + transversality), so L² and weighted-L² (H¹) errors
-   are `∫_{‖ξ‖≤δ}(1+W)|ŵ|² → 0`.
-4. Symbol is Schwartz (smooth cutoff kills the singularity); realized via
-   `FourierTransform.fourierCLE` and the Hermitian-reality machinery in `CurlDensity.lean`.
+**Proof route (Yukawa regularization — the low-frequency cutoff simplified):**
+1. `ŵ` is transverse a.e. (`mem_sigma_iff_fourier_transverse`, `CurlDensity.lean:952`, proved).
+2. Set `ψ̂_a(ξ) := -(2πi)⁻¹ (a² + ‖ξ‖²)⁻¹ (ξ × ŵ(ξ))` with regularization scale `a > 0`.
+   The denominator `a² + ‖ξ‖² ≥ a² > 0` is smooth and bounded below — *no cutoff bump is
+   needed* — and `(a² + ‖ξ‖²)⁻¹` is of temperate growth via
+   `Function.hasTemperateGrowth_one_add_norm_sq_rpow` after a scaling composition, so `ψ̂_a`
+   is a genuine `SchwartzMap` (Stage 1).
+3. `ψ̂_a` is Hermitian, so `ψ_a := Re(𝓕⁻ ψ̂_a)` is a real Schwartz potential and
+   `𝓕(cxify ψ_a) = ψ̂_a` (Stage 1).
+4. `𝓕(curl ψ_a)_j = ‖ξ‖²/(a²+‖ξ‖²) · ŵ_j` a.e. (BAC-CAB + transversality; Stage 2), so the
+   error symbol is `-a²/(a²+‖ξ‖²) · ŵ_j`, and both the L² and viscous (`H¹`) errors are
+   `∫ (a²/(a²+‖ξ‖²))² · (weight) · ‖ŵ‖²`, which `→ 0` as `a → 0` by dominated convergence
+   (Stage 3).
 
-**Toolkit anchors (all verified in spike S7 of issue #93):**
-- `FourierTransform.fourierCLE` — Fourier isomorphism on `SchwartzMap`
+**Toolkit anchors:**
+- `Function.hasTemperateGrowth_one_add_norm_sq_rpow` — temperate growth of `(1+‖·‖²)^r`
+- `fourier_curlSchwartz_eq_cross` / `crossWithIξ` — `CurlDensity.lean`
 - `mem_sigma_iff_fourier_transverse` — `CurlDensity.lean:952`
 - `curlSchwartzL2` — `SchwartzDivFreeBasis.lean:203`
 - `viscousFormSq_R3` — `Regularity.lean:140`
@@ -475,7 +481,7 @@ private theorem integrable_normsq_weighted (f : SchwartzMap Domain3 ℂ) :
         ‖(SchwartzMap.smulLeftCLM ℂ (fun ξ => ((ξ a : ℝ) : ℂ)) f) ξ‖ ^ 2)
         (volume : Measure Domain3) :=
     fun a => integrable_sq_norm_schwartz _
-  have hsum := (integrable_finset_sum (Finset.univ : Finset (Fin 3)) (fun a _ => hcoord a))
+  have hsum := (integrable_finsetSum (Finset.univ : Finset (Fin 3)) (fun a _ => hcoord a))
   refine hsum.congr ?_
   filter_upwards with ξ
   rw [Fin.sum_univ_three]
@@ -545,6 +551,95 @@ private theorem tendsto_yukawa_integral (φ : Domain3 → ℝ) (hφ : ∀ ξ, 0 
     hmeas hint hbound hlim
   simpa using hres
 
+/-- The `j`-th component Fourier transform of the error `curl ψ_a − w` is a.e.
+`-a²/(a²+‖ξ‖²) · ŵ_j`. -/
+private theorem fourier_err_ae (a : ℝ) (ha : 0 < a)
+    (wh : Fin 3 → SchwartzMap Domain3 ℂ)
+    (hHerm : ∀ b : Fin 3, ∀ v : Domain3, wh b (-v) = (starRingEnd ℂ) (wh b v))
+    (htr : ∀ᵐ ξ ∂(volume : Measure Domain3), ∑ i : Fin 3, (ξ i : ℂ) * wh i ξ = 0)
+    (w : L2VF_R3)
+    (hwj : ∀ j : Fin 3, ((𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) : Domain3 → ℂ)
+        =ᵐ[volume] ((wh j : SchwartzMap Domain3 ℂ) : Domain3 → ℂ))
+    (j : Fin 3) :
+    ((𝓕 (L2VF_projComponentC_R3 j (curlSchwartzL2 (potOf a ha wh hHerm) - w)) : L2C_R3)
+        : Domain3 → ℂ)
+      =ᵐ[volume] fun ξ => (((-(a ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2))) : ℝ) : ℂ) * wh j ξ := by
+  have hlin : L2VF_projComponentC_R3 j (curlSchwartzL2 (potOf a ha wh hHerm) - w)
+      = L2VF_projComponentC_R3 j (curlSchwartzL2 (potOf a ha wh hHerm))
+        - L2VF_projComponentC_R3 j w := map_sub _ _ _
+  rw [hlin, fourier_sub_L2C]
+  filter_upwards [Lp.coeFn_sub
+      (𝓕 (L2VF_projComponentC_R3 j (curlSchwartzL2 (potOf a ha wh hHerm))))
+      (𝓕 (L2VF_projComponentC_R3 j w)),
+    fourier_curl_potOf_ae a ha wh hHerm htr j, hwj j] with ξ hs hc hwe
+  rw [hs, Pi.sub_apply, hc, hwe]
+  have hcoef : ‖ξ‖ ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2) - 1 = -(a ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2)) := by
+    have hden : (a ^ 2 + ‖ξ‖ ^ 2 : ℝ) ≠ 0 := by positivity
+    field_simp
+    ring
+  have hcoefC : (((‖ξ‖ ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2)) : ℝ) : ℂ) - 1
+      = (((-(a ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2))) : ℝ) : ℂ) := by exact_mod_cast hcoef
+  linear_combination (wh j ξ) * hcoefC
+
+/-- **L² error in Fourier form.** -/
+private theorem l2_err_eq (a : ℝ) (ha : 0 < a)
+    (wh : Fin 3 → SchwartzMap Domain3 ℂ)
+    (hHerm : ∀ b : Fin 3, ∀ v : Domain3, wh b (-v) = (starRingEnd ℂ) (wh b v))
+    (htr : ∀ᵐ ξ ∂(volume : Measure Domain3), ∑ i : Fin 3, (ξ i : ℂ) * wh i ξ = 0)
+    (w : L2VF_R3)
+    (hwj : ∀ j : Fin 3, ((𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) : Domain3 → ℂ)
+        =ᵐ[volume] ((wh j : SchwartzMap Domain3 ℂ) : Domain3 → ℂ)) :
+    ‖curlSchwartzL2 (potOf a ha wh hHerm) - w‖ ^ 2
+      = ∫ ξ : Domain3, ∑ j : Fin 3,
+          (a ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2)) ^ 2 * ‖wh j ξ‖ ^ 2 ∂(volume : Measure Domain3) := by
+  set e := curlSchwartzL2 (potOf a ha wh hHerm) - w with he
+  have hpars := inner_L2VF_eq_integral_sum_fourier_H1 e e
+  rw [real_inner_self_eq_norm_sq] at hpars
+  have hall : ∀ᵐ ξ ∂(volume : Measure Domain3), ∀ j : Fin 3,
+      ((𝓕 (L2VF_projComponentC_R3 j e) : L2C_R3) : Domain3 → ℂ) ξ
+        = (((-(a ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2))) : ℝ) : ℂ) * wh j ξ := by
+    rw [MeasureTheory.ae_all_iff]
+    intro j
+    exact fourier_err_ae a ha wh hHerm htr w hwj j
+  have hae : (fun ξ : Domain3 => ∑ j : Fin 3,
+        (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j e) : L2C_R3) ξ)
+          * (𝓕 (L2VF_projComponentC_R3 j e) : L2C_R3) ξ)
+      =ᵐ[volume] fun ξ => (((∑ j : Fin 3,
+          (a ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2)) ^ 2 * ‖wh j ξ‖ ^ 2) : ℝ) : ℂ) := by
+    filter_upwards [hall] with ξ hξ
+    push_cast
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    have hzz : (starRingEnd ℂ) (wh j ξ) * wh j ξ = ((‖wh j ξ‖ : ℝ) : ℂ) ^ 2 :=
+      RCLike.conj_mul (wh j ξ)
+    rw [hξ j, map_mul, Complex.conj_ofReal, mul_mul_mul_comm, hzz]
+    push_cast
+    ring
+  have hcast : ((‖e‖ ^ 2 : ℝ) : ℂ)
+      = (((∫ ξ : Domain3, ∑ j : Fin 3,
+          (a ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2)) ^ 2 * ‖wh j ξ‖ ^ 2 ∂(volume : Measure Domain3)) : ℝ) : ℂ) := by
+    rw [hpars, integral_congr_ae hae]
+    exact integral_ofReal
+  exact_mod_cast hcast
+
+/-- **Viscous error in Fourier form.** -/
+private theorem visc_err_eq (a : ℝ) (ha : 0 < a)
+    (wh : Fin 3 → SchwartzMap Domain3 ℂ)
+    (hHerm : ∀ b : Fin 3, ∀ v : Domain3, wh b (-v) = (starRingEnd ℂ) (wh b v))
+    (htr : ∀ᵐ ξ ∂(volume : Measure Domain3), ∑ i : Fin 3, (ξ i : ℂ) * wh i ξ = 0)
+    (w : L2VF_R3)
+    (hwj : ∀ j : Fin 3, ((𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) : Domain3 → ℂ)
+        =ᵐ[volume] ((wh j : SchwartzMap Domain3 ℂ) : Domain3 → ℂ)) :
+    viscousFormSq_R3 1 (curlSchwartzL2 (potOf a ha wh hHerm) - w)
+      = ∑ j : Fin 3, ∫ ξ : Domain3,
+          (a ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2)) ^ 2
+            * ((2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖wh j ξ‖ ^ 2) ∂(volume : Measure Domain3) := by
+  rw [viscousFormSq_R3, one_mul]
+  refine Finset.sum_congr rfl (fun j _ => ?_)
+  refine integral_congr_ae ?_
+  filter_upwards [fourier_err_ae a ha wh hHerm htr w hwj j] with ξ hξ
+  simp only [hξ, norm_mul, mul_pow, Complex.norm_real, Real.norm_eq_abs, sq_abs]
+  ring
+
 /-! ## Main theorem (spike S6 verbatim, production name `curl_approx_H1`) -/
 
 /-- Every Schwartz divergence-free field `w ∈ L2Sigma_R3` can be approximated in the H¹
@@ -559,6 +654,85 @@ theorem curl_approx_H1 (w : L2Sigma_R3) (hw : IsSchwartzDivFree_R3 w)
     ∃ ψ : Fin 3 → SchwartzMap Domain3 ℝ,
       ‖curlSchwartzL2 ψ - (w : L2VF_R3)‖ < ε ∧
       viscousFormSq_R3 1 (curlSchwartzL2 ψ - (w : L2VF_R3)) < ε := by
-  sorry -- ALLOW_SORRY: scaffold (issue #4 PR-2 — lean-prover fills via Fourier low-freq cutoff)
+  classical
+  obtain ⟨ψw, hψw⟩ := hw
+  set wh : Fin 3 → SchwartzMap Domain3 ℂ := fun b => 𝓕 (cxifyH1 (ψw b)) with hwhdef
+  -- Hermitian symmetry of `ŵ`
+  have hHerm : ∀ b : Fin 3, ∀ v : Domain3, wh b (-v) = (starRingEnd ℂ) (wh b v) := by
+    intro b v; exact fourierH1_cxify_hermitian (ψw b) v
+  -- the Fourier transform of the `j`-th component of `w` is a.e. `ŵ_j`
+  have hwj : ∀ j : Fin 3, ((𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) : Domain3 → ℂ)
+      =ᵐ[volume] ((wh j : SchwartzMap Domain3 ℂ) : Domain3 → ℂ) := by
+    intro j
+    have hcomp : L2VF_projComponentC_R3 j (w : L2VF_R3)
+        = (cxifyH1 (ψw j)).toLp 2 (volume : Measure Domain3) := by
+      rw [L2VF_projComponentC_R3, ContinuousLinearMap.comp_apply, hψw j, ← toLp_cxifyH1]
+    have h1 : (𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3)
+        = (𝓕 (cxifyH1 (ψw j))).toLp 2 (volume : Measure Domain3) := by
+      rw [hcomp]; exact SchwartzMap.toLp_fourier_eq (cxifyH1 (ψw j))
+    rw [h1]
+    exact (𝓕 (cxifyH1 (ψw j))).coeFn_toLp 2 (volume : Measure Domain3)
+  -- transversality of `ŵ` a.e.
+  have htr : ∀ᵐ ξ ∂(volume : Measure Domain3), ∑ i : Fin 3, (ξ i : ℂ) * wh i ξ = 0 := by
+    have htrans := (mem_sigma_iff_fourier_transverse (w : L2VF_R3)).1 (SetLike.coe_mem w)
+    have hae : ∀ᵐ ξ ∂(volume : Measure Domain3), ∀ j : Fin 3,
+        ((𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) : Domain3 → ℂ) ξ = wh j ξ := by
+      rw [MeasureTheory.ae_all_iff]; exact hwj
+    filter_upwards [htrans, hae] with ξ hT hEq
+    have hT' : ∑ i : Fin 3, (ξ i : ℂ)
+        * (𝓕 (L2VF_projComponentC_R3 i (w : L2VF_R3)) : L2C_R3) ξ = 0 := of_eq_true hT
+    rw [← hT']
+    exact Finset.sum_congr rfl (fun i _ => by rw [hEq i])
+  -- the two error weights
+  set φ : Domain3 → ℝ := fun ξ => ∑ j : Fin 3, ‖wh j ξ‖ ^ 2 with hφdef
+  have hφnn : ∀ ξ, 0 ≤ φ ξ := fun ξ => Finset.sum_nonneg (fun j _ => by positivity)
+  have hφint : Integrable φ (volume : Measure Domain3) :=
+    integrable_finsetSum _ (fun j _ => integrable_sq_norm_schwartz (wh j))
+  -- the scale sequence `aₙ = 1/(n+1) → 0`
+  set an : ℕ → ℝ := fun n => 1 / (n + 1) with handef
+  have hanpos : ∀ n, 0 < an n := fun n => by positivity
+  have hanlim : Filter.Tendsto an Filter.atTop (nhds 0) :=
+    tendsto_one_div_add_atTop_nhds_zero_nat
+  -- L² error → 0
+  have hL2t : Filter.Tendsto
+      (fun n => ‖curlSchwartzL2 (potOf (an n) (hanpos n) wh hHerm) - (w : L2VF_R3)‖ ^ 2)
+      Filter.atTop (nhds 0) := by
+    refine (tendsto_yukawa_integral φ hφnn hφint an hanpos hanlim).congr (fun n => ?_)
+    rw [l2_err_eq (an n) (hanpos n) wh hHerm htr (w : L2VF_R3) hwj]
+    refine integral_congr_ae (Filter.Eventually.of_forall (fun ξ => ?_))
+    simp only [hφdef]
+    rw [Finset.mul_sum]
+  -- viscous error → 0
+  have hVt : Filter.Tendsto
+      (fun n => viscousFormSq_R3 1 (curlSchwartzL2 (potOf (an n) (hanpos n) wh hHerm)
+          - (w : L2VF_R3)))
+      Filter.atTop (nhds 0) := by
+    have hsum : Filter.Tendsto
+        (fun n => ∑ j : Fin 3, ∫ ξ : Domain3,
+          (an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2)) ^ 2
+            * ((2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖wh j ξ‖ ^ 2) ∂(volume : Measure Domain3))
+        Filter.atTop (nhds 0) := by
+      have hzero : (0 : ℝ) = ∑ _j : Fin 3, (0 : ℝ) := by simp
+      rw [hzero]
+      refine tendsto_finsetSum _ (fun j _ => ?_)
+      exact tendsto_yukawa_integral (fun ξ => (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖wh j ξ‖ ^ 2)
+        (fun ξ => by positivity)
+        (by
+          have := (integrable_normsq_weighted (wh j)).const_mul ((2 * Real.pi) ^ 2)
+          refine this.congr (Filter.Eventually.of_forall (fun ξ => by ring))) an hanpos hanlim
+    refine hsum.congr (fun n => ?_)
+    rw [visc_err_eq (an n) (hanpos n) wh hHerm htr (w : L2VF_R3) hwj]
+  -- pick a scale making both errors `< ε`
+  have hL2ev : ∀ᶠ n in Filter.atTop,
+      ‖curlSchwartzL2 (potOf (an n) (hanpos n) wh hHerm) - (w : L2VF_R3)‖ ^ 2 < ε ^ 2 :=
+    hL2t.eventually_lt_const (by positivity)
+  have hVev : ∀ᶠ n in Filter.atTop,
+      viscousFormSq_R3 1 (curlSchwartzL2 (potOf (an n) (hanpos n) wh hHerm) - (w : L2VF_R3)) < ε :=
+    hVt.eventually_lt_const hε
+  obtain ⟨n, hn1, hn2⟩ := (hL2ev.and hVev).exists
+  refine ⟨potOf (an n) (hanpos n) wh hHerm, ?_, hn2⟩
+  have hnn : 0 ≤ ‖curlSchwartzL2 (potOf (an n) (hanpos n) wh hHerm) - (w : L2VF_R3)‖ :=
+    norm_nonneg _
+  nlinarith [hn1, hnn, hε]
 
 end LerayHopf
