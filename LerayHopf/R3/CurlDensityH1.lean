@@ -456,6 +456,95 @@ private theorem inner_L2VF_eq_integral_sum_fourier_H1 (a b : L2VF_R3) :
   rw [Finset.sum_congr rfl (fun j _ => hcomp j)]
   rw [integral_finsetSum _ (fun j _ => hint j)]
 
+/-- `𝓕` on `L2C_R3` distributes over subtraction. -/
+private theorem fourier_sub_L2C (A B : L2C_R3) : 𝓕 (A - B) = 𝓕 A - 𝓕 B :=
+  map_sub (AddMonoidHom.mk' (𝓕 : L2C_R3 → L2C_R3) fourier_add) A B
+
+/-- The squared norm of a Schwartz map is integrable. -/
+private theorem integrable_sq_norm_schwartz (f : SchwartzMap Domain3 ℂ) :
+    Integrable (fun ξ : Domain3 => ‖f ξ‖ ^ 2) (volume : Measure Domain3) :=
+  (memLp_two_iff_integrable_sq_norm (SchwartzMap.memLp f 2 volume).aestronglyMeasurable).mp
+    (SchwartzMap.memLp f 2 volume)
+
+/-- The weight `‖ξ‖²‖ŵ_j ξ‖²` is integrable (`ŵ_j` Schwartz): write
+`‖ξ‖²‖ŵ_j ξ‖² = ∑_a ‖(ξ_a • ŵ_j) ξ‖²` with each `ξ_a • ŵ_j` Schwartz. -/
+private theorem integrable_normsq_weighted (f : SchwartzMap Domain3 ℂ) :
+    Integrable (fun ξ : Domain3 => ‖ξ‖ ^ 2 * ‖f ξ‖ ^ 2) (volume : Measure Domain3) := by
+  have hcoord : ∀ a : Fin 3,
+      Integrable (fun ξ : Domain3 =>
+        ‖(SchwartzMap.smulLeftCLM ℂ (fun ξ => ((ξ a : ℝ) : ℂ)) f) ξ‖ ^ 2)
+        (volume : Measure Domain3) :=
+    fun a => integrable_sq_norm_schwartz _
+  have hsum := (integrable_finset_sum (Finset.univ : Finset (Fin 3)) (fun a _ => hcoord a))
+  refine hsum.congr ?_
+  filter_upwards with ξ
+  rw [Fin.sum_univ_three]
+  simp only [SchwartzMap.smulLeftCLM_apply_apply (hasTemperateGrowth_coordC _), smul_eq_mul,
+    norm_mul, mul_pow, Complex.norm_real, Real.norm_eq_abs, sq_abs]
+  rw [norm_sq_eq_sum ξ]
+  ring
+
+/-- **Dominated convergence in the scale `a`.**  For a nonnegative integrable `φ`, the
+Yukawa-weighted integrals `∫ (a²/(a²+‖ξ‖²))² φ` vanish as `a → 0`. -/
+private theorem tendsto_yukawa_integral (φ : Domain3 → ℝ) (hφ : ∀ ξ, 0 ≤ φ ξ)
+    (hint : Integrable φ (volume : Measure Domain3))
+    (an : ℕ → ℝ) (hanpos : ∀ n, 0 < an n) (hanlim : Filter.Tendsto an Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun n => ∫ ξ : Domain3, (an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2)) ^ 2 * φ ξ
+        ∂(volume : Measure Domain3)) Filter.atTop (nhds 0) := by
+  have hane : ∀ᵐ ξ ∂(volume : Measure Domain3), ‖ξ‖ ≠ 0 := by
+    have hsing : (volume : Measure Domain3) {(0 : Domain3)} = 0 := by simp
+    have : ∀ᵐ ξ ∂(volume : Measure Domain3), ξ ≠ 0 := by
+      rw [ae_iff]; simpa using hsing
+    filter_upwards [this] with ξ hξ
+    simpa using hξ
+  have hmeas : ∀ n : ℕ, AEStronglyMeasurable
+      (fun ξ : Domain3 => (an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2)) ^ 2 * φ ξ)
+      (volume : Measure Domain3) := by
+    intro n
+    refine (Continuous.aestronglyMeasurable ?_).mul hint.1
+    exact (continuous_const.div
+      (continuous_const.add (continuous_norm.pow 2))
+      (fun ξ => ne_of_gt (add_pos_of_pos_of_nonneg (pow_pos (hanpos n) 2)
+        (by positivity)))).pow 2
+  have hbound : ∀ n : ℕ, ∀ᵐ ξ ∂(volume : Measure Domain3),
+      ‖(an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2)) ^ 2 * φ ξ‖ ≤ φ ξ := by
+    intro n
+    filter_upwards with ξ
+    have hfac : (an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2)) ^ 2 ≤ 1 := by
+      have hle : an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2) ≤ 1 := by
+        rw [div_le_one (add_pos_of_pos_of_nonneg (pow_pos (hanpos n) 2) (by positivity))]
+        nlinarith [sq_nonneg ‖ξ‖]
+      have hnn : 0 ≤ an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2) := by positivity
+      nlinarith [hle, hnn]
+    rw [Real.norm_eq_abs, abs_of_nonneg (mul_nonneg (by positivity) (hφ ξ))]
+    calc (an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2)) ^ 2 * φ ξ ≤ 1 * φ ξ :=
+          mul_le_mul_of_nonneg_right hfac (hφ ξ)
+      _ = φ ξ := one_mul _
+  have hlim : ∀ᵐ ξ ∂(volume : Measure Domain3),
+      Filter.Tendsto (fun n => (an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2)) ^ 2 * φ ξ) Filter.atTop
+        (nhds ((fun _ => (0 : ℝ)) ξ)) := by
+    filter_upwards [hane] with ξ hξ
+    have hnpos : (0 : ℝ) < ‖ξ‖ ^ 2 := by positivity
+    have han2 : Filter.Tendsto (fun n => an n ^ 2) Filter.atTop (nhds 0) := by
+      have := hanlim.pow 2; simpa using this
+    have hden : Filter.Tendsto (fun n => an n ^ 2 + ‖ξ‖ ^ 2) Filter.atTop (nhds (‖ξ‖ ^ 2)) := by
+      have := han2.add (tendsto_const_nhds (x := ‖ξ‖ ^ 2)); simpa using this
+    have hratio : Filter.Tendsto (fun n => an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2)) Filter.atTop
+        (nhds 0) := by
+      have h := han2.div hden (ne_of_gt hnpos)
+      rw [zero_div] at h
+      exact h
+    have hsq : Filter.Tendsto (fun n => (an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2)) ^ 2) Filter.atTop
+        (nhds 0) := by have := hratio.pow 2; simpa using this
+    have := hsq.mul_const (φ ξ); simpa using this
+  have hres := MeasureTheory.tendsto_integral_of_dominated_convergence
+    (bound := φ)
+    (F := fun n ξ => (an n ^ 2 / (an n ^ 2 + ‖ξ‖ ^ 2)) ^ 2 * φ ξ)
+    (f := fun _ => (0 : ℝ))
+    (μ := (volume : Measure Domain3))
+    hmeas hint hbound hlim
+  simpa using hres
+
 /-! ## Main theorem (spike S6 verbatim, production name `curl_approx_H1`) -/
 
 /-- Every Schwartz divergence-free field `w ∈ L2Sigma_R3` can be approximated in the H¹
