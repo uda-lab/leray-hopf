@@ -17,8 +17,27 @@ cd "$ROOT"
 # ^ [attrs]* [modifiers]* (keyword) <space>
 pattern='^[[:space:]]*(@\[[^]]*\][[:space:]]*)*((private|protected|noncomputable|scoped|local)[[:space:]]+)*(axiom|constant|opaque|unsafe)[[:space:]]'
 
+# Enumerate Lean sources fail-closed: `find` writes to a temp file and its exit
+# status is checked BEFORE the list is consumed (a bare process substitution
+# would swallow traversal errors and let a partial scan report OK). `.git`/`.lake`
+# are pruned by basename at any depth (worktrees vendor their own `.lake`,
+# issue #84); agent worktrees are scanned by their own CI.
+list="$(mktemp)"
+trap 'rm -f "$list"' EXIT
+find . \( -name '.git' -o -name '.lake' -o -path './.claude/worktrees' \) -prune \
+     -o -type f -name '*.lean' -print0 > "$list"
+
 found=0
 while IFS= read -r -d '' file; do
+  # Distinguish grep "no match" (1) from tool/read failure (>1): only the
+  # former may continue; anything else aborts the guard (fail-closed).
+  status=0
+  matches="$(grep -nE "$pattern" -- "$file")" || status=$?
+  if [ "$status" -gt 1 ]; then
+    echo "ERROR: scanner failed on '$file' (grep exit $status)." >&2
+    exit 1
+  fi
+  [ -n "$matches" ] || continue
   while IFS= read -r match; do
     lineno="${match%%:*}"
     content="${match#*:}"
@@ -26,10 +45,8 @@ while IFS= read -r -d '' file; do
       *ALLOW_AXIOM:*) : ;; # documented assumption, skip
       *) printf '%s:%s:%s\n' "$file" "$lineno" "$content"; found=1 ;;
     esac
-  done < <(grep -nE "$pattern" -- "$file" 2>/dev/null || true)
-done < <(find . -type f -name '*.lean' \
-           -not -path '*/.lake/*' -not -path './.git/*' \
-           -not -path './.claude/worktrees/*' -print0)
+  done <<< "$matches"
+done < "$list"
 
 if [ "$found" -ne 0 ]; then
   echo "ERROR: undeclared axiom/constant/opaque/unsafe found above." >&2

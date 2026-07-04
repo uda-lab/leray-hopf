@@ -57,14 +57,22 @@ for name in "${BARE_NAMES[@]}"; do
   # Allow the name only when immediately followed by _axiomatic (i.e. as a prefix)
   # or when it appears inside a comment or the _axiomatic variant itself.
   # We want to catch bare `theorem exists_lerayHopf_torus3 ` declarations.
-  if grep -rn --include="*.lean" \
+  # Distinguish grep "no match" (1) from tool/read failure (>1): the previous
+  # `grep … 2>/dev/null | grep -q .` form converted scanner errors into a
+  # silent pass (fail-open).
+  status=0
+  hits="$(grep -rn --include="*.lean" \
         -E "(^|[[:space:]])(theorem|def|abbrev)[[:space:]]+${name}([[:space:]]|$|\()" \
-        --exclude-dir='.lake' --exclude-dir='.git' . 2>/dev/null | grep -q .; then
+        --exclude-dir='.lake' --exclude-dir='.git' --exclude-dir='worktrees' .)" \
+    || status=$?
+  if [ "$status" -gt 1 ]; then
+    echo "ERROR: bare-name scan failed for '${name}' (grep exit $status)." >&2
+    exit 1
+  fi
+  if [ -n "$hits" ]; then
     echo "ERROR: bare (non-_axiomatic) declaration '${name}' found in Lean sources." >&2
     echo "  Rename it to '${name}_axiomatic' as required by Issue #1 item 3." >&2
-    grep -rn --include="*.lean" \
-        -E "(^|[[:space:]])(theorem|def|abbrev)[[:space:]]+${name}([[:space:]]|$|\()" \
-        --exclude-dir='.lake' --exclude-dir='.git' . 2>/dev/null >&2 || true
+    printf '%s\n' "$hits" >&2
     FAIL=1
   fi
 done
@@ -88,6 +96,16 @@ for f in "${AXIOMATIC_FILES[@]}"; do
     continue
   fi
   # All axiom/opaque/unsafe lines must carry ALLOW_AXIOM markers.
+  # Distinguish grep "no match" (1) from tool/read failure (>1): the previous
+  # `grep … 2>/dev/null || true` form converted a read/tool failure into an
+  # empty match set, i.e. a false "all annotated" audit result (fail-open).
+  status=0
+  matches="$(grep -nE "$pattern" -- "$f")" || status=$?
+  if [ "$status" -gt 1 ]; then
+    echo "ERROR: axiom-audit scan failed on '$f' (grep exit $status)." >&2
+    exit 1
+  fi
+  [ -n "$matches" ] || continue
   while IFS= read -r match; do
     lineno="${match%%:*}"
     content="${match#*:}"
@@ -99,7 +117,7 @@ for f in "${AXIOMATIC_FILES[@]}"; do
         FAIL=1
         ;;
     esac
-  done < <(grep -nE "$pattern" -- "$f" 2>/dev/null || true)
+  done <<< "$matches"
 done
 
 # ---------------------------------------------------------------------------

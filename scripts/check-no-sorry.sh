@@ -22,15 +22,18 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-# Collect Lean sources (NUL-safe; survives spaces/newlines in paths).
-files=()
-while IFS= read -r -d '' f; do
-  files+=("$f")
-done < <(find . -type f -name '*.lean' \
-           -not -path '*/.lake/*' -not -path './.git/*' \
-           -not -path './.claude/worktrees/*' -print0)
+# Enumerate Lean sources fail-closed: `find` writes to a temp file and its exit
+# status is checked BEFORE the list is consumed. (A bare process substitution
+# `< <(find …)` would swallow traversal errors — bash does not propagate them —
+# letting a partial scan report OK.) `.git`/`.lake` are pruned by basename at
+# any depth (a built worktree vendors its own `.lake`, issue #84), and agent
+# worktrees under .claude/worktrees/ are out of scope (scanned by their own CI).
+list="$(mktemp)"
+trap 'rm -f "$list"' EXIT
+find . \( -name '.git' -o -name '.lake' -o -path './.claude/worktrees' \) -prune \
+     -o -type f -name '*.lean' -print0 > "$list"
 
-if [ "${#files[@]}" -eq 0 ]; then
+if [ ! -s "$list" ]; then
   echo "OK: no Lean sources to scan."
   exit 0
 fi
@@ -42,7 +45,7 @@ fi
 # a failing awk in any xargs batch makes the substitution non-zero under
 # `pipefail`), so the guard fails closed. Files are fed via NUL-safe xargs
 # batching so the scan stays under ARG_MAX regardless of tree size (issue #84).
-violations="$(printf '%s\0' "${files[@]}" | xargs -0 awk '
+violations="$(xargs -0 awk '
   FNR == 1 { depth = 0 }
   {
     line = $0; code = ""; inLine = 0
@@ -62,7 +65,7 @@ violations="$(printf '%s\0' "${files[@]}" | xargs -0 awk '
     if (code ~ /(^|[^A-Za-z0-9_])sorry([^A-Za-z0-9_]|$)/ && line !~ /ALLOW_SORRY:/)
       printf "%s:%d:%s\n", FILENAME, FNR, line
   }
-')"
+' < "$list")"
 
 if [ -n "$violations" ]; then
   printf '%s\n' "$violations" >&2
