@@ -1,3 +1,5 @@
+> CAMPAIGN COMPLETE (2026-07-04). All 6 PRs merged (T-AL-1..6 = #78/#79/#80/#85/#88/#89); axiom aubin_lions DELETED; exists_lerayHopf_torus3_axiomatic UNCONDITIONAL (#print axioms kernel-only); issue #23 closed. The body below is the historical plan.
+
 # Torus `aubin_lions` removal — the MODE-WISE SPECTRAL route (torus 1 → 0)
 
 **Architect doc (fable, 2026-07-03). PLAN ONLY — no Lean edited by this doc.**
@@ -146,7 +148,7 @@ the shared "B-pair" — it removes T-B only.**
 field and EVERY step's interface premise, not just the ones that look hard.** The R3
 conjunct-2 wall was missed because the spike checked conjuncts 1&3 only.
 
-Deliverable: `LerayHopf/Scratch/TorusAubinLionsSpike.lean` (`-- SCRATCH` header, marked
+Deliverable: `LerayHopf/Scratch/TorusAubinLionsSpike.lean` (campaign spike, since deleted) (`-- SCRATCH` header, marked
 `ALLOW_SORRY: scratch` on target lines), typechecking against the real interfaces, +
 verdict appended to this doc. Owner: **lean-architect (fable)**. Builder: incremental
 `flock /tmp/lean-build.lock lake build LerayHopf.Scratch.TorusAubinLionsSpike` only.

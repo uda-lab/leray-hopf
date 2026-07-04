@@ -128,12 +128,13 @@ convention); uniform `energy_bound : ½‖u t‖² ≤ ½‖Pₙu₀‖²`; unif
 `T*‖u₀‖² + ‖u₀‖²/(2ν)` — true since `h1EnergySq ≤ ‖·‖²_{L²} + viscousFormSq 1`, energy
 monotone, `‖Pₙu₀‖≤‖u₀‖`; a generous larger RHS is fine and SAFER). Temam III.3.
 
-### A2 `aubin_lions` — Aubin–Lions, **spatial half discharged not axiomatized**.
+### A2 ~~`aubin_lions`~~ — **(REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq` via mode-wise spectral route; this row is historical)**
+~~Aubin–Lions, **spatial half discharged not axiomatized**.
 Takes the Galerkin sequence + its uniform energy/reg bounds + an explicit **spatial-compactness
 hypothesis whose statement is exactly `rellich_L2Sigma`'s** (the assembly passes
 `rellich_L2Sigma`), and produces `∃ φ u, StrictMono φ ∧` strong `L²(0,T;H)` convergence,
 stated as `Tendsto (fun n => ∫ t in 0..T, ‖galSeq (φ n) t - u t‖²) atTop (𝓝 0)`. So A2 adds
-ONLY the genuinely-missing Bochner-time half (defect 3). Temam III.2.1.
+ONLY the genuinely-missing Bochner-time half (defect 3). Temam III.2.1.~~
 
 ### A3 `galerkin_limit_passage` — consumes the structured Galerkin sequence + A2's strong
 limit, concludes `WeakFormNS ν T (torus3Evolution …) u ∧ energy-inequality(lsc) ∧ initial-trace`.

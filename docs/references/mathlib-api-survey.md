@@ -5,14 +5,13 @@ understanding the gap of) each current project axiom. Updated after issue #53 / 
 
 ---
 
-## R³ capstone: current 2 project axioms
+## R³ capstone: current 1 project axiom
 
 The current `#print axioms exists_lerayHopf_r3_axiomatic` footprint is:
 
 | # | Axiom name | File | Mathematical content |
 |---|---|---|---|
-| 1 | `galerkin_spacetime_precompact_R3` | `R3/ArzelaAscoliTime.lean` | LOCAL Aubin–Lions–Simon L²(0,T;L²(B_k)) precompactness (refine-capable) |
-| 2 | `galerkin_limit_passage_R3` | `R3/AxiomaticClosure.lean` | Limit passage: good representative, WeakFormNS, energy inequality, initial trace |
+| 1 | `galerkin_limit_passage_R3` | `R3/AxiomaticClosure.lean` | Limit passage: good representative, WeakFormNS, energy inequality, initial trace |
 
 **Removed since the earlier 5-axiom survey:**
 - `curlSchwartzDense_holds` / `r3GalerkinScheme_exists` — proved by the Fourier curl-density route.
@@ -20,18 +19,21 @@ The current `#print axioms exists_lerayHopf_r3_axiomatic` footprint is:
 - `galerkin_weakLimit_R3` — proved by the strong ball-exhaustion + Mazur route.
 - REMOVED: `aubin_lions_R3` (its spatial half proved; time half rerouted through two
   thinner statements; only `galerkin_spacetime_precompact_R3` remains live).
+- REMOVED: `galerkin_spacetime_precompact_R3` — proved via the step-curve route (#46/PR-4).
 
-## T³ capstone: current 2 project axioms
+## T³ capstone: 0 project axioms (unconditional)
 
-`#print axioms exists_lerayHopf_torus3_axiomatic` footprint:
+`#print axioms exists_lerayHopf_torus3_axiomatic` = kernel axioms only (`propext`,
+`Classical.choice`, `Quot.sound`). **T³ is unconditional.**
 
-| # | Axiom name | File | Mathematical content |
-|---|---|---|---|
-| 1 | `aubin_lions` | `AxiomaticClosure.lean` | Aubin–Lions time compactness (spatial half = rellich_L2Sigma, proved) |
-| 2 | `galerkin_limit_passage` | `AxiomaticClosure.lean` | T³ limit passage to weak NS solution |
-
-`torusConvectionGap_exists` is now a theorem (`torusConvectionGap_holds`, issue #53 / PR #62),
-not a project axiom.
+**All T³ project axioms removed:**
+- `aubin_lions` — **REMOVED (issue #23, PR #89, 2026-07-04)**: now the proved
+  `noncomputable def torusAubinLionsPackage_of_galSeq`
+  (`LerayHopf/TorusAubinLionsAssembly.lean`) via the mode-wise spectral route.
+- `galerkin_limit_passage` — **REMOVED (#25/PR #75)**: proved via
+  `torus_galerkin_limit_passage_of_energyClass` + `torus_energyClass_of_aubinLions`.
+- `torusConvectionGap_exists` — **REMOVED (#53/PR #62)**: now the theorem
+  `torusConvectionGap_holds`.
 
 ---
 
@@ -171,15 +173,22 @@ and WeakFormNS time-IBP step all require this missing pillar.
 
 ---
 
-## T³ axiom API survey
+## T³ axiom API survey (historical — all T³ axioms now removed)
 
-### T³ axiom 1: `aubin_lions`
+### Former T³ axiom 1: `aubin_lions` (REMOVED, issue #23 / PR #89)
 
-Same mathematical content as `galerkin_spacetime_precompact_R3` (time-compactness) but
-for T³. The spatial half is discharged by `rellich_L2Sigma` (`H1Sigma.lean`, proved via
-Fourier-tail decay). The time half is the same Aubin–Lions–Simon gap as the R³ version.
+This was the Aubin–Lions time compactness axiom for T³. The spatial half was discharged by
+`rellich_L2Sigma` (`H1Sigma.lean`). The time half — rather than the abstract Bochner
+Aubin–Lions–Simon route — was discharged by the mode-wise spectral route: equi-Lipschitz
+scalar test-pairings + scalar Bolzano–Weierstrass diagonal + Riesz limit curve + H¹ Fourier
+tail. No `W^{1,p}(0,T;X)` or Simon's lemma was needed. The result is the proved
+`noncomputable def torusAubinLionsPackage_of_galSeq`
+(`LerayHopf/TorusAubinLionsAssembly.lean`), with the same binder list and conclusion type
+as the former axiom.
 
-**Mathlib:** Same as R3 axiom 1 (`galerkin_spacetime_precompact_R3`) above.
+**Mathlib used:** scalar `BoundedContinuousFunction` / Bolzano–Weierstrass (bounded real
+sequences), `Continuous.aestronglyMeasurable`, lintegral Fatou, existing `viscousEnn`
+quartet patterns (`TorusTraceEnergy.lean`), Riesz representation on `L2Sigma`.
 
 ### Removed former T³ axiom: `torusConvectionGap_exists`
 

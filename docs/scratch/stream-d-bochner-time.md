@@ -25,8 +25,8 @@ The capstone wiring (the `aubin_lions*` / `galerkin_limit_passage*` axioms in th
 
 | Axiom | File:line | Time-side content this stream must reach |
 |---|---|---|
-| `aubin_lions` (T³) | `AxiomaticClosure.lean:340` | Bochner-time compactness half |
-| `galerkin_limit_passage` (T³) | `AxiomaticClosure.lean:394` | good representative + weak-in-time continuity + initial trace |
+| ~~`aubin_lions` (T³)~~ | ~~`AxiomaticClosure.lean:340`~~ | **(REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq`; used the mode-wise spectral route, NOT Stream D Bochner A-L-S; line ref void)** |
+| ~~`galerkin_limit_passage` (T³)~~ | ~~`AxiomaticClosure.lean:394`~~ | **(REMOVED #25/PR #75)** |
 | `aubin_lions_R3` | `R3/AxiomaticClosure.lean:458` | Bochner-time half (spatial = P3, local) |
 | `galerkin_limit_passage_R3` | `R3/AxiomaticClosure.lean:496` | good representative + trace (local form) |
 

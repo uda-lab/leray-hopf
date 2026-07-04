@@ -1,3 +1,5 @@
+> NOTE (2026-07-04): T-B / `aubin_lions` is DONE — T³ unconditional; see issue #23 / PR #89. The T-B rows below are historical; the axiom no longer exists.
+
 # Bochner-time foundation metaplan — driving the FINAL 4 project axioms to ZERO
 
 **Planner doc. PLAN ONLY — no Lean edited.** Scope is fixed by `docs/milestone.md` +
@@ -14,7 +16,7 @@ project axioms and decomposes the shared Bochner functional-analysis build they 
 | # | axiom | file:line | consumed by |
 |---|-------|-----------|-------------|
 | R3-B | `galerkin_spacetime_precompact_R3` | `LerayHopf/R3/ArzelaAscoliTime.lean:123` | `perBall_ae_subseq` → `diag_ae_subseq` → `u_lim_aestronglyMeasurable` → `aubinLionsPackage_R3_of_timeCompactness` (`R3/AubinLionsLimitPassage.lean`) → `build_galerkin_package_R3_of_galSeq` |
-| T-B  | `aubin_lions` | `LerayHopf/AxiomaticClosure.lean:367` | `build_galerkin_package_of_galSeq` (`AxiomaticClosure.lean:533`, `spatial := rellich_L2Sigma`) → capstone |
+| T-B  | ~~`aubin_lions`~~ | ~~`LerayHopf/AxiomaticClosure.lean:367`~~ | **REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq` (mode-wise spectral route, not Bochner A-L-S); line refs void** |
 | R3-C | `galerkin_limit_passage_R3` | `LerayHopf/R3/AxiomaticClosure.lean:558` | `AubinLionsAssembly.lean:84` (`build_galerkin_package_R3_of_galSeq`) → capstone |
 | T-C  | `galerkin_limit_passage` | `LerayHopf/AxiomaticClosure.lean:421` | `build_galerkin_package_of_galSeq` (`AxiomaticClosure.lean:538`) → capstone |
 
@@ -200,10 +202,10 @@ STEP-1's honest route reuses the PHASE-1 foundation, so B is sequenced AFTER the
   refine-capable Cantor-diagonal consumer tower (`perBall_ae_subseq` → `diag_ae_subseq` →
   `u_lim_aestronglyMeasurable`) ALREADY EXISTS, so this is the cheap wiring once PR-B2 lands.
   Delete the axiom. **must-prove (wiring).**
-- **PR-TB [T] — `aubin_lions` removal.** Port the Steklov/modulus toolkit to T³ (the torus has NO
+- **PR-TB [T] — `aubin_lions` removal.** ~~Port the Steklov/modulus toolkit to T³ (the torus has NO
   Steklov scaffold today — this is the underestimated cost per bc-feasibility risk) and apply PR-B2
   GLOBALLY (compact domain, no ball exhaustion, spatial input = `rellich_L2Sigma`). Delete the
-  axiom. **must-prove.**
+  axiom.~~ **(REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq`; the Bochner route was superseded by the mode-wise spectral route which avoided Steklov entirely. This row is historical.)**
 
 ---
 

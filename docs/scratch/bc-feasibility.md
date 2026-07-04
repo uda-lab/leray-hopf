@@ -1,3 +1,5 @@
+> NOTE (2026-07-04): T-B / `aubin_lions` is DONE — T³ unconditional; see #23. The T-B rows below are historical.
+
 # Cores B/C feasibility scout — the final 4 project axioms
 
 READ-ONLY scout. Goal: drive R3 (now 2 axioms) and torus (now 3 axioms) to ZERO. After
@@ -10,7 +12,7 @@ core A (in-progress torus convection), the four remaining are the two **compactn
 |---|-------|-----------|-------------|
 | R3-B | `galerkin_spacetime_precompact_R3` | `LerayHopf/R3/ArzelaAscoliTime.lean:123` | `perBall_ae_subseq` → `diag_ae_subseq` → `u_lim_aestronglyMeasurable` (T4 assembly) → feeds `AubinLionsPackage_R3` (`AubinLionsLimitPassage.lean`) |
 | R3-C | `galerkin_limit_passage_R3` | `LerayHopf/R3/AxiomaticClosure.lean:558` | `AubinLionsAssembly.lean:84` (`build_galerkin_package_R3_of_galSeq`) → capstone |
-| T-B | `aubin_lions` (torus) | `LerayHopf/AxiomaticClosure.lean:367` | `AxiomaticClosure.lean:533` (`build_galerkin_package_of_galSeq`, with `spatial := rellich_L2Sigma`) → capstone |
+| T-B | ~~`aubin_lions` (torus)~~ | ~~`LerayHopf/AxiomaticClosure.lean:367`~~ | **REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq`; line refs void** |
 | T-C | `galerkin_limit_passage` (torus) | `LerayHopf/AxiomaticClosure.lean:421` | `AxiomaticClosure.lean:538` → capstone |
 
 ## Mathematical content (precise function-space setting)
@@ -25,12 +27,13 @@ core A (in-progress torus convection), the four remaining are the two **compactn
   adds ONLY the **Bochner-time** half (time-equicontinuity from the integrated reg-bound + Steklov
   modulus + δ→0 diagonalization).
 
-- **T-B** — Aubin–Lions time compactness, spatial half presented as the hypothesis `spatial`
+- **T-B** — **(REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq`.)** ~~Aubin–Lions time compactness, spatial half presented as the hypothesis `spatial`
   (discharged at the call site by the proved compact-domain `rellich_L2Sigma`, `H1Sigma.lean:170`).
   The axiom body asserts: from the Galerkin sequence + spatial-compactness hypothesis, produce an
   `AubinLionsPackage` (a strongly-`L²(0,T;L²_σ)`-convergent subsequence). Same Bochner-time content
   as R3-B but on the **compact torus T³** — so it is GLOBAL (no ball exhaustion), and the spatial
-  input is the simpler whole-domain Rellich, not the local one.
+  input is the simpler whole-domain Rellich, not the local one.~~ The discharge used the mode-wise
+  spectral route (not Bochner A-L-S; see `torus-aubinlions-modewise-plan.md`).
 
 - **R3-C / T-C** — Lions–Magenes / Temam III.3 limit passage. Input: the Aubin–Lions package
   (strong-L² limit `alPkg.u`). Output: existence of a **good representative** `u` that is
@@ -96,10 +99,10 @@ core A (in-progress torus convection), the four remaining are the two **compactn
    Steklov time-modulus toolkit is built and sorry-free; only the time-equicontinuity →
    per-ball-L²-precompact extraction remains. This is "assemble existing pieces + the δ→0
    diagonalization," not new theory from scratch. Highest built-infrastructure ratio.
-2. **T-B `aubin_lions`** — second. SAME Bochner-time content as R3-B but GLOBAL on compact T³
+2. ~~**T-B `aubin_lions`** — second. SAME Bochner-time content as R3-B but GLOBAL on compact T³
    (no ball exhaustion → strictly simpler once R3-B's time half exists), and the spatial input is
    the simpler whole-domain `rellich_L2Sigma`. Blocked mainly by the MISSING torus Steklov
-   scaffold, which R3-B would teach how to port.
+   scaffold, which R3-B would teach how to port.~~ **(REMOVED 2026-07-04, #23 / PR #89 — proved via mode-wise spectral route, not Bochner A-L-S.)**
 3. **R3-C `galerkin_limit_passage_R3`** — third. Hard (Lions–Magenes embedding) but its kernel
    `w1pTime_continuous_in_H` is already scaffolded domain-neutrally with a precise statement; the
    energy/trace/weak-eq conjuncts have mathlib IBP/FTC backing. Declared MONTHS-CLASS.
