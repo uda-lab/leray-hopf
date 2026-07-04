@@ -14,6 +14,7 @@ the architect-verified glue body.  Every term is sorry-free.
 Assumptions: none (no project axioms, no opaque/unsafe; all leaves proved).
 -/
 import LerayHopf.TorusGalerkinODESolve    -- GalerkinSolutionData, velocityProjection_n_norm_le, IsGalerkinTest
+import LerayHopf.TorusProjectionAdjoint   -- velocity-projection orthogonality calculus (self-adjointness at fixed points)
 import LerayHopf.TorusTestFamily          -- P0.3 leaf: stokesTestPairing_bound_of_galerkinTest
 import LerayHopf.TorusConvectionExtension -- P0.3 leaf: velocityProjection_n_eq_of_le (level promotion m ≤ n)
 import LerayHopf.Bochner.ScalarEquicontinuity  -- T-AL-2 engine: exists_uniform_subseq_of_lipschitz_family
@@ -184,73 +185,13 @@ Plan reference: `docs/scratch/torus-aubinlions-modewise-plan.md` §3 row T-AL-4.
 Statements frozen by architect gate 2026-07-03.  Leaves P0.5 and P0.10 are for the
 prover; P0.11 capstone is architect-verified wiring (sorry-free). -/
 
-/-- Private helper (T-AL-4 local copy): the real `L2VF` inner product as the sum over
-the three components of the real parts of the complex `L2C` component inners.
-Duplicates `L2VF_inner_eq_sum_componentC` of `TorusProjectionAdjoint.lean`, which lies
-outside this file's (frozen) import closure; the proof is the same polarization
-argument over the proved norm decomposition `Torus.L2VF_norm_sq_eq_sum_componentC`. -/
-private theorem inner_eq_sum_componentC_aux (u v : L2VF) :
-    inner (𝕜 := ℝ) u v =
-      ∑ j : Fin 3,
-        (inner (𝕜 := ℂ) (L2VF_projComponentC j u) (L2VF_projComponentC j v)).re := by
-  -- Real polarization on the left.
-  have hL : inner (𝕜 := ℝ) u v
-      = (‖u + v‖ ^ 2 - ‖u‖ ^ 2 - ‖v‖ ^ 2) / 2 := by
-    have h := norm_add_sq_real u v
-    linarith
-  -- Complex polarization (real part) on each summand of the right.
-  have hR : ∀ j : Fin 3,
-      (inner (𝕜 := ℂ) (L2VF_projComponentC j u) (L2VF_projComponentC j v)).re
-        = (‖L2VF_projComponentC j u + L2VF_projComponentC j v‖ ^ 2
-            - ‖L2VF_projComponentC j u‖ ^ 2 - ‖L2VF_projComponentC j v‖ ^ 2) / 2 := by
-    intro j
-    have h := norm_add_sq (𝕜 := ℂ)
-      (L2VF_projComponentC j u) (L2VF_projComponentC j v)
-    rw [RCLike.re_to_complex] at h
-    linarith
-  rw [hL]
-  simp only [hR]
-  rw [← Finset.sum_div]
-  congr 1
-  have hadd : ∀ j : Fin 3, L2VF_projComponentC j (u + v)
-      = L2VF_projComponentC j u + L2VF_projComponentC j v := fun j => map_add _ u v
-  rw [Torus.L2VF_norm_sq_eq_sum_componentC (u + v),
-    Torus.L2VF_norm_sq_eq_sum_componentC u, Torus.L2VF_norm_sq_eq_sum_componentC v]
-  simp only [hadd]
-  rw [← Finset.sum_sub_distrib, ← Finset.sum_sub_distrib]
-
-/-- Private helper (T-AL-4 local copy of `velocityProjection_n_inner_symm`):
-self-adjointness of the velocity Galerkin projection, componentwise from the
-`starProjection` self-adjointness of the scalar Fourier projection. -/
-private theorem velocityProjection_inner_symm_aux (n : ℕ) (u v : L2VF) :
-    inner (𝕜 := ℝ) (velocityProjection_n n u) v
-      = inner (𝕜 := ℝ) u (velocityProjection_n n v) := by
-  have hself : ∀ f g : L2C, inner (𝕜 := ℂ) (fourierProjection_n n f) g
-      = inner (𝕜 := ℂ) f (fourierProjection_n n g) := fun f g =>
-    Submodule.inner_starProjection_left_eq_right (fourierSpan n) f g
-  rw [inner_eq_sum_componentC_aux, inner_eq_sum_componentC_aux]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  rw [velocityProjection_n_component_comm n u j, velocityProjection_n_component_comm n v j]
-  rw [show ((fourierProjection_n n).restrictScalars ℝ (L2VF_projComponentC j u))
-      = fourierProjection_n n (L2VF_projComponentC j u) from rfl,
-    show ((fourierProjection_n n).restrictScalars ℝ (L2VF_projComponentC j v))
-      = fourierProjection_n n (L2VF_projComponentC j v) from rfl,
-    hself]
-
-/-- Private helper (T-AL-4 local copy of `velocityProjection_n_inner_of_fixed`):
-pairing against a band-limited element passes through the projection. -/
-private theorem velocityProjection_inner_of_fixed_aux (n : ℕ) (u : L2VF) {w : L2VF}
-    (hw : velocityProjection_n n w = w) :
-    inner (𝕜 := ℝ) (velocityProjection_n n u) w = inner (𝕜 := ℝ) u w := by
-  rw [velocityProjection_inner_symm_aux, hw]
-
 /-- Private helper (shared by P0.5 and P0.10): on a divergence-free input the level-`N`
 Fourier–Galerkin truncation is the orthonormal-coordinate expansion over the
 finite-dimensional `velocitySpan N`, with plain `L2VF`-pairing coefficients.
 
 `Pₙ x ∈ velocitySpan N` (`velocityP_initial_mem`), so `Pₙ x = ∑ᵢ ⟪bᵢ, Pₙ x⟫ • bᵢ`
 (`OrthonormalBasis.sum_repr'`); the coefficient collapses to `⟪x, bᵢ⟫` by
-self-adjointness at the fixed point `bᵢ` (`velocityProjection_inner_of_fixed_aux`,
+self-adjointness at the fixed point `bᵢ` (`velocityProjection_n_inner_of_fixed`,
 `velocityP_fixes_span`). -/
 private theorem velocityProjection_eq_sum_inner (N : ℕ) (x : L2Sigma) :
     velocityProjection_n N (x : L2VF)
@@ -268,7 +209,7 @@ private theorem velocityProjection_eq_sum_inner (N : ℕ) (x : L2Sigma) :
     rw [Submodule.coe_inner]
     show inner (𝕜 := ℝ) ((b i : L2VF)) (velocityProjection_n N (x : L2VF)) = _
     rw [real_inner_comm,
-      velocityProjection_inner_of_fixed_aux N (x : L2VF) (velocityP_fixes_span N (b i))]
+      velocityProjection_n_inner_of_fixed N (x : L2VF) (velocityP_fixes_span N (b i))]
   have hexp : ∑ i, inner (𝕜 := ℝ) (b i) q • b i = q := b.sum_repr' q
   calc velocityProjection_n N (x : L2VF)
       = ((q : velocitySpan N) : L2VF) := rfl

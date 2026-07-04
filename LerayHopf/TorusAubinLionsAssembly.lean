@@ -53,7 +53,7 @@ private theorem eLpNorm_two_eq_ofReal_sqrt' {β : Type*} [NormedAddCommGroup β]
       (by norm_num : (0 : ℝ) ≤ 1 / 2),
     ← Real.sqrt_eq_rpow]
 
-theorem eLpNorm_tendsto_of_integral_sq_tendsto
+private theorem eLpNorm_tendsto_of_integral_sq_tendsto
     (T : ℝ) (hT : 0 < T) (M : ℝ) (f : ℕ → ℝ → L2VF)
     (hmeas : ∀ n, AEStronglyMeasurable (f n) (volume.restrict (Icc (0 : ℝ) T)))
     (hb : ∀ n t, t ∈ Icc (0 : ℝ) T → ‖f n t‖ ≤ M)
@@ -142,7 +142,7 @@ private theorem integrable_sq_of_aesm_bounded {β : Type*} [NormedAddCommGroup �
 subsequence to the limit curve, from the Step-D projected convergence + the two
 T-AL-5 tail bounds via the Pythagoras split and an ε-squeeze over the level `N`.
 Conclusion shape = P0.8's `hint` input verbatim. -/
-theorem integral_sq_sub_tendsto_zero_of_galSeq
+private theorem integral_sq_sub_tendsto_zero_of_galSeq
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
     (φ : ℕ → ℕ) (u : Time → L2Sigma)
