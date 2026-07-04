@@ -92,6 +92,7 @@ import LerayHopf.R3.ArzelaAscoliTime      -- issue #44: spacetime precompactness
 import LerayHopf.R3.AubinLionsLimitPassage
 import LerayHopf.R3.CurlDensity
 import LerayHopf.R3.CurlDensityCapstone   -- issue #3: curlSchwartzDense_holds now a proved theorem
+import LerayHopf.R3.GalerkinBasisH1       -- issue #4 PR-3: nonempty_schwartzGalerkinBasis_H1 (strengthened basis, scaffold)
 import LerayHopf.R3.FrechetKolmogorov
 import LerayHopf.R3.ConvectionOperator
 import LerayHopf.R3.ConvectionForm
