@@ -29,6 +29,16 @@ cd "$ROOT"
 
 FAIL=0
 
+# Shared fail-closed enumeration of Lean sources (same shape as the sibling
+# guards): `find` writes to a temp file and its exit status gates consumption.
+# Prunes `.git`/`.lake` by basename at any depth and the anchored agent
+# worktree path only — NOT any directory that merely happens to be named
+# "worktrees" (that would be a path-based scan bypass).
+list="$(mktemp)"
+trap 'rm -f "$list"' EXIT
+find . \( -name '.git' -o -name '.lake' -o -path './.claude/worktrees' \) -prune \
+     -o -type f -name '*.lean' -print0 > "$list"
+
 # ---------------------------------------------------------------------------
 # Gate 1: Core.lean must not import any axiomatic module.
 # ---------------------------------------------------------------------------
@@ -40,10 +50,23 @@ AXIOMATIC_MODULES=(
   "LerayHopf.R3Axiomatic"
 )
 
+if [ ! -r "$CORE" ]; then
+  echo "ERROR: '$CORE' is missing or unreadable — cannot audit the import boundary." >&2
+  exit 1
+fi
+
 for mod in "${AXIOMATIC_MODULES[@]}"; do
-  if grep -qE "^import[[:space:]]+${mod//./\\.}([[:space:]]|$)" "$CORE"; then
+  # Explicit grep status handling: 0 = violation, 1 = clean, >1 = scanner
+  # failure (aborts). A bare `if grep -q` would conflate 1 and >1 because
+  # `set -e` is suspended inside `if` conditions (fail-open).
+  status=0
+  grep -qE "^import[[:space:]]+${mod//./\\.}([[:space:]]|$)" "$CORE" || status=$?
+  if [ "$status" -eq 0 ]; then
     echo "ERROR: $CORE imports axiomatic module '$mod'" >&2
     FAIL=1
+  elif [ "$status" -gt 1 ]; then
+    echo "ERROR: Core-import scan failed for '$mod' (grep exit $status)." >&2
+    exit 1
   fi
 done
 
@@ -57,18 +80,16 @@ for name in "${BARE_NAMES[@]}"; do
   # Allow the name only when immediately followed by _axiomatic (i.e. as a prefix)
   # or when it appears inside a comment or the _axiomatic variant itself.
   # We want to catch bare `theorem exists_lerayHopf_torus3 ` declarations.
-  # Distinguish grep "no match" (1) from tool/read failure (>1): the previous
-  # `grep … 2>/dev/null | grep -q .` form converted scanner errors into a
-  # silent pass (fail-open).
-  status=0
-  hits="$(grep -rn --include="*.lean" \
-        -E "(^|[[:space:]])(theorem|def|abbrev)[[:space:]]+${name}([[:space:]]|$|\()" \
-        --exclude-dir='.lake' --exclude-dir='.git' --exclude-dir='worktrees' .)" \
-    || status=$?
-  if [ "$status" -gt 1 ]; then
-    echo "ERROR: bare-name scan failed for '${name}' (grep exit $status)." >&2
-    exit 1
-  fi
+  # awk over the shared find list (xargs-batched): no match is exit 0, and any
+  # tool failure makes the plain command substitution non-zero, which `set -e`
+  # turns into an abort. (grep-through-xargs would conflate "no match" with
+  # tool failure via xargs exit 123; a previous `grep -r --exclude-dir` form
+  # both swallowed scanner errors and excluded ANY dir named "worktrees".)
+  hits="$(xargs -0 awk -v name="$name" '
+    $0 ~ ("(^|[[:space:]])(theorem|def|abbrev)[[:space:]]+" name "([[:space:]]|$|\\()") {
+      printf "%s:%d:%s\n", FILENAME, FNR, $0
+    }
+  ' < "$list")"
   if [ -n "$hits" ]; then
     echo "ERROR: bare (non-_axiomatic) declaration '${name}' found in Lean sources." >&2
     echo "  Rename it to '${name}_axiomatic' as required by Issue #1 item 3." >&2
