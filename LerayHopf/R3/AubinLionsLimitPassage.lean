@@ -227,7 +227,7 @@ theorem bForm_tendsto_of_strongL2 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
 
 Proof: `energy_bound` gives `½‖uₙ t‖² ≤ ½‖𝔊.P n u₀‖²`; `𝔊.norm_le` gives
 `‖𝔊.P n u₀‖ ≤ ‖u₀‖`; combine. This is the side of E1 that needs no time-measurability. -/
-private theorem galerkin_norm_le_u0 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+theorem galerkin_norm_le_u0 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
     (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {t : ℝ} (ht : 0 ≤ t) :
     ‖(gs.u t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
@@ -247,7 +247,7 @@ time `Set.Ici 0` (it is even differentiable there by `u_hasDeriv`).
 Forward-only: `u_hasDeriv` now guarantees differentiability only for `t ≥ 0` (the curve is a
 physical Galerkin solution, confined only on forward time).  Everything downstream uses the
 curve only on `[0,T] ⊆ Ici 0`, so forward continuity suffices. -/
-private theorem galerkin_curve_continuous (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+theorem galerkin_curve_continuous (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
     (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
     ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
@@ -577,7 +577,7 @@ inner-product space, if `‖gₙ‖ ≤ M` and `⟪g, gₙ⟫ → ‖g‖²`, th
 This is the inner-product-trick form of weak-lsc of the norm: `‖g‖² = lim ⟪g, gₙ⟫ ≤ ‖g‖ · liminf ‖gₙ‖`
 (Cauchy–Schwarz + `Monotone.map_liminf_of_continuousAt` to commute the nonneg scalar `‖g‖` with
 `liminf`), then divide by `‖g‖`.  No Mazur, no subsequence extraction. -/
-private theorem norm_le_liminf_of_inner_tendsto {E : Type*} [NormedAddCommGroup E]
+theorem norm_le_liminf_of_inner_tendsto {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] (g : E) (gn : ℕ → E) (M : ℝ) (hM : ∀ n, ‖gn n‖ ≤ M)
     (hinner : Tendsto (fun n => @inner ℝ E _ g (gn n)) atTop (nhds (‖g‖ ^ 2))) :
     ‖g‖ ≤ Filter.liminf (fun n => ‖gn n‖) atTop := by
@@ -782,7 +782,7 @@ private theorem tendsto_norm_tailVF'_zero (v : L2VF_R3) :
 `‖uₙ t‖ ≤ M`, `‖u t‖ ≤ M`, the inner products against any fixed `e` converge:
 `⟪e, uₙ t⟫ → ⟪e, u t⟫`.  Ball/tail ε/3 split: the ball part converges (`restrictToBall` strong),
 the tails are bounded by `‖tail e‖ · M → 0`. -/
-private theorem inner_tendsto_of_perball
+theorem inner_tendsto_of_perball
     (e : L2VF_R3) (un : ℕ → L2VF_R3) (u : L2VF_R3) (M : ℝ) (hM0 : 0 ≤ M)
     (hbd : ∀ n, ‖un n‖ ≤ M) (hbu : ‖u‖ ≤ M)
     (hperball : ∀ k : ℕ, Tendsto (fun n => restrictToBall (k : ℝ) (un n)) atTop
@@ -823,7 +823,7 @@ private theorem inner_tendsto_of_perball
 
 /-- **Fixed-test-vector convergence ⟹ weak convergence** in `WeakSpace ℝ L2VF_R3`.  If
 `⟪e, uₙ⟫ → ⟪e, u⟫` for every `e` (Riesz: every dual), then `uₙ ⇀ u`. -/
-private theorem weak_tendsto_of_inner_tendsto
+theorem weak_tendsto_of_inner_tendsto
     (un : ℕ → L2VF_R3) (u : L2VF_R3)
     (hfix : ∀ e : L2VF_R3,
       Tendsto (fun n => (inner ℝ e (un n) : ℝ)) atTop (nhds (inner ℝ e u : ℝ))) :
@@ -2376,6 +2376,33 @@ trilinear Schwartz-tail bound for `F.b`/`convIntegralSchwartz` (the `‖x‖>R` 
 `N`-th identity then `N→∞` via `𝔊.tendsto_id`).
 All three stand on already-proved pieces; the structural reduction (time-IBP + dominated convergence
 in time) is in hand. -/
+
+/-- **W1: weak identity for the Aubin–Lions limit against a FIXED Galerkin test** (n→∞).
+
+For a test `w` that is already a Galerkin test of the scheme `𝔊` (i.e. `𝔊.P N w = w` for
+some level `N`), the limit curve `alPkg.u` satisfies the distributional Navier–Stokes integral
+identity against `ψ ⊗ w`.
+
+This is the first stage (W1) of the two-stage proof of `weakFormNS_limit_passage`:
+- W1 (this lemma): n→∞ for FIXED Galerkin tests — no test approximation needed.
+- W2 (PR-4, `weakFormNS_limit_passage` with `R3TestApproxH1` binder): extend to all Schwartz
+  div-free tests via H¹-approximation.
+
+Statement is VERBATIM from spike S4 (`weakFormNS_galerkinTest_spike`, issue #93 appendix). -/
+theorem weakFormNS_galerkinTest_limit
+    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
+    (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (w : L2Sigma_R3) (hw : IsGalerkinTest_R3 𝔊 w)
+    (ψ : Time → ℝ) (hψcs : HasCompactSupport ψ)
+    (hψsupp : tsupport ψ ⊆ Set.Ioo 0 T) (hψC1 : ContDiff ℝ 1 ψ) :
+    ∫ t in (0 : ℝ)..T,
+      (-(inner (𝕜 := ℝ) ((alPkg.u t : L2VF_R3)) (w : L2VF_R3)) * deriv ψ t +
+        ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (w : L2VF_R3) +
+          F.b (alPkg.u t) (alPkg.u t) w)) = 0 := by
+  sorry -- ALLOW_SORRY: scaffold (issue #4 PR-1 W1 — lean-prover fills)
 
 /-- **WeakFormNS limit passage (conjunct 2 of `galerkin_limit_passage_R3`).**
 

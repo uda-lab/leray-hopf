@@ -116,3 +116,6 @@ import LerayHopf.Bochner.ScalarEquicontinuity     -- T-AL-2 (#23): domain-neutra
 import LerayHopf.TorusModeCompactness             -- T-AL-3 (#23): mode-wise extraction (equi-Lipschitz + engine assembly)
 import LerayHopf.TorusModeTail                    -- T-AL-5 (#23): mode-wise tail bounds
 import LerayHopf.TorusAubinLionsAssembly          -- T-AL-6 (#23): aubin_lions replacement assembly
+
+-- Feasibility spike for issue #4 (galerkin_limit_passage_R3 discharge); scratch only
+import LerayHopf.Scratch.Issue4LimitPassageSpike

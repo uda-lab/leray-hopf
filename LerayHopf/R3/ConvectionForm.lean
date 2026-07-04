@@ -880,6 +880,428 @@ theorem fb_eq_antisymmIntegral {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊)
   refine tendsto_nhds_unique (hLHS.congr (fun n => ?_)) hRHS
   exact fb_eq_antisymmIntegral_schwartz F w ψw hψw (sf n) (sg n) (hsf_sch n) (hsg_sch n)
 
+/-! ### Per-ball convergence of F.b (atom b — WeakFormNS limit passage) -/
+
+/-- Schwartz tail decay: for any Schwartz map φ on Domain3 and ε > 0, there is R₀ > 0
+with |φ(x)| < ε whenever ‖x‖ > R₀. Follows from `SchwartzMap.tendsto_cocompact`. -/
+private theorem schwartz_ball_tail_decay (φ : SchwartzMap Domain3 ℝ) {ε : ℝ} (hε : 0 < ε) :
+    ∃ R₀ : ℝ, 0 < R₀ ∧ ∀ x : Domain3, R₀ < ‖x‖ → ‖φ x‖ < ε := by
+  obtain ⟨K, hKcomp, hKsub⟩ :=
+    Filter.mem_cocompact.mp (Metric.tendsto_nhds.mp φ.tendsto_cocompact ε hε)
+  obtain ⟨R₀, hR₀pos, hKball⟩ := hKcomp.isBounded.subset_closedBall_lt 0 (0 : Domain3)
+  refine ⟨R₀, hR₀pos, fun x hxR => ?_⟩
+  have hxK : x ∉ K := fun hxK =>
+    absurd (hKball hxK) (by rwa [Metric.mem_closedBall, dist_zero_right, not_le])
+  simpa [dist_zero_right] using hKsub (Set.mem_compl hxK)
+
+/-- j-th coordinate of a vector in `EuclideanSpace ℝ (Fin 3)` is bounded by the norm.
+Cauchy–Schwarz: `|proj_j v| = |⟪single j 1, v⟫| ≤ ‖single j 1‖ · ‖v‖ = ‖v‖`. -/
+private theorem euclidean_proj_le_norm_CF (j : Fin 3) (v : EuclideanSpace ℝ (Fin 3)) :
+    |(EuclideanSpace.proj j (𝕜 := ℝ)) v| ≤ ‖v‖ := by
+  have hinner : (EuclideanSpace.proj j (𝕜 := ℝ)) v =
+      inner ℝ (EuclideanSpace.single j (1 : ℝ)) v := by
+    simp [EuclideanSpace.inner_single_left]
+  rw [hinner]
+  calc |(inner ℝ (EuclideanSpace.single j (1 : ℝ)) v : ℝ)|
+      ≤ ‖EuclideanSpace.single j (1 : ℝ)‖ * ‖v‖ := abs_real_inner_le_norm _ _
+    _ = 1 * ‖v‖ := by simp [PiLp.norm_single]
+    _ = ‖v‖ := one_mul _
+
+/-- `‖mulBddR φ hφ g‖² = ∫ (φ x · g x)²`. Via `real_inner_self_eq_norm_sq`,
+`L2.inner_def`, and `mulBddR_coeFn`. -/
+private theorem normSq_mulBddR_CF (φ : Domain3 → ℝ)
+    (hφ : MemLp φ ⊤ (volume : Measure Domain3))
+    (g : Lp ℝ 2 (volume : Measure Domain3)) :
+    ‖mulBddR φ hφ g‖ ^ 2 =
+      ∫ x, (φ x * (g : Domain3 → ℝ) x) ^ 2 ∂(volume : Measure Domain3) := by
+  rw [← real_inner_self_eq_norm_sq (mulBddR φ hφ g), MeasureTheory.L2.inner_def]
+  refine integral_congr_ae ?_
+  filter_upwards [mulBddR_coeFn φ hφ g] with x hx
+  simp only [RCLike.inner_apply, conj_trivial, hx]; ring
+
+/-- `restrictToBall R 0 = 0` (local copy to avoid circular import with AubinLionsLimitPassage). -/
+private theorem restrictToBall_zero_CF (R : ℝ) :
+    restrictToBall R (0 : L2VF_R3) = (0 : L2ballR3 R) := by
+  apply Lp.ext
+  filter_upwards [MemLp.coeFn_toLp ((Lp.memLp (0 : L2VF_R3)).restrict
+          (Metric.closedBall (0 : Domain3) R)),
+    Lp.coeFn_zero (E := EuclideanSpace ℝ (Fin 3)) (p := 2)
+        (μ := (volume : Measure Domain3).restrict (Metric.closedBall (0 : Domain3) R)),
+    ae_mono Measure.restrict_le_self
+        (Lp.coeFn_zero (E := EuclideanSpace ℝ (Fin 3)) (p := 2)
+          (μ := (volume : Measure Domain3)))] with x h1 h2 h3
+  exact h1.trans (h3.trans h2.symm)
+
+/-- `restrictToBall R (u - v) = restrictToBall R u - restrictToBall R v`. -/
+private theorem restrictToBall_sub_CF (R : ℝ) (u v : L2VF_R3) :
+    restrictToBall R (u - v) = restrictToBall R u - restrictToBall R v := by
+  apply Lp.ext
+  filter_upwards [
+    MemLp.coeFn_toLp ((Lp.memLp (u - v)).restrict (Metric.closedBall (0 : Domain3) R)),
+    MemLp.coeFn_toLp ((Lp.memLp u).restrict (Metric.closedBall (0 : Domain3) R)),
+    MemLp.coeFn_toLp ((Lp.memLp v).restrict (Metric.closedBall (0 : Domain3) R)),
+    Lp.coeFn_sub (restrictToBall R u) (restrictToBall R v),
+    ae_mono Measure.restrict_le_self (Lp.coeFn_sub u v)] with x h1 h2 h3 h4 h5
+  -- Bridge definitional equality: restrictToBall R w = MemLp.toLp ↑↑w ... by def
+  have eq1 : (↑↑(restrictToBall R (u - v)) : Domain3 → EuclideanSpace ℝ (Fin 3)) x =
+      (↑↑(u - v) : Domain3 → EuclideanSpace ℝ (Fin 3)) x := h1
+  have eq2 : (↑↑(restrictToBall R u) : Domain3 → EuclideanSpace ℝ (Fin 3)) x =
+      (↑↑u : Domain3 → EuclideanSpace ℝ (Fin 3)) x := h2
+  have eq3 : (↑↑(restrictToBall R v) : Domain3 → EuclideanSpace ℝ (Fin 3)) x =
+      (↑↑v : Domain3 → EuclideanSpace ℝ (Fin 3)) x := h3
+  rw [eq1, h5]
+  simp only [h4, Pi.sub_apply, eq2, eq3]
+
+/-- `‖restrictToBall R w‖² = ∫_{B_R} ‖w x‖² ∂vol`. -/
+private theorem normSq_restrictToBall_CF (R : ℝ) (w : L2VF_R3) :
+    ‖restrictToBall R w‖ ^ 2 =
+      ∫ x in Metric.closedBall (0 : Domain3) R,
+        ‖(w : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 ∂(volume : Measure Domain3) := by
+  set μR := (volume : Measure Domain3).restrict (Metric.closedBall (0 : Domain3) R)
+  have hstep1 : ‖restrictToBall R w‖ ^ 2 =
+      ∫ x, ‖((restrictToBall R w) x : EuclideanSpace ℝ (Fin 3))‖ ^ 2 ∂μR := by
+    rw [← real_inner_self_eq_norm_sq (restrictToBall R w), MeasureTheory.L2.inner_def]
+    refine integral_congr_ae ?_
+    filter_upwards with x; exact real_inner_self_eq_norm_sq _
+  rw [hstep1]
+  refine integral_congr_ae ?_
+  filter_upwards [MemLp.coeFn_toLp ((Lp.memLp w).restrict
+      (Metric.closedBall (0 : Domain3) R))] with x hx
+  -- restrictToBall R w = MemLp.toLp ↑↑w ... by def; congr 2 closes the norm-sq equality via hx
+  congr 2
+
+/-- `‖w‖² = ∫ ‖w x‖² ∂vol` for `w : L2VF_R3`. -/
+private theorem normSq_VF_eq_integral_CF (w : L2VF_R3) :
+    ‖(w : L2VF_R3)‖ ^ 2 =
+      ∫ x, ‖(w : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 ∂(volume : Measure Domain3) := by
+  rw [← real_inner_self_eq_norm_sq w, MeasureTheory.L2.inner_def]
+  refine integral_congr_ae ?_
+  filter_upwards with x; exact real_inner_self_eq_norm_sq _
+
+set_option maxHeartbeats 800000 in
+/-- **Key convergence lemma.** Schwartz φ, component `j`, sequence `fn : ℕ → L2VF_R3`
+with uniform bound `‖fn n‖ ≤ M` and per-ball convergence `restrictToBall k (fn n) → 0`
+for every `k : ℕ`. Then `‖mulBddR (⇑φs) hφ (L2VF_projComponent_R3 j (fn n))‖ → 0`.
+
+Proof sketch: split the norm-sq into ball and tail integrals, bound each by ε/2. -/
+private theorem mulBddR_projComp_norm_tendsto_CF
+    (φs : SchwartzMap Domain3 ℝ) (hφ : MemLp (⇑φs) ⊤ (volume : Measure Domain3))
+    (j : Fin 3) (fn : ℕ → L2VF_R3) (M : ℝ) (hM0 : 0 ≤ M)
+    (hbd : ∀ n, ‖(fn n : L2VF_R3)‖ ≤ M)
+    (hperball : ∀ k : ℕ, Filter.Tendsto
+        (fun n => restrictToBall (k : ℝ) (fn n : L2VF_R3)) Filter.atTop (nhds 0)) :
+    Filter.Tendsto
+        (fun n => ‖mulBddR (⇑φs) hφ (L2VF_projComponent_R3 j (fn n : L2VF_R3))‖)
+        Filter.atTop (nhds 0) := by
+  apply Metric.tendsto_atTop.mpr
+  intro ε hε
+  -- L∞ norm of φs
+  set Φ := (eLpNorm (⇑φs) ⊤ volume).toReal
+  have hΦnn : 0 ≤ Φ := ENNReal.toReal_nonneg
+  have hfin : eLpNorm (⇑φs) ⊤ volume ≠ ⊤ := hφ.eLpNorm_lt_top.ne
+  -- tail parameter ε_R = ε / (2 * (M + 1)) > 0
+  set ε_R := ε / (2 * (M + 1))
+  have hε_Rpos : 0 < ε_R := by positivity
+  -- ball parameter δ = ε / (2 * (Φ + 1)) > 0
+  set δ := ε / (2 * (Φ + 1))
+  have hδpos : 0 < δ := by positivity
+  -- Schwartz decay: |φs x| < ε_R when ‖x‖ > R₀
+  obtain ⟨R₀, _hR₀pos, hφ_tail⟩ := schwartz_ball_tail_decay φs hε_Rpos
+  -- integer radius strictly exceeding R₀
+  set R₀n : ℕ := ⌊R₀⌋₊ + 1
+  have hR₀n_gt : R₀ < (R₀n : ℝ) := by
+    simp only [R₀n, Nat.cast_add, Nat.cast_one]
+    exact Nat.lt_floor_add_one R₀
+  -- per-ball convergence picks N with ‖restrictToBall R₀n (fn n)‖ < δ for n ≥ N
+  obtain ⟨N, hN⟩ := (Metric.tendsto_atTop.mp (hperball R₀n)) δ hδpos
+  refine ⟨N, fun n hn => ?_⟩
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg (norm_nonneg _)]
+  -- abbreviations
+  set cJ := L2VF_projComponent_R3 j
+  set g : Lp ℝ 2 volume := cJ (fn n : L2VF_R3)
+  set h := mulBddR (⇑φs) hφ g
+  set B := Metric.closedBall (0 : Domain3) (R₀n : ℝ)
+  -- ‖h‖² = ∫ (φs x * g x)²
+  have hnormSq : ‖h‖ ^ 2 = ∫ x, (⇑φs x * (g : Domain3 → ℝ) x) ^ 2 ∂volume :=
+    normSq_mulBddR_CF _ _ g
+  -- a.e. coeFn of g: (g : Domain3 → ℝ) x = EuclideanSpace.proj j (fn n x)
+  have hg_ceFn : (g : Domain3 → ℝ) =ᵐ[volume]
+      fun x => (EuclideanSpace.proj j (𝕜 := ℝ)) ((fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x) :=
+    (EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL (p := 2) (μ := volume) (fn n)
+  -- integrability of (φs x * g x)²
+  have h_int : Integrable (fun x => (⇑φs x * (g : Domain3 → ℝ) x) ^ 2) volume := by
+    -- h : Lp ℝ 2 volume, so ‖h‖² is integrable; rewrite via mulBddR_coeFn
+    refine (Lp.memLp h).integrable_sq.congr ?_
+    filter_upwards [mulBddR_coeFn (⇑φs) hφ g] with x hx
+    rw [hx]
+  -- integrability of ‖fn n x‖²
+  have h_fn_int : Integrable
+      (fun x => ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2) volume :=
+    (memLp_two_iff_integrable_sq_norm (Lp.memLp (fn n : L2VF_R3)).1).mp
+      (Lp.memLp (fn n : L2VF_R3))
+  -- a.e. bound: ‖φs x‖ ≤ Φ
+  have hφ_ae_le : ∀ᵐ x ∂(volume : Measure Domain3), ‖(⇑φs) x‖ ≤ Φ := by
+    filter_upwards [ae_le_eLpNormEssSup (f := ⇑φs) (μ := volume)] with x hx
+    rw [← eLpNorm_exponent_top, enorm_eq_nnnorm] at hx
+    have h2 := ENNReal.toReal_mono hfin hx
+    simp only [ENNReal.coe_toReal, coe_nnnorm] at h2; exact h2
+  -- X = ‖restrictToBall R₀n (fn n)‖
+  set X := ‖restrictToBall (R₀n : ℝ) (fn n : L2VF_R3)‖
+  have hXnn : 0 ≤ X := norm_nonneg _
+  have hX_lt_δ : X < δ := by
+    have h := hN n hn
+    rwa [dist_zero_right] at h
+  -- Ball bound: ∫_B (φs g)² ≤ Φ² · X²
+  have h_ball_bound : ∫ x in B, (⇑φs x * (g : Domain3 → ℝ) x) ^ 2 ∂volume ≤ Φ ^ 2 * X ^ 2 := by
+    have hΦfn_int : IntegrableOn
+        (fun x => Φ ^ 2 * ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2) B volume :=
+      (h_fn_int.const_mul (Φ ^ 2)).integrableOn
+    calc ∫ x in B, (⇑φs x * (g : Domain3 → ℝ) x) ^ 2 ∂volume
+        ≤ ∫ x in B,
+            Φ ^ 2 * ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 ∂volume := by
+          apply setIntegral_mono_on_ae h_int.integrableOn hΦfn_int measurableSet_closedBall
+          filter_upwards [hφ_ae_le, hg_ceFn] with x hφx hgx _
+          rw [hgx]
+          have h_φ_sq : (⇑φs x) ^ 2 ≤ Φ ^ 2 := by
+            have habs : |⇑φs x| ≤ Φ := by rwa [← Real.norm_eq_abs]
+            nlinarith [sq_abs (⇑φs x), hΦnn, abs_nonneg (⇑φs x)]
+          have h_proj_sq :
+              ((EuclideanSpace.proj j (𝕜 := ℝ))
+                ((fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x)) ^ 2 ≤
+              ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 := by
+            -- |proj j v| ≤ ‖v‖ → |proj j v|² ≤ ‖v‖², and p² = |p|²
+            have h_le := euclidean_proj_le_norm_CF j
+                ((fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x)
+            rw [← sq_abs]
+            exact pow_le_pow_left₀ (abs_nonneg _) h_le 2
+          rw [mul_pow]
+          exact mul_le_mul h_φ_sq h_proj_sq (sq_nonneg _) (sq_nonneg _)
+      _ = Φ ^ 2 * ∫ x in B,
+            ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 ∂volume :=
+          integral_const_mul _ _
+      _ = Φ ^ 2 * X ^ 2 := by rw [← normSq_restrictToBall_CF]
+  -- Tail bound: ∫_{Bᶜ} (φs g)² ≤ ε_R² · M²
+  have h_tail_bound :
+      ∫ x in Bᶜ, (⇑φs x * (g : Domain3 → ℝ) x) ^ 2 ∂volume ≤ ε_R ^ 2 * M ^ 2 := by
+    have hεfn_int : IntegrableOn
+        (fun x => ε_R ^ 2 * ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2) Bᶜ volume :=
+      (h_fn_int.const_mul (ε_R ^ 2)).integrableOn
+    calc ∫ x in Bᶜ, (⇑φs x * (g : Domain3 → ℝ) x) ^ 2 ∂volume
+        ≤ ∫ x in Bᶜ,
+            ε_R ^ 2 * ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 ∂volume := by
+          apply setIntegral_mono_on_ae h_int.integrableOn hεfn_int
+            measurableSet_closedBall.compl
+          filter_upwards [hg_ceFn] with x hgx hx
+          rw [hgx]
+          have hxR : R₀ < ‖x‖ := by
+            rw [Set.mem_compl_iff, Metric.mem_closedBall, not_le, dist_zero_right] at hx
+            linarith [hR₀n_gt]
+          have hφx := hφ_tail x hxR
+          have h_φ_sq : (⇑φs x) ^ 2 ≤ ε_R ^ 2 := by
+            have habs : |⇑φs x| < ε_R := by rwa [← Real.norm_eq_abs]
+            nlinarith [sq_abs (⇑φs x), hε_Rpos.le, abs_nonneg (⇑φs x)]
+          have h_proj_sq :
+              ((EuclideanSpace.proj j (𝕜 := ℝ))
+                ((fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x)) ^ 2 ≤
+              ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 := by
+            -- |proj j v| ≤ ‖v‖ → |proj j v|² ≤ ‖v‖², and p² = |p|²
+            have h_le := euclidean_proj_le_norm_CF j
+                ((fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x)
+            rw [← sq_abs]
+            exact pow_le_pow_left₀ (abs_nonneg _) h_le 2
+          rw [mul_pow]
+          exact mul_le_mul h_φ_sq h_proj_sq (sq_nonneg _) (sq_nonneg _)
+      _ ≤ ∫ x, ε_R ^ 2 * ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 ∂volume :=
+          setIntegral_le_integral (h_fn_int.const_mul (ε_R ^ 2))
+            (ae_of_all _ fun x => by positivity)
+      _ = ε_R ^ 2 * ‖fn n‖ ^ 2 := by
+          rw [integral_const_mul, ← normSq_VF_eq_integral_CF]
+      _ ≤ ε_R ^ 2 * M ^ 2 :=
+          mul_le_mul_of_nonneg_left
+            (sq_le_sq' (by linarith [norm_nonneg (fn n : L2VF_R3), hM0]) (hbd n))
+            (sq_nonneg _)
+  -- ‖h‖² ≤ (Φ · X + ε_R · M)²
+  have h_sq_bound : ‖h‖ ^ 2 ≤ (Φ * X + ε_R * M) ^ 2 := by
+    have hsplit := integral_add_compl (show MeasurableSet B from measurableSet_closedBall) h_int
+    rw [hnormSq, ← hsplit]
+    nlinarith [h_ball_bound, h_tail_bound,
+      mul_nonneg (mul_nonneg hΦnn hXnn) (mul_nonneg hε_Rpos.le hM0)]
+  -- ‖h‖ ≤ Φ · X + ε_R · M
+  have h_bound : ‖h‖ ≤ Φ * X + ε_R * M := by
+    have hpos : 0 ≤ Φ * X + ε_R * M := by positivity
+    rw [← Real.sqrt_sq (norm_nonneg h), ← Real.sqrt_sq hpos]
+    exact Real.sqrt_le_sqrt h_sq_bound
+  -- Conclude ‖h‖ < ε
+  -- h1: Φ·(ε/(2(Φ+1))) < ε/2 ↔ Φε < ε(Φ+1)
+  have h1 : Φ * δ < ε / 2 := by
+    have hΦ1 : 0 < 2 * (Φ + 1) := by linarith
+    simp only [δ, mul_div_assoc']
+    rw [div_lt_iff₀ hΦ1]
+    have : ε / 2 * (2 * (Φ + 1)) = ε * (Φ + 1) := by ring
+    linarith
+  -- h2: (ε/(2(M+1)))·M < ε/2 ↔ εM < ε(M+1)
+  have h2 : ε_R * M < ε / 2 := by
+    have hM1 : 0 < 2 * (M + 1) := by linarith
+    simp only [ε_R, div_mul_eq_mul_div]
+    rw [div_lt_iff₀ hM1]
+    have : ε / 2 * (2 * (M + 1)) = ε * (M + 1) := by ring
+    linarith
+  calc ‖h‖ ≤ Φ * X + ε_R * M := h_bound
+    _ < ε := by
+        have hΦX_le : Φ * X ≤ Φ * δ := mul_le_mul_of_nonneg_left hX_lt_δ.le hΦnn
+        linarith
+
+/-- Self-adjointness of real pointwise multiplication: `⟨f, h·g⟩ = ⟨h·f, g⟩`
+in `Lp ℝ 2 volume`.
+
+Both sides equal `∫ x, (↑f x) * h x * (↑g x) ∂μ` via `MeasureTheory.L2.inner_def`,
+`mulBddR_coeFn`, and the identity `inner ℝ a b = a * b` for real scalars. -/
+private theorem mulBddR_self_adjoint (h : Domain3 → ℝ) (hh : MemLp h ⊤ (volume : Measure Domain3))
+    (f g : Lp ℝ 2 (volume : Measure Domain3)) :
+    (inner ℝ f (mulBddR h hh g) : ℝ) = (inner ℝ (mulBddR h hh f) g : ℝ) := by
+  rw [MeasureTheory.L2.inner_def, MeasureTheory.L2.inner_def]
+  refine integral_congr_ae ?_
+  filter_upwards [mulBddR_coeFn h hh f, mulBddR_coeFn h hh g] with x hxf hxg
+  -- After RCLike.inner_apply (which gives ⟪a, b⟫_ℝ = conj a * b) and conj_trivial
+  -- (conj is identity on ℝ), both sides reduce to a * h x * b expressions.
+  simp only [RCLike.inner_apply, conj_trivial, hxf, hxg]
+  ring
+
+set_option maxHeartbeats 800000 in
+/-- **Per-ball convergence of F.b (atom b of WeakFormNS passage).**
+
+For a Schwartz-div-free test `w` with witnesses `ψw`, if `uₙ → u` in L²(B_R) for every
+radius R (per-ball convergence) with uniform L² bound `‖uₙ‖ ≤ M`, then
+`F.b(uₙ, uₙ, w) → F.b(u, u, w)`.
+
+**Method.** After applying `fb_eq_antisymmIntegral` and unfolding `antisymmIntegral`, each
+(i, a)-term is `inner (comp_a uₙ) (mulBddR φ_{a,i} (comp_i uₙ))`.  The bilinear difference
+splits into:
+- TERM A `= inner (comp_a (uₙ - u)) (mulBddR φ (comp_i uₙ))`: ε/3 split via
+  `schwartz_ball_tail_decay` for the `‖x‖>R` tail and per-ball for the `‖x‖≤R` ball;
+- TERM B `= inner (comp_a u) (mulBddR φ (comp_i (uₙ - u)))`: self-adjointness +
+  scalar ball-tail ε/3 argument (tail of FIXED element → 0, ball uses per-ball). -/
+theorem fb_tendsto_of_perball {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊)
+    (w : L2Sigma_R3) (hw : IsSchwartzDivFree_R3 w)
+    (un : ℕ → L2Sigma_R3) (u : L2Sigma_R3)
+    (M : ℝ) (hM0 : 0 ≤ M)
+    (hbd : ∀ n, ‖(un n : L2VF_R3)‖ ≤ M)
+    (hbu : ‖(u : L2VF_R3)‖ ≤ M)
+    (hperball : ∀ k : ℕ, Filter.Tendsto
+        (fun n => restrictToBall (k : ℝ) (un n : L2VF_R3))
+        Filter.atTop (nhds (restrictToBall (k : ℝ) (u : L2VF_R3)))) :
+    Filter.Tendsto (fun n => F.b (un n) (un n) w) Filter.atTop (nhds (F.b u u w)) := by
+  obtain ⟨ψw, hψw⟩ := hw
+  simp_rw [fb_eq_antisymmIntegral F w ψw hψw]
+  -- Unfold the (private, @[irreducible]) def — allowed from within this file.
+  unfold antisymmIntegral
+  apply Filter.Tendsto.neg
+  apply tendsto_finsetSum; intro i _
+  apply tendsto_finsetSum; intro a _
+  -- Abbreviated notation for this (i, a)-summand
+  set φs : SchwartzMap Domain3 ℝ :=
+    lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψw i)
+  set φ : Domain3 → ℝ := ⇑φs
+  set hφ : MemLp φ ⊤ (volume : Measure Domain3) := lineDerivOp_schwartz_memLp_top (ψw i) a
+  set cA := L2VF_projComponent_R3 a
+  set cI := L2VF_projComponent_R3 i
+  -- Reduce to showing the difference → 0
+  suffices hd : Filter.Tendsto
+      (fun n => (inner ℝ (cA (un n : L2VF_R3)) (mulBddR φ hφ (cI (un n : L2VF_R3))) : ℝ) -
+               (inner ℝ (cA (u : L2VF_R3)) (mulBddR φ hφ (cI (u : L2VF_R3))) : ℝ))
+      Filter.atTop (nhds 0) by
+    have := hd.add (tendsto_const_nhds (x := (inner ℝ (cA (u : L2VF_R3)) (mulBddR φ hφ (cI (u : L2VF_R3))) : ℝ)))
+    simp only [sub_add_cancel, zero_add] at this
+    exact this
+  -- Bilinear decomposition: diff = TERM_A + TERM_B
+  have hdecomp : ∀ n,
+      (inner ℝ (cA (un n : L2VF_R3)) (mulBddR φ hφ (cI (un n : L2VF_R3))) : ℝ) -
+      (inner ℝ (cA (u : L2VF_R3)) (mulBddR φ hφ (cI (u : L2VF_R3))) : ℝ) =
+      (inner ℝ (cA (un n : L2VF_R3) - cA (u : L2VF_R3))
+          (mulBddR φ hφ (cI (un n : L2VF_R3))) : ℝ) +
+      (inner ℝ (cA (u : L2VF_R3))
+          (mulBddR φ hφ (cI (un n : L2VF_R3)) - mulBddR φ hφ (cI (u : L2VF_R3))) : ℝ) := by
+    intro n
+    linarith [inner_sub_left (𝕜 := ℝ) (cA (un n : L2VF_R3)) (cA (u : L2VF_R3))
+                (mulBddR φ hφ (cI (un n : L2VF_R3))),
+              inner_sub_right (𝕜 := ℝ) (cA (u : L2VF_R3)) (mulBddR φ hφ (cI (un n : L2VF_R3)))
+                (mulBddR φ hφ (cI (u : L2VF_R3)))]
+  simp_rw [hdecomp]
+  -- Shared setup: fn n = uₙ - u, uniformly bounded, per-ball → 0
+  set fn : ℕ → L2VF_R3 := fun n => (un n : L2VF_R3) - (u : L2VF_R3)
+  have hbd_fn : ∀ n, ‖fn n‖ ≤ 2 * M := fun n =>
+    (norm_sub_le _ _).trans (by linarith [hbd n, hbu])
+  have hperball_fn : ∀ k : ℕ, Filter.Tendsto
+      (fun n => restrictToBall (k : ℝ) (fn n)) Filter.atTop (nhds 0) := by
+    intro k
+    have h := (hperball k).sub_const (restrictToBall (k : ℝ) (u : L2VF_R3))
+    simp only [sub_self] at h
+    exact h.congr fun n => (restrictToBall_sub_CF (k : ℝ) (un n : L2VF_R3) (u : L2VF_R3)).symm
+  -- Operator norm of cI ≤ 1
+  have hcI_norm_le_one : ‖cI‖ ≤ 1 := by
+    have h_proj : ‖(EuclideanSpace.proj (𝕜 := ℝ) i :
+        EuclideanSpace ℝ (Fin 3) →L[ℝ] ℝ)‖ ≤ 1 := by
+      apply ContinuousLinearMap.opNorm_le_bound
+      · norm_num
+      · intro v
+        rw [one_mul, Real.norm_eq_abs]
+        exact euclidean_proj_le_norm_CF i v
+    exact (ContinuousLinearMap.norm_compLpL_le
+        (EuclideanSpace.proj (𝕜 := ℝ) i)).trans h_proj
+  have hcI_bd : ∀ n, ‖cI (un n : L2VF_R3)‖ ≤ M := fun n =>
+    calc ‖cI (un n : L2VF_R3)‖
+        ≤ ‖cI‖ * ‖(un n : L2VF_R3)‖ := ContinuousLinearMap.le_opNorm cI _
+      _ ≤ 1 * ‖(un n : L2VF_R3)‖ := mul_le_mul_of_nonneg_right hcI_norm_le_one (norm_nonneg _)
+      _ = ‖(un n : L2VF_R3)‖ := one_mul _
+      _ ≤ M := hbd n
+  -- TERM A → 0: ⟨cA(uₙ-u), mulBddR φ (cI uₙ)⟩ → 0
+  -- Transpose via self-adjointness, then squeeze against ‖mulBddR φ (cA fn n)‖ * M → 0.
+  have htermA : Filter.Tendsto
+      (fun n => (inner ℝ (cA (un n : L2VF_R3) - cA (u : L2VF_R3))
+        (mulBddR φ hφ (cI (un n : L2VF_R3))) : ℝ)) Filter.atTop (nhds 0) := by
+    -- cA(uₙ) - cA(u) = cA(fn n)
+    simp_rw [show ∀ n, cA (un n : L2VF_R3) - cA (u : L2VF_R3) = cA (fn n) from
+        fun n => (map_sub cA _ _).symm]
+    -- Transpose: ⟨cA(fn n), mulBddR φ (cI uₙ)⟩ = ⟨mulBddR φ (cA(fn n)), cI uₙ⟩
+    simp_rw [mulBddR_self_adjoint φ hφ]
+    -- Key: ‖mulBddR φ hφ (cA (fn n))‖ → 0
+    have h_key := mulBddR_projComp_norm_tendsto_CF φs hφ a fn (2 * M)
+        (by linarith) hbd_fn hperball_fn
+    have h_key_mul : Filter.Tendsto (fun n => ‖mulBddR φ hφ (cA (fn n))‖ * M)
+        Filter.atTop (nhds 0) := by
+      have h := h_key.mul_const M; simp only [zero_mul] at h; exact h
+    refine squeeze_zero_norm (fun n => ?_) h_key_mul
+    rw [Real.norm_eq_abs]
+    calc |(inner ℝ (mulBddR φ hφ (cA (fn n))) (cI (un n : L2VF_R3)) : ℝ)|
+        ≤ ‖mulBddR φ hφ (cA (fn n))‖ * ‖cI (un n : L2VF_R3)‖ :=
+            abs_real_inner_le_norm _ _
+      _ ≤ ‖mulBddR φ hφ (cA (fn n))‖ * M :=
+            mul_le_mul_of_nonneg_left (hcI_bd n) (norm_nonneg _)
+  -- TERM B → 0: ⟨cA u, mulBddR φ (cI uₙ) - mulBddR φ (cI u)⟩ → 0
+  -- Rewrite difference via mulBddR_sub, bound by ‖cA u‖ * ‖mulBddR φ (cI fn n)‖ → 0.
+  have htermB : Filter.Tendsto
+      (fun n => (inner ℝ (cA (u : L2VF_R3))
+        (mulBddR φ hφ (cI (un n : L2VF_R3)) - mulBddR φ hφ (cI (u : L2VF_R3))) : ℝ))
+      Filter.atTop (nhds 0) := by
+    -- mulBddR φ (cI uₙ) - mulBddR φ (cI u) = mulBddR φ (cI (fn n))
+    have hrwB : ∀ n, mulBddR φ hφ (cI (un n : L2VF_R3)) - mulBddR φ hφ (cI (u : L2VF_R3)) =
+        mulBddR φ hφ (cI (fn n)) := fun n =>
+      (mulBddR_sub φ hφ (cI (u : L2VF_R3)) (cI (un n : L2VF_R3))).trans
+        (congr_arg (mulBddR φ hφ) (map_sub cI (un n : L2VF_R3) (u : L2VF_R3)).symm)
+    simp_rw [hrwB]
+    -- Key: ‖mulBddR φ hφ (cI (fn n))‖ → 0
+    have h_key := mulBddR_projComp_norm_tendsto_CF φs hφ i fn (2 * M)
+        (by linarith) hbd_fn hperball_fn
+    have h_key_mul : Filter.Tendsto (fun n => ‖cA (u : L2VF_R3)‖ * ‖mulBddR φ hφ (cI (fn n))‖)
+        Filter.atTop (nhds 0) := by
+      have h := tendsto_const_nhds (x := ‖cA (u : L2VF_R3)‖) |>.mul h_key
+      simp only [mul_zero] at h; exact h
+    refine squeeze_zero_norm (fun n => ?_) h_key_mul
+    rw [Real.norm_eq_abs]
+    exact (abs_real_inner_le_norm _ _).trans
+        (mul_le_mul_of_nonneg_right (le_refl _) (norm_nonneg _))
+  simpa only [add_zero] using htermA.add htermB
+
 /-! ### P2 — Scaffold packaging for future `ConvectionGap` construction -/
 
 /-- **P2 (scaffold-only).** Packaging of the density result as the `schwartz_dense`
