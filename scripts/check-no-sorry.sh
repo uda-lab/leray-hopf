@@ -27,7 +27,8 @@ files=()
 while IFS= read -r -d '' f; do
   files+=("$f")
 done < <(find . -type f -name '*.lean' \
-           -not -path './.lake/*' -not -path './.git/*' -print0)
+           -not -path '*/.lake/*' -not -path './.git/*' \
+           -not -path './.claude/worktrees/*' -print0)
 
 if [ "${#files[@]}" -eq 0 ]; then
   echo "OK: no Lean sources to scan."
@@ -37,9 +38,11 @@ fi
 # Comment-aware scanner. Maintains block-comment nesting across lines (reset per
 # file), strips line comments, and prints `file:line:content` for any code line
 # whose CODE portion holds a whole-word `sorry` but whose full line lacks an
-# ALLOW_SORRY marker. Any awk failure propagates (no `|| true`, no `2>/dev/null`),
-# so the guard fails closed.
-violations="$(awk '
+# ALLOW_SORRY marker. Any awk failure propagates (no `|| true`, no `2>/dev/null`;
+# a failing awk in any xargs batch makes the substitution non-zero under
+# `pipefail`), so the guard fails closed. Files are fed via NUL-safe xargs
+# batching so the scan stays under ARG_MAX regardless of tree size (issue #84).
+violations="$(printf '%s\0' "${files[@]}" | xargs -0 awk '
   FNR == 1 { depth = 0 }
   {
     line = $0; code = ""; inLine = 0
@@ -59,7 +62,7 @@ violations="$(awk '
     if (code ~ /(^|[^A-Za-z0-9_])sorry([^A-Za-z0-9_]|$)/ && line !~ /ALLOW_SORRY:/)
       printf "%s:%d:%s\n", FILENAME, FNR, line
   }
-' "${files[@]}")"
+')"
 
 if [ -n "$violations" ]; then
   printf '%s\n' "$violations" >&2

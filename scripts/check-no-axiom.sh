@@ -28,7 +28,8 @@ while IFS= read -r -d '' file; do
     esac
   done < <(grep -nE "$pattern" -- "$file" 2>/dev/null || true)
 done < <(find . -type f -name '*.lean' \
-           -not -path './.lake/*' -not -path './.git/*' -print0)
+           -not -path '*/.lake/*' -not -path './.git/*' \
+           -not -path './.claude/worktrees/*' -print0)
 
 if [ "$found" -ne 0 ]; then
   echo "ERROR: undeclared axiom/constant/opaque/unsafe found above." >&2
