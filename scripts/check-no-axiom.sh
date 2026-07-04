@@ -14,23 +14,35 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-# ^ [attrs]* [modifiers]* (keyword) <space>
-pattern='^[[:space:]]*(@\[[^]]*\][[:space:]]*)*((private|protected|noncomputable|scoped|local)[[:space:]]+)*(axiom|constant|opaque|unsafe)[[:space:]]'
+# Enumerate Lean sources fail-closed: `find` writes to a temp file and its exit
+# status is checked BEFORE the list is consumed (a bare process substitution
+# would swallow traversal errors and let a partial scan report OK). `.git`/`.lake`
+# are pruned by basename at any depth (worktrees vendor their own `.lake`,
+# issue #84); agent worktrees are scanned by their own CI.
+list="$(mktemp)"
+trap 'rm -f "$list"' EXIT
+find . \( -name '.git' -o -name '.lake' -o -path './.claude/worktrees' \) -prune \
+     -o -type f -name '*.lean' -print0 > "$list"
 
-found=0
-while IFS= read -r -d '' file; do
-  while IFS= read -r match; do
-    lineno="${match%%:*}"
-    content="${match#*:}"
-    case "$content" in
-      *ALLOW_AXIOM:*) : ;; # documented assumption, skip
-      *) printf '%s:%s:%s\n' "$file" "$lineno" "$content"; found=1 ;;
-    esac
-  done < <(grep -nE "$pattern" -- "$file" 2>/dev/null || true)
-done < <(find . -type f -name '*.lean' \
-           -not -path './.lake/*' -not -path './.git/*' -print0)
+if [ ! -s "$list" ]; then
+  echo "OK: no Lean sources to scan."
+  exit 0
+fi
 
-if [ "$found" -ne 0 ]; then
+# Single awk scan over all sources, fed via NUL-safe xargs batching
+# (ARG_MAX-safe). Match: declaration-leading keyword — optionally preceded by
+# attributes/modifiers — whose line lacks an ALLOW_AXIOM marker. No
+# here-strings and no per-file grep: a failing awk/xargs in any batch makes
+# the plain command substitution non-zero, which `set -e` turns into an
+# abort, so the guard fails closed.
+violations="$(xargs -0 awk '
+  /^[[:space:]]*(@\[[^]]*\][[:space:]]*)*((private|protected|noncomputable|scoped|local)[[:space:]]+)*(axiom|constant|opaque|unsafe)[[:space:]]/ && !/ALLOW_AXIOM:/ {
+    printf "%s:%d:%s\n", FILENAME, FNR, $0
+  }
+' < "$list")"
+
+if [ -n "$violations" ]; then
+  printf '%s\n' "$violations"
   echo "ERROR: undeclared axiom/constant/opaque/unsafe found above." >&2
   echo "Add '-- ALLOW_AXIOM: <reason>' on the same line and record it in the file's assumptions section." >&2
   exit 1
