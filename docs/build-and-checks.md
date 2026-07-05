@@ -67,5 +67,27 @@ Markers are per-line by design, so every exception is justified where it occurs.
 
 ## CI
 
-`.github/workflows/lean.yml` runs the same build and checks on push, pull request, and
-manual dispatch. Local preflight and CI run the identical scripts.
+Auto full builds are **abolished** (GitHub Actions cost).
+
+- **PRs** run the `guards` job: grep guards only (`check-no-sorry.sh`,
+  `check-no-axiom.sh`, `check-theorem-names.sh`). No Lean build on CI for PRs.
+- **Full build + axiom pins** (`check-axioms.sh`, `check-axioms-live.sh`) run
+  **manually** via the `lean` workflow's `workflow_dispatch` trigger on GitHub.
+- **Mandatory build gate** is the **local incremental build**, enforced by the
+  `scripts/hooks/pre-push` git hook.
+
+### Activating the pre-push hook (once per clone)
+
+```bash
+git config core.hooksPath scripts/hooks
+```
+
+After activation, every `git push` runs the grep guards and, when `.lean` /
+`lakefile` / `lean-toolchain` files changed, a flock-serialized `lake build`.
+A failing build or failing guard blocks the push.
+
+Verify activation:
+
+```bash
+git config --get core.hooksPath   # should print: scripts/hooks
+```

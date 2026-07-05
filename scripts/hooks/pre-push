@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Local build gate. CI no longer runs auto full builds (Actions cost); the mandatory
+# build gate is this LOCAL incremental build. Blocks push unless grep guards pass and
+# (when Lean sources changed) the incremental build is green.
+# Enable once per clone:  git config core.hooksPath scripts/hooks
+set -uo pipefail
+ROOT="$(git rev-parse --show-toplevel)" || exit 1
+cd "$ROOT" || exit 1
+
+echo "[pre-push] grep guards…"
+bash scripts/check-no-sorry.sh      || { echo "[pre-push] BLOCK: check-no-sorry failed";      exit 1; }
+bash scripts/check-no-axiom.sh      || { echo "[pre-push] BLOCK: check-no-axiom failed";      exit 1; }
+bash scripts/check-theorem-names.sh || { echo "[pre-push] BLOCK: check-theorem-names failed"; exit 1; }
+
+base="$(git merge-base HEAD origin/main 2>/dev/null || true)"
+changed="$(git diff --name-only "${base:-HEAD}" HEAD 2>/dev/null || true)"
+if printf '%s\n' "$changed" | grep -qE '\.lean$|lakefile|lean-toolchain'; then
+  echo "[pre-push] Lean sources changed — incremental build (flock)…"
+  LOG="$(mktemp)"
+  if ! flock /tmp/lean-build.lock lake build >"$LOG" 2>&1; then
+    echo "[pre-push] BLOCK: lake build FAILED. Tail:"; tail -n 30 "$LOG"; rm -f "$LOG"; exit 1
+  fi
+  rm -f "$LOG"
+  echo "[pre-push] build green"
+else
+  echo "[pre-push] no Lean/build changes — skipping build"
+fi
+echo "[pre-push] gate passed"
+exit 0
