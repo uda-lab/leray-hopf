@@ -32,8 +32,9 @@ theorem in `LimitPassage.lean`, issue #4 PR-6).  The single extra (vs. T³) that
 
 - **AX-G `r3GalerkinScheme_exists`** — the approximation-projection family
   (replaces T³'s proved `velocityProjection_n`); DISCHARGED (issue #21) — now a `theorem` in
-  `SchwartzDivFreeBasis.lean` resting on the thin density axiom `curlSchwartzDense_holds`,
-  which is the actual project axiom counted in its place (net 5, a swap).
+  `SchwartzDivFreeBasis.lean` via `curlSchwartzDense_holds`, which is itself DISCHARGED
+  (issue #3/#21, Fourier curl-density route in `CurlDensityCapstone.lean`) — no project
+  axiom remains here.
 
 The former AX-SC `spatial_compactness_R3` (local Rellich H¹(B_R)↪↪L²(B_R); replaces T³'s
 proved `rellich_L2Sigma`; Rellich FAILS globally on ℝ³ but LOCAL convergence on every ball
