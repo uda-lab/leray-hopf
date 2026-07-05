@@ -2728,7 +2728,8 @@ theorem weakFormNS_limit_passage
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (htest : R3TestApproxH1 𝔊) : -- (htest used in proof, PR-4)
     WeakFormNS ν T (r3Evolution 𝔊 F) alPkg.u := by
   -- Unfold `WeakFormNS` (the `r3Evolution` evolution: `viscousForm = stokesTestPairing_R3`,
   -- `convForm = F.b`, `isTest = IsSchwartzDivFree_R3`).  Intro the admissible test data.
@@ -2758,7 +2759,7 @@ theorem weakFormNS_limit_passage
   --  (c) DENSITY — UNNECESSARY: `WeakFormNS`'s test is already Schwartz-div-free, so the fixed-`w`
   --      slice in (b) covers it; no Galerkin→Schwartz step is required.
   -- None weakens the statement; the goal below is the verbatim `WeakFormNS` integral identity.
-  sorry -- ALLOW_SORRY: WeakFormNS passage residual. Atom (a) VISCOUS DISCHARGED (stokesTestPairing_R3_eq_sum_inner_negLap, CurlDensity.lean — weak-continuous, passes by weak_tendsto_of_inner_tendsto). Atom (b) NONLINEAR PROVABLE via the fixed-Schwartz-w integral rep (WeakFormNS test w is always IsSchwartzDivFree_R3): Step 1 F.b f g w = -∑ᵢₐ∫ fₐ·gᵢ·∂ₐψwᵢ for all f,g∈L²σ by density-extending the Schwartz identity (b_galerkin + convIntegralSchwartz_divFree_eq) off schwartzDivFree_dense_of_curlDense using joint L²-continuity of both sides (b_bound; Cauchy-Schwarz+∂ψw∈L∞) — genuine L¹ integral; Step 2 ε/3 ball-split (tail ≤ sup_{|x|>R}|∂ψw|·2M²→0 by SchwartzMap.tendsto_cocompact + uniform M; middle→0 by per-ball strong strong_convergence_ae). NO full-space strong needed. Atom (c) DENSITY UNNECESSARY (WeakFormNS test already Schwartz). Structural reduction (time-IBP boundary-free + dominated convergence) in hand. Temam III.3. (Earlier "interface wall" claim RETRACTED — the fixed-w slice has the integral rep.)
+  sorry -- ALLOW_SORRY: PR-4 W2 proof (htest : R3TestApproxH1 𝔊 threaded). WeakFormNS passage residual. Atom (a) VISCOUS DISCHARGED (stokesTestPairing_R3_eq_sum_inner_negLap, CurlDensity.lean — weak-continuous, passes by weak_tendsto_of_inner_tendsto). Atom (b) NONLINEAR: for general Schwartz-div-free w, use htest to pick Galerkin approx vₙ →(L²+H¹) w; pass n→∞ for fixed Galerkin test via weakFormNS_galerkinTest_limit, then vₙ→w closure via stokesTestPairing_abs_le + bForm_galerkin_abs_le bounds in the H¹ graph seminorm (memH1VF_R3_of_isSchwartzDivFree supplies the H¹ regularity). Atom (c) DENSITY UNNECESSARY (WeakFormNS test already Schwartz). Structural reduction (time-IBP boundary-free + dominated convergence) in hand. Temam III.3.
 
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 

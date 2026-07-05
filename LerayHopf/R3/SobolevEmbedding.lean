@@ -1064,7 +1064,7 @@ Each real component is `(ψ j).toLp 2 volume` for a Schwartz `ψ j : 𝓢(Domain
 complex component projection `L2VF_projComponentC_R3 j` then equals `toLp` of the postcomposed
 Schwartz function `(ψ j).postcompCLM RCLike.ofRealCLM : 𝓢(Domain3, ℂ)`, and
 `memSobolev_of_eq_schwartz_toLp` finishes. -/
-private theorem memH1VF_R3_of_isSchwartzDivFree
+theorem memH1VF_R3_of_isSchwartzDivFree
     {v : L2Sigma_R3} (hv : IsSchwartzDivFree_R3 v) :
     memH1VF_R3 (v : L2VF_R3) := by
   obtain ⟨ψ, hψ⟩ := hv
