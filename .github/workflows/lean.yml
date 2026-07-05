@@ -1,15 +1,10 @@
 name: lean
 
+# Auto full builds are ABOLISHED (GitHub Actions cost). PRs run only the fast textual
+# guards; the full Lean build + axiom pins run MANUALLY via workflow_dispatch. The
+# mandatory build gate is the LOCAL incremental build, enforced by the
+# scripts/hooks/pre-push git hook (see docs/build-and-checks.md).
 on:
-  # Build only on pushes to main (e.g. merges); feature-branch work is covered by
-  # the pull_request trigger below. This avoids the push+pull_request double-run that
-  # billed every PR commit twice, and skips builds for pre-PR lane pushes.
-  push:
-    branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
-  # Documentation-only changes don't need the heavy Lean build / axiom pins.
   pull_request:
     paths-ignore:
       - 'docs/**'
@@ -22,36 +17,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  # Fast PR gate — textual guards only, NO Lean build (local build is the mandatory gate).
+  guards:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Guardrail — no unmarked sorry
+        run: bash scripts/check-no-sorry.sh
+      - name: Guardrail — no undeclared axiom/opaque/unsafe
+        run: bash scripts/check-no-axiom.sh
+      - name: Guardrail — no overclaiming theorem names
+        run: bash scripts/check-theorem-names.sh
+      - name: Guardrail — axiom-leak static pre-filter
+        run: bash scripts/check-axioms.sh
 
-      # Installs the pinned toolchain (lean-toolchain), runs `lake exe cache get`
-      # for mathlib, then `lake build`.
+  # Full build + axiom pins — MANUAL ONLY (workflow_dispatch).
+  full-build:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Build
         uses: leanprover/lean-action@v1
         with:
           use-mathlib-cache: true
-
       - name: Guardrail — no unmarked sorry
         run: bash scripts/check-no-sorry.sh
-
       - name: Guardrail — no undeclared axiom/opaque/unsafe
         run: bash scripts/check-no-axiom.sh
-
       - name: Guardrail — no overclaiming theorem names
         run: bash scripts/check-theorem-names.sh
-
-      - name: Guardrail — axiom-leak gate, static pre-filter (Core direct imports)
+      - name: Guardrail — axiom-leak static pre-filter
         run: bash scripts/check-axioms.sh
-
-      - name: Guardrail — axiom live pin (#print axioms exact match on capstones + Core)
-        # Runs lake env lean scripts/print_axioms.lean and asserts:
-        #   exists_lerayHopf_torus3_axiomatic = exactly 4 project axioms + 3 kernel, no sorryAx
-        #   exists_lerayHopf_r3_axiomatic     = exactly 5 project axioms + 3 kernel, no sorryAx
-        #   lower_bound_from_inverse_square_lifespan = kernel axioms only, no project, no sorryAx
-        #   localCompactness_R3_of_ballCompact       = kernel axioms only, no project, no sorryAx
-        # Catches transitive leaks that the static pre-filter cannot.
+      - name: Guardrail — axiom live pin
         run: bash scripts/check-axioms-live.sh
