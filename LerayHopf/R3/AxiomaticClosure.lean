@@ -624,6 +624,16 @@ structure LerayHopfSolutionFull_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊
     (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF_R3 (u t : L2VF_R3)) ∧
     IntervalIntegrable (fun s => viscousFormSq_R3 ν (u s : L2VF_R3))
       MeasureTheory.volume 0 T
+  /-- **Time-measurability (proof-carry):** the solution curve `t ↦ (u t : L2VF_R3)` is
+  `AEStronglyMeasurable` for the Lebesgue measure restricted to `[0, T]`.  This is the
+  Bochner-measurability half of the textbook Leray–Hopf class `u ∈ L∞(0,T;H) ∩ L²(0,T;V)`;
+  without it a non-measurable curve could satisfy `weak_eq` vacuously (the `WeakFormNS`
+  interval integral collapses to junk-`0` off the measurable class).  It is inherited from
+  the Aubin–Lions limit `AubinLionsPackage_R3.u_aestronglyMeasurable` through the
+  a.e.-link (`u t = alPkg.u t` a.e. on `[0, T]`) of the good representative. -/
+  u_aestronglyMeasurable :
+    AEStronglyMeasurable (fun t => (u t : L2VF_R3))
+      (MeasureTheory.volume.restrict (Set.Icc 0 T))
 
 /-- The **full Galerkin compactness package** on ℝ³, carrying genuine proof fields.
 
@@ -656,6 +666,12 @@ structure GalerkinCompactnessPackageFull_R3 (𝔊 : R3GalerkinScheme) (F : R3NSF
     (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF_R3 (limit t : L2VF_R3)) ∧
     IntervalIntegrable (fun s => viscousFormSq_R3 ν (limit s : L2VF_R3))
       MeasureTheory.volume 0 T
+  /-- **Time-measurability (proof-carry):** the limit curve `t ↦ (limit t : L2VF_R3)` is
+  `AEStronglyMeasurable` for the Lebesgue measure restricted to `[0, T]`, inherited from
+  `AubinLionsPackage_R3.u_aestronglyMeasurable` through the good-representative a.e.-link. -/
+  u_aestronglyMeasurable_limit :
+    AEStronglyMeasurable (fun t => (limit t : L2VF_R3))
+      (MeasureTheory.volume.restrict (Set.Icc 0 T))
 
 /-! ### Assembly theorems
 
@@ -678,7 +694,8 @@ theorem exists_lerayHopf_from_package_full_R3 (𝔊 : R3GalerkinScheme) (F : R3N
        weak_eq := pkg.weak_eq_limit
        energy_ineq := pkg.energy_ineq_limit
        initial_trace := pkg.initial_trace_limit
-       energy_class := pkg.energy_class_limit }⟩
+       energy_class := pkg.energy_class_limit
+       u_aestronglyMeasurable := pkg.u_aestronglyMeasurable_limit }⟩
 
 /-! **Main existence theorem on ℝ³ (axiomatic) — RELOCATED (issue #10).**
 
