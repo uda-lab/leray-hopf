@@ -3,11 +3,11 @@
 > **Historical snapshot.** This report describes the original autonomous run (T³, branch
 > `autorun/leray-hopf-torus3`) and is NOT updated to track the frontier. For the *current*
 > axiom frontier and status see [`STATUS.md`](STATUS.md), the repo [`README`](../README.md),
-> and the canonical live pin `scripts/check-axioms-live.sh`. As of 2026-07-04 the ℝ³ capstone
-> rests on **1 project axiom** (`galerkin_limit_passage_R3`;
-> `galerkin_spacetime_precompact_R3` discharged axiom → theorem by issue #46 PR-4, File E
-> `LerayHopf/R3/SpacetimePrecompact.lean`) and the 𝕋³ capstone rests on **1 project axiom**
-> (`aubin_lions`; `galerkin_limit_passage` removed by issue #25/PR #75).
+> and the canonical live pin `scripts/check-axioms-live.sh`. As of 2026-07-05 BOTH capstones
+> are **KERNEL-ONLY (0 project axioms)**:
+> ℝ³ — `galerkin_limit_passage_R3` PROVED as a theorem (issue #4 PR-6, `LimitPassage.lean`);
+> 𝕋³ — `aubin_lions` proved (issue #23, PR #89, `TorusAubinLionsAssembly.lean`).
+> `#print axioms` for both = `[propext, Classical.choice, Quot.sound]`.
 
 Leray–Hopf weak existence on the real 3-torus, built bottom-up on mathlib.
 Branch `autorun/leray-hopf-torus3`, 10 milestone commits on top of `9232c05`.

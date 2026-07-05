@@ -37,9 +37,12 @@ time content 1-for-1 for the single strictly-thinner UNCONDITIONAL
 into the operator-gap form `r3ConvectionGapOp_exists` + the proved theorem `r3_NSForms_exists`
 via `R3NSForms_of_gap`), and issue #56 (which proved `r3ConvectionGapOp_exists` sorry-free as
 `r3ConvectionGapOp_holds` via the determined-form construction in `ConvectionExtension.lean`),
-the capstone rests on TWO project axioms: `galerkin_limit_passage_R3` and
-`galerkin_spacetime_precompact_R3`.
+the capstone is now **KERNEL-ONLY** (0 project axioms, issue #4 PR-6): `galerkin_limit_passage_R3` and
+`galerkin_spacetime_precompact_R3` are both discharged.
 `r3ConvectionGapOp_exists` is NO LONGER among them — PROVED (issue #56) as `r3ConvectionGapOp_holds`.
+`galerkin_spacetime_precompact_R3` is NO LONGER among them — PROVED (issue #4 PR-4) in `ArzelaAscoliTime.lean`.
+`galerkin_limit_passage_R3` is NO LONGER among them — PROVED (issue #4 PR-6) as a theorem in `LimitPassage.lean`.
+`#print axioms exists_lerayHopf_r3_axiomatic` = `[propext, Classical.choice, Quot.sound]`.
 
 ## Declarations added
 
@@ -88,20 +91,21 @@ The witness scheme is the CONCRETE `schemeOfBasis B`, with `B` drawn from
 `nonempty_schwartzGalerkinBasis` (NOT from `r3GalerkinScheme_exists`, which would discard the
 basis via `Nonempty.elim` and reintroduce the need for the per-scheme ODE axiom).
 
-The name `_axiomatic` advertises that this result depends on the TWO remaining project axioms
-(`galerkin_limit_passage_R3`, `galerkin_spacetime_precompact_R3`).
-`galerkin_ode_solution_R3` is NO LONGER among them — discharged here (issue #10).
-`aubin_lions_R3` is NO LONGER among them — removed (issue #15): its spatial half PROVED, its time
-content swapped 1-for-1 for the single strictly-thinner UNCONDITIONAL `galerkinSpaceTimeExtraction_R3`
-(its modulus absorbed here; the redundant prior-revision `timeCompactnessInput_R3` axiom is dropped).
-`r3GalerkinScheme_exists` was discharged earlier (issue #21, `curlSchwartzDense_holds`);
-`spatial_compactness_R3` earlier still (issue #2, FK chain).
-`r3_NSForms_exist` is NO LONGER among them — replaced (issue #48, reorganization):
-  the named axiom was replaced by `r3ConvectionGapOp_exists` (operator core, in `ConvectionForm.lean`)
-  and the proved theorem `r3_NSForms_exists` (same conclusion, proved via `R3NSForms_of_gap`).
-`r3ConvectionGapOp_exists` is NO LONGER among them — PROVED (issue #56) sorry-free as the
-  theorem `r3ConvectionGapOp_holds` in `ConvectionExtension.lean` (determined-form construction);
-  the operator core is now entirely axiom-free.  Net project axioms: 2. -/
+The name `_axiomatic` is a legacy suffix; as of issue #4 PR-6, this result depends on **ZERO project
+axioms** — it is KERNEL-ONLY (`#print axioms` = `[propext, Classical.choice, Quot.sound]`).
+Former project axioms discharged:
+- `galerkin_ode_solution_R3` — here (issue #10)
+- `aubin_lions_R3` — removed (issue #15): spatial half PROVED, time content swapped for the strictly
+  thinner UNCONDITIONAL `galerkinSpaceTimeExtraction_R3` (now itself discharged below)
+- `r3GalerkinScheme_exists` — discharged (issue #21, `curlSchwartzDense_holds`); `curlSchwartzDense_holds`
+  itself discharged (issue #3/#21, Fourier curl-density route)
+- `spatial_compactness_R3` — discharged (issue #2, FK chain)
+- `r3_NSForms_exist` / `r3ConvectionGapOp_exists` — PROVED (issue #56) sorry-free as the theorem
+  `r3ConvectionGapOp_holds` in `ConvectionExtension.lean` (determined-form construction)
+- `galerkinSpaceTimeExtraction_R3` / `galerkin_spacetime_precompact_R3` — PROVED (issue #4 PR-4)
+  in `ArzelaAscoliTime.lean` via `galerkin_spacetime_precompact_of_goodSampling`
+- `galerkin_limit_passage_R3` — PROVED (issue #4 PR-6) as a theorem in `LimitPassage.lean`
+Net project axioms: **0**. -/
 theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),

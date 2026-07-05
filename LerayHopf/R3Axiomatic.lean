@@ -8,10 +8,10 @@ existence argument.  The capstone declaration is:
 
     `LerayHopf.exists_lerayHopf_r3_axiomatic`
 
-which depends on TWO project axioms:
-- `galerkin_spacetime_precompact_R3` (issue #44): refine-capable LOCAL Aubin–Lions–Simon
-  spacetime precompactness in L²(0,T;L²(B_k)); no tightness on ℝ³ required
-- `galerkin_limit_passage_R3` (AX-3): limit passage to weak NS solution on ℝ³
+which depends on **ZERO project axioms** — KERNEL-ONLY (`#print axioms` = `[propext, Classical.choice, Quot.sound]`).
+Former project axioms now all discharged:
+- `galerkin_spacetime_precompact_R3` (issue #46 PR-4): PROVED as theorem in `ArzelaAscoliTime.lean`
+- `galerkin_limit_passage_R3` (issue #4 PR-6): PROVED as theorem in `LimitPassage.lean`
 
 `r3ConvectionGapOp_exists` (former AX-4, issue #48) is NO LONGER an axiom — it is PROVED
 sorry-free as the theorem `r3ConvectionGapOp_holds` in `ConvectionExtension.lean` (issue #56,
