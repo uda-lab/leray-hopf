@@ -3,6 +3,7 @@ import LerayHopf.R3.CurlDensityH1         -- curl_approx_H1 (issue #4 PR-2, H¹ 
 import LerayHopf.R3.GalerkinODESolve
 import LerayHopf.R3.AubinLionsAssembly   -- build_galerkin_package_R3_of_galSeq (relocated, issue #15)
 import LerayHopf.R3.ConvectionExtension    -- r3_NSForms_exists (proved theorem, issue #56 rewire)
+import LerayHopf.R3.GalerkinBasisH1       -- nonempty_schwartzGalerkinBasis_H1 (issue #4 PR-3)
 
 /-!
 # LerayHopf.R3.GalerkinODECapstone — discharge `galerkin_ode_solution_R3` (issue #10)
@@ -68,11 +69,12 @@ axiom-free `galSeq_R3_of_basis` into the axiom-free core builder
 `build_galerkin_package_R3_of_galSeq` (AX-2 → AX-3).  Carries NO dependency on
 `galerkin_ode_solution_R3`. -/
 noncomputable def build_galerkin_package_R3_of_basis (B : SchwartzGalerkinBasis)
+    (htest : R3TestApproxH1 (schemeOfBasis B))
     (F : R3NSForms (schemeOfBasis B)) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3) :
     GalerkinCompactnessPackageFull_R3 (schemeOfBasis B) F ν T u₀ :=
   build_galerkin_package_R3_of_galSeq (schemeOfBasis B) F ν hν T hT u₀
-    (galSeq_R3_of_basis B F ν hν u₀)
+    (galSeq_R3_of_basis B F ν hν u₀) htest
 
 /-- **Main existence theorem on ℝ³ (axiomatic).**  Relocated from
 `LerayHopf/R3/SchwartzDivFreeBasis.lean` (issue #10) so that the per-`n` Galerkin sequence is
@@ -104,9 +106,9 @@ theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < 
     (T : ℝ) (hT : 0 < T) :
     ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),
     Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀) := by
-  obtain ⟨B⟩ := nonempty_schwartzGalerkinBasis
+  obtain ⟨⟨B, htest⟩⟩ := nonempty_schwartzGalerkinBasis_H1
   obtain ⟨F⟩ := r3_NSForms_exists (schemeOfBasis B)
   exact ⟨schemeOfBasis B, F, exists_lerayHopf_from_package_full_R3 (schemeOfBasis B) F ν T u₀
-    (build_galerkin_package_R3_of_basis B F ν hν T hT u₀)⟩
+    (build_galerkin_package_R3_of_basis B htest F ν hν T hT u₀)⟩
 
 end LerayHopf

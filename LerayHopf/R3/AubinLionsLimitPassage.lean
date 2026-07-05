@@ -550,7 +550,7 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
 /-- The viscous-form curve `s ↦ viscousFormSq_R3 1 (gs.u s)` is continuous on `Ici 0`
 (`= ∑_j ‖weightedFourierComponent (u s) j‖²`, a sum of norm² of the continuous weighted-Fourier
 curves — the `viscous_curve_continuous` field). -/
-private theorem viscousFormSq_curve_continuousOn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+theorem viscousFormSq_curve_continuousOn (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ) (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
     ContinuousOn (fun s => viscousFormSq_R3 1 (gs.u s : L2VF_R3)) (Set.Ici (0 : ℝ)) := by
   have heq : ∀ s, viscousFormSq_R3 1 (gs.u s : L2VF_R3)
@@ -1237,7 +1237,7 @@ weakly lower-semicontinuous, under strong-L². The chain:
 `ν`-weighted bound, so the `memH1` conjunct genuinely fails for `ν ≤ 0`. The *integrated* bound
 (`∫₀ᵀ viscous(u) ≤ ½‖u₀‖²`) is assembled from this via Fatou-in-time + `reg_bound` in
 `viscous_lsc_under_strongL2`. Temam III.3 / Lemarié-Rieusset §6. -/
-private theorem viscous_pointwise_lsc (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+theorem viscous_pointwise_lsc (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν T : ℝ) (hν : 0 < ν) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
     (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
