@@ -84,17 +84,26 @@ noncomputable def build_galerkin_package_of_galSeq (F : Torus3NSForms) (ν : ℝ
   -- with the energy-class hypothesis supplied by `torus_energyClass_of_aubinLions`.
   -- The goal is a `Type` (a structure), so the existential is unpacked with `Exists.choose`
   -- rather than `obtain` (which only eliminates into `Prop`).  The a.e.-link conjunct
-  -- (`hspec.1`) is intentionally discarded.
+  -- (`hspec.1`: `hex.choose t = alPkg.u t` a.e. on `[0,T]`) is RETAINED to transfer
+  -- time-measurability from the Aubin–Lions limit to the good representative.
   have hex := torus_galerkin_limit_passage_of_energyClass F ν hν T hT u₀ galSeq alPkg
                 (torus_energyClass_of_aubinLions F ν hν T hT u₀ galSeq alPkg)
   have hspec := hex.choose_spec
+  -- Time-measurability of the good representative, inherited from `alPkg.u_aestronglyMeasurable`
+  -- through the a.e.-link (coercion-congr on `L2Sigma → L2VF`).
+  have hmeas : MeasureTheory.AEStronglyMeasurable (fun t => (hex.choose t : L2VF))
+      (MeasureTheory.volume.restrict (Set.Icc 0 T)) := by
+    refine alPkg.u_aestronglyMeasurable.congr ?_
+    filter_upwards [hspec.1] with t ht
+    exact congrArg _ ht.symm
   -- Step 3: pack into the proof-carrying structure.
   exact
     { limit := hex.choose
       weak_eq_limit := hspec.2.1
       energy_ineq_limit := hspec.2.2.1
       initial_trace_limit := hspec.2.2.2.1
-      energy_class_limit := hspec.2.2.2.2 }
+      energy_class_limit := hspec.2.2.2.2
+      u_aestronglyMeasurable_limit := hmeas }
 
 /-- **Full Galerkin compactness package (issue #24).**  Assembles the proof-carrying
 `GalerkinCompactnessPackageFull` by feeding the axiom-free `galSeq_of_torus` into the axiom-free

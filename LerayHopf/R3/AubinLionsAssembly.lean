@@ -82,15 +82,24 @@ noncomputable def build_galerkin_package_R3_of_galSeq (𝔊 : R3GalerkinScheme) 
   -- Step 2 (AX-3 → proved theorem): limit passage to the good representative.
   -- The goal is a `Type` (a structure), so the existential is unpacked with
   -- `Exists.choose` rather than `obtain` (which only eliminates into `Prop`).
-  -- The a.e.-link conjunct (`hspec.1`) is intentionally discarded.
+  -- The a.e.-link conjunct (`hspec.1`: `hex.choose t = alPkg.u t` a.e. on `[0,T]`) is
+  -- RETAINED to transfer time-measurability from the Aubin–Lions limit to the representative.
   have hex := galerkin_limit_passage_R3 𝔊 F ν hν T hT u₀ galSeq alPkg htest
   have hspec := hex.choose_spec
+  -- Time-measurability of the good representative, inherited from `alPkg.u_aestronglyMeasurable`
+  -- through the a.e.-link (coercion-congr on `L2Sigma_R3 → L2VF_R3`, mirroring `LimitPassage`).
+  have hmeas : AEStronglyMeasurable (fun t => (hex.choose t : L2VF_R3))
+      (MeasureTheory.volume.restrict (Set.Icc 0 T)) := by
+    refine alPkg.u_aestronglyMeasurable.congr ?_
+    filter_upwards [hspec.1] with t ht
+    exact congrArg _ ht.symm
   -- Step 3: pack into the proof-carrying structure.
   exact
     { limit := hex.choose
       weak_eq_limit := hspec.2.1
       energy_ineq_limit := hspec.2.2.1
       initial_trace_limit := hspec.2.2.2.1
-      energy_class_limit := hspec.2.2.2.2 }
+      energy_class_limit := hspec.2.2.2.2
+      u_aestronglyMeasurable_limit := hmeas }
 
 end LerayHopf
