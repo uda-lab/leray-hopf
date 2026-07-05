@@ -30,6 +30,8 @@ jobs:
         run: bash scripts/check-no-axiom.sh
       - name: Guardrail — no overclaiming theorem names
         run: bash scripts/check-theorem-names.sh
+      - name: Guardrail — axiom-leak static pre-filter
+        run: bash scripts/check-axioms.sh
 
   # Full build + axiom pins — MANUAL ONLY (workflow_dispatch).
   full-build:
