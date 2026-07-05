@@ -266,8 +266,10 @@ def R3TestApproxH1 (𝔊 : R3GalerkinScheme) : Prop :=
 (the viscous form is the concrete `stokesTestPairing_R3`, NOT axiomatized).
 
 Mirrors `Torus3NSForms` with `L2Sigma_R3` in place of `L2Sigma`.  The `𝔊 : R3GalerkinScheme`
-parameter is threaded so that `b_galerkin` can pin `b` to `convIntegralSchwartz` via the
-Galerkin range's Schwartz structure.
+parameter is threaded so that the evolution `r3Evolution 𝔊 F` can reference the Galerkin
+projection `𝔊.P n`.  The pin `b_galerkin` uses Schwartz component witnesses
+(`L2VF_projComponent_R3 j`) directly — independent of `𝔊` — to pin `b` to
+`convIntegralSchwartz` on Schwartz div-free fields.
 
 **Non-vacuity:** `b_galerkin` pins `b` to `convIntegralSchwartz` (the genuine
 `∑_{i,a} ∫ u_a (∂_a v_i) w_i` convection integral) on Schwartz div-free fields.

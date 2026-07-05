@@ -29,9 +29,9 @@ by routing the capstone's per-`n` Galerkin sequence through the axiom-free
 
 `r3GalerkinScheme_exists` (former AX-G) is NO LONGER an axiom — it is a proved `theorem`
 (`LerayHopf/R3/SchwartzDivFreeBasis.lean`), assembled from the constructive witness chain and
-the single marked density axiom `curlSchwartzDense_holds` (issue #21).  Importing
-`GalerkinODECapstone` (which transitively imports `SchwartzDivFreeBasis` and `AxiomaticClosure`)
-re-exports the discharged `r3GalerkinScheme_exists` and the relocated capstone.
+the proved theorem `curlSchwartzDense_holds` (issue #3 Fourier route, issue #21 wiring).
+Importing `GalerkinODECapstone` (which transitively imports `SchwartzDivFreeBasis` and
+`AxiomaticClosure`) re-exports the discharged `r3GalerkinScheme_exists` and the relocated capstone.
 
 `spatial_compactness_R3` (AX-SC): LOCAL spatial compactness (local Rellich
 H¹(B_R)↪↪L²(B_R)) is NO LONGER an axiom — it was the former sixth project axiom and is
@@ -41,14 +41,14 @@ PR #35 / issue #2).
 `aubin_lions_R3` (former AX-3): the full Aubin–Lions package axiom is NO LONGER an axiom —
 removed (issue #15).  Its spatial half is genuinely PROVED axiom-free (the
 `steklovAvg_spatial_extraction` chain over the FK-derived `LocalRellichInput`), and its time
-content is SWAPPED 1-for-1 for the single strictly-thinner UNCONDITIONAL axiom
-`galerkinSpaceTimeExtraction_R3` (which absorbs the time-equicontinuity modulus, so no separate
-modulus axiom is needed; the redundant prior-revision `timeCompactnessInput_R3` axiom is dropped).
-The package is assembled by the proved
-constructor
+content was initially replaced by the proved theorem `galerkinSpaceTimeExtraction_R3`
+(subsequently PROVED via `u_lim_aestronglyMeasurable` in `ArzelaAscoliTime.lean`, issue #44;
+the redundant prior-revision `timeCompactnessInput_R3` is dropped).
+The package is assembled by the proved constructor
 `aubinLionsPackage_R3_of_timeCompactness` (`LerayHopf/R3/AubinLionsLimitPassage.lean`), wired
 through the relocated builder in `LerayHopf/R3/AubinLionsAssembly.lean`.
 
-Import this module ONLY when you need the axiom-dependent results.
-For axiom-free work, use `import LerayHopf.Core`.
+This module is KERNEL-ONLY (zero project axioms).  Import it whenever the full R³ capstone
+chain (`exists_lerayHopf_r3_axiomatic`) is needed; `import LerayHopf.Core` suffices for work
+that does not require the R³ capstone declarations.
 -/

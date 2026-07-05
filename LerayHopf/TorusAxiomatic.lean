@@ -10,9 +10,12 @@ existence argument.  The capstone declaration is:
 
     `LerayHopf.exists_lerayHopf_torus3_axiomatic`
 
-(relocated to `LerayHopf/TorusGalerkinODECapstone.lean` in issue #24), which depends on one
-project axiom:
-- (all torus project axioms REMOVED — `aubin_lions` discharged by `torusAubinLionsPackage_of_galSeq`, issue #23)
+(relocated to `LerayHopf/TorusGalerkinODECapstone.lean` in issue #24), which depends on **zero
+project axioms** — KERNEL-ONLY.  All former project axioms removed:
+- `galerkin_ode_solution` removed (issue #24)
+- `torusConvectionGap_exists` removed (issue #53/PR #62)
+- `galerkin_limit_passage` removed (issue #25/PR #75)
+- `aubin_lions` removed (issue #23); proved as `torusAubinLionsPackage_of_galSeq`
 
 The former `galerkin_ode_solution` axiom (Picard–Lindelöf on finite-dim Vₙ) has been **removed**
 (issue #24): the finite-dim torus Galerkin ODE is now solved unconditionally by the proved

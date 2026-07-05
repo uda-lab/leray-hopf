@@ -51,7 +51,7 @@ requires discharging every pillar below — the full missing PDE sub-chapter of 
 | ~~`aubin_lions_R3`~~ **REMOVED (#15)** → split → `galerkinSpaceTimeExtraction_R3` → **PROVED (#44)** | **P-δ** isolates to `galerkin_spacetime_precompact_R3` | P2 partial (spatial reuse + b-passage) |
 | ~~`galerkin_weakLimit_R3`~~ **REMOVED (#47)** | strong ball-exhaustion + Mazur weak-closedness — PROVED | — |
 | ~~`galerkin_spacetime_precompact_R3`~~ **REMOVED (#46 PR-4, 2026-07-04)** | **P-δ** LOCAL Aubin–Lions–Simon spacetime precompactness — DONE (step-curve route, File E `SpacetimePrecompact.lean`) | issue #46 PRs #74/#81/#86/PR-4, wired in |
-| `galerkin_limit_passage_R3` (**live**) | **P-δ** (+ weak-time-deriv good representative; b-passage DONE) | P2 partial |
+| ~~`galerkin_limit_passage_R3`~~ **PROVED (#4 PR-6, 2026-07-05)** | **P-δ** complete — `LimitPassage.lean`; Option-A H¹-curl-approx route (`R3TestApproxH1`); R3 **1 → 0** | — |
 
 ## The genuine missing-mathlib pillars (the real work units)
 
@@ -113,22 +113,22 @@ read-only base is `FourierL2`. The remaining capstone work is sequential.
   construction (`r3ConvectionGapOp_holds`); `ConvectionExtension.lean`; R3 3→2.
 - **C4a: remove `galerkin_spacetime_precompact_R3`** — **DONE (#46 PR-4, 2026-07-04)** →
   step-curve LOCAL Aubin–Lions–Simon assembly (File E `SpacetimePrecompact.lean`); R3 2→1.
-- **C4b (remaining): remove `galerkin_limit_passage_R3`** once the limit-passage
-  infrastructure (issue #69 / Stream D) lands → 1→0 (ℝ³ unconditional).
+- **C4b: remove `galerkin_limit_passage_R3`** — **DONE (issue #4 PR-6, 2026-07-05)** →
+  Option-A H¹-curl-approx route (`R3TestApproxH1`, `LimitPassage.lean`); R3 **1 → 0**;
+  ℝ³ now **unconditional** (kernel-only).  Stream D was not required — the limit passage
+  was closed via the H¹-curl approximation route independently of Bochner/Simon.
 Each Ci edits the core and re-pins `#print axioms`; strictly sequential among themselves, but
 interleavable with ongoing streams.
 
-## Honest horizon (no over-promising)
+## Honest horizon (achieved — both capstones kernel-only)
 
-- **Already achieved:** Streams A and B + C0/track3 + #47 + C3 + the #46 spacetime-precompactness
-  campaign completed → **6 → 1 axiom** (ℝ³); on T³, #24 + #53 + #25 + #23 → **4 → 0 axioms**
-  (T³ **unconditional**, 2026-07-04).
-- **The remaining endpoint:**
-  - **ℝ³ (1 axiom):** `galerkin_limit_passage_R3` still needs the Bochner/Simon (Stream D)
-    route — the issue #46 campaign is COMPLETE (`galerkin_spacetime_precompact_R3` discharged
-    2026-07-04, PRs #74/#81/#86 + PR-4) and #69 (open/draft, pin-neutral) carries the
-    `galerkin_limit_passage_R3` work.
-  - **T³ (0 axioms): DONE.** `aubin_lions` removed (issue #23, PR #89, 2026-07-04) via
-    the mode-wise spectral route; `exists_lerayHopf_torus3_axiomatic` is unconditional.
-- Full axiom-free ℝ³ completion ⟺ Stream D done = the multi-person-year mathlib PDE sub-chapter;
-  realistic dent of a sustained push: ℝ³ **1 → 0**.
+- **Achieved:** Streams A + B + C0/track3 + #47 + C3 + #46 spacetime-precompactness + C4b →
+  **6 → 0 axioms** (ℝ³ **unconditional**, 2026-07-05); on T³, #24 + #53 + #25 + #23 →
+  **4 → 0 axioms** (T³ **unconditional**, 2026-07-04).
+- **ℝ³ (0 axioms): DONE.** `galerkin_limit_passage_R3` proved (issue #4 PR-6, 2026-07-05)
+  via the Option-A H¹-curl-approx route (`R3TestApproxH1`), NOT via Stream D / Bochner/Simon.
+  `exists_lerayHopf_r3_axiomatic` is unconditional (kernel-only).
+- **T³ (0 axioms): DONE.** `aubin_lions` removed (issue #23, PR #89, 2026-07-04) via
+  the mode-wise spectral route; `exists_lerayHopf_torus3_axiomatic` is unconditional.
+- **Full kernel-only completion: DONE** (both capstones, 2026-07-05).  `bash scripts/check-axioms-live.sh`
+  is the canonical live pin.

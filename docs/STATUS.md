@@ -24,10 +24,12 @@ plan to discharge it. Higher-level scope/posture: the approved plan and `docs/mi
 
 ## Goal (authoritative)
 
-Build the Leray–Hopf weak-existence formalization on the **real 3-torus**, bottom-up on
-mathlib, as far as possible toward an **unconditional T³ existence theorem**
-(`u₀ ∈ L²_σ(𝕋³) ⇒ ∃ Leray–Hopf weak solution`). Reduce anything not closable to a
-**documented marked-`sorry` frontier** with exact statements. R³ is out of scope.
+Build the Leray–Hopf weak-existence formalization on the **real 3-torus and ℝ³**, bottom-up
+on mathlib toward an **unconditional Leray–Hopf existence theorem**
+(`u₀ ∈ L²_σ ⇒ ∃ Leray–Hopf weak solution`). **Both capstones are UNCONDITIONAL (kernel-only):**
+`exists_lerayHopf_torus3_axiomatic` (T³) and `exists_lerayHopf_r3_axiomatic` (ℝ³) each have
+`#print axioms` = `[propext, Classical.choice, Quot.sound]` — zero project axioms.
+Residual marked `sorry` outside both capstone cones is documented below.
 
 Roadmap: M1 spine ✅ → M2 real domain & function spaces → M3 Galerkin `Pₙ` + Leray `Π_div`
 → M4 finite-dim Galerkin ODE + energy identity → M5–7 compactness + Aubin–Lions on T³
@@ -109,7 +111,7 @@ discharged into the Aubin–Lions axiom as an explicit hypothesis. Every axiom p
 only — **zero project axioms, no `sorryAx`**.
 Renamed from `exists_lerayHopf_torus3` in Wave-0 (Issue #1 item 3).
 
-### ℝ³ (whole-space) — the 1 axiom (`LerayHopf/R3/GalerkinODECapstone.lean`) (now 1 — see top banner)
+### ℝ³ (whole-space) — 0 project axioms — KERNEL-ONLY (`LerayHopf/R3/GalerkinODECapstone.lean`)
 
 (Was 6; `spatial_compactness_R3` removed in PR #35 / issue #2 — now a proved theorem, see
 the row marked **REMOVED** below.)
@@ -123,7 +125,7 @@ tests; closed div-free subspace), `lerayProjection_R3`, `memH1VF_R3` (via `MemSo
 
 | Axiom | Role | T³ analogue | Why ℝ³ needs it |
 |---|---|---|---|
-| `galerkin_limit_passage_R3` | existential good representative (a.e.-linked), weak form + energy-ineq + trace + energy-class | T³ `galerkin_limit_passage` | Temam III.3; local convergence + Schwartz-test decay |
+| ~~`galerkin_limit_passage_R3`~~ | **PROVED (issue #4 PR-6, 2026-07-05)** in `LimitPassage.lean` — existential good representative + weak form + energy-ineq + trace + energy-class | T³ `galerkin_limit_passage` | Temam III.3; local convergence + Schwartz-test decay |
 
 Removed from axiom set (now proved theorems):
 - ~~`galerkin_spacetime_precompact_R3`~~ **REMOVED (#46 PR-4, 2026-07-04)** — axiom → theorem
@@ -160,36 +162,42 @@ Wave-0; Issue #1 item 3.) Marked (`ALLOW_SORRY`) `sorry` declarations currently 
 - `Statement.lean:exists_lerayHopf_torus3_statement` — the deliberate scaffold target (not
   frontier debt; superseded by the proved `exists_lerayHopf_torus3_axiomatic`; kept by the
   no-rename rule).
-- **P2 (`LerayHopf/R3/AubinLionsLimitPassage.lean`), two intentional open frontier sorries:**
-  - `kineticEnergy_lsc_bound` (E1) — a.e.-in-time kinetic-energy bound; blocked because
-    `AubinLionsPackage_R3` carries no time-measurability for its limit `u` (needs vector-valued
-    Bochner-time / measurable-representative theory, absent in mathlib). `#print axioms` shows
-    `sorryAx` for this declaration (intentional, marked).
-  - `aubinLionsPackage_R3_of_timeCompactness` (C2) — the full Aubin–Lions assembly; the Steklov
-    interval-averaging route is viable (Codex-confirmed, not unsound) but the δ-mesh
-    diagonalization + H¹-Jensen on the average + Bochner-average measurability + boundary strip
-    remain open (mathlib lacks `W^{1,p}(0,T;X)` / Simon's lemma). `#print axioms` shows `sorryAx`
-    (intentional, marked). The Steklov building blocks + S1 + N1 in the same file are proved
-    axiom-clean.
+**`kineticEnergy_lsc_bound` (E1) and `aubinLionsPackage_R3_of_timeCompactness` (C2) are PROVED
+sorry-free** as of issue #31 and issue #15 respectively.  `AubinLionsLimitPassage.lean` carries
+zero `sorry` lines.  Their former open status is historical.
 
-**`exists_lerayHopf_r3_axiomatic` and `exists_lerayHopf_torus3_axiomatic` are unaffected by the
-P2 sorries** — neither imports `AubinLionsLimitPassage`; their `#print axioms` show only the
-project axioms + the 3 kernel axioms, no `sorryAx`. No new project axioms were introduced by
-R3-d/P5/P3/P2.
+Actual residual marked `sorry` (7 total, all outside both capstone cones):
+- `LerayHopf/Statement.lean:37` — deliberate scaffold target
+  (`exists_lerayHopf_torus3_statement`); kept by the no-rename rule, superseded by the proved
+  `exists_lerayHopf_torus3_axiomatic`.
+- `LerayHopf/Bochner/TimeSobolev.lean:544` — D1 Lions–Magenes good-representative embedding
+  (`w1pTime_continuous_in_H`); declared months-class residual.
+- `LerayHopf/Bochner/TimeSobolevAC.lean:350` — Bochner–Fubini distributional FTC for the
+  interval primitive `w(t)=∫₀ᵗ v`; isolated single residual of R1.
+- `LerayHopf/Bochner/TimeMollification.lean:196` — S1 time-mollification with linked
+  L²(V)/L²(V') convergence; interval Steklov assembly wall.
+- `LerayHopf/Bochner/TimeMollifierInterval.lean:297` — Fubini side-condition (compact-box L¹
+  bound); not soundness-critical; the mathematical commutation identity is proved unconditionally.
+- `LerayHopf/Bochner/TimeMollifierInterval.lean:466` — B1 even-reflection no-Dirac identity;
+  blocked on Bochner 1D-Sobolev FTC/trace pillar.
+- `LerayHopf/Bochner/TimeMollifierInterval.lean:601` — B assembly; transitively blocked on B1.
 
-**The genuine analytic frontier (NOT coded — documented here, not faked as sorry/axiom).**
-Reaching unconditional T³ existence requires the following, each blocked by *structural mathlib
-absences* (not hard-but-routine proofs). They are demarcated as future work, with the abstract
-interfaces (`AbstractEnergyLaw`, `GalerkinCompactnessPackage`) already in place to receive them:
+**Both capstones are unaffected by all residual sorries** — the kernel-only `#print axioms` pin
+(`[propext, Classical.choice, Quot.sound]`, no `sorryAx`) is the authoritative justification,
+not import-level reachability.
 
-| Frontier item | Precise content | Blocker |
+**Former analytic frontier (HISTORICAL — both capstones now UNCONDITIONAL, 2026-07-05).**
+These were the items that required structural mathlib sub-libraries to close the existence
+theorems; all are now resolved.  Retained as a record.
+
+| Frontier item | Precise content | Resolution |
 |---|---|---|
-| Concrete NS convection `b(u,v,w)` | `∫_{𝕋³} ((u·∇)v)·w` on `L²/H¹` torus fields | mathlib has no `(u·∇)v` for `Lp` a.e.-classes; needs torus weak-derivative/Fourier-convection API |
-| Nonlinear cancellation `b(u,u,u)=0` | skew-symmetry for divergence-free `u` | needs torus integration-by-parts; mathlib's divergence theorem is for ℝⁿ boxes only |
-| Galerkin ODE existence | `uₙ` solving the projected ODE via `PicardLindelof` | API exists but gated on the concrete RHS above |
-| ~~Rellich on T³~~ **DONE** | `H¹(𝕋³)`-ball totally bounded in `L²(𝕋³)` (`H1_ball_totallyBounded`), via Fourier-tail decay | ✅ proved axiom-free (M5) — the Aubin–Lions *spatial* linchpin |
-| Aubin–Lions (full, time) | time-equicontinuity + Rellich ⟹ strong `L²(0,T;L²)` compactness | needs Bochner time-derivative bounds + Arzelà–Ascoli plumbing (Rellich half done) |
-| Limit passage | weak-* + strong-L² limits ⟹ weak solution | needs the above + Banach–Alaoglu plumbing |
+| ~~Concrete NS convection `b(u,v,w)`~~ | `∫_{𝕋³} ((u·∇)v)·w` on `L²/H¹` torus fields | **DONE** — `torusConvectionGap_holds` (issue #53/PR #62) |
+| ~~Nonlinear cancellation `b(u,u,u)=0`~~ | skew-symmetry for divergence-free `u` | **DONE** — proved lemma `Torus3NSForms.b_self_zero` |
+| ~~Galerkin ODE existence~~ | `uₙ` solving the projected ODE via `PicardLindelof` | **DONE** — `galerkinSolutionData_torus` (issue #24) + `finDimGlobalODE_exists` (track 3) |
+| ~~Rellich on T³~~ | `H¹(𝕋³)`-ball totally bounded in `L²(𝕋³)` (`H1_ball_totallyBounded`) | **DONE** — proved axiom-free (M5) |
+| ~~Aubin–Lions (full, time)~~ | time-equicontinuity + Rellich ⟹ strong `L²(0,T;L²)` | **DONE** — `torusAubinLionsPackage_of_galSeq` (issue #23, T-AL-6) |
+| ~~Limit passage~~ | weak-* + strong-L² limits ⟹ weak solution | **DONE** — `galerkin_limit_passage_R3` proved (issue #4 PR-6); T³ `torus_galerkin_limit_passage_of_energyClass` (issue #25) |
 
 The **abstract energy law ⟹ energy inequality ⟹ nonincreasing energy** chain is fully proved
 (`AbstractEnergyLaw`); only the *concrete construction supplying* such a law is frontier.

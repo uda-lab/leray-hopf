@@ -2352,10 +2352,9 @@ Passing `n→∞` (linear terms by the weak-L² convergence bridge `inner_tendst
 nonlinear term by `bForm_tendsto_of_strongL2`) and then `N→∞` (Galerkin test density) gives the
 weak form for `alPkg.u` against `ψ ⊗ w`.
 
-ISOLATED ANALYTIC FRONTIER (the residual of this conjunct — see the `ALLOW_SORRY` below).  After
-the structural reduction (time-IBP + dominated convergence in time, both in hand) three atoms
-remain.  Each is PROVABLE on existing repo/Mathlib pieces — none is a strong-compactness wall —
-but each is its own multi-lemma sub-development not yet built:
+PROOF DETAIL (this conjunct is PROVED in `weakFormNS_limit_passage`).  After the structural
+reduction (time-IBP + dominated convergence in time, both in hand) three atoms were identified.
+Each rests on already-proved pieces — none is a strong-compactness wall.  For reference:
 (i) the VISCOUS-form equality passage `B(uₙ t, w) → B(u t, w)`.  `stokesTestPairing_R3` is the
 H¹/Dirichlet pairing `∑ⱼ∫ (2π)²‖ξ‖² Re[𝓕uⱼ·conj 𝓕wⱼ]` (`Regularity.lean:123`), not L²-continuous in
 `u` as written.  PROVABLE route (Plancherel onto the test): `(2π)²‖ξ‖² 𝓕wⱼ = 𝓕((-Δ)wⱼ)` for Schwartz
