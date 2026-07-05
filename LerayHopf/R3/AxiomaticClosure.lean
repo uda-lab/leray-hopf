@@ -19,13 +19,16 @@ The T³ 8-round audit lessons are baked in preemptively.
 
 ## Architecture
 
-Three axioms are added in THIS file.  Three former axioms are NO LONGER assumed here:
-AX-SC (`spatial_compactness_R3`, now a THEOREM via the Fréchet–Kolmogorov chain, issue #2),
-AX-G (`r3GalerkinScheme_exists`, now a discharged THEOREM, issue #21), and AX-1
-(`galerkin_ode_solution_R3`, discharged via the axiom-free `galerkinSolutionData_unconditional`
-over `schemeOfBasis B`, issue #10 — see `LerayHopf/R3/GalerkinODECapstone.lean`).  The single
-extra (vs. T³) that T³ PROVED but ℝ³ cannot supply concretely is now isolated to the thin
-density `curlSchwartzDense_holds` (an axiom in `SchwartzDivFreeBasis.lean`, downstream):
+**ALL axioms are DISCHARGED — R3 capstone is KERNEL-ONLY (0 project axioms).**
+SIX former project axioms are now removed: AX-SC (`spatial_compactness_R3`, THEOREM via the
+Fréchet–Kolmogorov chain, issue #2), AX-G (`r3GalerkinScheme_exists`, THEOREM, issue #21),
+AX-1 (`galerkin_ode_solution_R3`, discharged via the axiom-free `galerkinSolutionData_unconditional`
+over `schemeOfBasis B`, issue #10), AX-4 (`r3ConvectionGapOp_exists`, PROVED sorry-free as
+`r3ConvectionGapOp_holds`, issue #56), AX-2 (`aubin_lions_R3`, built axiom-free in
+`AubinLionsAssembly.lean`, issue #4 PR-6), and AX-3 (`galerkin_limit_passage_R3`, PROVED as a
+theorem in `LimitPassage.lean`, issue #4 PR-6).  The single extra (vs. T³) that T³ PROVED but
+ℝ³ cannot supply concretely was isolated to the thin density `curlSchwartzDense_holds`
+(discharged by the Fourier curl-density route, issue #3 / #21):
 
 - **AX-G `r3GalerkinScheme_exists`** — the approximation-projection family
   (replaces T³'s proved `velocityProjection_n`); DISCHARGED (issue #21) — now a `theorem` in
@@ -36,8 +39,7 @@ The former AX-SC `spatial_compactness_R3` (local Rellich H¹(B_R)↪↪L²(B_R);
 proved `rellich_L2Sigma`; Rellich FAILS globally on ℝ³ but LOCAL convergence on every ball
 is TRUE without tightness) is now PROVED here, not assumed.
 
-The remaining TWO axioms are AX-2 and AX-3 (AX-1 is discharged, issue #10; AX-4 is PROVED,
-issue #56):
+ALL six former axioms are now discharged (AX-1 issue #10; AX-4 issue #56; AX-2 + AX-3 issue #4 PR-6):
 
 - **AX-4 `r3_NSForms_exist` / `r3ConvectionGapOp_exists`** — PROVED (issue #56).  The named
   declaration `r3_NSForms_exist` was replaced (issue #48) by the operator-core declaration
@@ -48,8 +50,11 @@ issue #56):
   itself is still the target type (defined below).  Mirrors torus #22 / #48.
 - **AX-1 `galerkin_ode_solution_R3`** — Galerkin ODE global solution; DISCHARGED (issue #10),
   no longer an axiom — see `LerayHopf/R3/GalerkinODECapstone.lean`.
-- **AX-2 `aubin_lions_R3`** — Aubin–Lions time compactness.
-- **AX-3 `galerkin_limit_passage_R3`** — limit passage to weak NS solution.
+- **AX-2 `aubin_lions_R3`** — Aubin–Lions time compactness; DISCHARGED (issue #4 PR-6),
+  built axiom-free in `AubinLionsAssembly.lean` via `build_galerkin_package_R3_of_galSeq`.
+- **AX-3 `galerkin_limit_passage_R3`** — limit passage to weak NS solution; DISCHARGED (issue #4
+  PR-6), PROVED as a theorem in `LerayHopf/R3/LimitPassage.lean` — ∀t energy inequality + weak NS
+  equation + initial trace + energy class, sorry-free.
 
 `𝔊 : R3GalerkinScheme` is threaded as a parameter throughout (cleaner than
 `.some` noise).

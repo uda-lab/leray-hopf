@@ -6,12 +6,12 @@ debt**, never merged sibling files.
 
 ## Current capstone footprint
 
-`#print axioms exists_lerayHopf_r3_axiomatic` = **1 project axiom + 3 kernel** (no sorryAx).
+`#print axioms exists_lerayHopf_r3_axiomatic` = **3 kernel axioms only** (no project axioms, no sorryAx) — **R³ UNCONDITIONAL**.
 `#print axioms exists_lerayHopf_torus3_axiomatic` = **3 kernel axioms only** (no project axioms, no sorryAx) — **T³ UNCONDITIONAL**.
-Live R3 axiom: `galerkin_limit_passage_R3`.
+Live R3 axiom: none — `galerkin_limit_passage_R3` PROVED (issue #4, PR-6, 2026-07-05).
 Live T³ axiom: none — `aubin_lions` REMOVED (issue #23, PR #89; now the proved def `torusAubinLionsPackage_of_galSeq`).
 
-**Removed so far (R3: original 6 → current 1; T³: original 4 → current 0):**
+**Removed so far (R3: original 6 → current 0; T³: original 4 → current 0):**
 - `spatial_compactness_R3` (#2) — Fréchet–Kolmogorov chain
 - `galerkin_ode_solution_R3` (#10) — finite-dim ODE solver
 - `aubin_lions_R3` → split → time content became `galerkinSpaceTimeExtraction_R3` → PROVED (#15/#44)
@@ -28,6 +28,10 @@ Live T³ axiom: none — `aubin_lions` REMOVED (issue #23, PR #89; now the prove
 - `galerkin_spacetime_precompact_R3` (#46 PR-4, 2026-07-04) — axiom → theorem via the step-curve
   Aubin–Lions–Simon assembly (File E `LerayHopf/R3/SpacetimePrecompact.lean`,
   `galerkin_spacetime_precompact_of_goodSampling`); R3 frontier 2 → 1
+- `galerkin_limit_passage_R3` (#4 PR-6, 2026-07-05) — PROVED as theorem in
+  `LerayHopf/R3/LimitPassage.lean` (Fatou+liminf → ∀t energy ineq; `weakFormNS_limit_passage`
+  → weak NS eq; `strong_trace_of_props_R3` → initial trace); R3 frontier 1 → **0**
+  (R3 now **unconditional**)
 
 The `check-axioms-live.sh` script is the canonical live pin.
 

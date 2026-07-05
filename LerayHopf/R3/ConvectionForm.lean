@@ -1328,7 +1328,8 @@ LONGER declared here as an axiom.
 The theorem `r3_NSForms_exists` (same conclusion `Nonempty (R3NSForms 𝔊)`) is also now
 located in `ConvectionExtension.lean`, where it is proved from `r3ConvectionGapOp_holds`
 (NOT from an axiom) + proved density via `R3NSForms_of_gap`.  Net result: the operator core
-is PROVED; no project axiom remains for the convection operator.  R3 capstone now rests on
-TWO project axioms: `galerkin_limit_passage_R3` and `galerkin_spacetime_precompact_R3`. -/
+is PROVED; no project axiom remains for the convection operator.  R3 capstone is now
+KERNEL-ONLY (0 project axioms): `galerkin_spacetime_precompact_R3` PROVED (issue #46 PR-4) and
+`galerkin_limit_passage_R3` PROVED (issue #4 PR-6, `LimitPassage.lean`). -/
 
 end LerayHopf
