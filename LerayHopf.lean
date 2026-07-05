@@ -119,3 +119,4 @@ import LerayHopf.TorusModeCompactness             -- T-AL-3 (#23): mode-wise ext
 import LerayHopf.TorusModeTail                    -- T-AL-5 (#23): mode-wise tail bounds
 import LerayHopf.TorusAubinLionsAssembly          -- T-AL-6 (#23): aubin_lions replacement assembly
 import LerayHopf.R3.GoodRepresentative            -- issue #4 PR-5: R3 weakly-continuous representative (scaffold)
+import LerayHopf.R3.LimitPassage                  -- issue #4 PR-6: galerkin_limit_passage_R3 PROVED (zero project axioms)

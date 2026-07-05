@@ -79,8 +79,8 @@ excludes the trivial form.
 - `galerkin_ode_solution_R3`         : DISCHARGED (issue #10) — was the AX-1 ODE-existence axiom; now removed, replaced by the axiom-free `galerkinSolutionData_unconditional` over `schemeOfBasis B` (`GalerkinODECapstone.lean`)
 - `spatial_compactness_R3`           : THEOREM (issue #2) — ℝ³ spatial compactness LOCAL (ball-restricted, no tightness); proved via the FK chain, no axiom
 - `AubinLionsPackage_R3`             : structure carrying the compactness subsequence
-- `aubin_lions_R3`                   : axiom — Aubin–Lions with spatial half = `spatial_compactness_R3`
-- `galerkin_limit_passage_R3`        : axiom — limit passage to weak NS solution
+- `aubin_lions_R3`                   : NO LONGER AN AXIOM — Aubin–Lions discharged (issue #4, PR-6): AubinLionsPackage_R3 now built axiom-free via `AubinLionsAssembly.lean`; the old axiom name is gone from the codebase
+- `galerkin_limit_passage_R3`        : NO LONGER AN AXIOM — PROVED THEOREM (issue #4, PR-6, `LimitPassage.lean`): ∀t energy inequality + weak NS solution + initial trace + energy class; project R3 axiom count = 0
 - `LerayHopfSolutionFull_R3`         : proof-carrying Leray–Hopf solution structure
 - `GalerkinCompactnessPackageFull_R3`: proof-carrying Galerkin compactness package
 - `build_galerkin_package_R3_of_galSeq` : assembly (axiom-free core) — chains AX-2 (spatial_compactness_R3) → AX-3 from an explicit Galerkin sequence
@@ -89,15 +89,18 @@ excludes the trivial form.
 
 ## Assumptions
 
-Two axioms remain active in the R3 capstone chain (names below with justifications).  FOUR
-former axioms are now DISCHARGED: AX-SC `spatial_compactness_R3` (issue #2, FK chain — item 4
+**ALL axioms discharged — R3 capstone is KERNEL-ONLY (0 project axioms).**
+`#print axioms exists_lerayHopf_r3_axiomatic` = `[propext, Classical.choice, Quot.sound]`.
+SIX former axioms are now DISCHARGED: AX-SC `spatial_compactness_R3` (issue #2, FK chain — item 4
 below), AX-G `r3GalerkinScheme_exists` (issue #21 — item 1 below), AX-1
 `galerkin_ode_solution_R3` (issue #10 — item 3 below; discharged downstream in
-`GalerkinODECapstone.lean`), and AX-4 `r3ConvectionGapOp_exists` (issue #56 — item 2 below;
-proved sorry-free as `r3ConvectionGapOp_holds` in `ConvectionExtension.lean`).  The former
-fourth project axiom counted in place of AX-G is `curlSchwartzDense_holds` (in
-`SchwartzDivFreeBasis.lean`), the thin density that AX-G was swapped for; it is NOT assumed
-here.
+`GalerkinODECapstone.lean`), AX-4 `r3ConvectionGapOp_exists` (issue #56 — item 2 below;
+proved sorry-free as `r3ConvectionGapOp_holds` in `ConvectionExtension.lean`), AX-2
+`aubin_lions_R3` (issue #4, PR-6 — item 5 below; built axiom-free in `AubinLionsAssembly.lean`),
+and AX-3 `galerkin_limit_passage_R3` (issue #4, PR-6 — item 6 below; proved as a theorem in
+`LimitPassage.lean`).  The former fourth project axiom counted in place of AX-G is
+`curlSchwartzDense_holds` (in `SchwartzDivFreeBasis.lean`), the thin density that AX-G was
+swapped for; it is NOT assumed here.
 
 1. `r3GalerkinScheme_exists` — NO LONGER AN AXIOM (DISCHARGED, issue #21). Existence of a
    Galerkin approximation-projection family on `L²_σ(ℝ³)` with smooth (Schwartz) range.  The
@@ -135,14 +138,18 @@ here.
    frechetKolmogorov_holds` (the sorry-free Fréchet–Kolmogorov chain; `#print axioms`
    shows kernel axioms only). Leray 1934; Lemarié-Rieusset §6.
 
-5. `aubin_lions_R3` — Aubin–Lions time compactness; spatial half supplied as the
-   LOCAL `spatial_compactness_R3` hypothesis (ball-restricted convergence, no tightness).
-   Axiom covers only the Bochner-time half. TRUE; blocked by missing Bochner-Sobolev
-   time-derivative bounds. Temam III.2.1.
+5. `aubin_lions_R3` — NO LONGER AN AXIOM (DISCHARGED, issue #4, PR-6). Aubin–Lions time
+   compactness; spatial half supplied as the LOCAL `spatial_compactness_R3` hypothesis
+   (ball-restricted convergence, no tightness).  The time-compactness half is now built
+   axiom-free in `AubinLionsAssembly.lean` via `build_galerkin_package_R3_of_galSeq` (threaded
+   `htest : R3TestApproxH1 𝔊`).  Temam III.2.1.
 
-6. `galerkin_limit_passage_R3` — limit passage from the strong-L²(0,T) subsequence to a
-   weak NS solution with energy inequality, initial trace, and energy class. TRUE; blocked
-   by the nonlinear limit passage via `b_bound`. Temam III.3.
+6. `galerkin_limit_passage_R3` — NO LONGER AN AXIOM (PROVED THEOREM, issue #4, PR-6).
+   Limit passage from the strong-L²(0,T) subsequence to a weak NS solution with energy
+   inequality, initial trace, and energy class.  Proved sorry-free in
+   `LerayHopf/R3/LimitPassage.lean`: Fatou + liminf superadditivity → ∀t energy ineq;
+   `weakFormNS_limit_passage` + `ae_restrict_iff'` + `intervalIntegral.integral_congr_ae`
+   → weak NS equation; `strong_trace_of_props_R3` → initial trace.  Temam III.3.
 -/
 
 namespace LerayHopf
@@ -332,8 +339,8 @@ LONGER an axiom anywhere in the codebase.
 - The proved theorem `r3_NSForms_exists` (same conclusion `Nonempty (R3NSForms 𝔊)`, no
   statement weakening) is also now in `ConvectionExtension.lean`.
 - `R3NSForms` (the structure) remains intact — it is still the target type.
-- Net project axioms for the R3 capstone: 2 (`galerkin_limit_passage_R3` and
-  `galerkin_spacetime_precompact_R3`). -/
+- Net project axioms for the R3 capstone: **0** — `exists_lerayHopf_r3_axiomatic` is KERNEL-ONLY
+  (`#print axioms` = `[propext, Classical.choice, Quot.sound]`). -/
 
 /-! ### Proved lemma: b u u u = 0 -/
 
@@ -569,46 +576,14 @@ assembly (`build_galerkin_package_R3_of_galSeq`) is RELOCATED to the downstream
 `LerayHopf/R3/AubinLionsAssembly.lean` to stay acyclic (mirroring the #10/#24 capstone
 relocation pattern).  The package structure `AubinLionsPackage_R3` itself stays defined above. -/
 
-/-! ### Axiom AX-3: Galerkin limit passage on ℝ³ -/
+/-! ### AX-3 removed — `galerkin_limit_passage_R3` is now a THEOREM
 
-/-- **Axiom AX-3:** Galerkin limit passage on ℝ³ (existential good representative).
+The former axiom `galerkin_limit_passage_R3` (AX-3) has been **proved** and
+relocated to `LerayHopf/R3/LimitPassage.lean` (issue #4 PR-6).  It now carries
+the extra hypothesis `htest : R3TestApproxH1 𝔊` (the H¹-graph test-approximation
+property discharged via `nonempty_schwartzGalerkinBasis_H1`).
 
-Consumes the Galerkin sequence `galSeq` and the Aubin–Lions package `alPkg`
-(type-indexed by `galSeq`, enforcing chain faithfulness), and concludes that a
-**good representative** `u` exists satisfying:
-- a.e.-equality to the Aubin–Lions limit `alPkg.u`,
-- `WeakFormNS`: the weak NS equation with evolution `r3Evolution 𝔊 F`,
-- energy inequality on `[0, T]`,
-- initial trace: `u(t) → u₀` as `t → 0⁺`,
-- energy class: a.e. `memH1VF_R3` + integrable `viscousFormSq_R3 ν`.
-
-The a.e.-equality link ties `u` to the Aubin–Lions limit (not a standalone solution).
-Strong L²(0,T) convergence from AX-2 kills the nonlinear error via `b_bound`;
-energy inequality by lsc; initial trace from `𝔊.tendsto_id` (applied at the div-free
-initial datum `u₀ ∈ L2Sigma_R3`, within the Σ-restricted convergence).
-
-Blocked in Lean by: nonlinear limit passage requires `b_bound` applied to strong
-L² convergence.  Temam III.3. -/
-axiom galerkin_limit_passage_R3 -- ALLOW_AXIOM: limit passage produces a GOOD REPRESENTATIVE of alPkg.u (a.e.-equal to Aubin–Lions limit); strong convergence kills nonlinear error via b_bound; lsc energy; initial trace; energy class; Temam III.3
-    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
-    (u₀ : L2Sigma_R3)
-    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
-    ∃ u : Time → L2Sigma_R3,
-    (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), u t = alPkg.u t) ∧
-    WeakFormNS ν T (r3Evolution 𝔊 F) u ∧
-    (∀ t, 0 ≤ t → t ≤ T →
-      (1 / 2 : ℝ) * ‖(u t : L2VF_R3)‖ ^ 2 +
-      ∫ s in (0 : ℝ)..t, viscousFormSq_R3 ν (u s : L2VF_R3) ≤
-      (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2) ∧
-    Filter.Tendsto
-      (fun t => (u t : L2VF_R3))
-      (nhdsWithin 0 (Set.Ici 0))
-      (nhds (u₀ : L2VF_R3)) ∧
-    ((∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF_R3 (u t : L2VF_R3)) ∧
-    IntervalIntegrable (fun s => viscousFormSq_R3 ν (u s : L2VF_R3))
-      MeasureTheory.volume 0 T)
+After PR-6, `exists_lerayHopf_r3_axiomatic` has **zero project axioms**. -/
 
 /-! ### Proof-carrying solution structures -/
 

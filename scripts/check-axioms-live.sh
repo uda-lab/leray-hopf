@@ -26,9 +26,10 @@
 #           torusAubinLionsPackage_of_galSeq (TorusAubinLionsAssembly.lean, mode-wise campaign).
 #           Net 𝕋³ project axioms now 0.  THE TORUS IS KERNEL-ONLY.
 #
-#   exists_lerayHopf_r3_axiomatic — exactly 4 axioms:
+#   exists_lerayHopf_r3_axiomatic — exactly 3 axioms (KERNEL-ONLY):
 #     propext  Classical.choice  Quot.sound  (3 kernel)
-#     LerayHopf.galerkin_limit_passage_R3  (1 project)
+#     NOTE: galerkin_limit_passage_R3 REMOVED (issue #4 PR-6) — proved as a theorem
+#           in LerayHopf/R3/LimitPassage.lean.  R3 now kernel-only like 𝕋³.
 #     NOTE: spatial_compactness_R3 REMOVED (issue #2) — now a theorem via the FK chain.
 #     NOTE: r3GalerkinScheme_exists REMOVED (issue #21) — now a theorem, SWAPPED for the
 #           thinner curlSchwartzDense_holds density axiom.
@@ -234,8 +235,7 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 #    total-boundedness engine. Net R3 project axioms now 1.)
 # ---------------------------------------------------------------------------
 assert_axioms "exists_lerayHopf_r3_axiomatic" \
-  "propext Classical.choice Quot.sound
-   LerayHopf.galerkin_limit_passage_R3"
+  "propext Classical.choice Quot.sound"
 
 # ---------------------------------------------------------------------------
 # Pin 3: Core torus representative — no project axioms, no sorryAx
@@ -253,4 +253,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets (R3: 1 project axiom, 𝕋³: 0 project axioms — KERNEL-ONLY)."
+echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY)."
