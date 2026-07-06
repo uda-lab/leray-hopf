@@ -6,14 +6,32 @@ Zero-dependency metadata extractor for the LerayHopf library.
 This executable imports the *already-built* `LerayHopf` oleans (it deliberately does
 NOT `import LerayHopf`, so the exe compiles against Lean core only and never drags the
 library/mathlib into its own build), reflects over the resulting `Environment`, and
-emits one JSON record per public LerayHopf declaration.
+emits one JSON record per LerayHopf declaration.
 
 Run it under the project's Lean search path so the LerayHopf/mathlib oleans are found.
 The JSON array goes to stdout by default, or to `--out <path>`; the human-readable
-kind summary always goes to stderr, so stdout stays pipe-clean:
+report (kind summary + dependency/identity audit) always goes to stderr, so stdout
+stays pipe-clean:
 
     lake exe extract_notes                      -- JSON to stdout
     lake exe extract_notes -- --out notes.json  -- JSON to notes.json
+
+## Record schema
+
+Each record has: `id`, `name`, `private`, `kind`, `signature`, `doc`, `file`,
+`startLine`, `endLine`, `deps`.
+
+* `id` is the *real internal name* string — unique by construction, and the key the
+  `deps` edges point at. For a public declaration `id == name`.
+* `name` is the *display user-name*. It can collide across modules for `private`
+  helpers (Lean strips the module-specific part of a private name), so `name` is NOT a
+  key; use `id` (plus `file`) to disambiguate.
+* `deps` are project-internal edges (constants referenced in the declaration's type and
+  value), each normalized to an emitted record `id`: a field projection or constructor
+  of a kept structure is remapped to that structure's `id`; auxiliaries and range-less
+  synthetics are dropped and tallied in the stderr audit. Every emitted `deps` entry
+  resolves to exactly one record `id` (asserted before write). The run exits nonzero if
+  a dep is unresolved for an unknown reason, an `id` is duplicated, or a dep dangles.
 
 Design constraints (spike S0, tracking uda-lab/lean-pde-notes#2):
 * `import Lean` ONLY.
@@ -96,26 +114,79 @@ def classifyKind (env : Environment) (name : Name) (ci : ConstantInfo) : MetaM S
   | .defnInfo _   => return (if (← isReducible name) then "abbrev" else "def")
   | _             => return "other"
 
-/-- Project-internal constants referenced in `ci`'s type and value, mapped to user
-    names, deduplicated, self excluded, sorted. -/
-def depsOf (env : Environment) (userName : Name) (ci : ConstantInfo) : Array String := Id.run do
+/-- Structural parent (owning inductive/structure) of an auto-generated companion `d`
+    that is itself dropped from the record set: a field projection's or constructor's
+    inductive. Returns `none` for companions we do not remap (recursors, noConfusion,
+    equation lemmas, …); those are dropped from `deps` with an audited reason. -/
+def structuralParent? (env : Environment) (d : Name) : Option Name :=
+  let ctorInduct (cn : Name) : Option Name :=
+    match env.find? cn with
+    | some (.ctorInfo cval) => some cval.induct
+    | _                     => none
+  if env.isProjectionFn d then
+    (env.getProjectionFnInfo? d).bind (fun info => ctorInduct info.ctorName)
+  else
+    ctorInduct d
+
+/-- IDs (real internal-name strings) of the declarations actually emitted as records. -/
+abbrev KeptIds := Std.HashSet String
+
+/-- Resolve one project-internal dependency `d` (a real constant name) to an emitted
+    record id, or to a drop reason. A projection/constructor of a kept structure is
+    remapped to that structure's id (the field lives inside the structure node); a dep
+    that is itself a kept record is kept; everything else is dropped with an audited
+    reason. A `d` that is a normal LerayHopf declaration yet absent from `keptIds` is an
+    `unknown` (a real emission bug) and must fail the run. -/
+def resolveDep (env : Environment) (keptIds : KeptIds) (d : Name) :
+    MetaM (Except String String) := do
+  let did := d.toString
+  if keptIds.contains did then
+    return .ok did
+  match structuralParent? env d with
+  | some p =>
+      let pid := p.toString
+      if keptIds.contains pid then return .ok pid
+      else return .error "projection-remap-missing-parent"
+  | none =>
+      let du := (privateToUserName? d).getD d
+      match env.find? d with
+      | some ci =>
+          if isNoise env d du ci then return .error "synthetic"
+          else if (← findDeclarationRanges? d).isNone then return .error "range-less"
+          else return .error "unknown"
+      | none => return .error "unknown"
+
+/-- Normalized project-internal dependency ids of `ci` (referenced in type and value):
+    resolved against `keptIds`, self excluded, deduplicated, sorted. Also returns the
+    audit list of drop reasons for edges that did not resolve to a record. -/
+def depsOf (env : Environment) (name : Name) (ci : ConstantInfo) (keptIds : KeptIds) :
+    MetaM (Array String × Array String) := do
   let used := ci.type.getUsedConstants ++ (ci.value?.map Expr.getUsedConstants).getD #[]
-  let mut seen : Std.HashSet String := {}
+  let self := name.toString
+  let mut ids : Std.HashSet String := {}
+  let mut reasons : Array String := #[]
   for d in used do
     match moduleOf? env d with
     | some m =>
-        if isLerayHopfModule m && !d.isInternalDetail then
-          let du := (privateToUserName? d).getD d
-          if du != userName then seen := seen.insert du.toString
+        -- Filter on the *display* name's internal-detail status: this keeps genuine
+        -- declarations — public and `private` (whose real names are `isInternalDetail`
+        -- but whose display names are not) — while dropping every auxiliary of either
+        -- (`_proof_`, `.eq_*`, `match_*`, private equation lemmas, …) before the audit.
+        let du := (privateToUserName? d).getD d
+        if isLerayHopfModule m && !du.isInternalDetail then
+          match ← resolveDep env keptIds d with
+          | .ok id  => if id != self then ids := ids.insert id
+          | .error r => reasons := reasons.push r
     | none => pure ()
-  seen.toArray.qsort (· < ·)
+  return (ids.toArray.qsort (· < ·), reasons)
 
-/-- Build one JSON record for a single (kept) declaration, paired with its kind.
-    `ranges` is the source range located by the caller; range-less synthetic decls
-    (`.ctorIdx`, `.congr_simp`, …) are dropped upstream, so every record carries a
-    real `file:line` the notes UI can link to. -/
-def recordOf (name : Name) (ci : ConstantInfo) (ranges : DeclarationRanges) :
-    MetaM (String × Json) := do
+/-- Build one JSON record for a single (kept) declaration. Returns its kind, the JSON,
+    its resolved dep ids, and the audit reasons for dropped edges.
+    `id` is the real internal name (unique by construction); `name` is the display
+    user-name (may collide across modules for private helpers — see the validation in
+    `extractAll`). Deps reference `id`s. `ranges` is the source range located upstream. -/
+def recordOf (name : Name) (ci : ConstantInfo) (ranges : DeclarationRanges)
+    (keptIds : KeptIds) : MetaM (String × Json × Array String × Array String) := do
   let env ← getEnv
   let userName := (privateToUserName? name).getD name
   let isPriv := (privateToUserName? name).isSome
@@ -127,7 +198,9 @@ def recordOf (name : Name) (ci : ConstantInfo) (ranges : DeclarationRanges) :
     catch _ => pure "<pp-error>"
   let doc ← findDocString? env name
   let fileStr := (moduleOf? env name).map moduleToFile |>.getD ""
-  return (kind, Json.mkObj [
+  let (deps, reasons) ← depsOf env name ci keptIds
+  let json := Json.mkObj [
+    ("id",        Json.str name.toString),
     ("name",      Json.str userName.toString),
     ("private",   Json.bool isPriv),
     ("kind",      Json.str kind),
@@ -136,11 +209,22 @@ def recordOf (name : Name) (ci : ConstantInfo) (ranges : DeclarationRanges) :
     ("file",      Json.str fileStr),
     ("startLine", toJson ranges.range.pos.line),
     ("endLine",   toJson ranges.range.endPos.line),
-    ("deps",      Json.arr ((depsOf env userName ci).map Json.str))
-  ])
+    ("deps",      Json.arr (deps.map Json.str))
+  ]
+  return (kind, json, deps, reasons)
 
-/-- Walk the environment, keep LerayHopf declarations, emit records + a kind summary. -/
-def extractAll : MetaM (Json × String) := do
+/-- Format a `reason → count` audit map as `total (r1: n1; r2: n2)`. -/
+def fmtAudit (m : Std.HashMap String Nat) : String :=
+  let total := m.fold (fun acc _ n => acc + n) 0
+  let parts := (m.toList.toArray.qsort (fun a b => a.1 < b.1)).map (fun (r, n) => s!"{r}: {n}")
+  s!"{total} (" ++ "; ".intercalate parts.toList ++ ")"
+
+/-- Walk the environment, keep LerayHopf declarations, emit records + a stderr report.
+    Two passes: first fix the set of emitted record ids, then build records whose `deps`
+    are normalized against that set. Returns `(json, report, ok)`; `ok = false` (nonzero
+    exit) iff a dep is unresolved for an unknown reason, or a record id is duplicated, or
+    an emitted dep does not point at a record. -/
+def extractAll : MetaM (Json × String × Bool) := do
   let env ← getEnv
   -- Pure pass: gather (name, ConstantInfo) for constants defined in LerayHopf modules.
   let targets : Array (Name × ConstantInfo) :=
@@ -149,21 +233,51 @@ def extractAll : MetaM (Json × String) := do
       | some m => if isLerayHopfModule m then acc.push (name, ci) else acc
       | none   => acc
   let targets := targets.qsort (fun a b => a.1.toString < b.1.toString)
-  let mut records : Array Json := #[]
-  let mut counts : Std.HashMap String Nat := {}
+  -- Pass 1: fix the emitted-record id set (real names, unique by construction).
+  let mut kept : Array (Name × ConstantInfo × DeclarationRanges) := #[]
+  let mut keptIds : KeptIds := {}
   for (name, ci) in targets do
     let userName := (privateToUserName? name).getD name
     if isNoise env name userName ci then continue
     -- Drop synthetic decls with no source range (`.ctorIdx`, `.congr_simp`, …):
     -- the notes UI needs a `file:line` to link to.
     let some ranges ← findDeclarationRanges? name | continue
-    let (k, rec_) ← recordOf name ci ranges
-    records := records.push rec_
+    kept := kept.push (name, ci, ranges)
+    keptIds := keptIds.insert name.toString
+  -- Pass 2: build records with normalized deps + collect audits.
+  let mut records : Array Json := #[]
+  let mut counts : Std.HashMap String Nat := {}
+  let mut unresolved : Std.HashMap String Nat := {}
+  let mut nameCounts : Std.HashMap String Nat := {}
+  let mut idCounts : Std.HashMap String Nat := {}
+  let mut dangling := 0
+  for (name, ci, ranges) in kept do
+    let (k, json, deps, reasons) ← recordOf name ci ranges keptIds
+    records := records.push json
     counts := counts.insert k (counts.getD k 0 + 1)
-  let summaryLines := counts.toList.toArray.qsort (fun a b => a.1 < b.1)
-    |>.map (fun (k, n) => s!"  {k}: {n}")
-  let summary := s!"kept {records.size} declarations\n" ++ "\n".intercalate summaryLines.toList
-  return (Json.arr records, summary)
+    for r in reasons do unresolved := unresolved.insert r (unresolved.getD r 0 + 1)
+    for id in deps do if !keptIds.contains id then dangling := dangling + 1
+    let disp := ((privateToUserName? name).getD name).toString
+    nameCounts := nameCounts.insert disp (nameCounts.getD disp 0 + 1)
+    idCounts := idCounts.insert name.toString (idCounts.getD name.toString 0 + 1)
+  -- Audits.
+  let dupIds := idCounts.toList.filter (fun (_, n) => n > 1)
+  let dupNameGroups := nameCounts.toList.filter (fun (_, n) => n > 1)
+  let dupNameDecls := dupNameGroups.foldl (fun acc (_, n) => acc + n) 0
+  let unknown := unresolved.getD "unknown" 0
+  let ok := unknown == 0 && dupIds.isEmpty && dangling == 0
+  let kindLines := (counts.toList.toArray.qsort (fun a b => a.1 < b.1)).map
+    (fun (k, n) => s!"  {k}: {n}")
+  let mut report := s!"kept {records.size} declarations\n" ++ "\n".intercalate kindLines.toList
+  report := report ++ s!"\nunresolved_deps: {fmtAudit unresolved}"
+  report := report ++
+    s!"\nduplicate_display_names: {dupNameGroups.length} groups ({dupNameDecls} decls)"
+  report := report ++ s!"\nduplicate_ids: {dupIds.length}"
+  report := report ++ s!"\ndangling_deps: {dangling}"
+  unless ok do
+    report := report ++ s!"\nFAIL: unresolved_unknown={unknown} duplicate_ids={dupIds.length} \
+      dangling_deps={dangling}"
+  return (Json.arr records, report, ok)
 
 /-- `none` = write to stdout; `some p` = write to file `p`. -/
 def parseArgs : List String → Except String (Option String)
@@ -207,13 +321,13 @@ unsafe def main (rawArgs : List String) : IO UInt32 := do  -- ALLOW_AXIOM: exe-o
     maxHeartbeats := 0
   }
   let coreState : Core.State := { env := env }
-  let ((jsonArr, summary), _) ← (extractAll.run').toIO coreCtx coreState
+  let ((jsonArr, report, ok), _) ← (extractAll.run').toIO coreCtx coreState
   match out? with
   | some path =>
       IO.FS.writeFile path jsonArr.pretty
-      IO.eprintln summary
+      IO.eprintln report
       IO.eprintln s!"wrote {path}"
   | none =>
       IO.println jsonArr.pretty
-      IO.eprintln summary
-  return 0
+      IO.eprintln report
+  return (if ok then 0 else 1)
