@@ -82,14 +82,27 @@ def lastComp : Name → String
   | _        => ""
 
 /-- Suffixes of auto-generated structural lemmas that are not part of the human API
-    (`Foo.mk.injEq`, `Foo.sizeOf_spec`, `Foo.eq_def`, …) and are not caught by
-    `isAuxRecursor`/`isNoConfusion`/`isInternalDetail`. -/
+    (`Foo.mk.injEq`, `Foo.sizeOf_spec`, `Foo.noConfusionType`, …) and are not caught by
+    `isAuxRecursor`/`isNoConfusion`/`isInternalDetail`. A suffix match alone never drops a
+    declaration — see `suffixCorroboratedNoise`. -/
 def autoLemmaSuffixes : List String :=
   ["injEq", "inj", "sizeOf_spec", "sizeOf_eq", "eq_def", "eq_unfold", "toCtorIdx", "ofNat",
    "noConfusion", "noConfusionType"]
 
-/-- Should this constant be dropped as auto-generated / internal noise? -/
-def isNoise (env : Environment) (name : Name) (userName : Name) (ci : ConstantInfo) : Bool :=
+/-- Does some strict prefix of `name` name an inductive/structure? Used to corroborate
+    that a suffix-matching declaration is a generated structural companion rather than a
+    hand-written declaration that happens to share a suffix. -/
+partial def parentIsInductive (env : Environment) : Name → Bool
+  | .str p _ =>
+      (match env.find? p with | some (.inductInfo _) => true | _ => false)
+        || parentIsInductive env p
+  | .num p _ => parentIsInductive env p
+  | .anonymous => false
+
+/-- Metadata-confirmed generated / internal noise, independent of source range: a noisy
+    `ConstantInfo` kind, an internal display name, a field projection, or an auxiliary
+    recursor / `noConfusion`. These are never human API, range or no range. -/
+def isHardNoise (env : Environment) (name : Name) (userName : Name) (ci : ConstantInfo) : Bool :=
   let kindNoise :=
     match ci with
     | .ctorInfo _ | .recInfo _ | .quotInfo _ => true
@@ -98,8 +111,18 @@ def isNoise (env : Environment) (name : Name) (userName : Name) (ci : ConstantIn
     || userName.isInternalDetail
     || env.isProjectionFn name
     || isAuxRecursor env name         -- .casesOn/.recOn/.brecOn/.below/.binductionOn/…
-    || isNoConfusion env name         -- .noConfusion/.noConfusionType
-    || autoLemmaSuffixes.contains (lastComp name)
+    || isNoConfusion env name         -- .noConfusion (ext-marked)
+
+/-- A generated structural lemma recognized by an `autoLemmaSuffixes` suffix, corroborated
+    by Lean metadata that it is generated (a strict prefix names an inductive/structure).
+    The corroboration is required so a range-bearing hand-written declaration is NEVER
+    dropped by suffix match alone (Codex round-2 medium). -/
+def suffixCorroboratedNoise (env : Environment) (name : Name) : Bool :=
+  autoLemmaSuffixes.contains (lastComp name) && parentIsInductive env name
+
+/-- Should this constant be dropped as auto-generated / internal noise? -/
+def isNoise (env : Environment) (name : Name) (userName : Name) (ci : ConstantInfo) : Bool :=
+  isHardNoise env name userName ci || suffixCorroboratedNoise env name
 
 /-- Coarse declaration kind used by the notes UI. Instance takes priority over the
     `ConstantInfo` shape because a `Prop`-valued instance is stored as a `thmInfo`. -/
@@ -131,14 +154,34 @@ def structuralParent? (env : Environment) (d : Name) : Option Name :=
 /-- IDs (real internal-name strings) of the declarations actually emitted as records. -/
 abbrev KeptIds := Std.HashSet String
 
+/-- Why a dependency edge did not resolve to an emitted record. Explicitly typed so the
+    run's failure discipline is not stringly: only `syntheticConfirmed` and `rangeLess`
+    are nonfatal (audited, exit 0); every other category — a projection/constructor whose
+    parent structure was not emitted, or an unclassifiable constant — is fatal (exit ≠ 0),
+    because it signals a hole in the record set rather than an expected drop. -/
+inductive DepDrop where
+  | syntheticConfirmed   -- metadata-confirmed generated companion (isNoise)
+  | rangeLess            -- a real declaration that carries no source range
+  | missingParent        -- projection/constructor whose parent structure is not emitted
+  | unknown              -- a normal declaration absent from `keptIds` (emission bug)
+
+def DepDrop.reason : DepDrop → String
+  | .syntheticConfirmed => "synthetic-confirmed"
+  | .rangeLess          => "range-less"
+  | .missingParent      => "projection-remap-missing-parent"
+  | .unknown            => "unknown"
+
+/-- Only confirmed-synthetic and range-less drops are tolerated; all others fail the run. -/
+def DepDrop.fatal : DepDrop → Bool
+  | .syntheticConfirmed | .rangeLess => false
+  | .missingParent | .unknown        => true
+
 /-- Resolve one project-internal dependency `d` (a real constant name) to an emitted
-    record id, or to a drop reason. A projection/constructor of a kept structure is
+    record id, or to a typed drop. A projection/constructor of a kept structure is
     remapped to that structure's id (the field lives inside the structure node); a dep
-    that is itself a kept record is kept; everything else is dropped with an audited
-    reason. A `d` that is a normal LerayHopf declaration yet absent from `keptIds` is an
-    `unknown` (a real emission bug) and must fail the run. -/
+    that is itself a kept record is kept; everything else is dropped with a typed reason. -/
 def resolveDep (env : Environment) (keptIds : KeptIds) (d : Name) :
-    MetaM (Except String String) := do
+    MetaM (Except DepDrop String) := do
   let did := d.toString
   if keptIds.contains did then
     return .ok did
@@ -146,25 +189,25 @@ def resolveDep (env : Environment) (keptIds : KeptIds) (d : Name) :
   | some p =>
       let pid := p.toString
       if keptIds.contains pid then return .ok pid
-      else return .error "projection-remap-missing-parent"
+      else return .error .missingParent
   | none =>
       let du := (privateToUserName? d).getD d
       match env.find? d with
       | some ci =>
-          if isNoise env d du ci then return .error "synthetic"
-          else if (← findDeclarationRanges? d).isNone then return .error "range-less"
-          else return .error "unknown"
-      | none => return .error "unknown"
+          if isNoise env d du ci then return .error .syntheticConfirmed
+          else if (← findDeclarationRanges? d).isNone then return .error .rangeLess
+          else return .error .unknown
+      | none => return .error .unknown
 
 /-- Normalized project-internal dependency ids of `ci` (referenced in type and value):
     resolved against `keptIds`, self excluded, deduplicated, sorted. Also returns the
-    audit list of drop reasons for edges that did not resolve to a record. -/
+    typed drops for edges that did not resolve to a record. -/
 def depsOf (env : Environment) (name : Name) (ci : ConstantInfo) (keptIds : KeptIds) :
-    MetaM (Array String × Array String) := do
+    MetaM (Array String × Array DepDrop) := do
   let used := ci.type.getUsedConstants ++ (ci.value?.map Expr.getUsedConstants).getD #[]
   let self := name.toString
   let mut ids : Std.HashSet String := {}
-  let mut reasons : Array String := #[]
+  let mut drops : Array DepDrop := #[]
   for d in used do
     match moduleOf? env d with
     | some m =>
@@ -175,10 +218,10 @@ def depsOf (env : Environment) (name : Name) (ci : ConstantInfo) (keptIds : Kept
         let du := (privateToUserName? d).getD d
         if isLerayHopfModule m && !du.isInternalDetail then
           match ← resolveDep env keptIds d with
-          | .ok id  => if id != self then ids := ids.insert id
-          | .error r => reasons := reasons.push r
+          | .ok id    => if id != self then ids := ids.insert id
+          | .error dr => drops := drops.push dr
     | none => pure ()
-  return (ids.toArray.qsort (· < ·), reasons)
+  return (ids.toArray.qsort (· < ·), drops)
 
 /-- Build one JSON record for a single (kept) declaration. Returns its kind, the JSON,
     its resolved dep ids, and the audit reasons for dropped edges.
@@ -186,7 +229,7 @@ def depsOf (env : Environment) (name : Name) (ci : ConstantInfo) (keptIds : Kept
     user-name (may collide across modules for private helpers — see the validation in
     `extractAll`). Deps reference `id`s. `ranges` is the source range located upstream. -/
 def recordOf (name : Name) (ci : ConstantInfo) (ranges : DeclarationRanges)
-    (keptIds : KeptIds) : MetaM (String × Json × Array String × Array String) := do
+    (keptIds : KeptIds) : MetaM (String × Json × Array String × Array DepDrop) := do
   let env ← getEnv
   let userName := (privateToUserName? name).getD name
   let isPriv := (privateToUserName? name).isSome
@@ -198,7 +241,7 @@ def recordOf (name : Name) (ci : ConstantInfo) (ranges : DeclarationRanges)
     catch _ => pure "<pp-error>"
   let doc ← findDocString? env name
   let fileStr := (moduleOf? env name).map moduleToFile |>.getD ""
-  let (deps, reasons) ← depsOf env name ci keptIds
+  let (deps, drops) ← depsOf env name ci keptIds
   let json := Json.mkObj [
     ("id",        Json.str name.toString),
     ("name",      Json.str userName.toString),
@@ -211,7 +254,7 @@ def recordOf (name : Name) (ci : ConstantInfo) (ranges : DeclarationRanges)
     ("endLine",   toJson ranges.range.endPos.line),
     ("deps",      Json.arr (deps.map Json.str))
   ]
-  return (kind, json, deps, reasons)
+  return (kind, json, deps, drops)
 
 /-- Format a `reason → count` audit map as `total (r1: n1; r2: n2)`. -/
 def fmtAudit (m : Std.HashMap String Nat) : String :=
@@ -222,8 +265,8 @@ def fmtAudit (m : Std.HashMap String Nat) : String :=
 /-- Walk the environment, keep LerayHopf declarations, emit records + a stderr report.
     Two passes: first fix the set of emitted record ids, then build records whose `deps`
     are normalized against that set. Returns `(json, report, ok)`; `ok = false` (nonzero
-    exit) iff a dep is unresolved for an unknown reason, or a record id is duplicated, or
-    an emitted dep does not point at a record. -/
+    exit) iff any dep drop is fatal (`missingParent`/`unknown`), a record id is duplicated,
+    or an emitted dep does not point at a record. -/
 def extractAll : MetaM (Json × String × Bool) := do
   let env ← getEnv
   -- Pure pass: gather (name, ConstantInfo) for constants defined in LerayHopf modules.
@@ -251,31 +294,35 @@ def extractAll : MetaM (Json × String × Bool) := do
   let mut nameCounts : Std.HashMap String Nat := {}
   let mut idCounts : Std.HashMap String Nat := {}
   let mut dangling := 0
+  let mut fatalDrops := 0
   for (name, ci, ranges) in kept do
-    let (k, json, deps, reasons) ← recordOf name ci ranges keptIds
+    let (k, json, deps, drops) ← recordOf name ci ranges keptIds
     records := records.push json
     counts := counts.insert k (counts.getD k 0 + 1)
-    for r in reasons do unresolved := unresolved.insert r (unresolved.getD r 0 + 1)
+    for dr in drops do
+      unresolved := unresolved.insert dr.reason (unresolved.getD dr.reason 0 + 1)
+      if dr.fatal then fatalDrops := fatalDrops + 1
     for id in deps do if !keptIds.contains id then dangling := dangling + 1
     let disp := ((privateToUserName? name).getD name).toString
     nameCounts := nameCounts.insert disp (nameCounts.getD disp 0 + 1)
     idCounts := idCounts.insert name.toString (idCounts.getD name.toString 0 + 1)
-  -- Audits.
+  -- Audits. Nonfatal drops (synthetic-confirmed, range-less) are tolerated; every fatal
+  -- drop (missing parent, unknown), a duplicate id, or a dangling dep fails the run.
   let dupIds := idCounts.toList.filter (fun (_, n) => n > 1)
   let dupNameGroups := nameCounts.toList.filter (fun (_, n) => n > 1)
   let dupNameDecls := dupNameGroups.foldl (fun acc (_, n) => acc + n) 0
-  let unknown := unresolved.getD "unknown" 0
-  let ok := unknown == 0 && dupIds.isEmpty && dangling == 0
+  let ok := fatalDrops == 0 && dupIds.isEmpty && dangling == 0
   let kindLines := (counts.toList.toArray.qsort (fun a b => a.1 < b.1)).map
     (fun (k, n) => s!"  {k}: {n}")
   let mut report := s!"kept {records.size} declarations\n" ++ "\n".intercalate kindLines.toList
   report := report ++ s!"\nunresolved_deps: {fmtAudit unresolved}"
+  report := report ++ s!"\nfatal_dep_drops: {fatalDrops}"
   report := report ++
     s!"\nduplicate_display_names: {dupNameGroups.length} groups ({dupNameDecls} decls)"
   report := report ++ s!"\nduplicate_ids: {dupIds.length}"
   report := report ++ s!"\ndangling_deps: {dangling}"
   unless ok do
-    report := report ++ s!"\nFAIL: unresolved_unknown={unknown} duplicate_ids={dupIds.length} \
+    report := report ++ s!"\nFAIL: fatal_dep_drops={fatalDrops} duplicate_ids={dupIds.length} \
       dangling_deps={dangling}"
   return (Json.arr records, report, ok)
 
@@ -322,12 +369,21 @@ unsafe def main (rawArgs : List String) : IO UInt32 := do  -- ALLOW_AXIOM: exe-o
   }
   let coreState : Core.State := { env := env }
   let ((jsonArr, report, ok), _) ← (extractAll.run').toIO coreCtx coreState
-  match out? with
-  | some path =>
-      IO.FS.writeFile path jsonArr.pretty
-      IO.eprintln report
-      IO.eprintln s!"wrote {path}"
-  | none =>
-      IO.println jsonArr.pretty
-      IO.eprintln report
-  return (if ok then 0 else 1)
+  -- Gate all artifact output on validation: on failure emit only the report and exit 1,
+  -- never a partial/invalid artifact. On success write atomically (temp + rename) so a
+  -- reader never observes a half-written `--out` file.
+  if ok then
+    match out? with
+    | some path =>
+        let tmp := path ++ ".tmp"
+        IO.FS.writeFile tmp jsonArr.pretty
+        IO.FS.rename tmp path
+        IO.eprintln report
+        IO.eprintln s!"wrote {path}"
+    | none =>
+        IO.println jsonArr.pretty
+        IO.eprintln report
+    return 0
+  else
+    IO.eprintln report
+    return 1
