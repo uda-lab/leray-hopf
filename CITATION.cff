@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this Lean formalization, please cite it as below."
+title: "lean-pde"
+type: software
+authors:
+  - family-names: "Uda"
+    given-names: "Tomoki"
+repository-code: "https://github.com/uda-lab/lean-pde"
+url: "https://github.com/uda-lab/lean-pde"
+abstract: "A Lean 4 and mathlib formalization of Leray-Hopf weak existence for the incompressible Navier-Stokes equations on the periodic three-torus and on whole space R^3."
+keywords:
+  - "Lean"
+  - "mathlib"
+  - "formalized mathematics"
+  - "Navier-Stokes equations"
+  - "Leray-Hopf weak solutions"
+license: "Apache-2.0"

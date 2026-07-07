@@ -86,3 +86,13 @@ bash scripts/agent-preflight.sh    # build + guardrail checks
 CI (`.github/workflows/lean.yml`) builds the project and runs guardrail checks that
 block overclaiming theorem names, unmarked `sorry`, and undeclared axioms, plus the
 live axiom pin described above.
+
+## License and citation
+
+This repository is licensed under the Apache License 2.0; see [`LICENSE`](LICENSE).
+The license covers the Lean formalization code and repository materials. It does not
+purport to license mathematical facts or theorems themselves.
+
+Citation metadata is provided in [`CITATION.cff`](CITATION.cff). If you use this
+formalization, cite the repository using GitHub's "Cite this repository" metadata or
+the `CITATION.cff` file.
