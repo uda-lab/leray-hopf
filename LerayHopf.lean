@@ -12,11 +12,14 @@ Two capstone existence theorems, both **kernel-only** (`#print axioms` returns o
 * `exists_lerayHopf_r3` (ℝ³, whole space — the original Leray 1934 target) —
   `LerayHopf/R3/GalerkinODECapstone.lean`
 
-Both existence statements are re-exported through the corresponding
-`SolutionInterfaces.lean` support layer. `LerayHopfSolutionFull(_R3)` is
-**proof-carrying**: its fields are actual proofs of the weak Navier–Stokes equation,
-the energy inequality, the initial trace, and the energy class
-`u ∈ L²(0,T;H¹_σ)` — not `Prop` placeholders.
+Import `LerayHopf.Torus.Capstone` (which pulls in `Torus/GalerkinODECapstone.lean`) or
+`LerayHopf.R3Capstone` (which pulls in `R3/GalerkinODECapstone.lean`) to bring the
+corresponding `exists_lerayHopf_*` theorem into scope; each capstone file's own
+`SolutionInterfaces.lean` support layer provides the surrounding definitions
+(`Torus3NSForms`/`R3NSForms`, assembly helpers) but does not itself export the
+theorem. `LerayHopfSolutionFull(_R3)` is **proof-carrying**: its fields are actual
+proofs of the weak Navier–Stokes equation, the energy inequality, the initial trace,
+and the energy class `u ∈ L²(0,T;H¹_σ)` — not `Prop` placeholders.
 
 No claim is made that regularity, uniqueness, or non-uniqueness of the
 Navier–Stokes equations has been formalized.
@@ -24,9 +27,12 @@ Navier–Stokes equations has been formalized.
 ## Layering
 
 * `LerayHopf.Core` — the axiom-free, `sorryAx`-free spatial/regularity layer shared by
-  both domains (abstract `DissipativeEvolution`/`WeakFormNS`/`AbstractEnergyLaw`, the
-  T³ and ℝ³ `L²_σ` spaces, Leray/Galerkin projections, Fourier machinery). Work that
-  does not need a capstone should `import LerayHopf.Core` to stay project-axiom-free.
+  both domains: the T³ and ℝ³ `L²_σ` spaces, Leray/Galerkin projections, and Fourier
+  machinery. (The domain-neutral abstract layer — `EvolutionTriple.lean`'s
+  `DissipativeEvolution`/`WeakFormNS` and `EnergyEstimate.lean`'s `AbstractEnergyLaw` —
+  lives in separate top-level modules that `Core` does not import; reach them via
+  `import LerayHopf` or by importing those files directly.) Work that does not need a
+  capstone should `import LerayHopf.Core` to stay project-axiom-free.
 * `LerayHopf.Torus.Capstone` — re-exports the full T³ capstone chain
   (`exists_lerayHopf_torus3`).
 * `LerayHopf.R3Capstone` — re-exports the full ℝ³ capstone chain
