@@ -3,25 +3,55 @@
 
 Root module for the Leray–Hopf weak-existence formalization project.
 
-The mathematical scope — solution concept, existence statement, Galerkin compactness
-package, energy skeleton — is specified in:
+## What is proved
 
-* `docs/milestone.md`            (roadmap)
-* `docs/leray_hopf_lean_mvp_plan.md` (MVP design and file layout)
+Two capstone existence theorems, both **kernel-only** (`#print axioms` returns only
+`propext` / `Classical.choice` / `Quot.sound` — zero project axioms, no `sorryAx`):
 
-Those plan files are the source of truth for mathematical content. This module gathers
-the structural spine (Milestone 1): the solution concept, the existence statement (still a
-marked `sorry` target), the Galerkin compactness package, the structural implication
-package ⟹ existence, and an abstract energy skeleton. PDE analysis is intentionally
-packaged behind `Prop` placeholders and refined in later milestones.
+* `exists_lerayHopf_torus3` (𝕋³, the 3-torus) — `LerayHopf/Torus/GalerkinODECapstone.lean`
+* `exists_lerayHopf_r3` (ℝ³, whole space — the original Leray 1934 target) —
+  `LerayHopf/R3/GalerkinODECapstone.lean`
 
-Side branches (independent of the existence spine):
+Import `LerayHopf.Torus.Capstone` (which pulls in `Torus/GalerkinODECapstone.lean`) or
+`LerayHopf.R3Capstone` (which pulls in `R3/GalerkinODECapstone.lean`) to bring the
+corresponding `exists_lerayHopf_*` theorem into scope; each capstone file's own
+`SolutionInterfaces.lean` support layer provides the surrounding definitions
+(`Torus3NSForms`/`R3NSForms`, assembly helpers) but does not itself export the
+theorem. `LerayHopfSolutionFull(_R3)` is **proof-carrying**: its fields are actual
+proofs of the weak Navier–Stokes equation, the energy inequality, the initial trace,
+and the energy class `u ∈ L²(0,T;H¹_σ)` — not `Prop` placeholders.
+
+No claim is made that regularity, uniqueness, or non-uniqueness of the
+Navier–Stokes equations has been formalized.
+
+## Layering
+
+* `LerayHopf.Core` — the axiom-free, `sorryAx`-free spatial/regularity layer shared by
+  both domains: the T³ and ℝ³ `L²_σ` spaces, Leray/Galerkin projections, and Fourier
+  machinery. (The domain-neutral abstract layer — `EvolutionTriple.lean`'s
+  `DissipativeEvolution`/`WeakFormNS` and `EnergyEstimate.lean`'s `AbstractEnergyLaw` —
+  lives in separate top-level modules that `Core` does not import; reach them via
+  `import LerayHopf` or by importing those files directly.) Work that does not need a
+  capstone should `import LerayHopf.Core` to stay project-axiom-free.
+* `LerayHopf.Torus.Capstone` — re-exports the full T³ capstone chain
+  (`exists_lerayHopf_torus3`).
+* `LerayHopf.R3Capstone` — re-exports the full ℝ³ capstone chain
+  (`exists_lerayHopf_r3`).
+* `LerayHopf` (this file) — re-exports all three layers, plus the remaining
+  sorry-carrying support files (Bochner time theory, Galerkin ODE solvers, limit
+  passage, etc.) needed to assemble both capstones.
+
+Side branches (independent of the existence capstones):
 * `LerayHopf.BlowupLowerBound`  (Branch A) — algebraic blow-up lower bound, sorry-free.
 * `LerayHopf.NonuniquenessStatement` (Branch B) — non-uniqueness proposition, scaffold only.
 
+For the narrative status (axiom ledger, remaining `sorry` inventory, verification
+commands) see `README.md` and `HANDOFF.md`; for the mathematical roadmap see
+`docs/milestone.md` and `docs/ROADMAP.md`.
+
 ## Import surface structure (Wave-0 axiom-removal refactor)
 
-The import surface is now split:
+The import surface is split:
 - `import LerayHopf.Core`            — axiom-free, sorryAx-free spatial/regularity layer
 - `import LerayHopf.Torus.Capstone` — T³ kernel-only capstone re-export
 - `import LerayHopf.R3Capstone`     — ℝ³ kernel-only capstone re-export
@@ -29,9 +59,6 @@ The import surface is now split:
 
 Core work that does not require the capstone re-exports should use
 `import LerayHopf.Core` to stay project-axiom-free.
-
-No claim is made that existence, regularity, uniqueness, or nonuniqueness of the
-Navier–Stokes equations has been formalized.
 -/
 
 -- Axiom-free core layer (no project axioms, no sorryAx)

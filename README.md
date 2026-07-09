@@ -56,8 +56,9 @@ be described as a PDE existence theorem.
 
 ## Layout
 
-- **Lean sources:** `LerayHopf/` — `R3/` (ℝ³), `Bochner/` (Gelfand-triple time theory),
-  `Core/`, and the top-level `Torus*` / `*.lean` files (𝕋³ and shared infrastructure).
+- **Lean sources:** `LerayHopf/` — `R3/` (ℝ³), `Torus/` (𝕋³), `Bochner/` (Gelfand-triple
+  time theory), and the top-level shared/abstract `*.lean` files. See
+  [`docs/architecture.md`](docs/architecture.md) for a module map by layer.
 - **Mathematical scope / roadmap:** [`docs/milestone.md`](docs/milestone.md),
   [`docs/leray_hopf_lean_mvp_plan.md`](docs/leray_hopf_lean_mvp_plan.md),
   [`docs/ROADMAP.md`](docs/ROADMAP.md).
@@ -66,6 +67,21 @@ be described as a PDE existence theorem.
 - **Agent rules:** [`AGENTS.md`](AGENTS.md); roles + Codex review protocol:
   [`docs/agent-roles.md`](docs/agent-roles.md); build/checks:
   [`docs/build-and-checks.md`](docs/build-and-checks.md).
+- `docs/scratch/` holds internal agent working notes (route plans, per-round audit
+  verdicts, design contracts) — not part of the curated documentation set above.
+
+## Repository hygiene
+
+- The `LerayHopf/` import DAG has **zero dead files**: every `.lean` file under
+  `LerayHopf/` is reachable via at least one `import` statement.
+- Doc-string coverage on public declarations is high throughout the tree.
+- Exactly **7** remaining `sorry`s, every one same-line `-- ALLOW_SORRY:`-marked and
+  none reachable from either capstone: `LerayHopf/Statement.lean:39` (an intentional
+  scaffold placeholder, kept distinct from the real capstones by design) and six
+  Lions–Magenes-class Bochner-time walls — `Bochner/TimeSobolev.lean:545`,
+  `Bochner/TimeSobolevAC.lean:350`, `Bochner/TimeMollification.lean:196`,
+  `Bochner/TimeMollifierInterval.lean:297,466,601`. Verify with
+  `grep -rn 'sorry -- ALLOW_SORRY' LerayHopf/`.
 
 ## Build and CI
 

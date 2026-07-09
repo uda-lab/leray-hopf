@@ -18,9 +18,9 @@
 のみ、`sorryAx` なし）。
 
 ```lean
--- LerayHopf/Torus/SolutionInterfaces.lean
+-- LerayHopf/Torus/GalerkinODECapstone.lean
 exists_lerayHopf_torus3 (u₀ : L2Sigma)    (ν>0) (T>0) : ∃ F,   Nonempty (LerayHopfSolutionFull    F ν T u₀)
--- LerayHopf/R3/SolutionInterfaces.lean
+-- LerayHopf/R3/GalerkinODECapstone.lean
 exists_lerayHopf_r3      (u₀ : L2Sigma_R3) (ν>0) (T>0) : ∃ 𝔊 F, Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)
 ```
 
@@ -34,11 +34,15 @@ exists_lerayHopf_r3      (u₀ : L2Sigma_R3) (ν>0) (T>0) : ∃ 𝔊 F, Nonempty
 |---|---|---|
 | 抽象層 | `DissipativeEvolution`（H + 正則性汎関数 reg + 粘性形式 + 移流形式）, `WeakFormNS`, `AbstractEnergyLaw` | 共通（ℝ³ で**無修正再利用**） |
 | 空間線形層 | `L²_σ`, Leray 射影, 正則性汎関数, 粘性形式 — **公理ゼロで構築** | 各々 |
-| 解析フロンティア | 移流形式・Galerkin ODE・Aubin–Lions・極限移行 — **最小公理** | 各々 |
+| 解析フロンティア | 移流形式・Galerkin ODE・Aubin–Lions・極限移行 — かつて公理化、現在は**全て証明済み（公理ゼロ）** | 各々 |
 
-T³ は 4 公理、ℝ³ は 6 公理で閉じる。**差の 2 公理**（ℝ³ の Galerkin 近似射影族と
-空間コンパクト性）は、**T³ では証明できたが ℝ³ では証明できない**まさにその二つ
-（`velocityProjection_n` と `rellich_L2Sigma`）に対応する。これが非有界領域の正直なコストである。
+T³・ℝ³ とも現在は **0 公理**（kernel-only）で閉じる。かつては T³ が 4 公理、ℝ³ が 6 公理で閉じており、
+ℝ³ の**差の 2 公理**（Galerkin 近似射影族の存在 `r3GalerkinScheme_exists` と空間コンパクト性
+`spatial_compactness_R3`）は、T³ 側の対応物（`velocityProjection_n` と `rellich_L2Sigma`）が最初から
+証明済みだった一方、ℝ³ では非有界領域ゆえ未証明という、非有界領域固有の追加コストだった。その後
+`r3GalerkinScheme_exists`（issue #21）・`spatial_compactness_R3`（issue #2、局所 Rellich への再定式化）
+がいずれも証明され、残る全公理（移流形式存在・Galerkin ODE 解・Aubin–Lions・極限移行、T³/ℝ³ 双方）も
+issue #22–25 / #44–56 で順次除去された。除去履歴の一次情報は §5 と `HANDOFF.md` §4「The axioms」。
 
 ---
 
@@ -74,7 +78,7 @@ structure DissipativeEvolution where
 `⟪u'(t),u(t)⟫ + D(u(t)) + B(u(t),u(t),u(t)) = 0`（`B w w w = 0`, `D ≥ 0`）から
 エネルギー非増加 `½‖u(t)‖² ≤ ½‖u(s)‖²` を導く（後述 2.3）。これも抽象で、ℝ³ にそのまま効く。
 
-### 1.3 T³ の発散ゼロ空間 `L2Sigma` ［DivergenceFree.lean, Leray.lean］
+### 1.3 T³ の発散ゼロ空間 `L2Sigma` ［Torus/DivergenceFree.lean, Torus/Leray.lean］
 
 `L2VF := Lp (EuclideanSpace ℝ (Fin 3)) 2 haarTorus3`（＝`L²(𝕋³;ℝ³)`）。Fourier 係数による発散記号
 ```lean
@@ -106,7 +110,7 @@ L2Sigma_R3 : Submodule ℝ L2VF_R3 := ⨅ φ : 𝓢(ℝ³,ℝ), (divTestFunction
 ### 1.5 正則性・粘性汎関数
 
 - T³：`h1EnergySq u = ∑_j ∑'_k (1+∑_i k_i²)‖û_j(k)‖²`、`viscousFormSq ν u = ν∑_j∑'_k (2π)²(∑_i k_i²)‖û_j(k)‖²`
-  ［H1Sigma.lean］。`(2π)²` は荷重項（`∂_xᵢ e^{2πi k·x}` の係数 `(2π kᵢ)`）。
+  ［Torus/H1Sigma.lean］。`(2π)²` は荷重項（`∂_xᵢ e^{2πi k·x}` の係数 `(2π kᵢ)`）。
 - ℝ³：`memH1VF_R3` は `TemperedDistribution.MemSobolev 1 2`（Bessel ポテンシャル）で**厳密構築**、
   `stokesTestPairing_R3`/`viscousFormSq_R3` は L²-Fourier 変換 `Lp.fourierTransformₗᵢ` を用いた
   **スペクトル積分** `∫ ξ, (2π)²‖ξ‖²·…`（`smulLeftCLM` 装置は不要）［R3/Regularity.lean］。
@@ -115,7 +119,7 @@ L2Sigma_R3 : Submodule ℝ L2VF_R3 := ⨅ φ : 𝓢(ℝ³,ℝ), (divTestFunction
 
 ## 2. 要所の補題：自然言語訳 + Lean 対応
 
-### 2.1 ＜山場＞ Fourier-tail Rellich コンパクト埋め込み ［RellichEmbedding.lean: `rellich_seq_compact`, `H1_ball_totallyBounded`］
+### 2.1 ＜山場＞ Fourier-tail Rellich コンパクト埋め込み ［Torus/RellichEmbedding.lean: `rellich_seq_compact`, `H1_ball_totallyBounded`］
 
 **主張**：H¹ ノルムが一様有界な `L²(𝕋³;ℂ)` 列は L² 収束部分列をもつ（`H¹↪L²` のコンパクト性）。
 **これがプロジェクトで最も難度の高い "本物の解析" であり、公理ゼロで証明できたのが最大の成果。**
@@ -138,7 +142,7 @@ L2Sigma_R3 : Submodule ℝ L2VF_R3 := ⨅ φ : 𝓢(ℝ³,ℝ), (divTestFunction
 （`RCLike.properSpace_submodule`, `isCompactOperator_of_locallyCompactSpace_dom`,
 `isCompact_closedBall` の像）。テイル和の subtype 化（`Summable.subtype`, `tsum_subtype_le`）。
 
-### 2.2 発散ゼロ列への Rellich ＋対角列 ［H1Sigma.lean: `rellich_L2Sigma`］
+### 2.2 発散ゼロ列への Rellich ＋対角列 ［Torus/H1Sigma.lean: `rellich_L2Sigma`］
 
 **主張**：`u n ∈ L2Sigma`、`memH1VF (u n)`、`h1EnergySq (u n) ≤ M²` ⇒ `L2VF` 収束部分列＋極限も `L2Sigma`。
 
@@ -165,7 +169,7 @@ summable は出ない（tsum 規約、後述 4.1）ので、`rellich_seq_compact
 → **これは数学的ギャップではなく Lean 人間工学のギャップ**（4.9）。FTC-2
 `intervalIntegral.integral_eq_sub_of_hasDerivAt` で積分してエネルギー不等式、`EnergySkeleton` へ橋渡し。
 
-### 2.4 Galerkin 射影の実数値性 ［VelocityGalerkin.lean: `velocityProjection_n_component_comm`, `conjL2C_fourierProjection`］
+### 2.4 Galerkin 射影の実数値性 ［Torus/VelocityGalerkin.lean: `velocityProjection_n_component_comm`, `conjL2C_fourierProjection`］
 
 **主張**：実ベクトル場の成分は複素埋め込みされるが、対称箱上の Fourier 截断は実数値性を保つ
 （`Re(P_n(û_j)) = P_n(実成分)`）。
@@ -199,7 +203,7 @@ summable は出ない（tsum 規約、後述 4.1）ので、`rellich_seq_compact
 | `Submodule.inner_starProjection_left_eq_right`（自己随伴） | Fourier 乗数公式の導出 | GalerkinProjection |
 | `lineDerivOpCLM` + `SchwartzMap.toLp` + `innerSL ℝ` | ℝ³ 弱発散汎関数 | R3/DivergenceFree |
 | `𝓕 := Lp.fourierTransformₗᵢ` の `instFourierTransform` + `Lp.instCoeFun` 点値 + `integral_nonneg`/`positivity` | ℝ³ 粘性スペクトル積分 | R3/Regularity |
-| `Exists.choose` / `choose_spec`（`obtain` 不可な Type 値ゴール） | A3 の存在子から構造体を組む | (R3/)AxiomaticClosure |
+| `Exists.choose` / `choose_spec`（`obtain` 不可な Type 値ゴール） | A3 の存在子から構造体を組む | (R3/)GalerkinODECapstone |
 
 ---
 
@@ -275,28 +279,34 @@ T³ は `galerkinConvection`（有限 Fourier 和）、ℝ³ は `convIntegralSc
 
 ---
 
-## 5. 何が証明され、何が公理か（信頼ベースの所在）
+## 5. 何が証明され、何が公理か（信頼ベースの所在・現状は公理ゼロ）
 
-**公理ゼロで証明したもの**（"道具"はここまで本物）：
+**現在、両定理とも 0 プロジェクト公理**（`#print axioms` は `propext`/`Classical.choice`/`Quot.sound`
+の kernel 公理のみ）。以下は**最初から公理ゼロで構築されたもの**と、**かつて公理化され、後に
+定理として除去されたもの**の内訳。
+
+**最初から公理ゼロで証明したもの**（"道具"はここまで本物）：
 - 抽象層全体（`DissipativeEvolution`/`WeakFormNS`/`AbstractEnergyLaw` と諸補題）。
 - T³ 空間線形層：`L2Sigma`（閉発散ゼロ空間）、Leray・Galerkin 射影、Fourier 乗数公式、
   **エネルギー恒等式・不等式**、そして**山場の Fourier-tail Rellich** `rellich_seq_compact`/`rellich_L2Sigma`。
 - ℝ³ 空間線形層：`L2Sigma_R3`（弱発散×Schwartz、閉）、Leray 射影、`memH1VF_R3`（MemSobolev）、
   粘性形式（Fourier 積分）、移流積分 `convIntegralSchwartz`。
 
-**公理化したもの**（mathlib 不在の解析フロンティア。各 `-- ALLOW_AXIOM:` ＋ Temam/Leray/Lemarié-Rieusset 参照）：
+**かつて公理化され、後に定理として除去されたもの**（mathlib 不在の解析フロンティアを埋めた順）：
 
-| | T³ (4) | ℝ³ (6) | 数学的内容 |
-|---|---|---|---|
-| 移流形式存在 | `torus3_NSForms_exist` | `r3_NSForms_exist` | `(u·∇)v` の L² 化（具体ピン留めで非退化） |
-| Galerkin ODE | `galerkin_ode_solution` | `galerkin_ode_solution_R3` | 有限次元 Picard–Lindelöf＋一様評価 |
-| Aubin–Lions | `aubin_lions` | `aubin_lions_R3` | 時間コンパクト性（空間半は仮説） |
-| 極限移行 | `galerkin_limit_passage` | `galerkin_limit_passage_R3` | 非線形項の極限（強 L² が誤差を消す） |
-| **Galerkin 射影族** | （**証明済** `velocityProjection_n`） | `r3GalerkinScheme_exists` | ℝ³ は周波数截断が無限次元／Lp 乗数不在 |
-| **空間コンパクト性** | （**証明済** `rellich_L2Sigma`） | `spatial_compactness_R3` | ℝ³ は大域 Rellich 破綻 ⇒ 局所 |
+| | T³（かつて 4 公理） | ℝ³（かつて 6 公理） | 数学的内容 | 除去 |
+|---|---|---|---|---|
+| 移流形式存在 | `torus3_NSForms_exist` → `torusConvectionGap_exists` | `r3_NSForms_exist` → `r3ConvectionGapOp_exists` | `(u·∇)v` の L² 化（具体ピン留めで非退化） | T³: issue #22, #53/PR #62。ℝ³: issue #56/PR #60 |
+| Galerkin ODE | `galerkin_ode_solution` | `galerkin_ode_solution_R3` | 有限次元 Picard–Lindelöf＋一様評価 | issue #24 / #10 |
+| Aubin–Lions | `aubin_lions` | `aubin_lions_R3` | 時間コンパクト性（空間半は最初から証明済み） | T³: issue #23（mode-wise spectral route）。ℝ³: issue #15/#44 + #46 PR-4（spacetime precompactness） |
+| 極限移行 | `galerkin_limit_passage` | `galerkin_limit_passage_R3` | 非線形項の極限（強 L² が誤差を消す） | T³: issue #25/PR #75。ℝ³: issue #4/PR-6 |
+| Galerkin 射影族 | （最初から証明済み `velocityProjection_n`） | `r3GalerkinScheme_exists` | ℝ³ は周波数截断が無限次元／Lp 乗数不在 | issue #21 |
+| 空間コンパクト性 | （最初から証明済み `rellich_L2Sigma`） | `spatial_compactness_R3` | ℝ³ は大域 Rellich 破綻 ⇒ 局所版 | issue #2 |
 
-T³ の **A2 は空間半を証明済 `rellich_L2Sigma` で割り当て**、公理は時間半（Bochner-time）のみを足す。
-ℝ³ の差の 2 公理が**まさに**「T³ で証明できた二つ」に対応するのが、非有界領域の正直なコスト。
+T³ が最初から**空間半を証明済 `rellich_L2Sigma` で割り当て**ていた一方、ℝ³ の差の 2 公理
+（Galerkin 射影族・空間コンパクト性）が**まさに「T³ で最初から証明できた二つ」に対応していた**の
+が非有界領域固有の追加コストだった——という構図は issue #21・#2 で解消されている。現在の公理台帳・
+除去履歴の一次情報は `HANDOFF.md` §4「The axioms」および `docs/STATUS.md`。
 
 ---
 
@@ -318,13 +328,13 @@ T³ の **A2 は空間半を証明済 `rellich_L2Sigma` で割り当て**、公�
 |---|---|
 | `LerayHopf/EvolutionTriple.lean` | 抽象 `DissipativeEvolution`, `WeakFormNS`, `convForm_self_zero` |
 | `LerayHopf/EnergyEstimate.lean` | `AbstractEnergyLaw`, エネルギー恒等式・不等式・非増加 |
-| `LerayHopf/Leray.lean`, `DivergenceFree.lean` | T³ `L2Sigma`, `divSymbol`, Leray 射影 |
-| `LerayHopf/GalerkinProjection.lean`, `VelocityGalerkin.lean` | Fourier 截断・速度 Galerkin 射影・実数値性 |
-| `LerayHopf/RellichEmbedding.lean` | **Fourier-tail Rellich**（L1–L5, `rellich_seq_compact`） |
-| `LerayHopf/H1Sigma.lean` | `h1EnergySq`, `viscousFormSq`, **`rellich_L2Sigma`**（成分＋対角） |
-| `LerayHopf/Torus/SolutionInterfaces.lean` | T³ 4 公理＋組立 `exists_lerayHopf_torus3` |
+| `LerayHopf/Torus/Leray.lean`, `Torus/DivergenceFree.lean` | T³ `L2Sigma`, `divSymbol`, Leray 射影 |
+| `LerayHopf/Torus/GalerkinProjection.lean`, `Torus/VelocityGalerkin.lean` | Fourier 截断・速度 Galerkin 射影・実数値性 |
+| `LerayHopf/Torus/RellichEmbedding.lean` | **Fourier-tail Rellich**（L1–L5, `rellich_seq_compact`） |
+| `LerayHopf/Torus/H1Sigma.lean` | `h1EnergySq`, `viscousFormSq`, **`rellich_L2Sigma`**（成分＋対角） |
+| `LerayHopf/Torus/SolutionInterfaces.lean` | T³ 支援層（組立ヘルパ）；主定理本体は `Torus/GalerkinODECapstone.lean` の `exists_lerayHopf_torus3`（0 公理） |
 | `LerayHopf/R3/Domain.lean` | ℝ³ L² 空間・成分射影 |
 | `LerayHopf/R3/DivergenceFree.lean` | **弱発散×Schwartz** `L2Sigma_R3`・Leray 射影 |
 | `LerayHopf/R3/Regularity.lean` | `memH1VF_R3`(MemSobolev), Fourier 積分粘性形式 |
-| `LerayHopf/R3/SolutionInterfaces.lean` | ℝ³ 6 公理＋組立 `exists_lerayHopf_r3` |
+| `LerayHopf/R3/SolutionInterfaces.lean` | ℝ³ 支援層（組立ヘルパ）；主定理本体は `R3/GalerkinODECapstone.lean` の `exists_lerayHopf_r3`（0 公理） |
 | `docs/STATUS.md` | 公理台帳・Codex 監査ログ |

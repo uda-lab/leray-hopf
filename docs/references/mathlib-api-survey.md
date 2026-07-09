@@ -1,11 +1,20 @@
-# Mathlib API Survey — Current Axiom Frontier
+# Mathlib API Survey — Historical Axiom Frontier
+
+> **Historical snapshot** (as of issue #53 / PR #62). Both capstones are now
+> **KERNEL-ONLY (0 project axioms)** — see `HANDOFF.md` §4 and `docs/STATUS.md` for the
+> current, canonical axiom ledger and `scripts/check-axioms-live.sh` for the live pin.
+> The R³ "1 project axiom" below (`galerkin_limit_passage_R3`, the table's sole live
+> entry at this snapshot) was subsequently PROVED as a theorem (issue #4 / PR-6,
+> `LerayHopf/R3/LimitPassage.lean`, 2026-07-05); this document was not updated to
+> track it.
 
 This document records the Mathlib declarations directly relevant to discharging (or
-understanding the gap of) each current project axiom. Updated after issue #53 / PR #62.
+understanding the gap of) each axiom that was live at the time of writing. Updated after
+issue #53 / PR #62.
 
 ---
 
-## R³ capstone: current 1 project axiom
+## R³ capstone: current 1 project axiom (at time of writing — see banner above)
 
 The current `#print axioms exists_lerayHopf_r3` footprint is:
 
