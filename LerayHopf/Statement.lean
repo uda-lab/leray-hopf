@@ -28,12 +28,16 @@ stand; see `docs/STATUS.md` ("Known scaffold caveats"). -/
 def ExistsLerayHopf (Ω : Type*) [MeasureSpace Ω] (u₀ : Type*) : Prop :=
   Nonempty (LerayHopfSolution Ω u₀)
 
+namespace Scaffold
+
 /-- **Target statement.** Existence of a Leray–Hopf weak solution on `𝕋³`.
 
 Intentionally left as a marked `sorry`: this is what the project aims to prove, and it
 is dishonest to close it while `LerayHopfSolution`'s fields are placeholders. -/
 theorem exists_lerayHopf_torus3_statement (u₀ : Type*) :
     ExistsLerayHopf Torus3 u₀ := by
-  sorry -- ALLOW_SORRY: target statement; do NOT discharge while definitions are placeholders
+  sorry -- ALLOW_SORRY: scaffold target statement; keep the historical placeholder theorem distinct from the real capstone
+
+end Scaffold
 
 end LerayHopf

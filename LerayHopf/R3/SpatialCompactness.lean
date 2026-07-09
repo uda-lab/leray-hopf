@@ -13,13 +13,13 @@ open MeasureTheory Filter Topology Metric
 
 This file substantiates — axiom-free and (once `lean-prover` fills the bodies)
 sorry-free — the analytic content of the `spatial_compactness_R3` axiom in
-`AxiomaticClosure.lean:378–389`.  It *reproduces* that axiom's exact conclusion
+`SolutionInterfaces.lean:378–389`.  It *reproduces* that axiom's exact conclusion
 shape from ONE clean isolated hypothesis, `LocalRellichInput`, which captures the
 genuine analytic frontier.
 
 ## Architecture (standalone)
 
-This file is **standalone**: it does **not** import `R3.AxiomaticClosure.lean`, and is
+This file is **standalone**: it does **not** import `R3.SolutionInterfaces.lean`, and is
 **not** imported by it.  The connection to the axiom is *semantic* (the deliverable's
 conclusion is byte-identical to the axiom body, plus a `(B : LocalRellichInput)` binder),
 exactly as R3-d (`TrilinearEstimate.lean`) and P5 (`GalerkinScheme.lean`) did.  It does
@@ -37,9 +37,9 @@ R3/Domain.lean
     └── R3/DivergenceFree.lean
             └── R3/Regularity.lean   (memH1VF_R3, viscousFormSq_R3)
                     └── R3/SpatialCompactness.lean   [THIS FILE]
-                            (standalone; NOT importing R3/AxiomaticClosure.lean)
+                            (standalone; NOT importing R3/SolutionInterfaces.lean)
 ```
-Sibling of `R3/AxiomaticClosure.lean`, not a dependency of it.  Added to root `LerayHopf.lean`.
+Sibling of `R3/SolutionInterfaces.lean`, not a dependency of it.  Added to root `LerayHopf.lean`.
 
 ## Declarations (dependency order)
 
@@ -1038,7 +1038,7 @@ theorem ballLimit_global_mem_L2Sigma (B : LocalRellichInput) (M : ℝ)
 
 /-- **LOCAL spatial compactness on ℝ³, from the isolated local-Rellich input.**
 
-Reproduces the exact conclusion of `spatial_compactness_R3` (AxiomaticClosure.lean:378–389)
+Reproduces the exact conclusion of `spatial_compactness_R3` (SolutionInterfaces.lean:378–389)
 axiom-free, conditional only on `LocalRellichInput` (the unconditional local compact
 embedding H¹(B_R) ↪↪ L²(B_R), which mathlib lacks). -/
 theorem localCompactness_R3_of_ballCompact (B : LocalRellichInput) :

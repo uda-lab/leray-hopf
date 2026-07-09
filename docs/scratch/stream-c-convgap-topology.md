@@ -2,7 +2,7 @@
 
 **Stream:** `stream-c-convection-operator` (Tier G repair, round 4)
 **File to edit (lean-coder, signatures only):** `LerayHopf/R3/ConvectionForm.lean`
-**Do NOT edit:** `AxiomaticClosure.lean`, `ConvectionOperator.lean`, `TrilinearEstimate.lean`, `Regularity.lean`.
+**Do NOT edit:** `SolutionInterfaces.lean`, `ConvectionOperator.lean`, `TrilinearEstimate.lean`, `Regularity.lean`.
 **Status of this doc:** statement-level contract only. No Lean edited by the planner.
 
 ---
@@ -36,7 +36,7 @@ analytic facts in the topology where they hold**, matched slot-by-slot to what
 
 ---
 
-## 1. Exact `R3NSForms` findings (`AxiomaticClosure.lean` lines 203–253)
+## 1. Exact `R3NSForms` findings (`SolutionInterfaces.lean` lines 203–253)
 
 `R3NSForms (𝔊 : R3GalerkinScheme)` is a structure. The convection form and its
 required properties:
@@ -405,7 +405,7 @@ the `R3NSForms_of_gap` signature, checking specifically:
   proofs land in the Tier-G prover pass).
 - **Must-pass statement gate (Codex):** all six §7 checks green; in particular round-3's
   pure-L² joint continuity is removed and replaced by `b_cont_fixedTest`.
-- **No new `axiom`/`opaque`/`constant`.** `AxiomaticClosure.lean` untouched.
+- **No new `axiom`/`opaque`/`constant`.** `SolutionInterfaces.lean` untouched.
 - **Later (Tier-G prover pass, separate PR):** `R3NSForms_of_gap` sorry-free.
 
 ### Targets

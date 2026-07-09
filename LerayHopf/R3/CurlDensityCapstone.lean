@@ -5,7 +5,7 @@ import LerayHopf.R3.CurlDensity
 # LerayHopf.R3.CurlDensityCapstone — retire `curlSchwartzDense_holds` (issue #3 / #21)
 
 This file performs the acyclic wiring that removes the project axiom
-`curlSchwartzDense_holds` from `exists_lerayHopf_r3_axiomatic`.  It contains NO new
+`curlSchwartzDense_holds` from `exists_lerayHopf_r3`.  It contains NO new
 mathematics: the Helmholtz/Weyl curl-density on ℝ³ is already proved
 (`curlSchwartzDense_provedRoute`, sorry-free and axiom-free) in
 `LerayHopf/R3/CurlDensity.lean`.  Here we only re-anchor the two downstream consumers
@@ -57,7 +57,7 @@ Formerly `axiom curlSchwartzDense_holds : CurlSchwartzDense` in
 Named `curlSchwartzDense_holds` (same as the former axiom) so that downstream
 consumers (`nonempty_schwartzGalerkinBasis`, `GalerkinODECapstone`, etc.) see no
 name change.  The `axiom` form was removed from `SchwartzDivFreeBasis.lean` as part
-of this restructure; `#print axioms exists_lerayHopf_r3_axiomatic` no longer lists
+of this restructure; `#print axioms exists_lerayHopf_r3` no longer lists
 `LerayHopf.curlSchwartzDense_holds` after this wiring. -/
 theorem curlSchwartzDense_holds : CurlSchwartzDense :=
   curlSchwartzDense_provedRoute

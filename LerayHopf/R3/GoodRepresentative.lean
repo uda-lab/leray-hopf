@@ -23,7 +23,7 @@ exactly as proved for T³ in `TorusTraceEnergy.lean`.
 R3 deltas vs. torus:
 - A.e.-t weak convergence comes from `inner_tendsto_of_perball` (per-ball strong convergence);
   no further a.e.-subsequence extraction is needed.
-- Level promotion uses `𝔊.mono_range` (`AxiomaticClosure.lean:207`).
+- Level promotion uses `𝔊.mono_range` (`SolutionInterfaces.lean:207`).
 - Per-test Stokes bound comes from `negLap` + `range_schwartz` + `stokesTestPairing_abs_le`.
 - Density in `L2Sigma_R3` is `𝔊.tendsto_id`.
 

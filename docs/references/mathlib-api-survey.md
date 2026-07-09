@@ -7,11 +7,11 @@ understanding the gap of) each current project axiom. Updated after issue #53 / 
 
 ## R³ capstone: current 1 project axiom
 
-The current `#print axioms exists_lerayHopf_r3_axiomatic` footprint is:
+The current `#print axioms exists_lerayHopf_r3` footprint is:
 
 | # | Axiom name | File | Mathematical content |
 |---|---|---|---|
-| 1 | `galerkin_limit_passage_R3` | `R3/AxiomaticClosure.lean` | Limit passage: good representative, WeakFormNS, energy inequality, initial trace |
+| 1 | `galerkin_limit_passage_R3` | `R3/SolutionInterfaces.lean` | Limit passage: good representative, WeakFormNS, energy inequality, initial trace |
 
 **Removed since the earlier 5-axiom survey:**
 - `curlSchwartzDense_holds` / `r3GalerkinScheme_exists` — proved by the Fourier curl-density route.
@@ -23,7 +23,7 @@ The current `#print axioms exists_lerayHopf_r3_axiomatic` footprint is:
 
 ## T³ capstone: 0 project axioms (unconditional)
 
-`#print axioms exists_lerayHopf_torus3_axiomatic` = kernel axioms only (`propext`,
+`#print axioms exists_lerayHopf_torus3` = kernel axioms only (`propext`,
 `Classical.choice`, `Quot.sound`). **T³ is unconditional.**
 
 **All T³ project axioms removed:**

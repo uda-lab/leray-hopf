@@ -3,7 +3,7 @@
 **Planner:** lean-planner. **Status:** planning artifact only (no `.lean` edited).
 **Scope source of truth:** `docs/milestone.md` (M6/M8), `docs/leray_hopf_lean_mvp_plan.md`,
 `HANDOFF.md` §5–6 (pillar **P2**), and the existing axiom signatures in
-`LerayHopf/AxiomaticClosure.lean` + `LerayHopf/R3/AxiomaticClosure.lean`.
+`LerayHopf/Torus/SolutionInterfaces.lean` + `LerayHopf/R3/SolutionInterfaces.lean`.
 **Discipline:** `lean-formalization-discipline` skill — Mathlib boundary first, honest
 gap-sizing, least-abstract isolation, no over-strength / no-smuggle, standard over bespoke.
 
@@ -19,16 +19,16 @@ gap-sizing, least-abstract isolation, no over-strength / no-smuggle, standard ov
 ## 0. The four target axioms this stream substantiates (NOT removed this stream)
 
 The capstone wiring (the `aubin_lions*` / `galerkin_limit_passage*` axioms in the two
-`AxiomaticClosure.lean` files) is **deferred** and **untouched** here. Stream D builds the
+`SolutionInterfaces.lean` files) is **deferred** and **untouched** here. Stream D builds the
 *substantiating* abstract library in NEW files; only a later, separately-contracted
 "capstone-swap" stream rewrites those four axioms into theorems applying this library.
 
 | Axiom | File:line | Time-side content this stream must reach |
 |---|---|---|
-| ~~`aubin_lions` (T³)~~ | ~~`AxiomaticClosure.lean:340`~~ | **(REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq`; used the mode-wise spectral route, NOT Stream D Bochner A-L-S; line ref void)** |
-| ~~`galerkin_limit_passage` (T³)~~ | ~~`AxiomaticClosure.lean:394`~~ | **(REMOVED #25/PR #75)** |
-| `aubin_lions_R3` | `R3/AxiomaticClosure.lean:458` | Bochner-time half (spatial = P3, local) |
-| `galerkin_limit_passage_R3` | `R3/AxiomaticClosure.lean:496` | good representative + trace (local form) |
+| ~~`aubin_lions` (T³)~~ | ~~`SolutionInterfaces.lean:340`~~ | **(REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq`; used the mode-wise spectral route, NOT Stream D Bochner A-L-S; line ref void)** |
+| ~~`galerkin_limit_passage` (T³)~~ | ~~`SolutionInterfaces.lean:394`~~ | **(REMOVED #25/PR #75)** |
+| `aubin_lions_R3` | `R3/SolutionInterfaces.lean:458` | Bochner-time half (spatial = P3, local) |
+| `galerkin_limit_passage_R3` | `R3/SolutionInterfaces.lean:496` | good representative + trace (local form) |
 
 **Two-domain leverage.** All four are stated over the abstract layer
 (`DissipativeEvolution`, `WeakFormNS`, `r3Evolution`/`torus3Evolution`). Stream D's library
@@ -184,7 +184,7 @@ delivers the **measurable-representative primitive** that P2's E1/C2 are blocked
   (conditional on D3 + spatial input)** — instantiate the abstract `aubinLions_strongL2` at
   `torus3Evolution`/`r3Evolution`, producing the *conclusion type* of `aubin_lions` /
   `aubin_lions_R3` (the `AubinLionsPackage*` data) from the library. **Does NOT edit
-  `AxiomaticClosure.lean`** — these are standalone wiring theorems proving the axiom's
+  `SolutionInterfaces.lean`** — these are standalone wiring theorems proving the axiom's
   statement; the axiom-swap is a later capstone stream. Gap: medium (mostly type-plumbing,
   given D0's bridge + D3).
 - Update P2's `aubinLionsPackage_R3_of_timeCompactness` (C2) and `kineticEnergy_lsc_bound`
@@ -294,7 +294,7 @@ test class), #7 (non-vacuity pin).
 - `w1pTime_continuous_in_H` and the full `aubinLions_strongL2` proof may remain
   scaffold-only (marked `sorry` + TODO) — these are the declared months-class residuals.
 - **No new `axiom`/`opaque`/`constant`.** `bash scripts/agent-preflight.sh` green.
-- **No edit to either `AxiomaticClosure.lean`** (substantiation only; capstone deferred).
+- **No edit to either `SolutionInterfaces.lean`** (substantiation only; capstone deferred).
 
 **Stream-D-final DoD (later streams):** `aubinLions_strongL2` + `w1pTime_continuous_in_H`
 sorry-free; D4 wiring proved; a separate capstone-swap stream rewrites the four time-side
@@ -305,7 +305,7 @@ axioms into theorems applying D4.
 ## 8. Parallel-safety vs Streams A/B/C
 
 - **No file collisions:** Stream D writes ONLY new files under `LerayHopf/Bochner/`. It does
-  not edit `AxiomaticClosure.lean` (T³ or ℝ³), `TrilinearEstimate.lean` (Stream re: P1 / b),
+  not edit `SolutionInterfaces.lean` (T³ or ℝ³), `TrilinearEstimate.lean` (Stream re: P1 / b),
   `GalerkinScheme.lean` (P5), or `SpatialCompactness.lean` (P3).
 - **Read-only dependence:** D4 *imports* the domain closures and P3 but does not modify them;
   if A/B/C change those files' proof bodies, D4 is unaffected (it references types/statements).

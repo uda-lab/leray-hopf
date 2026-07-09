@@ -21,7 +21,7 @@ import LerayHopf.NonuniquenessStatement
 import LerayHopf.BlowupLowerBound
 
 -- ℝ³ spatial/Fourier sublayer — fully sorry-free and axiom-free.
--- These do NOT import R3/AxiomaticClosure or any file that does.
+-- These do NOT import R3/SolutionInterfaces or any file that does.
 import LerayHopf.R3.Domain
 import LerayHopf.R3.DivergenceFree
 import LerayHopf.R3.Regularity
@@ -40,15 +40,15 @@ imported here should show only
 
     propext  Classical.choice  Quot.sound
 
-and none of the project-specific `axiom` declarations from the axiomatic
-closure modules (`AxiomaticClosure`, `R3/AxiomaticClosure`).
+and none of the project-specific `axiom` declarations from the capstone
+support modules (`Torus/SolutionInterfaces`, `R3/SolutionInterfaces`).
 
-Downstream core work that does not need the axiomatic closures should
+Downstream core work that does not need the capstone support modules should
 `import LerayHopf.Core` instead of `import LerayHopf`.
 
-Axiomatic layers live in:
-- `LerayHopf.Torus.Axiomatic` (imports `LerayHopf.Torus.AxiomaticClosure`)
-- `LerayHopf.R3Axiomatic`   (imports `LerayHopf.R3.AxiomaticClosure`)
+Capstone layers live in:
+- `LerayHopf.Torus.Capstone` (imports `LerayHopf.Torus.SolutionInterfaces`)
+- `LerayHopf.R3Capstone`   (imports `LerayHopf.R3.SolutionInterfaces`)
 
 The full `import LerayHopf` surface continues to export both layers.
 

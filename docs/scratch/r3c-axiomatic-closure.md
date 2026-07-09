@@ -1,8 +1,8 @@
 # R3-c — ℝ³ axiomatic closure (design contract)
 
-Port of the **Codex-approved** T³ `LerayHopf/AxiomaticClosure.lean` to ℝ³ types, reusing the
+Port of the **Codex-approved** T³ `LerayHopf/Torus/SolutionInterfaces.lean` to ℝ³ types, reusing the
 abstract `DissipativeEvolution`/`WeakFormNS`/`AbstractEnergyLaw` verbatim. The T³ 8-round audit
-lessons are baked in PREEMPTIVELY. New file `LerayHopf/R3/AxiomaticClosure.lean`.
+lessons are baked in PREEMPTIVELY. New file `LerayHopf/R3/SolutionInterfaces.lean`.
 
 ## ℝ³ types already built (axiom-free, R3-a/R3-b)
 `L2VF_R3`, `L2C_R3`, `L2VF_projComponent(C)_R3 j`, `L2Sigma_R3` (closed div-free subspace),

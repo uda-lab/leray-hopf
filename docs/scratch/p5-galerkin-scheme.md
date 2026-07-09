@@ -7,15 +7,15 @@
 ## Goal
 
 Substantiate — **axiom-free and sorry-free** — the analytic content of the
-`r3GalerkinScheme_exists` axiom (`LerayHopf/R3/AxiomaticClosure.lean:152-153`), by
+`r3GalerkinScheme_exists` axiom (`LerayHopf/R3/SolutionInterfaces.lean:152-153`), by
 *constructing* a `R3GalerkinScheme` from a single honest density hypothesis, in a
 **new standalone file**.
 
 This follows the **exact R3-d template**
 (`LerayHopf/R3/TrilinearEstimate.lean`, commit `6e00fa1`):
 
-- It does **NOT** remove the axiom and does **NOT** import `AxiomaticClosure.lean`.
-- `AxiomaticClosure.lean` does **NOT** import the new file.
+- It does **NOT** remove the axiom and does **NOT** import `SolutionInterfaces.lean`.
+- `SolutionInterfaces.lean` does **NOT** import the new file.
 - The connection is **semantic**, not structural: the new file proves a theorem of the
   shape `(density hypothesis) → Nonempty R3GalerkinScheme`, demonstrating the axiom is
   true modulo one cleanly-isolated classical input.
@@ -85,7 +85,7 @@ import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.LinearAlgebra.FiniteDimensional.Defs
 import Mathlib.Analysis.Distribution.SchwartzSpace.Basic
 ```
-(Do NOT import `AxiomaticClosure.lean`. Justify any addition beyond these.)
+(Do NOT import `SolutionInterfaces.lean`. Justify any addition beyond these.)
 
 ### Namespace / opens
 ```
@@ -99,11 +99,11 @@ open scoped Topology
 Domain.lean
   └── DivergenceFree.lean   (L2VF_R3, L2Sigma_R3, L2VF_projComponent_R3)
         └── GalerkinScheme.lean   [THIS FILE]
-              (standalone; NOT imported by AxiomaticClosure.lean)
+              (standalone; NOT imported by SolutionInterfaces.lean)
 ```
 
-Note `AxiomaticClosure.lean` already imports `DivergenceFree` (transitively) and defines
-`R3GalerkinScheme`. **This file must NOT import `AxiomaticClosure.lean`**, so it cannot
+Note `SolutionInterfaces.lean` already imports `DivergenceFree` (transitively) and defines
+`R3GalerkinScheme`. **This file must NOT import `SolutionInterfaces.lean`**, so it cannot
 reference the `R3GalerkinScheme` structure by name. Therefore the deliverable is stated
 *field-by-field* (D1–D6 below) as standalone lemmas about `starProjection`, plus a final
 "assembly readiness" statement (D7) whose conclusion is the conjunction of the six field
@@ -261,7 +261,7 @@ a div-free basis. Resolution options, in order of preference:
     inputs (the only place `𝔊.P` is applied in `AxiomaticClosure`/`Regularity` is to
     `w : L2Sigma_R3` via `IsGalerkinTest_R3`), then a **follow-up lean-coder PR** should
     weaken the structure field to `∀ u, u ∈ L2Sigma_R3 → Tendsto …`. That is a separate
-    PR (touches `AxiomaticClosure.lean`); **out of scope for P5**, which stays standalone.
+    PR (touches `SolutionInterfaces.lean`); **out of scope for P5**, which stays standalone.
   - Do NOT prove a false `∀ u : L2VF_R3` statement. If forced, leave the unrestricted
     form as a `-- TODO:` with the precise blocker (basis not total in L²).
 **Mathlib:** `starProjection_tendsto_self`; `iSup`/`topologicalClosure` from `B.dense_span`
@@ -376,7 +376,7 @@ Review the **statements** before proofs are attempted:
    is sound, that `toLpCLM` linearity correctly transfers Schwartz combinations, and that
    no vector-valued Schwartz construction is silently required.
 4. `galerkinScheme_properties_of_basis` (D7) — confirm the six-way conjunction faithfully
-   matches the six `R3GalerkinScheme` fields (`AxiomaticClosure.lean:126-150`) up to the
+   matches the six `R3GalerkinScheme` fields (`SolutionInterfaces.lean:126-150`) up to the
    documented `tendsto_id` restriction, so the semantic link to the axiom is genuine.
 
 ## Definition of done
@@ -390,7 +390,7 @@ Review the **statements** before proofs are attempted:
 - `#print axioms galerkinScheme_properties_of_basis` shows only
   `[propext, Classical.choice, Quot.sound]` (R3-d discipline; add the `#print axioms`
   line as a comment-checked sanity, not committed output).
-- File does NOT import `AxiomaticClosure.lean`; `AxiomaticClosure.lean` does NOT import it.
+- File does NOT import `SolutionInterfaces.lean`; `SolutionInterfaces.lean` does NOT import it.
 - `bash scripts/agent-preflight.sh` green.
 - Codex `/codex:adversarial-review --effort xhigh` → approve on statements (points 1–4),
   routed by orchestrator before proof work and again after.
@@ -428,14 +428,14 @@ prefix-span projections land in the closed subspace `L2Sigma_R3`, so unrestricte
 honest-partial D7 framing below where they conflict.
 
 Verified before deciding: `R3GalerkinScheme.tendsto_id` is **never mechanically consumed**
-in proof code (only the field decl at `AxiomaticClosure.lean:132` + prose at lines
+in proof code (only the field decl at `SolutionInterfaces.lean:132` + prose at lines
 118/162/459); every application of `𝔊.P` in the closure is on **divergence-free** data
 (`IsGalerkinTest_R3`, `u_inVn`, initial trace at `u₀ ∈ L2Sigma_R3`). The unrestricted
 quantifier is strictly stronger than the Leray–Hopf assembly needs.
 
 Scope changes vs. the original plan:
 
-1. **AxiomaticClosure.lean edit (lean-coder).** Weaken the field
+1. **SolutionInterfaces.lean edit (lean-coder).** Weaken the field
    `tendsto_id : ∀ (u : L2VF_R3), Filter.Tendsto (fun n => P n u) atTop (nhds u)`
    →
    `tendsto_id : ∀ (u : L2VF_R3), u ∈ L2Sigma_R3 → Filter.Tendsto (fun n => P n u) atTop (nhds u)`.
@@ -448,7 +448,7 @@ Scope changes vs. the original plan:
    `#print axioms exists_lerayHopf_r3` must stay clean (the 6 project axioms +
    propext/Classical.choice/Quot.sound, no sorryAx). Preflight green.
 
-3. **GalerkinScheme.lean now IMPORTS `AxiomaticClosure.lean`** (standalone constraint
+3. **GalerkinScheme.lean now IMPORTS `SolutionInterfaces.lean`** (standalone constraint
    lifted — the deliverable now witnesses the structure). DAG: AxiomaticClosure →
    GalerkinScheme. Confirm NO cycle (AxiomaticClosure must not import GalerkinScheme).
    `SchwartzGalerkinBasis`, `galerkinSpan`, `galerkinP` stay in GalerkinScheme.lean.

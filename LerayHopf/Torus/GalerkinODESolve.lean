@@ -1187,7 +1187,7 @@ private theorem galerkin_reg_bound_curve (F : Torus3NSForms) (ν : ℝ) (hν : 0
 
 /-! ### D — `galerkinSolutionData_torus` (the deliverable)
 
-The torus `GalerkinSolutionData` (`AxiomaticClosure.lean`) now quantifies `u_hasDeriv`/`u_ode` over
+The torus `GalerkinSolutionData` (`SolutionInterfaces.lean`) now quantifies `u_hasDeriv`/`u_ode` over
 forward time `∀ t, 0 ≤ t →` (issue #24 soundness correction, matching the merged ℝ³ sibling
 `GalerkinSolutionData_R3`).  This is exactly what the forward-global Galerkin solver (G1) supplies:
 the quadratic field blows up in finite *backward* time, so the previous all-`t` form was an

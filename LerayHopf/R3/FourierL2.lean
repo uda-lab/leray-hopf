@@ -61,7 +61,7 @@ is controlled by `(2π)²‖h‖²‖ξ‖²` (F9), matching the F7 weight.
 ## Assumptions
 
 None.  This file introduces **no** `axiom`/`opaque`/`unsafe` and must NOT import
-`AxiomaticClosure` (the NS axioms must stay out of its `#print axioms`).
+`SolutionInterfaces` (the NS axioms must stay out of its `#print axioms`).
 
 All of F1–F9 (and the linearity/bound fields of F2) are fully proved, `sorry`-free, with
 `#print axioms` showing only `[propext, Classical.choice, Quot.sound]`.

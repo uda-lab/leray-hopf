@@ -7,7 +7,7 @@
 **Runs in PARALLEL with:** another planner (Fourier foundation + pillars 1 & 2). **Stay in lane:**
 this file touches ONLY finite-dim ODE existence (`FinDimGlobalODE` construction). It does NOT touch
 `SchwartzGalerkinBasis`/`dense_span`, Rellich/compactness, or the Fourier API.
-**Does NOT edit `AxiomaticClosure.lean`.** (Confirmed below, §0.) Root import added later by coder.
+**Does NOT edit `SolutionInterfaces.lean`.** (Confirmed below, §0.) Root import added later by coder.
 
 ---
 
@@ -396,7 +396,7 @@ Lands the headline "unconditional over `schemeOfBasis B`" payoff. Only after D i
   analogue of `LocalRellichInput`), or (ii) a precise `-- TODO`/marked `sorry`. Report says so
   explicitly; NO overclaim that two-sided global is proved.
 
-**`AxiomaticClosure.lean` is NOT edited.** (2-A edits ONLY `GalerkinODEExistence.lean`'s structure
+**`SolutionInterfaces.lean` is NOT edited.** (2-A edits ONLY `GalerkinODEExistence.lean`'s structure
 quantifiers, not the axiom block, and only with orchestrator sequencing + Codex sign-off.)
 
 ---
@@ -443,7 +443,7 @@ Review **statements** before any proof is attempted:
 - **Shape 2-B (fallback):** forward-global PROVED axiom-free; backward `t<0` isolated in a minimal
   named sub-hypothesis or precise TODO; report states honestly that two-sided `∀ t:ℝ` global is NOT
   unconditionally proved (only forward-global is).
-- **`AxiomaticClosure.lean` NOT edited;** no import cycle.
+- **`SolutionInterfaces.lean` NOT edited;** no import cycle.
 - **Zero new axioms / opaque / unsafe.** Only transient `ALLOW_SORRY` during coder→prover handoff.
 - `#print axioms exists_lerayHopf_r3` unchanged (this file not on the closure import path).
 - `bash scripts/agent-preflight.sh` green.

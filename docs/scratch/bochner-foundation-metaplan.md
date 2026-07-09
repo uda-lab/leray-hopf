@@ -16,9 +16,9 @@ project axioms and decomposes the shared Bochner functional-analysis build they 
 | # | axiom | file:line | consumed by |
 |---|-------|-----------|-------------|
 | R3-B | `galerkin_spacetime_precompact_R3` | `LerayHopf/R3/ArzelaAscoliTime.lean:123` | `perBall_ae_subseq` → `diag_ae_subseq` → `u_lim_aestronglyMeasurable` → `aubinLionsPackage_R3_of_timeCompactness` (`R3/AubinLionsLimitPassage.lean`) → `build_galerkin_package_R3_of_galSeq` |
-| T-B  | ~~`aubin_lions`~~ | ~~`LerayHopf/AxiomaticClosure.lean:367`~~ | **REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq` (mode-wise spectral route, not Bochner A-L-S); line refs void** |
-| R3-C | `galerkin_limit_passage_R3` | `LerayHopf/R3/AxiomaticClosure.lean:558` | `AubinLionsAssembly.lean:84` (`build_galerkin_package_R3_of_galSeq`) → capstone |
-| T-C  | `galerkin_limit_passage` | `LerayHopf/AxiomaticClosure.lean:421` | `build_galerkin_package_of_galSeq` (`AxiomaticClosure.lean:538`) → capstone |
+| T-B  | ~~`aubin_lions`~~ | ~~`LerayHopf/Torus/SolutionInterfaces.lean:367`~~ | **REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq` (mode-wise spectral route, not Bochner A-L-S); line refs void** |
+| R3-C | `galerkin_limit_passage_R3` | `LerayHopf/R3/SolutionInterfaces.lean:558` | `AubinLionsAssembly.lean:84` (`build_galerkin_package_R3_of_galSeq`) → capstone |
+| T-C  | `galerkin_limit_passage` | `LerayHopf/Torus/SolutionInterfaces.lean:421` | `build_galerkin_package_of_galSeq` (`SolutionInterfaces.lean:538`) → capstone |
 
 R3 currently carries 3 project axioms (these two B/C + `r3_NSForms_exist`); torus carries 3
 (these two B/C + `torusConvectionGap_exists`). The B/C pair is what this plan removes; the
@@ -67,7 +67,7 @@ NSForms/ConvectionGap residuals are out of scope (tracked separately, #56/#53).
 The bc-feasibility report says R3-C/T-C "literally defer to the same kernel
 `w1pTime_continuous_in_H`." **This is NOT the current code state — it is the intended
 architecture.** Verified facts:
-- Neither `LerayHopf/R3/AxiomaticClosure.lean` nor `LerayHopf/AxiomaticClosure.lean` imports
+- Neither `LerayHopf/R3/SolutionInterfaces.lean` nor `LerayHopf/Torus/SolutionInterfaces.lean` imports
   `LerayHopf.Bochner.*` or references `GelfandTriple` / `W1pTime` / `w1pTime_continuous_in_H`
   (grep: zero hits beyond doc-comments).
 - The two C axioms are **free-standing axioms** asserting the full good-representative existence
@@ -182,7 +182,7 @@ initial trace, energy class. Most of that machinery already exists per domain
 - **PR-TC2 [T] — torus limit-passage assembly + `galerkin_limit_passage` removal.** Mirror
   PR-R3C2. The assembly is domain-generic given the triple; the per-domain pieces are the
   `b_bound`/lsc/trace lemmas (torus side currently leans more on R3's built helpers — see the
-  torus `strong_convergence` C2 `sorry` referenced at `AxiomaticClosure.lean:357-365`). **must-prove.**
+  torus `strong_convergence` C2 `sorry` referenced at `SolutionInterfaces.lean:357-365`). **must-prove.**
 
 ### PHASE 3 — The B pair (Aubin–Lions–Simon compactness) — removes R3-B then T-B
 

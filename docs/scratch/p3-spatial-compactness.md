@@ -4,7 +4,7 @@
 **File deliverable:** `LerayHopf/R3/SpatialCompactness.lean` (new, standalone)
 **Branch:** `autorun/p3-spatial-compactness`
 **Plan reference:** `/Users/uda/.claude/plans/p2-p3-witty-rain.md` (P3 section, lines 43–84);
-target axiom `spatial_compactness_R3` in `LerayHopf/R3/AxiomaticClosure.lean:378–389`.
+target axiom `spatial_compactness_R3` in `LerayHopf/R3/SolutionInterfaces.lean:378–389`.
 **Models to mirror:** `LerayHopf/H1Sigma.lean:rellich_L2Sigma` (diagonal extraction +
 `isClosed.mem_of_tendsto` for div-free closure); `LerayHopf/RellichEmbedding.lean`
 (`IsCompact.tendsto_subseq` strategy).
@@ -18,10 +18,10 @@ and sorry-free, from ONE clean isolated hypothesis that captures the genuine ana
 frontier (the LOCAL compact embedding `H¹(B_R) ↪↪ L²(B_R)`, which mathlib lacks).
 
 This does **not** remove the axiom. We add a sibling proved lemma in a new standalone file
-(`AxiomaticClosure.lean` is **not** edited and **not** imported here). The connection is
+(`SolutionInterfaces.lean` is **not** edited and **not** imported here). The connection is
 semantic, exactly as R3-d (`TrilinearEstimate.lean`) and P5 (`GalerkinScheme.lean`) did.
 
-Target conclusion (verbatim from `AxiomaticClosure.lean:378–389`):
+Target conclusion (verbatim from `SolutionInterfaces.lean:378–389`):
 
 ```lean
 ∀ (M : ℝ) (z : ℕ → L2VF_R3),
@@ -322,7 +322,7 @@ conclusion. Prefer proving G5 outright.
 ```lean
 /-- **LOCAL spatial compactness on ℝ³, from the isolated local-Rellich input.**
 
-Reproduces the exact conclusion of `spatial_compactness_R3` (AxiomaticClosure.lean:378–389)
+Reproduces the exact conclusion of `spatial_compactness_R3` (SolutionInterfaces.lean:378–389)
 axiom-free, conditional only on `LocalRellichInput` (the unconditional local compact
 embedding H¹(B_R) ↪↪ L²(B_R), which mathlib lacks). -/
 theorem localCompactness_R3_of_ballCompact (B : LocalRellichInput) :
@@ -347,7 +347,7 @@ by continuity of further restriction `L2ballR3 k → L2ballR3 R`). Conclude
 `dist (restrictToBall R (z (ψ n))) (restrictToBall R g) ^ 2 → 0` and rewrite via D0c.
 
 **The deliverable's statement must be byte-identical (modulo bound variable names) to the
-`spatial_compactness_R3` axiom body.** lean-coder: copy it from `AxiomaticClosure.lean:379–389`
+`spatial_compactness_R3` axiom body.** lean-coder: copy it from `SolutionInterfaces.lean:379–389`
 and prepend `(B : LocalRellichInput)`.
 
 ---
@@ -359,9 +359,9 @@ R3/Domain.lean
   └── R3/DivergenceFree.lean
         └── R3/Regularity.lean   (memH1VF_R3, viscousFormSq_R3)
               └── R3/SpatialCompactness.lean   [NEW — this PR]
-                    (standalone; NOT importing R3/AxiomaticClosure.lean)
+                    (standalone; NOT importing R3/SolutionInterfaces.lean)
 ```
-Sibling of `R3/AxiomaticClosure.lean`, not a dependency of it. Added to root `LerayHopf.lean`.
+Sibling of `R3/SolutionInterfaces.lean`, not a dependency of it. Added to root `LerayHopf.lean`.
 
 ---
 
@@ -384,7 +384,7 @@ If, and only if, G5 (div-free of the limit) cannot be closed, a SECOND field on
   (no `ψ`, no `g`, no `Tendsto`, no joint-over-`R` extraction, no div-free limit). This is the
   single most important gate (mirrors P5 `dense_span` honesty review).
 - `localCompactness_R3_of_ballCompact`: confirm its conclusion is byte-identical to
-  `spatial_compactness_R3` (AxiomaticClosure.lean:378–389) plus the `(B : LocalRellichInput)`
+  `spatial_compactness_R3` (SolutionInterfaces.lean:378–389) plus the `(B : LocalRellichInput)`
   binder — no hidden weakening (Hard rule 3).
 - `restrictToBall` / `L2ballR3`: is the restricted-measure L² object the right carrier, and
   does D0c's bridge equation typecheck (set-integral = squared restricted-L²-distance)?
@@ -406,7 +406,7 @@ unchanged.
 
 **lean-coder** (file skeleton, imports, signatures, root-build edit):
 - Create `LerayHopf/R3/SpatialCompactness.lean`: imports (§2.1), namespace/opens (§2.2),
-  module doc referencing `AxiomaticClosure.lean:378–389` and the plan.
+  module doc referencing `SolutionInterfaces.lean:378–389` and the plan.
 - `LocalRellichInput` structure (§1.2), `L2ballR3` (D0a), `restrictToBall` signature (D0b),
   and all theorem signatures D0c, D1, D2, D3a, D3b, D4 each carrying
   `:= by sorry -- ALLOW_SORRY: scaffold pending lean-prover` (and `restrictToBall := sorry`),
@@ -433,7 +433,7 @@ unchanged.
 - [ ] `#print axioms localCompactness_R3_of_ballCompact` shows only
       `[propext, Classical.choice, Quot.sound]` — no `sorryAx`.
 - [ ] `#print axioms exists_lerayHopf_r3` unchanged (6 project + 3 kernel axioms, no `sorryAx`);
-      `AxiomaticClosure.lean` not edited.
+      `SolutionInterfaces.lean` not edited.
 - [ ] `bash scripts/agent-preflight.sh` green.
 - [ ] Codex Gates 1, 2, 3 → approve.
 

@@ -26,7 +26,7 @@ The three main pieces are:
 ## Context in the campaign
 
 This file is the **final PR (PR-6)** of the six-PR `galerkin_limit_passage_R3`
-removal campaign (issue #4).  After this file, `exists_lerayHopf_r3_axiomatic` has
+removal campaign (issue #4).  After this file, `exists_lerayHopf_r3` has
 **zero project axioms** (`#print axioms` = kernel-only: `propext`,
 `Classical.choice`, `Quot.sound`).
 -/

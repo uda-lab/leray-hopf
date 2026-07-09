@@ -24,7 +24,7 @@ assembles the full 5-conjunct existential and thereby completes the removal of t
 NO import of `LerayHopf/Bochner/TimeSobolev*.lean`; no `W1pTime` witness is used.
 -/
 
-import LerayHopf.Torus.AxiomaticClosure
+import LerayHopf.Torus.SolutionInterfaces
 import LerayHopf.Torus.TraceEnergy
 
 namespace LerayHopf

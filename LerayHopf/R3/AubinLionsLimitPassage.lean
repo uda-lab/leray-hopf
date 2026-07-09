@@ -4,8 +4,8 @@
 **Milestone:** `p2-aubin-lions` (honest PARTIAL substantiation; contract
 `docs/scratch/p2-aubin-lions.md`, ADDENDUM "Scope refinement" governs the scope below).
 
-This module IMPORTS `R3.AxiomaticClosure` (justified — it *produces* `AubinLionsPackage_R3`
-and *consumes* `GalerkinSolutionData_R3`, both of which live in `AxiomaticClosure.lean` with
+This module IMPORTS `R3.SolutionInterfaces` (justified — it *produces* `AubinLionsPackage_R3`
+and *consumes* `GalerkinSolutionData_R3`, both of which live in `SolutionInterfaces.lean` with
 no lighter exposing module). This is the single heavy import; unlike P3 (`R3.SpatialCompactness`,
 deliberately standalone) it is unavoidable here. It also reuses P3
 (`localCompactness_R3_of_ballCompact`, `LocalRellichInput`) and R3-d's `b`-bound analytic core
@@ -47,7 +47,7 @@ theory would supply). The deliverables are otherwise proved axiom-free.
   `galerkin_curves_equicontinuous` helper are retained as legacy/unused scaffolding (referenced only
   in docs), kept for the eventual discharge of the extraction axiom.
 
-**Documented residual frontier (the limit-passage half stays axiomatic upstream):** the limit-passage
+**Documented residual frontier (the limit-passage half stays capstone upstream):** the limit-passage
 conclusions (b) `WeakFormNS`, (d) initial trace, and (e) energy class require the absent
 vector-valued weak time-derivative / `W^{1,p}(0,T;X)` theory and are carried by the upstream
 `galerkin_limit_passage_R3` axiom (not by this file). Bundling them into a `GoodRepresentativeInput`
@@ -71,14 +71,14 @@ PROVED, its time content swapped 1-for-1 for the strictly-thinner `galerkinSpace
 -/
 
 -- Import-cycle audit (REQUIRED — Hard rule 10). Verified against the actual import lines:
---   * `R3.AxiomaticClosure` imports ONLY `EvolutionTriple`, `R3.Regularity`, and a mathlib
+--   * `R3.SolutionInterfaces` imports ONLY `EvolutionTriple`, `R3.Regularity`, and a mathlib
 --     interval-integral module — it does NOT import this file, `R3.SpatialCompactness`, or
 --     `R3.TrilinearEstimate`. So importing it here is acyclic.
 --   * `R3.SpatialCompactness` imports `R3.Regularity` + mathlib (standalone); `R3.TrilinearEstimate`
 --     imports `R3.DivergenceFree` + mathlib (leaf). Importing both here adds no cycle.
 --   * This file is a LEAF (nothing imports it). It is the unique place that may reference
 --     `AubinLionsPackage_R3` AND reuse P3 — neither of those modules can reference the other.
-import LerayHopf.R3.AxiomaticClosure     -- AubinLionsPackage_R3, GalerkinSolutionData_R3, r3Evolution, R3NSForms
+import LerayHopf.R3.SolutionInterfaces     -- AubinLionsPackage_R3, GalerkinSolutionData_R3, r3Evolution, R3NSForms
 import LerayHopf.R3.SpatialCompactness   -- localCompactness_R3_of_ballCompact, LocalRellichInput
 import LerayHopf.R3.ArzelaAscoliTime     -- issue #44: T0.1/T0.2 axioms + T1–T4 Arzelà–Ascoli chain + u_lim_aestronglyMeasurable
 import LerayHopf.R3.TrilinearEstimate    -- b-bound analytic core (downstream of R3NSForms.b_bound)
@@ -126,7 +126,7 @@ structure TimeCompactnessInput (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
 /-- The `spatial` hypothesis required by the Aubin–Lions combination is exactly P3's
 `localCompactness_R3_of_ballCompact`. Supplying P3's isolated input discharges it.
 
-This type is the `aubin_lions_R3` `spatial` binder verbatim (`AxiomaticClosure.lean:449–459`). -/
+This type is the `aubin_lions_R3` `spatial` binder verbatim (`SolutionInterfaces.lean:449–459`). -/
 theorem spatialInput_R3_of_localRellich (B : LocalRellichInput) :
     ∀ (M : ℝ) (z : ℕ → L2VF_R3),
       (∀ n, z n ∈ L2Sigma_R3) → (∀ n, memH1VF_R3 (z n)) →
@@ -2343,7 +2343,7 @@ once the good representative is taken to be `alPkg.u`, conjunct 0 = `EventuallyE
 
 PROOF SKELETON (Temam III.3).  Fix an admissible test `ψ ⊗ w` (`ψ : Time → ℝ` C¹ with
 `tsupport ψ ⊆ Ioo 0 T`, `w` Schwartz divergence-free).  For each Galerkin level `N` and each
-`n ≥ N` the approximant ODE `u_ode` (`AxiomaticClosure.lean:387`) holds against the Galerkin
+`n ≥ N` the approximant ODE `u_ode` (`SolutionInterfaces.lean:387`) holds against the Galerkin
 test `𝔊.P N w` (a fixed point of `𝔊.P n` for `n ≥ N`).  Multiplying by `ψ(t)`, integrating over
 `[0,T]`, and integrating the time-derivative term by parts (boundary-free because
 `tsupport ψ ⊆ Ioo 0 T`) yields, for the approximant `uₙ`,
@@ -3322,7 +3322,7 @@ spatial compactness (via `LocalRellichInput`).  The time-compactness extraction 
 UNCONDITIONALLY by `galerkinSpaceTimeExtraction_R3` (no separate `TimeCompactnessInput` modulus
 hypothesis — it is absorbed into that single axiom).  The conclusion type is exactly
 `AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq` (matching the `aubin_lions_R3` binder list,
-`AxiomaticClosure.lean:444–460`).
+`SolutionInterfaces.lean:444–460`).
 
 ASSEMBLY: the genuine spatial half is PROVED axiom-free (the `steklovAvg_spatial_extraction`
 chain). The single irreducible LOCAL Bochner-time compactness extraction (one subsequence `φ` + a

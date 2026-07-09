@@ -11,8 +11,8 @@
 Issue #1 finding 2 names three files:
 
 - `LerayHopf.lean` (the root re-export module)
-- `LerayHopf/AxiomaticClosure.lean` (T³ axiomatic closure — formerly carried `axiom aubin_lions` and `axiom galerkin_limit_passage`; both REMOVED as of 2026-07-04: `aubin_lions` by #23/PR #89, `galerkin_limit_passage` by #25/PR #75; T³ now unconditional)
-- `LerayHopf/R3/AxiomaticClosure.lean` (ℝ³ axiomatic closure — carries `axiom r3_NSForms_exist` and `axiom galerkin_limit_passage_R3`)
+- `LerayHopf/Torus/SolutionInterfaces.lean` (T³ axiomatic closure — formerly carried `axiom aubin_lions` and `axiom galerkin_limit_passage`; both REMOVED as of 2026-07-04: `aubin_lions` by #23/PR #89, `galerkin_limit_passage` by #25/PR #75; T³ now unconditional)
+- `LerayHopf/R3/SolutionInterfaces.lean` (ℝ³ axiomatic closure — carries `axiom r3_NSForms_exist` and `axiom galerkin_limit_passage_R3`)
 
 The concern: any file that writes `import LerayHopf` transitively inherits every project axiom, even if it only needs axiom-free pieces like `LerayHopf.Core`.
 
@@ -27,8 +27,8 @@ The Wave-0 refactor introduced a three-layer import surface, documented in both 
 | Import | Content | Axioms |
 |---|---|---|
 | `import LerayHopf.Core` | axiom-free, sorryAx-free | 0 project axioms |
-| `import LerayHopf.Torus.Axiomatic` | T³ capstone chain | 0 project axioms (all three former axioms now proved: `torusConvectionGap_exists` → #53/PR#62, `galerkin_limit_passage` → #25/PR#75, `aubin_lions` → #23/PR#89) |
-| `import LerayHopf.R3Axiomatic` | ℝ³ capstone chain | 1 (`galerkin_limit_passage_R3`; former axioms `r3_NSForms_exist`, `curlSchwartzDense_holds`, `galerkinSpaceTimeExtraction_R3`, `galerkin_weakLimit_R3`, `galerkin_spacetime_precompact_R3` all proved) |
+| `import LerayHopf.Torus.Capstone` | T³ capstone chain | 0 project axioms (all three former axioms now proved: `torusConvectionGap_exists` → #53/PR#62, `galerkin_limit_passage` → #25/PR#75, `aubin_lions` → #23/PR#89) |
+| `import LerayHopf.R3Capstone` | ℝ³ capstone chain | 1 (`galerkin_limit_passage_R3`; former axioms `r3_NSForms_exist`, `curlSchwartzDense_holds`, `galerkinSpaceTimeExtraction_R3`, `galerkin_weakLimit_R3`, `galerkin_spacetime_precompact_R3` all proved) |
 | `import LerayHopf` | all three | 1 project axiom total (`galerkin_limit_passage_R3`; T³ unconditional) |
 
 The root `LerayHopf.lean` is an intentional full-surface re-export. Its docstring says so explicitly. `LerayHopf.Core` exists precisely for consumers who want the axiom-free layer.
@@ -45,8 +45,8 @@ The root module is consumed by `lake build` via `lakefile.toml`'s `[[lean_lib]] 
 ### 2c. What `scripts/print_axioms.lean` imports
 
 ```
-import LerayHopf.Torus.Axiomatic
-import LerayHopf.R3Axiomatic
+import LerayHopf.Torus.Capstone
+import LerayHopf.R3Capstone
 import LerayHopf.Core
 ```
 
@@ -54,15 +54,15 @@ It does NOT import the root `LerayHopf`. It imports the three sub-aggregators di
 
 ### 2d. The redundant imports in `LerayHopf.lean`
 
-The root currently lists 22 imports. Eight of them are already transitively covered by `LerayHopf.Torus.Axiomatic` or `LerayHopf.R3Axiomatic`:
+The root currently lists 22 imports. Eight of them are already transitively covered by `LerayHopf.Torus.Capstone` or `LerayHopf.R3Capstone`:
 
-- `LerayHopf.Torus.Axiomatic` imports:
-  - `LerayHopf.Torus.AxiomaticClosure` (which imports `LerayHopf.EvolutionTriple`, `LerayHopf.Torus.H1Sigma`, `LerayHopf.EnergyEstimate`, `LerayHopf.Torus.GalerkinProjection`)
+- `LerayHopf.Torus.Capstone` imports:
+  - `LerayHopf.Torus.SolutionInterfaces` (which imports `LerayHopf.EvolutionTriple`, `LerayHopf.Torus.H1Sigma`, `LerayHopf.EnergyEstimate`, `LerayHopf.Torus.GalerkinProjection`)
   - `LerayHopf.Torus.ConvectionForm`
   - `LerayHopf.Torus.GalerkinODECapstone` (which imports `LerayHopf.Torus.ConvectionForm` and `LerayHopf.Torus.GalerkinODESolve`)
   - Transitively also: `LerayHopf.Torus.GalerkinScheme`, `LerayHopf.Torus.RellichEmbedding`, `LerayHopf.Torus.SobolevTorus`, `LerayHopf.Statement`, `LerayHopf.ExistenceFromPackage`
 
-- `LerayHopf.R3Axiomatic` imports `LerayHopf.R3.GalerkinODECapstone`, which transitively pulls in the entire R3 chain.
+- `LerayHopf.R3Capstone` imports `LerayHopf.R3.GalerkinODECapstone`, which transitively pulls in the entire R3 chain.
 
 So the explicit lines in `LerayHopf.lean` for:
 
@@ -93,12 +93,12 @@ import LerayHopf.Bochner.GelfandTriple
 import LerayHopf.Bochner.TimeSobolev
 ```
 
-...are redundant (already transitively covered) once `LerayHopf.Torus.Axiomatic` and `LerayHopf.R3Axiomatic` are imported. The root could, in principle, be reduced to:
+...are redundant (already transitively covered) once `LerayHopf.Torus.Capstone` and `LerayHopf.R3Capstone` are imported. The root could, in principle, be reduced to:
 
 ```
 import LerayHopf.Core
-import LerayHopf.Torus.Axiomatic
-import LerayHopf.R3Axiomatic
+import LerayHopf.Torus.Capstone
+import LerayHopf.R3Capstone
 import LerayHopf.Bochner.GelfandTriple
 import LerayHopf.Bochner.TimeSobolev
 ```
@@ -132,8 +132,8 @@ The concern (consumers inheriting axioms by importing the root) is technically v
 import LerayHopf.Core
 
 -- Full axiomatic closures (transitive covers of all torus/R3 chain files)
-import LerayHopf.Torus.Axiomatic
-import LerayHopf.R3Axiomatic
+import LerayHopf.Torus.Capstone
+import LerayHopf.R3Capstone
 
 -- Bochner layer (not covered by either aggregator above)
 import LerayHopf.Bochner.GelfandTriple
@@ -189,8 +189,8 @@ gate is mechanical:
   transitively reachable from the new five-line import list.  The verification is a DAG
   walk, not a proof obligation.  The mapping is:
   - `LerayHopf.Core` — unchanged; already covers all the Core-layer files.
-  - `LerayHopf.Torus.Axiomatic` → `LerayHopf.Torus.AxiomaticClosure` → `LerayHopf.EvolutionTriple`, `LerayHopf.Torus.H1Sigma`, `LerayHopf.EnergyEstimate`, `LerayHopf.Torus.GalerkinProjection`; and `LerayHopf.Torus.ConvectionForm`, `LerayHopf.Torus.GalerkinODECapstone` → `LerayHopf.Torus.GalerkinODESolve` → `LerayHopf.Torus.GalerkinScheme`.  Also `LerayHopf.Torus.RellichEmbedding`, `LerayHopf.Statement`, `LerayHopf.ExistenceFromPackage` via `AxiomaticClosure`'s chain through `H1Sigma`.
-  - `LerayHopf.R3Axiomatic` → `LerayHopf.R3.GalerkinODECapstone` → entire R3 chain including `GalerkinScheme`, `SchwartzDivFreeBasis`, `GalerkinODE`, `GalerkinODEExistence`, `GalerkinODESolve`, `AubinLionsAssembly`, `AubinLionsLimitPassage`, `ArzelaAscoliTime`, `CurlDensity`, `FrechetKolmogorov`, `ConvectionOperator`, `ConvectionForm`.
+  - `LerayHopf.Torus.Capstone` → `LerayHopf.Torus.SolutionInterfaces` → `LerayHopf.EvolutionTriple`, `LerayHopf.Torus.H1Sigma`, `LerayHopf.EnergyEstimate`, `LerayHopf.Torus.GalerkinProjection`; and `LerayHopf.Torus.ConvectionForm`, `LerayHopf.Torus.GalerkinODECapstone` → `LerayHopf.Torus.GalerkinODESolve` → `LerayHopf.Torus.GalerkinScheme`.  Also `LerayHopf.Torus.RellichEmbedding`, `LerayHopf.Statement`, `LerayHopf.ExistenceFromPackage` via `AxiomaticClosure`'s chain through `H1Sigma`.
+  - `LerayHopf.R3Capstone` → `LerayHopf.R3.GalerkinODECapstone` → entire R3 chain including `GalerkinScheme`, `SchwartzDivFreeBasis`, `GalerkinODE`, `GalerkinODEExistence`, `GalerkinODESolve`, `AubinLionsAssembly`, `AubinLionsLimitPassage`, `ArzelaAscoliTime`, `CurlDensity`, `FrechetKolmogorov`, `ConvectionOperator`, `ConvectionForm`.
   - `LerayHopf.Bochner.GelfandTriple` and `LerayHopf.Bochner.TimeSobolev` — listed explicitly as before; not covered by any aggregator.
 
 No adversarial-review slash command is needed for this PR (no new statement, no new proof, no axiom).
@@ -201,8 +201,8 @@ No adversarial-review slash command is needed for this PR (no new statement, no 
 
 `scripts/print_axioms.lean` imports:
 ```
-import LerayHopf.Torus.Axiomatic
-import LerayHopf.R3Axiomatic
+import LerayHopf.Torus.Capstone
+import LerayHopf.R3Capstone
 import LerayHopf.Core
 ```
 

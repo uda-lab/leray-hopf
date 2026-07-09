@@ -17,7 +17,7 @@ Leray–Hopf 弱解存在の形式化に関する日本語スライド執筆用�
 - **C**: 標準訳が未確立。暫定表記を示す。
 
 ### Lean コードの扱い
-- Lean のキーワード（`sorry`, `axiom`, `theorem`, `def`, `structure` 等）および Lean の識別子（`exists_lerayHopf_r3_axiomatic`, `LerayHopfSolution`, `GalerkinCompactnessPackage` 等）は**コードとして原文のまま**扱い、日本語に訳さない。スライド中ではコードブロックまたは等幅フォントで表示する。
+- Lean のキーワード（`sorry`, `axiom`, `theorem`, `def`, `structure` 等）および Lean の識別子（`exists_lerayHopf_r3`, `LerayHopfSolution`, `GalerkinCompactnessPackage` 等）は**コードとして原文のまま**扱い、日本語に訳さない。スライド中ではコードブロックまたは等幅フォントで表示する。
 
 ---
 

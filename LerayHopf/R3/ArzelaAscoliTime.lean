@@ -28,7 +28,7 @@ pointwise-in-time strong equicontinuity. The Mathlib extraction chain is:
 
 **Architecture (import-cycle safety):**
   R3.SpatialCompactness  ← (LocalRellichInput, L2ballR3, restrictToBall)
-  R3.AxiomaticClosure    ← (GalerkinSolutionData_R3)
+  R3.SolutionInterfaces    ← (GalerkinSolutionData_R3)
   R3.ArzelaAscoliTime    [THIS FILE]   ← depends on both above
   R3.AubinLionsLimitPassage            ← imports this file
 
@@ -73,10 +73,10 @@ Simon spacetime precompactness on ℝ³) was DISCHARGED on 2026-07-04 (issue #46
 total-boundedness engine (the `n`-uniform integrated sampling modulus + Rellich ball-compactness).
 
 Net R3 project axioms from this file: 0.
-The remaining R3 project axiom is `galerkin_limit_passage_R3` (from `AxiomaticClosure`).
+The remaining R3 project axiom is `galerkin_limit_passage_R3` (from `SolutionInterfaces`).
 -/
 
-import LerayHopf.R3.AxiomaticClosure   -- GalerkinSolutionData_R3, R3GalerkinScheme, R3NSForms
+import LerayHopf.R3.SolutionInterfaces   -- GalerkinSolutionData_R3, R3GalerkinScheme, R3NSForms
 import LerayHopf.R3.SpatialCompactness -- LocalRellichInput, L2ballR3, restrictToBall
 import LerayHopf.R3.DivergenceFree     -- L2VF_R3_separable, L2Sigma_R3_weaklyClosed (WL-1, WL-4)
 -- E2 galerkin_spacetime_precompact_of_goodSampling — discharges galerkin_spacetime_precompact_R3

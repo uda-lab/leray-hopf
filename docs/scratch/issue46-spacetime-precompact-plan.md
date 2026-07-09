@@ -16,7 +16,7 @@ since then the repo has landed, sorry-free and axiom-free,
 - `totallyBounded_of_uniform_approx` (`LerayHopf/R3/FrechetKolmogorov.lean:1806`, **public**),
 - `LocalRellichInput` discharged unconditionally
   (`localRellichInput_of_frechetKolmogorov frechetKolmogorov_holds`, visible from
-  `R3/AxiomaticClosure.lean`).
+  `R3/SolutionInterfaces.lean`).
 
 With these, the trilinear Sobolev wall is **passable on Galerkin states** (which are
 componentwise Schwartz by `R3GalerkinScheme.range_schwartz` + `u_inVn`), and the axiom can be

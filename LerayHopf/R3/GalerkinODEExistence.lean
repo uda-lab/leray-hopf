@@ -12,7 +12,7 @@ This file attempts the second analytic gap behind `galerkin_ode_solution_R3`:
 constructing a `GalerkinODEInput` (`GalerkinODE.lean`) from the finite-dim Galerkin ODE.
 It mirrors `GalerkinScheme.lean`/`GalerkinODE.lean`: a standalone sibling under
 `LerayHopf/R3/`, isolated-hypothesis discipline for the residual frontier, and it
-**never edits `AxiomaticClosure.lean`** (the abstraction-barrier finite-dimensionality fix
+**never edits `SolutionInterfaces.lean`** (the abstraction-barrier finite-dimensionality fix
 is the later sequential capstone).
 
 ## HONEST scope (the §1.4 abstraction barrier — concrete-scheme route)
@@ -42,11 +42,11 @@ no continuation-from-a-priori-bound theorem) — is **isolated** in the hypothes
 ## Import justification (NO import cycle)
 
 ```
-Domain.lean → … → AxiomaticClosure.lean → GalerkinODE.lean ─┐
+Domain.lean → … → SolutionInterfaces.lean → GalerkinODE.lean ─┐
                                         → GalerkinScheme.lean┴─→ GalerkinODEExistence.lean [THIS FILE]
 ```
 
-`GalerkinODE.lean` already imports `AxiomaticClosure.lean`, so the structures/defs
+`GalerkinODE.lean` already imports `SolutionInterfaces.lean`, so the structures/defs
 (`GalerkinODEInput`, `R3GalerkinScheme`, `R3NSForms`, `stokesTestPairing_R3`, `L2Sigma_R3`,
 `L2VF_R3`, `Time`) are transitively in scope; `GalerkinScheme.lean` supplies `galerkinSpan`,
 `galerkinP`, and the finite-dimensional instance. Neither file imports THIS one — the
@@ -62,7 +62,7 @@ and finite-dim completeness for the Riesz step.
 (a bundle of curve data, not an environment axiom) — the honest analogue of P3's
 `LocalRellichInput` and P5's `SchwartzGalerkinBasis`, and STRICTLY smaller than
 `GalerkinODEInput` because R-repr is now PROVED (R1/R2/R3), not assumed.
-`AxiomaticClosure.lean` is **NOT edited**.
+`SolutionInterfaces.lean` is **NOT edited**.
 -/
 
 namespace LerayHopf
@@ -408,7 +408,7 @@ noncomputable def galerkinODE_vectorField
 functional `w ↦ - ν · stokes(u, w) - b(u, u, w)`.  This is the **R-repr** content
 (weak-form ⇄ vector-field representation) made precise: it is the identity from which the
 weak Galerkin ODE `u_ode` is DERIVED in R3.  Sign/`ν` conventions match `u_ode`
-(`AxiomaticClosure.lean` / `GalerkinODE.lean:102`). -/
+(`SolutionInterfaces.lean` / `GalerkinODE.lean:102`). -/
 theorem galerkinODE_vectorField_spec
     (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBasis B)) (ν : ℝ) (n : ℕ)
     (u w : galerkinSpan B n) :

@@ -1,5 +1,5 @@
 import LerayHopf.R3.ConvectionOperator
-import LerayHopf.R3.AxiomaticClosure
+import LerayHopf.R3.SolutionInterfaces
 import LerayHopf.R3.SchwartzDivFreeBasis
 import LerayHopf.R3.CurlDensityCapstone  -- curlSchwartzDense_holds (proved theorem, issue #3/#21)
 
@@ -9,15 +9,15 @@ import LerayHopf.R3.CurlDensityCapstone  -- curlSchwartzDense_holds (proved theo
 **Milestone / stream:** `stream-c-convection-operator` (Tier G).
 
 This file isolates the genuine Mathlib-absent pillar behind the
-`r3_NSForms_exist` assumption (declared in `LerayHopf/R3/AxiomaticClosure.lean`)
+`r3_NSForms_exist` assumption (declared in `LerayHopf/R3/SolutionInterfaces.lean`)
 as a single named hypothesis `ConvectionGap`, and proves the conditional
 
   `ConvectionGap 𝔊 → Nonempty (R3NSForms 𝔊)`
 
 so that discharging `ConvectionGap` once (when the missing weak-`(u·∇)v` calculus on
-`Lp` lands) discharges `r3_NSForms_exist` everywhere, with no edit to `AxiomaticClosure`.
+`Lp` lands) discharges `r3_NSForms_exist` everywhere, with no edit to `SolutionInterfaces`.
 
-It imports `AxiomaticClosure.lean` (allowed) to reference `R3NSForms`, but does **not**
+It imports `SolutionInterfaces.lean` (allowed) to reference `R3NSForms`, but does **not**
 edit it.
 
 ## What the gap is — and is not
@@ -90,7 +90,7 @@ density chain is sorry-free.
 **Issue #48 reorganization:** The named axiom `r3_NSForms_exist` is REPLACED by
 `r3ConvectionGapOp_exists` (see `## Assumptions` below), mirroring the accepted torus #22
 pattern (`torusConvectionGap_exists`).  `r3_NSForms_exists` is a proved theorem (sorry-free).
-`AxiomaticClosure.lean` is NOT edited.
+`SolutionInterfaces.lean` is NOT edited.
 
 What becomes THEOREM content (no longer assumed):
 - The multilinear ALGEBRA: `b_add_{1,2,3}` and `b_smul_{1,2,3}` are derived from `b_multilinear`.
@@ -333,7 +333,7 @@ the bound and the pin are derived from the Tier-S lemmas through `b_extends` /
 `b_cont_fixedTest`; only the algebraic trilinear/antisymmetry content (`b_multilinear`,
 `b_antisymm_gap`) is asserted, as the honest residual of the missing weak operator.
 Discharging `ConvectionGap` later (when the weak-`(u·∇)v` extension calculus lands)
-discharges `r3_NSForms_exist` for free, with no edit to `AxiomaticClosure.lean`, and never
+discharges `r3_NSForms_exist` for free, with no edit to `SolutionInterfaces.lean`, and never
 vacuously (the `convFormSchwartz_eq_witness` pin through `b_extends` excludes `b = 0`). -/
 theorem R3NSForms_of_gap (𝔊 : R3GalerkinScheme) (g : ConvectionGap 𝔊) :
     Nonempty (R3NSForms 𝔊) := by
@@ -443,7 +443,7 @@ and replaced by the OPERATOR-ONLY residual axiom `r3ConvectionGapOp_exists` (bel
 carries only the five operator-extension fields.  Density (`schwartz_dense`) is proved here (P2)
 and assembled in `r3_NSForms_exists`.  All trilinear/bound/pin algebra that `r3_NSForms_exist`
 formerly assumed is now THEOREM content via `R3NSForms_of_gap` (above).  The capstone
-`exists_lerayHopf_r3_axiomatic` is rerouted from `r3_NSForms_exist` to the proved theorem
+`exists_lerayHopf_r3` is rerouted from `r3_NSForms_exist` to the proved theorem
 `r3_NSForms_exists` (below).
 -/
 

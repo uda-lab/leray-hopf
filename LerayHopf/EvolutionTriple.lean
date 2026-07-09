@@ -40,7 +40,7 @@ Carries only what `WeakFormNS` and the energy law need:
 - a trilinear convection form `convForm : H → H → H → ℝ` satisfying antisymmetry.
 
 Galerkin projection, compactness, and concrete T³ constructions are NOT in this
-bundle (they belong in the assembly `AxiomaticClosure.lean`, Commit 2). -/
+bundle (they belong in the assembly `SolutionInterfaces.lean`, Commit 2). -/
 structure DissipativeEvolution where
   /-- The real Hilbert space of velocity fields. -/
   H : Type*

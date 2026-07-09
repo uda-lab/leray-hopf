@@ -1,14 +1,14 @@
-import LerayHopf.Torus.AxiomaticClosure
+import LerayHopf.Torus.SolutionInterfaces
 import LerayHopf.Torus.ConvectionForm
 import LerayHopf.Torus.GalerkinODECapstone
 
 /-!
-# LerayHopf.Torus.Axiomatic — axiomatic closure for 𝕋³
+# LerayHopf.Torus.Capstone — capstone re-export for 𝕋³
 
-This module re-exports the full axiomatic closure of the Torus³ Leray–Hopf
+This module re-exports the full capstone chain of the Torus³ Leray–Hopf
 existence argument.  The capstone declaration is:
 
-    `LerayHopf.exists_lerayHopf_torus3_axiomatic`
+    `LerayHopf.exists_lerayHopf_torus3`
 
 (relocated to `LerayHopf/Torus/GalerkinODECapstone.lean` in issue #24), which depends on **zero
 project axioms** — KERNEL-ONLY.  All former project axioms removed:

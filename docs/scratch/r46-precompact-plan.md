@@ -28,7 +28,7 @@
     `LocalRellichInput` from the FK chain (sorry-free, kernel axioms only).
   - `steklovAvg`, `steklovAvg_norm_le_u0`, `steklovAvg_approx` (in `AubinLionsLimitPassage.lean`):
     the Steklov averaging infrastructure.
-  - `spatial_compactness_R3` (proved theorem in `AxiomaticClosure.lean`): for any L²∩H¹-bounded
+  - `spatial_compactness_R3` (proved theorem in `SolutionInterfaces.lean`): for any L²∩H¹-bounded
     div-free sequence, there exists a subsequence converging in L²(B_R) for all R.
 - Plan reference: `docs/milestone.md` Milestone 8 (Aubin–Lions / compactness axiom removal).
 

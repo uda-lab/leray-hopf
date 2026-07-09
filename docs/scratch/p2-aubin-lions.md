@@ -23,7 +23,7 @@
 >   measurability + boundary strip `(T−δ,T]`).
 > - **DROPPED** (never shipped): `GoodRepresentativeInput`, `galerkinLimitPassage_R3_of_goodRep`,
 >   `galStates_admissible` (see ADDENDUM).
-> - Zero new axioms; `AxiomaticClosure.lean` not edited; `exists_lerayHopf_r3` unchanged
+> - Zero new axioms; `SolutionInterfaces.lean` not edited; `exists_lerayHopf_r3` unchanged
 >   (6 project + 3 kernel, no `sorryAx`); preflight green.
 >
 > See §8 (rewritten) and the ADDENDUM for details. Everything between here and §8 is archival.
@@ -32,8 +32,8 @@
 **File deliverable:** `LerayHopf/R3/AubinLionsLimitPassage.lean` (new, standalone)
 **Branch:** `autorun/p2-aubin-lions`
 **Plan reference:** `/Users/uda/.claude/plans/p2-p3-witty-rain.md` (P2 section, lines 88–123);
-target axioms `aubin_lions_R3` (`AxiomaticClosure.lean:444–460`, package `406–428`) and
-`galerkin_limit_passage_R3` (`AxiomaticClosure.lean:482–501`).
+target axioms `aubin_lions_R3` (`SolutionInterfaces.lean:444–460`, package `406–428`) and
+`galerkin_limit_passage_R3` (`SolutionInterfaces.lean:482–501`).
 **Models to mirror:** `LerayHopf/R3/SpatialCompactness.lean` (P3 — standalone, isolated
 `structure` hypothesis, diagonal-over-balls, `#print-axioms`-clean), `LerayHopf/R3/GalerkinScheme.lean`
 (P5 — bundled-structure frontier), `LerayHopf/R3/TrilinearEstimate.lean` (R3-d — `b`-bound under L²).
@@ -77,7 +77,7 @@ conclusions match the axiom bodies up to the added hypothesis binders).
 `strong_convergence` (LOCAL space-time L²(0,T; L²(B_R)) convergence on every ball). The
 spatial half is already factored out as the `spatial` hypothesis whose type is **byte-identical**
 to P3's `localCompactness_R3_of_ballCompact` conclusion (verified against
-`AxiomaticClosure.lean:449–459` vs `SpatialCompactness.lean:1044–1055`). So:
+`SolutionInterfaces.lean:449–459` vs `SpatialCompactness.lean:1044–1055`). So:
 
 - The **spatial input is dischargeable concretely** by P3 (modulo P3's `LocalRellichInput`).
 - The remaining gap is *purely the time direction*: upgrading per-(a.e.)-time spatial
@@ -99,7 +99,7 @@ axiom-free. The single honest non-proved input is the time equicontinuity.
 |---|---|---|---|
 | (a) | a.e.-equality `u =ᵐ alPkg.u` on `Icc 0 T` | REACHABLE (trivial) | take `u := alPkg.u`, then `=ᵐ` is `ae_eq_refl`. |
 | (b) | `WeakFormNS ν T (r3Evolution 𝔊 F) u` | **NOT reachable axiom-free** | needs the weak-time-derivative identity `∫ -⟪u,w⟫ψ' + ψ(ν·visc + b) = 0` recovered as the limit of the Galerkin ODE `u_ode`; the time-derivative-to-test-function transfer (IBP in time against `ψ`) is exactly the missing `W^{1,p}(0,T;X)` machinery. Isolate via `GoodRepresentativeInput.weakForm`. The `b`-term *passage* (limit of `F.b (uₙ) (uₙ) w → F.b u u w` under strong L²) IS provable via `b_bound` and feeds this — see Tier N. |
-| (c) | energy inequality on `[0,T]` (by lsc) | REACHABLE | `galSeq n` carries `energy_bound` (`AxiomaticClosure.lean:343`) and `reg_bound` (`:349`); lower-semicontinuity of the L² norm under (weak/strong) limit + Fatou for the dissipation integral. The norm-lsc piece is provable from strong L² convergence on balls + uniform bound; the dissipation-Fatou piece needs the limit's energy class. Partly reachable; the dissipation lsc requires `GoodRepresentativeInput.energyClass`. See Tier E. |
+| (c) | energy inequality on `[0,T]` (by lsc) | REACHABLE | `galSeq n` carries `energy_bound` (`SolutionInterfaces.lean:343`) and `reg_bound` (`:349`); lower-semicontinuity of the L² norm under (weak/strong) limit + Fatou for the dissipation integral. The norm-lsc piece is provable from strong L² convergence on balls + uniform bound; the dissipation-Fatou piece needs the limit's energy class. Partly reachable; the dissipation lsc requires `GoodRepresentativeInput.energyClass`. See Tier E. |
 | (d) | initial trace `u t → u₀` as `t→0⁺` | **NOT reachable axiom-free** | needs strong-in-time continuity at 0 of the limit, again Bochner-time machinery + `𝔊.tendsto_id`. Isolate via `GoodRepresentativeInput.initialTrace`. |
 | (e) | energy class (a.e. `memH1VF_R3` + integrable `viscousFormSq_R3 ν`) | **NOT reachable axiom-free** | the limit's H¹ regularity / dissipation integrability is the weak-L²(0,T;H¹) lower-closure, missing in mathlib. Isolate via `GoodRepresentativeInput.energyClass`. |
 
@@ -118,7 +118,7 @@ indistinguishable from re-asserting the conclusion, we leave a precise `-- TODO:
 ### 2.1 Imports
 
 ```lean
-import LerayHopf.R3.AxiomaticClosure     -- AubinLionsPackage_R3, GalerkinSolutionData_R3, r3Evolution, R3NSForms
+import LerayHopf.R3.SolutionInterfaces     -- AubinLionsPackage_R3, GalerkinSolutionData_R3, r3Evolution, R3NSForms
 import LerayHopf.R3.SpatialCompactness   -- localCompactness_R3_of_ballCompact, LocalRellichInput, restrictToBall, L2ballR3
 import LerayHopf.R3.TrilinearEstimate    -- b-bound analytic core (convIntegralSchwartz_bound_*)
 import Mathlib.MeasureTheory.Integral.Bochner.Set   -- set/interval integrals over balls
@@ -126,7 +126,7 @@ import Mathlib.MeasureTheory.Integral.Bochner.Set   -- set/interval integrals ov
 
 **Import-cycle audit (REQUIRED, Hard rule 10):**
 - `R3.AxiomaticClosure` does **NOT** import this file, `R3.SpatialCompactness`, or
-  `R3.TrilinearEstimate` (verified: `AxiomaticClosure.lean` imports `R3.Regularity` and
+  `R3.TrilinearEstimate` (verified: `SolutionInterfaces.lean` imports `R3.Regularity` and
   `R3.GalerkinScheme` only; `SpatialCompactness.lean` is standalone, not imported by
   `AxiomaticClosure`). So importing `R3.AxiomaticClosure` here is acyclic.
 - `R3.SpatialCompactness` is standalone (imports `R3.Regularity` + mathlib), and
@@ -138,7 +138,7 @@ import Mathlib.MeasureTheory.Integral.Bochner.Set   -- set/interval integrals ov
 Unlike P3 (which deliberately avoided importing `AxiomaticClosure` to stay maximally
 standalone), P2 **must** import `R3.AxiomaticClosure` because its deliverables *produce*
 `AubinLionsPackage_R3` and *consume* `GalerkinSolutionData_R3` — these live in
-`AxiomaticClosure.lean` and there is no lighter module exposing them. This is a justified
+`SolutionInterfaces.lean` and there is no lighter module exposing them. This is a justified
 heavy import (the only one).
 
 ### 2.2 Namespace / opens
@@ -342,7 +342,7 @@ Role: prover. Sketch: bilinearity (`b_add_*`, `b_smul_*`) + `b_bound w hw` gives
 and `‖vₙ‖` is bounded (convergent ⇒ bounded), so the RHS → 0. **Fully axiom-free, uses only
 the `R3NSForms` structure fields.** This is the most cleanly-reachable genuine analytic lemma
 in the milestone and the concrete substantiation of "strong L² kills the nonlinear error".
-Dep: `F.b_bound`, `F.b_add_1/2`, `F.b_smul_*` (`AxiomaticClosure.lean:207–229`),
+Dep: `F.b_bound`, `F.b_add_1/2`, `F.b_smul_*` (`SolutionInterfaces.lean:207–229`),
 `Tendsto`-bounded helpers.
 **Note:** this is *global* strong L² convergence on its hypotheses; the `strong_convergence`
 from C2 is *local* (ball-restricted). Bridging local→global for `b` uses the Schwartz rapid
@@ -473,7 +473,7 @@ G.initialTrace, G.energyClass⟩`. The non-trivial content is in (i) Tier N / E 
 proved and (ii) Codex confirming `GoodRepresentativeInput` is honest. The assembly itself is
 mechanical — that is the point: the analytic value is in N1/E1, the isolation in the structure.
 **The statement is byte-identical (modulo the added `G` binder) to `galerkin_limit_passage_R3`
-(`AxiomaticClosure.lean:488–501`).** lean-coder: copy it from there and prepend the `G` binder.
+(`SolutionInterfaces.lean:488–501`).** lean-coder: copy it from there and prepend the `G` binder.
 
 ### Tier L — irreducible-gap markers (only if needed)
 
@@ -490,7 +490,7 @@ conclusion shape (Hard rule 3/8).
 R3/Domain.lean
   └── R3/DivergenceFree.lean ──┬── R3/TrilinearEstimate.lean ─────────────┐
                                └── R3/Regularity.lean                      │
-                                     ├── R3/AxiomaticClosure.lean ─────────┤
+                                     ├── R3/SolutionInterfaces.lean ─────────┤
                                      └── R3/SpatialCompactness.lean ───────┤
                                                                            ▼
                                               R3/AubinLionsLimitPassage.lean  [NEW — this PR, LEAF]
@@ -545,7 +545,7 @@ Any residual genuinely-irreducible step is a `-- ALLOW_SORRY: <reason>` marked `
   Quot.sound]` — NO `sorryAx` (TODO-blocked lemmas, if any, are reported separately with their
   marked sorry).
 - `#print axioms exists_lerayHopf_r3` unchanged (6 project + 3 kernel axioms, no `sorryAx`);
-  `AxiomaticClosure.lean` NOT edited.
+  `SolutionInterfaces.lean` NOT edited.
 
 ---
 
@@ -553,7 +553,7 @@ Any residual genuinely-irreducible step is a `-- ALLOW_SORRY: <reason>` marked `
 
 **lean-coder** (file skeleton, imports, signatures, root-build edit):
 - Create `LerayHopf/R3/AubinLionsLimitPassage.lean`: imports (§2.1, with the cycle-audit
-  comment), namespace/opens (§2.2), module doc referencing `AxiomaticClosure.lean:444–501`,
+  comment), namespace/opens (§2.2), module doc referencing `SolutionInterfaces.lean:444–501`,
   `SpatialCompactness.lean`, `TrilinearEstimate.lean`, and the plan.
 - `TimeCompactnessInput` (H1) and `GoodRepresentativeInput` (G1struct) structures.
 - All theorem signatures: `spatialInput_R3_of_localRellich` (S1), `galStates_admissible` (C1),
@@ -608,7 +608,7 @@ Shipped state (all verified):
       (the intended time-frontier for the still-open C2) — NOT the only non-proved item
       (E1/C2 are also open).
 - [x] `#print axioms exists_lerayHopf_r3` unchanged (6 project + 3 kernel, no `sorryAx`);
-      `AxiomaticClosure.lean` NOT edited.
+      `SolutionInterfaces.lean` NOT edited.
 - [x] `bash scripts/agent-preflight.sh` green (the two open sorries carry `ALLOW_SORRY`).
 - [x] Codex `--effort xhigh`: Gate 1 (no-smuggle on `TimeCompactnessInput`) approve;
       final-gate honesty sweeps applied (header/Tier-H/C2-docstring/boundary all corrected).

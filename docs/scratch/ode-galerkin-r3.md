@@ -5,12 +5,12 @@
 **Status:** task contract (no Lean edited)
 **File deliverable:** `LerayHopf/R3/GalerkinODE.lean` (new, standalone)
 **Branch (suggested):** `autorun/ode-galerkin-r3`
-**Target axiom:** `galerkin_ode_solution_R3` (`LerayHopf/R3/AxiomaticClosure.lean:363-365`),
+**Target axiom:** `galerkin_ode_solution_R3` (`LerayHopf/R3/SolutionInterfaces.lean:363-365`),
 producing `GalerkinSolutionData_R3` (`…:323-351`).
 **Models to mirror EXACTLY:** R3-d (`TrilinearEstimate.lean`), P5 (`GalerkinScheme.lean`),
 P3 (`SpatialCompactness.lean`) — standalone new file under `LerayHopf/R3/`,
 isolated-hypothesis discipline, `#print axioms`-clean deliverable, Codex statement+final
-gates, root-build inclusion in `LerayHopf.lean`, **never edit `AxiomaticClosure.lean`**.
+gates, root-build inclusion in `LerayHopf.lean`, **never edit `SolutionInterfaces.lean`**.
 
 ---
 
@@ -22,15 +22,15 @@ hypothesis** that captures the genuine mathlib gap, and from `F`'s algebraic pro
 (`b_antisymm`/`b_self_zero`, multilinearity, `b_bound`).
 
 This does **not** remove the axiom (the standalone discipline of R3-d/P5/P3). The new file
-does **not** import nor is imported by `AxiomaticClosure.lean`'s axiom block; but — exactly
-as P5's post-Codex addendum did — it **may** import `AxiomaticClosure.lean` to reference
+does **not** import nor is imported by `SolutionInterfaces.lean`'s axiom block; but — exactly
+as P5's post-Codex addendum did — it **may** import `SolutionInterfaces.lean` to reference
 `GalerkinSolutionData_R3`, `R3GalerkinScheme`, `R3NSForms`, `R3NSForms.b_self_zero` by name
 (those are *definitions/structures/proved lemmas*, not the axiom). The connection is
 semantic: we prove `(isolated hyp) → ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n`.
 
-> **DAG check (lean-coder):** `AxiomaticClosure.lean → GalerkinODE.lean`. Confirm NO cycle
+> **DAG check (lean-coder):** `SolutionInterfaces.lean → GalerkinODE.lean`. Confirm NO cycle
 > (AxiomaticClosure must not import GalerkinODE). P5's `GalerkinScheme.lean` already imports
-> `AxiomaticClosure.lean`, so this import direction is established and safe.
+> `SolutionInterfaces.lean`, so this import direction is established and safe.
 
 ---
 
@@ -200,7 +200,7 @@ New file `LerayHopf/R3/GalerkinODE.lean`.
 
 ### Imports
 ```
-import LerayHopf.R3.AxiomaticClosure   -- GalerkinSolutionData_R3, R3GalerkinScheme, R3NSForms,
+import LerayHopf.R3.SolutionInterfaces   -- GalerkinSolutionData_R3, R3GalerkinScheme, R3NSForms,
                                        --   R3NSForms.b_self_zero, stokesTestPairing_R3, …
 import LerayHopf.R3.GalerkinScheme     -- (optional) range_schwartz helpers if needed for M0
 ```
@@ -335,7 +335,7 @@ As in P5's optional step 5: a follow-up could replace `axiom galerkin_ode_soluti
 plus a proved `galerkin_ode_solution_R3` via `galerkinSolutionData_R3_of_input`. This trades
 a fat 8-field-data axiom for a thinner 5-field-input axiom + proved energy/regularity payoff
 (same axiom count, thinner frontier). **Out of scope here**; orchestrator decides after green
-+ re-audit. **Touches `AxiomaticClosure.lean` — a sanctioned soundness/thinning edit only if
++ re-audit. **Touches `SolutionInterfaces.lean` — a sanctioned soundness/thinning edit only if
 explicitly approved.**
 
 ---
@@ -380,7 +380,7 @@ a bundle of curve data, not an environment axiom. This is the honest analogue of
 `GalerkinODEInput` *iff* the Schwartz⇒`MemSobolev 1 2` bridge is a mathlib gap. Record the
 decision in the file header and the report.
 
-`AxiomaticClosure.lean` is **NOT edited** (no sanctioned soundness fix is needed here, unlike
+`SolutionInterfaces.lean` is **NOT edited** (no sanctioned soundness fix is needed here, unlike
 P5's `tendsto_id` weakening — `GalerkinSolutionData_R3` was already Codex-audited and is
 consumed faithfully). Confirm no field of `GalerkinSolutionData_R3` is too strong/unused
 during the build; if Codex flags one, escalate to orchestrator (do not silently edit).
@@ -430,7 +430,7 @@ Review the **statements** before any proof is attempted:
   during the coder→prover handoff (final state: sorry-free for the must-prove set).
 - `#print axioms galerkinSolutionData_R3_of_input` → only
   `[propext, Classical.choice, Quot.sound]` (R3-d/P5/P3 discipline).
-- File does **NOT** import the axiom block destructively; `AxiomaticClosure.lean` is
+- File does **NOT** import the axiom block destructively; `SolutionInterfaces.lean` is
   **NOT edited**; no import cycle.
 - `exists_lerayHopf_r3` unaffected: `#print axioms exists_lerayHopf_r3` stays = the 6 project
   axioms + propext/Classical.choice/Quot.sound, no `sorryAx` (this file is not imported by the

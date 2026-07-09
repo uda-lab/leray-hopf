@@ -2,7 +2,7 @@
 
 **Plan author:** lean-planner  
 **Date:** 2026-06-23  
-**Source files read:** `LerayHopf/R3/AxiomaticClosure.lean` (lines 231–301, the axiom and `R3NSForms` structure), `LerayHopf/R3/ConvectionForm.lean` (the already-built `ConvectionGap` + `R3NSForms_of_gap`), `LerayHopf/R3/ConvectionOperator.lean` (Tier-S `convFormSchwartz_*` lemmas, all discharged), `LerayHopf/R3/TrilinearEstimate.lean` (R3-d multilinearity + IBP + bound, all discharged), `LerayHopf/R3/DivergenceFree.lean` (`convIntegralSchwartz`, `L2Sigma_R3`), `LerayHopf/R3/SchwartzDivFreeBasis.lean` (`curlSchwartzDense_holds`).
+**Source files read:** `LerayHopf/R3/SolutionInterfaces.lean` (lines 231–301, the axiom and `R3NSForms` structure), `LerayHopf/R3/ConvectionForm.lean` (the already-built `ConvectionGap` + `R3NSForms_of_gap`), `LerayHopf/R3/ConvectionOperator.lean` (Tier-S `convFormSchwartz_*` lemmas, all discharged), `LerayHopf/R3/TrilinearEstimate.lean` (R3-d multilinearity + IBP + bound, all discharged), `LerayHopf/R3/DivergenceFree.lean` (`convIntegralSchwartz`, `L2Sigma_R3`), `LerayHopf/R3/SchwartzDivFreeBasis.lean` (`curlSchwartzDense_holds`).
 
 ---
 
@@ -13,7 +13,7 @@ axiom r3_NSForms_exist (𝔊 : R3GalerkinScheme) : Nonempty (R3NSForms 𝔊)
 -- ALLOW_AXIOM: ℝ³ NS convection form b exists ...
 ```
 
-Located in `LerayHopf/R3/AxiomaticClosure.lean` at line 300. Its `ALLOW_AXIOM` justification already describes the correct witness and outlines why each `R3NSForms` field is true.
+Located in `LerayHopf/R3/SolutionInterfaces.lean` at line 300. Its `ALLOW_AXIOM` justification already describes the correct witness and outlines why each `R3NSForms` field is true.
 
 **The twist:** `ConvectionForm.lean` (file already committed to `main`) already contains:
 
@@ -177,9 +177,9 @@ This is the mathematically precise statement of the missing bounded trilinear ex
 
 ### Files to touch
 
-1. `LerayHopf/R3/ConvectionForm.lean` — add `schwartzDivFree_dense_of_curlDense` (P1, must-prove) and `convectionGap_schwartz_dense` (P2, scaffold). Imports: already imports `ConvectionOperator.lean` and `AxiomaticClosure.lean`; needs to also import `SchwartzDivFreeBasis.lean` for `CurlSchwartzDense` and `curlSchwartzDense_holds`.
+1. `LerayHopf/R3/ConvectionForm.lean` — add `schwartzDivFree_dense_of_curlDense` (P1, must-prove) and `convectionGap_schwartz_dense` (P2, scaffold). Imports: already imports `ConvectionOperator.lean` and `SolutionInterfaces.lean`; needs to also import `SchwartzDivFreeBasis.lean` for `CurlSchwartzDense` and `curlSchwartzDense_holds`.
 
-   **Import DAG check:** `SchwartzDivFreeBasis.lean` imports `GalerkinScheme.lean` which imports `AxiomaticClosure.lean` which imports... check for cycles. `ConvectionForm.lean` currently imports `AxiomaticClosure.lean`. `SchwartzDivFreeBasis.lean` imports `GalerkinScheme.lean` which imports `AxiomaticClosure.lean`. So the chain is: `DivergenceFree.lean → AxiomaticClosure.lean → GalerkinScheme.lean → SchwartzDivFreeBasis.lean`. `ConvectionForm.lean` already imports `AxiomaticClosure.lean`. Adding `import LerayHopf.R3.SchwartzDivFreeBasis` to `ConvectionForm.lean` would create a potential cycle IF `SchwartzDivFreeBasis.lean` imports `ConvectionForm.lean` — it does not (it imports `GalerkinScheme.lean` only). So the import is safe.
+   **Import DAG check:** `SchwartzDivFreeBasis.lean` imports `GalerkinScheme.lean` which imports `SolutionInterfaces.lean` which imports... check for cycles. `ConvectionForm.lean` currently imports `SolutionInterfaces.lean`. `SchwartzDivFreeBasis.lean` imports `GalerkinScheme.lean` which imports `SolutionInterfaces.lean`. So the chain is: `DivergenceFree.lean → SolutionInterfaces.lean → GalerkinScheme.lean → SchwartzDivFreeBasis.lean`. `ConvectionForm.lean` already imports `SolutionInterfaces.lean`. Adding `import LerayHopf.R3.SchwartzDivFreeBasis` to `ConvectionForm.lean` would create a potential cycle IF `SchwartzDivFreeBasis.lean` imports `ConvectionForm.lean` — it does not (it imports `GalerkinScheme.lean` only). So the import is safe.
 
 2. **No other files require editing for #48's reachable scope.**
 
@@ -239,7 +239,7 @@ lemma convectionGap_schwartz_dense (h : CurlSchwartzDense) :
 ```
 LerayHopf/R3/DivergenceFree.lean
   → LerayHopf/R3/Regularity.lean         (IsSchwartzDivFree_R3)
-  → LerayHopf/R3/AxiomaticClosure.lean   (R3NSForms, R3GalerkinScheme)
+  → LerayHopf/R3/SolutionInterfaces.lean   (R3NSForms, R3GalerkinScheme)
     → LerayHopf/R3/GalerkinScheme.lean   (SchwartzGalerkinBasis)
       → LerayHopf/R3/SchwartzDivFreeBasis.lean
           (CurlSchwartzDense, curlSchwartzL2, curlSchwartzL2_mem_sigma,

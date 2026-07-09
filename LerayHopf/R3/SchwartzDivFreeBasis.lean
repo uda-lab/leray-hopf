@@ -47,18 +47,18 @@ that axiom.
 **Axiom SWAP, not increase (issue #21).**  This file ADDS the thin density axiom
 `curlSchwartzDense_holds : CurlSchwartzDense` and, through the witness chain, DISCHARGES the
 former fat `r3GalerkinScheme_exists` axiom (a 6-field structure existential, previously in
-`AxiomaticClosure.lean`) — now a proved `theorem` here.  Net R3 project-axiom count is
+`SolutionInterfaces.lean`) — now a proved `theorem` here.  Net R3 project-axiom count is
 UNCHANGED at 5; the frontier is strictly thinner (one `Submodule` density inequality vs. a
 6-field structure).  Because the discharge needs P5 (`nonempty_r3GalerkinScheme_of_basis`,
-downstream of `AxiomaticClosure`), `r3GalerkinScheme_exists` is relocated to THIS file (the
+downstream of `SolutionInterfaces`), `r3GalerkinScheme_exists` is relocated to THIS file (the
 shallowest acyclic point that sees both the `R3GalerkinScheme` structure and its witness).
-The capstone `exists_lerayHopf_r3_axiomatic` was relocated FURTHER downstream to
+The capstone `exists_lerayHopf_r3` was relocated FURTHER downstream to
 `GalerkinODECapstone.lean` (issue #10), below the axiom-free ODE chain it now routes through.
 
 ## DAG position
 ```
 DivergenceFree.lean   (L2VF_R3, L2Sigma_R3, L2VF_projComponent_R3, divTestFunctional)
-  └── … ── AxiomaticClosure.lean
+  └── … ── SolutionInterfaces.lean
               └── GalerkinScheme.lean        (SchwartzGalerkinBasis)
                       └── SchwartzDivFreeBasis.lean   [THIS FILE]
 ```
@@ -76,7 +76,7 @@ DivergenceFree.lean   (L2VF_R3, L2Sigma_R3, L2VF_projComponent_R3, divTestFuncti
 - `instSeparableSpace_L2VF_R3`        : B1 — `SeparableSpace L2VF_R3`
 - `exists_denseSeq_curlSchwartz`      : B2 — ℕ-enumeration with dense prefix spans (from frontier)
 - `schwartzGalerkinBasis_of_curlDense`: C1 — DELIVERABLE: density → `Nonempty SchwartzGalerkinBasis`
-  (the capstone `exists_lerayHopf_r3_axiomatic` is now in `GalerkinODECapstone.lean`, issue #10;
+  (the capstone `exists_lerayHopf_r3` is now in `GalerkinODECapstone.lean`, issue #10;
    `curlSchwartzDense_holds`, `nonempty_schwartzGalerkinBasis`, `r3GalerkinScheme_exists`
    are now in `CurlDensityCapstone.lean`, issue #3 / #21)
 
@@ -465,7 +465,7 @@ this file, and provides `curlSchwartzDense_holds` as a proved `theorem`
 The `schwartzGalerkinBasis_of_curlDense` conditional deliverable (C1) stays here —
 it is axiom-free modulo its hypothesis and is a genuine proved content item.
 
-`exists_lerayHopf_r3_axiomatic` lives in `LerayHopf/R3/GalerkinODECapstone.lean`
-(issue #10), re-exported by `LerayHopf/R3Axiomatic.lean`. -/
+`exists_lerayHopf_r3` lives in `LerayHopf/R3/GalerkinODECapstone.lean`
+(issue #10), re-exported by `LerayHopf/R3Capstone.lean`. -/
 
 end LerayHopf

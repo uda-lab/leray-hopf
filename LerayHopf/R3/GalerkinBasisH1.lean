@@ -1,4 +1,4 @@
-import LerayHopf.R3.GalerkinODEExistence   -- SchwartzGalerkinBasis, schemeOfBasis (+ AxiomaticClosure transitively → R3TestApproxH1)
+import LerayHopf.R3.GalerkinODEExistence   -- SchwartzGalerkinBasis, schemeOfBasis (+ SolutionInterfaces transitively → R3TestApproxH1)
 import LerayHopf.R3.CurlDensityH1          -- curl_approx_H1 (H¹ Fourier low-cut kernel, issue #4 PR-2)
 import LerayHopf.R3.CurlDensityCapstone    -- curlSchwartzDense_holds (proved density, for dense_span)
 import LerayHopf.R3.GalerkinCurveBounds    -- weightedFourierComponent_sub, viscousFormSq_eq_sum_normSq_wFC
@@ -15,7 +15,7 @@ satisfies the H¹(graph-norm) test-approximation property.
 
 The abstract limit-passage theorem (`galerkin_limit_passage_R3` replacement) carries a
 threaded hypothesis `htest : R3TestApproxH1 𝔊`.  The capstone chain
-(`GalerkinODECapstone.lean` → `R3Axiomatic.lean`) must supply a concrete witness.
+(`GalerkinODECapstone.lean` → `R3Capstone.lean`) must supply a concrete witness.
 
 `nonempty_schwartzGalerkinBasis` (proved in `CurlDensityCapstone.lean`) gives an L²-dense
 basis; the strengthened version here requires H¹(graph-norm) density as well, which is

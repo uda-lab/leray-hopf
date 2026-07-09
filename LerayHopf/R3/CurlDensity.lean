@@ -1727,7 +1727,7 @@ Schwartz vector potentials contains the whole weakly-divergence-free subspace `L
 
 This is a complete, `sorry`-free, axiom-free PROOF of `CurlSchwartzDense` (no extra hypotheses).
 The axiom `curlSchwartzDense_holds` is RETIRED: `CurlDensityCapstone.lean` (Route A, issue #3)
-re-anchors all consumers to this theorem; `#print axioms exists_lerayHopf_r3_axiomatic` no
+re-anchors all consumers to this theorem; `#print axioms exists_lerayHopf_r3` no
 longer lists `curlSchwartzDense_holds` (R3 project axioms: 5 → 4). -/
 theorem curlSchwartzDense_provedRoute : CurlSchwartzDense :=
   l2sigma_le_closure_span_curl

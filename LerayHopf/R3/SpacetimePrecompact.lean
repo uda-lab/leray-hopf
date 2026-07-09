@@ -45,7 +45,7 @@ carries a scoped `set_option maxHeartbeats 1200000` (the A5 transfer performs se
 unifications in the doubly-nested `Lp (L2ballR3 k) 2 μ_T` space).
 -/
 
-import LerayHopf.R3.GalerkinTimeModulus        -- D3 galerkin_sampling_error_bound; transitively AxiomaticClosure (GalerkinSolutionData_R3, R3GalerkinScheme, R3NSForms, L2Sigma_R3), FrechetKolmogorov/RellichBall (frechetKolmogorov_holds, localRellichInput_of_frechetKolmogorov)
+import LerayHopf.R3.GalerkinTimeModulus        -- D3 galerkin_sampling_error_bound; transitively SolutionInterfaces (GalerkinSolutionData_R3, R3GalerkinScheme, R3NSForms, L2Sigma_R3), FrechetKolmogorov/RellichBall (frechetKolmogorov_holds, localRellichInput_of_frechetKolmogorov)
 import LerayHopf.R3.GalerkinCurveBounds        -- B1 galerkinCurve_continuousOn, B2 galerkin_norm_le_u0 (curve continuity + energy bound for E1/E2)
 import LerayHopf.R3.SpatialCompactness         -- L2ballR3, restrictToBall, LocalRellichInput.ballCompact (mirrors ArzelaAscoliTime's source of the ball-restriction primitives)
 import LerayHopf.Bochner.StepFunctionCompactness  -- A4 isCompact_stepCurve_toLp, A5 totallyBounded_of_uniform_approx', A6 exists_subseq_tendsto_eLpNorm_of_totallyBounded (step-curve compactness engine for E2)

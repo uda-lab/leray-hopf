@@ -1,12 +1,12 @@
 import LerayHopf.R3.GalerkinODECapstone
 
 /-!
-# LerayHopf.R3Axiomatic — axiomatic closure for ℝ³
+# LerayHopf.R3Capstone — capstone re-export for ℝ³
 
-This module re-exports the full axiomatic closure of the ℝ³ Leray–Hopf
+This module re-exports the full capstone chain of the ℝ³ Leray–Hopf
 existence argument.  The capstone declaration is:
 
-    `LerayHopf.exists_lerayHopf_r3_axiomatic`
+    `LerayHopf.exists_lerayHopf_r3`
 
 which depends on **ZERO project axioms** — KERNEL-ONLY (`#print axioms` = `[propext, Classical.choice, Quot.sound]`).
 Former project axioms now all discharged:
@@ -31,7 +31,7 @@ by routing the capstone's per-`n` Galerkin sequence through the axiom-free
 (`LerayHopf/R3/SchwartzDivFreeBasis.lean`), assembled from the constructive witness chain and
 the proved theorem `curlSchwartzDense_holds` (issue #3 Fourier route, issue #21 wiring).
 Importing `GalerkinODECapstone` (which transitively imports `SchwartzDivFreeBasis` and
-`AxiomaticClosure`) re-exports the discharged `r3GalerkinScheme_exists` and the relocated capstone.
+`SolutionInterfaces`) re-exports the discharged `r3GalerkinScheme_exists` and the relocated capstone.
 
 `spatial_compactness_R3` (AX-SC): LOCAL spatial compactness (local Rellich
 H¹(B_R)↪↪L²(B_R)) is NO LONGER an axiom — it was the former sixth project axiom and is
@@ -49,6 +49,6 @@ The package is assembled by the proved constructor
 through the relocated builder in `LerayHopf/R3/AubinLionsAssembly.lean`.
 
 This module is KERNEL-ONLY (zero project axioms).  Import it whenever the full R³ capstone
-chain (`exists_lerayHopf_r3_axiomatic`) is needed; `import LerayHopf.Core` suffices for work
+chain (`exists_lerayHopf_r3`) is needed; `import LerayHopf.Core` suffices for work
 that does not require the R³ capstone declarations.
 -/

@@ -14,14 +14,14 @@ open scoped LineDeriv
 
 This file proves — axiom-free — the genuine analytic properties of
 `convIntegralSchwartz` that the `r3_NSForms_exist` axiom in
-`AxiomaticClosure.lean` (lines 167–281) currently only *asserts* in its
+`SolutionInterfaces.lean` (lines 167–281) currently only *asserts* in its
 justification prose.  The file upgrades those asserted facts into proved
 lemmas about the concrete Schwartz integral defined in `DivergenceFree.lean`.
 
 ## Architecture
 
-This file is **standalone**: it does NOT import `AxiomaticClosure.lean`, so
-the axiom justification remains independent.  `AxiomaticClosure.lean` does not
+This file is **standalone**: it does NOT import `SolutionInterfaces.lean`, so
+the axiom justification remains independent.  `SolutionInterfaces.lean` does not
 import this file either; the connection is semantic, not structural.
 
 DAG position:
@@ -29,7 +29,7 @@ DAG position:
 Domain.lean
     └── DivergenceFree.lean   (defines convIntegralSchwartz)
             └── TrilinearEstimate.lean   [THIS FILE]
-                    (standalone; NOT imported by AxiomaticClosure.lean)
+                    (standalone; NOT imported by SolutionInterfaces.lean)
 ```
 
 ## Declarations (dependency order)
