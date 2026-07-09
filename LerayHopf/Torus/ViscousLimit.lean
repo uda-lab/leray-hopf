@@ -1,5 +1,5 @@
 /-
-# LerayHopf.TorusViscousLimit — conjunct (4): energy-class discharge for `alPkg.u` on 𝕋³
+# LerayHopf.Torus.ViscousLimit — conjunct (4): energy-class discharge for `alPkg.u` on 𝕋³
 
 **Purpose:** This file discharges the conjunct-(4) energy-class obligation for the
 Aubin–Lions limit `alPkg.u`, namely:
@@ -8,7 +8,7 @@ Aubin–Lions limit `alPkg.u`, namely:
 - `IntervalIntegrable (fun s => viscousFormSq ν (alPkg.u s : L2VF)) volume 0 T`.
 
 This pair of facts is the hypothesis `h4` consumed by
-`torus_galerkin_limit_passage_of_energyClass` (in `LerayHopf.TorusTraceEnergy`), which
+`torus_galerkin_limit_passage_of_energyClass` (in `LerayHopf.Torus.TraceEnergy`), which
 assembles the full 5-conjunct existential and thereby completes the removal of the
 `galerkin_limit_passage` project axiom.
 
@@ -24,8 +24,8 @@ assembles the full 5-conjunct existential and thereby completes the removal of t
 NO import of `LerayHopf/Bochner/TimeSobolev*.lean`; no `W1pTime` witness is used.
 -/
 
-import LerayHopf.AxiomaticClosure
-import LerayHopf.TorusTraceEnergy
+import LerayHopf.Torus.AxiomaticClosure
+import LerayHopf.Torus.TraceEnergy
 
 namespace LerayHopf
 

@@ -1,4 +1,4 @@
-import LerayHopf.TorusDomain
+import LerayHopf.Torus.Domain
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Function.LpSpace.Complete
 import Mathlib.Analysis.Fourier.AddCircleMulti

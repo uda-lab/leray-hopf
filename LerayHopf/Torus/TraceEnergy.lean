@@ -1,5 +1,5 @@
 /-
-# LerayHopf.TorusTraceEnergy — conjuncts 1 + 3: energy inequality and initial trace on 𝕋³
+# LerayHopf.Torus.TraceEnergy — conjuncts 1 + 3: energy inequality and initial trace on 𝕋³
 
 **Milestone:** Torus `galerkin_limit_passage` removal, coupled pillar (1) + (3).
 
@@ -57,7 +57,7 @@ repairing one breaks the other.  This is the torus twin of the R3 trace-route sp
 No new axioms.
 -/
 
-import LerayHopf.TorusLimitPassage
+import LerayHopf.Torus.LimitPassage
 import Mathlib.MeasureTheory.Function.ConvergenceInMeasure
 import Mathlib.Topology.Algebra.Order.LiminfLimsup
 

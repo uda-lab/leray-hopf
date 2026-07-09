@@ -1,5 +1,5 @@
 /-
-# LerayHopf.TorusProjectionAdjoint — orthogonality calculus for `velocityProjection_n`
+# LerayHopf.Torus.ProjectionAdjoint — orthogonality calculus for `velocityProjection_n`
 
 **Milestone:** torus `galerkin_limit_passage` removal campaign, PR-1 (kernel #2).
 
@@ -23,7 +23,7 @@ No new axioms; everything reduces to mathlib's `starProjection` API and the
 Fourier-coefficient characterisation of `L2VF`.
 -/
 
-import LerayHopf.TorusGalerkinODESolve
+import LerayHopf.Torus.GalerkinODESolve
 
 namespace LerayHopf
 

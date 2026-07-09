@@ -23,7 +23,7 @@ Side branches (independent of the existence spine):
 
 The import surface is now split:
 - `import LerayHopf.Core`            — axiom-free, sorryAx-free spatial/regularity layer
-- `import LerayHopf.TorusAxiomatic`  — T³ axiomatic closure (2 project axioms)
+- `import LerayHopf.Torus.Axiomatic` — T³ axiomatic closure (2 project axioms)
 - `import LerayHopf.R3Axiomatic`     — ℝ³ axiomatic closure (2 project axioms)
 - `import LerayHopf`                 — (this file) re-exports all three layers
 
@@ -38,48 +38,48 @@ Navier–Stokes equations has been formalized.
 import LerayHopf.Core
 
 -- Torus-layer files not covered by Core (sorry-carrying, axiom-free)
-import LerayHopf.RellichEmbedding
-import LerayHopf.H1Sigma
+import LerayHopf.Torus.RellichEmbedding
+import LerayHopf.Torus.H1Sigma
 import LerayHopf.EvolutionTriple
 import LerayHopf.Statement
 import LerayHopf.ExistenceFromPackage
 import LerayHopf.EnergyEstimate
 
 -- Axiomatic closure layers (project axioms live here)
-import LerayHopf.TorusAxiomatic
+import LerayHopf.Torus.Axiomatic
 import LerayHopf.R3Axiomatic
 
 -- Torus H¹_σ submodule + Parseval scaffold (issue #53 PR-1)
-import LerayHopf.TorusEnergyConvection
+import LerayHopf.Torus.EnergyConvection
 
 -- Torus determined-form construction (issue #53: removes torusConvectionGap_exists axiom)
-import LerayHopf.TorusConvectionExtension
+import LerayHopf.Torus.ConvectionExtension
 
 -- Concrete T³ convection form (issue #22: removes torus3_NSForms_exist axiom)
-import LerayHopf.TorusConvectionForm
+import LerayHopf.Torus.ConvectionForm
 
 -- T³ Galerkin ODE solver + capstone wiring (issue #24: removes galerkin_ode_solution axiom)
-import LerayHopf.TorusGalerkinScheme
+import LerayHopf.Torus.GalerkinScheme
 -- T-AL-1 (#23): torus test family
-import LerayHopf.TorusTestFamily
-import LerayHopf.TorusGalerkinODESolve
-import LerayHopf.TorusGalerkinODECapstone
+import LerayHopf.Torus.TestFamily
+import LerayHopf.Torus.GalerkinODESolve
+import LerayHopf.Torus.GalerkinODECapstone
 
 -- T³ WeakFormNS limit passage (issue #25 conjunct 2: density-free, band-limited tests)
-import LerayHopf.TorusLimitPassage
+import LerayHopf.Torus.LimitPassage
 
 -- T³ trace + energy pillar (galerkin_limit_passage removal): Galerkin energy identity,
 -- weakly-continuous good representative, ∀t energy inequality (conjunct 1), strong initial
 -- trace (conjunct 3), and the capstone `torus_galerkin_limit_passage_of_energyClass`
 -- (full 5-conjunct existential, conditional only on the energy-class conjunct 4 for alPkg.u)
-import LerayHopf.TorusTraceEnergy
+import LerayHopf.Torus.TraceEnergy
 
 -- T³ energy-class conjunct (4) scaffold: a.e. memH1VF + IntervalIntegrable dissipation
 -- for alPkg.u, to be plugged into torus_galerkin_limit_passage_of_energyClass
-import LerayHopf.TorusViscousLimit
+import LerayHopf.Torus.ViscousLimit
 
 -- T³ galerkin_limit_passage removal: orthogonality calculus for velocityProjection_n (PR-1)
-import LerayHopf.TorusProjectionAdjoint
+import LerayHopf.Torus.ProjectionAdjoint
 
 -- R3 files not covered by Core (sorry-carrying or axiom-dependent)
 import LerayHopf.R3.GalerkinScheme
@@ -114,9 +114,9 @@ import LerayHopf.Bochner.TimeMollifierInterval
 import LerayHopf.Bochner.TimeMollification
 import LerayHopf.Bochner.StepFunctionCompactness  -- issue #46 PR-1: generic step-curve Lp compactness (File A)
 import LerayHopf.Bochner.ScalarEquicontinuity     -- T-AL-2 (#23): domain-neutral scalar equicontinuity engine
-import LerayHopf.Bochner.WeakLimitToolkit         -- issue #4 PR-5: generic Hilbert weak-limit toolkit (hoisted from TorusTraceEnergy)
-import LerayHopf.TorusModeCompactness             -- T-AL-3 (#23): mode-wise extraction (equi-Lipschitz + engine assembly)
-import LerayHopf.TorusModeTail                    -- T-AL-5 (#23): mode-wise tail bounds
-import LerayHopf.TorusAubinLionsAssembly          -- T-AL-6 (#23): aubin_lions replacement assembly
+import LerayHopf.Bochner.WeakLimitToolkit         -- issue #4 PR-5: generic Hilbert weak-limit toolkit (hoisted from Torus/TraceEnergy)
+import LerayHopf.Torus.ModeCompactness             -- T-AL-3 (#23): mode-wise extraction (equi-Lipschitz + engine assembly)
+import LerayHopf.Torus.ModeTail                    -- T-AL-5 (#23): mode-wise tail bounds
+import LerayHopf.Torus.AubinLionsAssembly          -- T-AL-6 (#23): aubin_lions replacement assembly
 import LerayHopf.R3.GoodRepresentative            -- issue #4 PR-5: R3 weakly-continuous representative (scaffold)
 import LerayHopf.R3.LimitPassage                  -- issue #4 PR-6: galerkin_limit_passage_R3 PROVED (zero project axioms)

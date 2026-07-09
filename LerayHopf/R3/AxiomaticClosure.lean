@@ -13,7 +13,7 @@ open MeasureTheory Filter Topology LineDeriv
 
 **Milestone R3-c — ℝ³ axiomatic closure.**
 
-Port of the Codex-approved T³ `LerayHopf/AxiomaticClosure.lean` to the whole-space
+Port of the Codex-approved T³ `LerayHopf/Torus/AxiomaticClosure.lean` to the whole-space
 setting, reusing `DissipativeEvolution`, `WeakFormNS`, and `Time` verbatim.
 The T³ 8-round audit lessons are baked in preemptively.
 

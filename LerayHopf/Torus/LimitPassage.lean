@@ -1,5 +1,5 @@
 /-
-# LerayHopf.TorusLimitPassage — conjunct 2: WeakFormNS limit passage on 𝕋³
+# LerayHopf.Torus.LimitPassage — conjunct 2: WeakFormNS limit passage on 𝕋³
 
 **Milestone:** Torus issue #25, conjunct 2 (P1–P4).
 
@@ -34,9 +34,9 @@ Fix an admissible pair `(ψ, w)`.
 No new axioms.
 -/
 
-import LerayHopf.AxiomaticClosure
-import LerayHopf.TorusConvectionExtension
-import LerayHopf.TorusGalerkinODESolve
+import LerayHopf.Torus.AxiomaticClosure
+import LerayHopf.Torus.ConvectionExtension
+import LerayHopf.Torus.GalerkinODESolve
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
 import Mathlib.Analysis.InnerProductSpace.Calculus
 

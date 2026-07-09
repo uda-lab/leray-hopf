@@ -21,7 +21,7 @@ compactness supplied as an explicit hypothesis (discharged on T³ by the proved
 
 ## Commit 1 — `H1Sigma.lean`
 
-`import LerayHopf.VelocityGalerkin / SobolevTorus / RellichEmbedding`. In `namespace LerayHopf`:
+`import LerayHopf.Torus.VelocityGalerkin / SobolevTorus / RellichEmbedding`. In `namespace LerayHopf`:
 
 - `def h1EnergySq (u : L2VF) : ℝ := ∑ j, ∑' k, (1 + ∑ i, (k i:ℝ)^2) * ‖mFourierCoeff3 (L2VF_projComponentC j u) k‖^2`
 - `theorem h1EnergySq_nonneg (u) : 0 ≤ h1EnergySq u`  (positivity)
@@ -38,7 +38,7 @@ compactness supplied as an explicit hypothesis (discharged on T³ by the proved
 
 ## Commit 1 — `EvolutionTriple.lean`  (lightened DissipativeEvolution)
 
-`import LerayHopf.H1Sigma / EnergyEstimate` + interval-integral. The bundle carries ONLY
+`import LerayHopf.Torus.H1Sigma / EnergyEstimate` + interval-integral. The bundle carries ONLY
 what `WeakFormNS` + the energy law need (the galerkin/compactness machinery stays in the
 T³-concrete assembly, NOT in the bundle — this removes the Plan doc's 3 sorry fields):
 

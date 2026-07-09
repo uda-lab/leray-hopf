@@ -13,8 +13,8 @@ open MeasureTheory
 
 This file defines the spatial domain `Domain3 = EuclideanSpace ℝ (Fin 3)` and the
 L² function spaces for the whole-space (ℝ³) Leray–Hopf theory, mirroring
-`LerayHopf.TorusDomain`, `LerayHopf.FunctionSpaces`, and the component-projection
-part of `LerayHopf.DivergenceFree`, but using the Lebesgue `volume` measure on ℝ³.
+`LerayHopf.Torus.Domain`, `LerayHopf.Torus.FunctionSpaces`, and the component-projection
+part of `LerayHopf.Torus.DivergenceFree`, but using the Lebesgue `volume` measure on ℝ³.
 
 ## Main definitions
 
@@ -52,7 +52,7 @@ noncomputable example : CompleteSpace L2VF_R3 := inferInstance
 /-- L²(ℝ³; ℂ) — complex scalar L² space with respect to `volume` on ℝ³.
 
 Used as target for componentwise complex embedding; mirrors `L2C` in
-`LerayHopf.FunctionSpaces`. -/
+`LerayHopf.Torus.FunctionSpaces`. -/
 noncomputable abbrev L2C_R3 := Lp ℂ 2 (volume : Measure Domain3)
 
 /-! ### Component projections -/

@@ -81,7 +81,7 @@ non-trivial `letI`-threading rewrites is HIGH RISK for a single PR.
 
 **Current state:** The separation is ALREADY IMPLEMENTED:
 - `import LerayHopf.Core` — axiom-free, documented
-- `import LerayHopf.TorusAxiomatic` — torus axiomatic layer
+- `import LerayHopf.Torus.Axiomatic` — torus axiomatic layer
 - `import LerayHopf.R3Axiomatic` — ℝ³ axiomatic layer
 - `import LerayHopf` — intentional re-export of all three
 

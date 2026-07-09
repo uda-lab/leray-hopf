@@ -1,6 +1,6 @@
-import LerayHopf.VelocityGalerkin
-import LerayHopf.SobolevTorus
-import LerayHopf.RellichEmbedding
+import LerayHopf.Torus.VelocityGalerkin
+import LerayHopf.Torus.SobolevTorus
+import LerayHopf.Torus.RellichEmbedding
 
 open MeasureTheory Filter Topology
 

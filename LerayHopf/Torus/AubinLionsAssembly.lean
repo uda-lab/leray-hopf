@@ -1,5 +1,5 @@
 /-
-# LerayHopf.TorusAubinLionsAssembly
+# LerayHopf.Torus.AubinLionsAssembly
 
 T-AL-6 assembly (torus `aubin_lions` mode-wise campaign, issue #23):
 This file holds the axiom-replacement def `torusAubinLionsPackage_of_galSeq`
@@ -12,12 +12,12 @@ Plan reference: `docs/scratch/torus-aubinlions-modewise-plan.md` §3/§5.
 -- `TorusModeTail` (T-AL-5, PR #88) transitively provides the whole campaign chain:
 -- TorusModeCompactness (T-AL-3/4) → {GalerkinODESolve, TestFamily, ConvectionExtension,
 -- ScalarEquicontinuity} → AxiomaticClosure (AubinLionsPackage in scope).
-import LerayHopf.TorusModeTail
+import LerayHopf.Torus.ModeTail
 -- `TorusProjectionAdjoint` is REQUIRED: P0.16's proof depends on
 -- `velocityProjection_n_pythagoras` (TorusProjectionAdjoint.lean:136), which the
 -- TorusModeTail transitive chain does NOT reach (codex HIGH finding, T-AL-6 gate).
 -- Both imports are acyclic (TorusProjectionAdjoint imports TorusGalerkinODESolve only).
-import LerayHopf.TorusProjectionAdjoint
+import LerayHopf.Torus.ProjectionAdjoint
 
 open MeasureTheory Filter Topology Set
 

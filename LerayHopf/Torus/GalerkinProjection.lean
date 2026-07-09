@@ -1,4 +1,4 @@
-import LerayHopf.Leray
+import LerayHopf.Torus.Leray
 import Mathlib.Analysis.InnerProductSpace.Projection.Submodule
 import Mathlib.LinearAlgebra.FiniteDimensional.Defs
 import Mathlib.Topology.Algebra.Module.FiniteDimension

@@ -1,5 +1,5 @@
 /-
-# LerayHopf.TorusModeTail
+# LerayHopf.Torus.ModeTail
 
 T-AL-5 node (torus `aubin_lions` mode-wise campaign, issue #23):
 Step-E tail bounds — the eight leaf lemmas (P0.6a/b/b'/c + P0.12–P0.15) that feed the
@@ -14,7 +14,7 @@ All eight are LEAF lemmas, discharged `sorry`-free by `lean-prover` (one private
 
 Assumptions: none beyond what `TorusModeCompactness` already carries.
 -/
-import LerayHopf.TorusModeCompactness
+import LerayHopf.Torus.ModeCompactness
 
 open MeasureTheory Filter Topology Set
 

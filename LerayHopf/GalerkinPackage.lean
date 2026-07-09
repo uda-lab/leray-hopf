@@ -1,4 +1,4 @@
-import LerayHopf.Basic
+import LerayHopf.Torus.Basic
 
 open MeasureTheory
 

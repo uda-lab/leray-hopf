@@ -80,6 +80,7 @@ import Mathlib.Analysis.InnerProductSpace.Dual          -- Riesz `toDual` for `H
 import Mathlib.MeasureTheory.Function.ConvergenceInMeasure
 import Mathlib.MeasureTheory.Function.LpSpace.Basic   -- MemLp / Lp (namesake of `W1pTime`)
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
 
 namespace LerayHopf.Bochner
 

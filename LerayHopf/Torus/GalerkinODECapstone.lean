@@ -1,15 +1,15 @@
-import LerayHopf.TorusAubinLionsAssembly
-import LerayHopf.TorusConvectionExtension
-import LerayHopf.TorusGalerkinODESolve
-import LerayHopf.TorusTraceEnergy
-import LerayHopf.TorusViscousLimit
+import LerayHopf.Torus.AubinLionsAssembly
+import LerayHopf.Torus.ConvectionExtension
+import LerayHopf.Torus.GalerkinODESolve
+import LerayHopf.Torus.TraceEnergy
+import LerayHopf.Torus.ViscousLimit
 
 /-!
-# LerayHopf.TorusGalerkinODECapstone — discharge `galerkin_ode_solution` (issue #24)
+# LerayHopf.Torus.GalerkinODECapstone — discharge `galerkin_ode_solution` (issue #24)
 
 This file performs the capstone WIRING that removes the project axiom `galerkin_ode_solution`
 from `exists_lerayHopf_torus3_axiomatic`.  It contains NO new mathematics: the finite-dimensional
-torus Galerkin ODE is already solved unconditionally in `LerayHopf/TorusGalerkinODESolve.lean`
+torus Galerkin ODE is already solved unconditionally in `LerayHopf/Torus/GalerkinODESolve.lean`
 (`galerkinSolutionData_torus`).  Here we only assemble the per-`n` data into a Galerkin sequence
 and feed it through the axiom-free package builder `build_galerkin_package_of_galSeq`.
 
@@ -119,7 +119,7 @@ noncomputable def build_galerkin_package_of_torus (F : Torus3NSForms) (ν : ℝ)
 For any `u₀ ∈ L²_σ`, `ν > 0`, `T > 0`, there exists a `Torus3NSForms` bundle `F` and a
 Leray–Hopf solution `u` on `[0, T]`.
 
-Relocated here from `LerayHopf/TorusConvectionForm.lean` (downstream of both the convection gap and
+Relocated here from `LerayHopf/Torus/ConvectionForm.lean` (downstream of both the convection gap and
 the proved torus Galerkin solver, no import cycle) so that the per-`n` Galerkin sequence is sourced
 from the axiom-free `galerkinSolutionData_torus` (over the finite-dim `velocitySpan n`), discharging
 `galerkin_ode_solution`.  The theorem name and statement are **byte-identical** to the original

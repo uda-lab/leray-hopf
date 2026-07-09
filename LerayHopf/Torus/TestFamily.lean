@@ -1,6 +1,6 @@
 -- Narrowest import: provides `stokesTestPairing` + `IsGalerkinTest` (via AxiomaticClosure)
 -- and `velocitySpan` (defined here). No heavier ODE-solver layer needed. (AGENTS.md rule 10)
-import LerayHopf.TorusGalerkinScheme
+import LerayHopf.Torus.GalerkinScheme
 
 open MeasureTheory Filter Topology
 

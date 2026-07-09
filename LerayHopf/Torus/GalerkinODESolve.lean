@@ -1,4 +1,4 @@
-import LerayHopf.TorusGalerkinScheme
+import LerayHopf.Torus.GalerkinScheme
 import Mathlib.Analysis.InnerProductSpace.Dual
 import Mathlib.Analysis.ODE.PicardLindelof
 import Mathlib.Analysis.ODE.Gronwall

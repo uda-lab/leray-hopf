@@ -1,4 +1,4 @@
-import LerayHopf.Basic
+import LerayHopf.Torus.Basic
 import Mathlib.MeasureTheory.Constructions.Pi
 import Mathlib.Analysis.Fourier.AddCircle
 
