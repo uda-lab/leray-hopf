@@ -73,7 +73,7 @@ LerayHopf/R3/FourierL2.lean           [NEW — shared foundation; foundation FIR
 - `FourierL2.lean` imports `LerayHopf.R3.Regularity` (for `viscousFormSq_R3`,
   `L2VF_projComponentC_R3`, `L2C_R3`, `Domain3`) and `Mathlib.Analysis.Fourier.LpSpace`.
   It must NOT import `AxiomaticClosure` (keep the NS axioms out of its `#print axioms`).
-- **Confirm: NO edits to `AxiomaticClosure.lean` (T³ or ℝ³), NO edits to the root
+- **Confirm: NO edits to `SolutionInterfaces.lean` (T³ or ℝ³), NO edits to the root
   `LerayHopf.lean` wiring.** Both consumers stay siblings; capstone wiring is deferred.
 - FK (consumer 1b), if attempted, gets its **own** new file
   `LerayHopf/R3/FrechetKolmogorov.lean` (mollification-based, independent of FourierL2).
@@ -297,11 +297,11 @@ post-proof `#print axioms` check, not a fresh statement review.
 **Explicitly NOT done (carried honestly):**
 - Fréchet–Kolmogorov full proof (KEPT as hypothesis).
 - `CurlSchwartzDense` as an unconditional theorem (thinned, not closed).
-- Any `AxiomaticClosure.lean` / root `LerayHopf.lean` wiring (deferred capstone).
+- Any `SolutionInterfaces.lean` / root `LerayHopf.lean` wiring (deferred capstone).
 
 **Invariant checks (every handoff):** `bash scripts/agent-preflight.sh` green; no new
 `axiom`/`opaque`/`unsafe` without `-- ALLOW_AXIOM:` + assumptions entry; no unmarked `sorry`;
-no overclaim names; `AxiomaticClosure.lean` untouched (confirmed).
+no overclaim names; `SolutionInterfaces.lean` untouched (confirmed).
 
 ---
 
@@ -330,6 +330,6 @@ Create `LerayHopf/R3/FourierL2.lean` with the imports
 (`LerayHopf.R3.Regularity`, `Mathlib.Analysis.Fourier.LpSpace`) and the **signatures/defs
 only** for F1–F9 (def bodies for F1, F2; `theorem … := by sorry -- ALLOW_SORRY: prover
 target` for F3–F9), plus the module docstring listing declarations + the (empty) Assumptions
-section. Do NOT touch `RellichBall.lean`, `SchwartzDivFreeBasis.lean`, `AxiomaticClosure.lean`,
+section. Do NOT touch `RellichBall.lean`, `SchwartzDivFreeBasis.lean`, `SolutionInterfaces.lean`,
 or `GalerkinODEExistence.lean` in this first task. After it compiles, the orchestrator runs
 the Codex statement review (§7) before any prover pass.

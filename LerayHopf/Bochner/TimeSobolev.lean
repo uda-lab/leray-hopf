@@ -8,7 +8,7 @@ each carrying a precise `ALLOW_SORRY` / `TODO`.
 
 This file is domain-neutral. It depends only on `LerayHopf.Bochner.GelfandTriple`
 (itself depending only on `EvolutionTriple` + mathlib) and on mathlib's Bochner / `Lp` /
-convergence-in-measure machinery. It does NOT import either `AxiomaticClosure.lean`, so it
+convergence-in-measure machinery. It does NOT import either `SolutionInterfaces.lean`, so it
 introduces no import cycle and may be reused by both the T³ and ℝ³ capstones later.
 
 ## Stage D1 — vector-valued time-Sobolev objects

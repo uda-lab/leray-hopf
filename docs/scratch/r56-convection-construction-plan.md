@@ -11,7 +11,7 @@ so `grad(v+v') = 0 ≠ ∇v + 0`). The corrected route is option (a): Hamel-base
 extension + antisymmetrization. See §1 for the refutation, §2 for the corrected route.
 
 **Goal.** Construct `Nonempty (ConvectionGapOp 𝔊)` axiom-free, dropping
-`exists_lerayHopf_r3_axiomatic` from 3 project axioms to 2 (pending C6 resolution).
+`exists_lerayHopf_r3` from 3 project axioms to 2 (pending C6 resolution).
 
 ---
 

@@ -3,7 +3,7 @@
 **Milestone:** `r3d-trilinear-estimate`
 **File deliverable:** `LerayHopf/R3/TrilinearEstimate.lean` (new)
 **Branch:** `autorun/leray-hopf-torus3` (same working branch)
-**Plan reference:** `HANDOFF.md` §5 P1; `LerayHopf/R3/AxiomaticClosure.lean` lines 167–281.
+**Plan reference:** `HANDOFF.md` §5 P1; `LerayHopf/R3/SolutionInterfaces.lean` lines 167–281.
 
 ---
 
@@ -15,8 +15,8 @@ in its justification prose.  This does **not** remove that axiom (defining `b` o
 all of `L²_σ` requires a missing `(u·∇)v` operator), but it upgrades the axiom's
 stated facts into proved lemmas about the concrete Schwartz integral.
 
-The new file is **standalone**: it does NOT import `AxiomaticClosure.lean`, so
-the axiom justification remains independent.  `AxiomaticClosure.lean` does not
+The new file is **standalone**: it does NOT import `SolutionInterfaces.lean`, so
+the axiom justification remains independent.  `SolutionInterfaces.lean` does not
 need to import `TrilinearEstimate.lean` either; the connection is semantic, not
 structural.
 
@@ -415,12 +415,12 @@ Cauchy–Schwarz for L² (`MeasureTheory.inner_le_nnorm_mul_nnorm`);
 Domain.lean
     └── DivergenceFree.lean   (imports SchwartzSpace.Deriv)
             └── TrilinearEstimate.lean   [NEW — this PR]
-                    (standalone; NOT imported by AxiomaticClosure.lean)
+                    (standalone; NOT imported by SolutionInterfaces.lean)
 ```
 
-`AxiomaticClosure.lean` imports `DivergenceFree.lean` (transitively via `Regularity.lean`)
+`SolutionInterfaces.lean` imports `DivergenceFree.lean` (transitively via `Regularity.lean`)
 and will continue to do so unchanged.  `TrilinearEstimate.lean` is a sibling of
-`AxiomaticClosure.lean` in the DAG, not a dependency of it.
+`SolutionInterfaces.lean` in the DAG, not a dependency of it.
 
 The `LerayHopf` library target in `lakefile.toml` will pick up `TrilinearEstimate.lean`
 automatically since it covers the whole `LerayHopf` namespace.
@@ -465,7 +465,7 @@ proof bodies are attempted:
 - Create `LerayHopf/R3/TrilinearEstimate.lean` with:
   - All import statements (section 2.1 above)
   - Namespace / opens
-  - Module-level doc comment referencing `AxiomaticClosure.lean` lines 167–281
+  - Module-level doc comment referencing `SolutionInterfaces.lean` lines 167–281
   - All 9 theorem signatures (A1–A6, B1, B2, C1, C2, C3) with `by sorry -- ALLOW_SORRY: scaffold pending lean-prover` as placeholders
   - Inline `-- Proof sketch:` comments for each declaration (lean-prover guidance)
   - No proof bodies

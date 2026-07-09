@@ -17,7 +17,7 @@ This file supplies the analytic frontier formerly carried by the
 `spatial_compactness_R3` axiom (via `LocalRellichInput.ballCompact`,
 `SpatialCompactness.lean:94-99`).  As of PR #35
 the FK chain is `sorry`-free, and `spatial_compactness_R3` is no longer an axiom — it is a
-proved `theorem` assembled from this file's deliverable (see `AxiomaticClosure.lean`).
+proved `theorem` assembled from this file's deliverable (see `SolutionInterfaces.lean`).
 Concretely this file does two things:
 
 1. the Navier–Stokes-specific bridge "global spectral gradient bound ⇒ uniform
@@ -88,14 +88,14 @@ The deliverable is the conditional constructor
 `localRellichInput_of_frechetKolmogorov : FrechetKolmogorovInput → LocalRellichInput`,
 whose conclusion reproduces `LocalRellichInput` verbatim.  As of PR #35,
 `spatial_compactness_R3` has been rewritten from `axiom` to a proved `theorem` (in
-`AxiomaticClosure.lean`, assembled from this deliverable via the FK chain); the only
+`SolutionInterfaces.lean`, assembled from this deliverable via the FK chain); the only
 remaining gap on this path is discharging `FrechetKolmogorovInput` itself (a future mathlib
 FK development), carried as an explicit hypothesis.
 
 ## Architecture (standalone sibling)
 
 This file imports `R3.SpatialCompactness` (reusing `LocalRellichInput`, `L2ballR3`,
-`restrictToBall`), but NOT `R3.AxiomaticClosure`.  Its `#print axioms` for the deliverable
+`restrictToBall`), but NOT `R3.SolutionInterfaces`.  Its `#print axioms` for the deliverable
 stays clean of the NS axioms and is `sorryAx`-free — it carries NO
 `sorry`/`axiom`/`opaque`/`constant`.
 
@@ -103,7 +103,7 @@ DAG position:
 ```
 R3/Regularity.lean   (L2VF_R3, L2Sigma_R3, memH1VF_R3, viscousFormSq_R3, Domain3)
   └── R3/SpatialCompactness.lean   (L2ballR3, restrictToBall, LocalRellichInput) [P3]
-        └── R3/RellichBall.lean    [THIS FILE; imports SpatialCompactness, NOT AxiomaticClosure]
+        └── R3/RellichBall.lean    [THIS FILE; imports SpatialCompactness, NOT SolutionInterfaces]
 ```
 
 ## Declarations (dependency order)

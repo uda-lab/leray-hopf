@@ -16,9 +16,9 @@
 #   Together they are fail-closed.
 #
 # What this file checks:
-#   1. Core.lean's direct imports do not include any axiomatic module.
-#   2. Bare capstone names (without _axiomatic) are absent from Lean sources.
-#   3. All axioms in axiomatic files carry ALLOW_AXIOM markers.
+#   1. Core.lean's direct imports do not include any capstone-only module.
+#   2. The public capstone declarations use the release names (no `_axiomatic` suffix).
+#   3. All axioms in the solution-interface files carry ALLOW_AXIOM markers.
 #
 # FAIL-CLOSED: set -euo pipefail; any grep/awk failure aborts with nonzero status.
 
@@ -40,14 +40,14 @@ find . \( -name '.git' -o -name '.lake' -o -path './.claude/worktrees' \) -prune
      -o -type f -name '*.lean' -print0 > "$list"
 
 # ---------------------------------------------------------------------------
-# Gate 1: Core.lean must not import any axiomatic module.
+# Gate 1: Core.lean must not import any capstone-only module.
 # ---------------------------------------------------------------------------
 CORE="LerayHopf/Core.lean"
-AXIOMATIC_MODULES=(
-  "LerayHopf.Torus.AxiomaticClosure"
-  "LerayHopf.R3.AxiomaticClosure"
-  "LerayHopf.Torus.Axiomatic"
-  "LerayHopf.R3Axiomatic"
+CAPSTONE_MODULES=(
+  "LerayHopf.Torus.SolutionInterfaces"
+  "LerayHopf.R3.SolutionInterfaces"
+  "LerayHopf.Torus.Capstone"
+  "LerayHopf.R3Capstone"
 )
 
 if [ ! -r "$CORE" ]; then
@@ -55,14 +55,14 @@ if [ ! -r "$CORE" ]; then
   exit 1
 fi
 
-for mod in "${AXIOMATIC_MODULES[@]}"; do
+for mod in "${CAPSTONE_MODULES[@]}"; do
   # Explicit grep status handling: 0 = violation, 1 = clean, >1 = scanner
   # failure (aborts). A bare `if grep -q` would conflate 1 and >1 because
   # `set -e` is suspended inside `if` conditions (fail-open).
   status=0
   grep -qE "^import[[:space:]]+${mod//./\\.}([[:space:]]|$)" "$CORE" || status=$?
   if [ "$status" -eq 0 ]; then
-    echo "ERROR: $CORE imports axiomatic module '$mod'" >&2
+    echo "ERROR: $CORE imports capstone-only module '$mod'" >&2
     FAIL=1
   elif [ "$status" -gt 1 ]; then
     echo "ERROR: Core-import scan failed for '$mod' (grep exit $status)." >&2
@@ -71,15 +71,13 @@ for mod in "${AXIOMATIC_MODULES[@]}"; do
 done
 
 # ---------------------------------------------------------------------------
-# Gate 2: The axiom-dependent capstone theorems must end in _axiomatic.
-#         Verify the old bare names are gone from the Lean sources.
+# Gate 2: The public capstone theorems must use the release names.
+#         Verify the old `_axiomatic` declarations are gone from Lean sources.
 # ---------------------------------------------------------------------------
-BARE_NAMES=("exists_lerayHopf_torus3" "exists_lerayHopf_r3")
+OLD_NAMES=("exists_lerayHopf_torus3_axiomatic" "exists_lerayHopf_r3_axiomatic")
 
-for name in "${BARE_NAMES[@]}"; do
-  # Allow the name only when immediately followed by _axiomatic (i.e. as a prefix)
-  # or when it appears inside a comment or the _axiomatic variant itself.
-  # We want to catch bare `theorem exists_lerayHopf_torus3 ` declarations.
+for name in "${OLD_NAMES[@]}"; do
+  # We only care about live declarations, not prose comments.
   # awk over the shared find list (xargs-batched): no match is exit 0, and any
   # tool failure makes the plain command substitution non-zero, which `set -e`
   # turns into an abort. (grep-through-xargs would conflate "no match" with
@@ -91,26 +89,26 @@ for name in "${BARE_NAMES[@]}"; do
     }
   ' < "$list")"
   if [ -n "$hits" ]; then
-    echo "ERROR: bare (non-_axiomatic) declaration '${name}' found in Lean sources." >&2
-    echo "  Rename it to '${name}_axiomatic' as required by Issue #1 item 3." >&2
+    echo "ERROR: stale declaration '${name}' found in Lean sources." >&2
+    echo "  Issue #108 retires the `_axiomatic` suffix from the public API." >&2
     printf '%s\n' "$hits" >&2
     FAIL=1
   fi
 done
 
 # ---------------------------------------------------------------------------
-# Gate 3: Axiomatic modules must not introduce un-annotated axioms.
+# Gate 3: Solution-interface modules must not introduce un-annotated axioms.
 #         (Redundant with check-no-axiom.sh, but makes the intent explicit here.)
 # ---------------------------------------------------------------------------
-AXIOMATIC_FILES=(
-  "LerayHopf/Torus/AxiomaticClosure.lean"
-  "LerayHopf/R3/AxiomaticClosure.lean"
+INTERFACE_FILES=(
+  "LerayHopf/Torus/SolutionInterfaces.lean"
+  "LerayHopf/R3/SolutionInterfaces.lean"
   "LerayHopf/Torus/ConvectionForm.lean"
 )
 
-for f in "${AXIOMATIC_FILES[@]}"; do
+for f in "${INTERFACE_FILES[@]}"; do
   if [ ! -f "$f" ]; then
-    echo "ERROR: expected axiomatic file '$f' does not exist." >&2
+    echo "ERROR: expected interface file '$f' does not exist." >&2
     FAIL=1
     continue
   fi
@@ -141,6 +139,6 @@ if [ "$FAIL" -ne 0 ]; then
 fi
 
 echo "OK: axiom-leak gate passed."
-echo "  Core.lean does not import axiomatic modules."
-echo "  Capstone theorems carry _axiomatic suffix."
-echo "  All axioms in axiomatic files are annotated ALLOW_AXIOM."
+echo "  Core.lean does not import capstone-only modules."
+echo "  Public capstone theorems use the release names."
+echo "  All axioms in the interface files are annotated ALLOW_AXIOM."

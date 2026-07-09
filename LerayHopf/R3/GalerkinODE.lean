@@ -1,4 +1,4 @@
-import LerayHopf.R3.AxiomaticClosure
+import LerayHopf.R3.SolutionInterfaces
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
@@ -8,24 +8,24 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 **Milestone:** `ode-galerkin-r3`.
 
 This file substantiates the **analytic content** of the `galerkin_ode_solution_R3` axiom
-(`LerayHopf/R3/AxiomaticClosure.lean`) by producing — for each `n` — a
+(`LerayHopf/R3/SolutionInterfaces.lean`) by producing — for each `n` — a
 `GalerkinSolutionData_R3 𝔊 F ν u₀ n` from a single **isolated, honest hypothesis**
 (`GalerkinODEInput`) plus the algebraic properties of the abstract NS forms `F`.
 
 ## Import justification (NO import cycle)
 
 ```
-Domain.lean → DivergenceFree.lean → … → AxiomaticClosure.lean
+Domain.lean → DivergenceFree.lean → … → SolutionInterfaces.lean
                                               └── GalerkinODE.lean   [THIS FILE]
 ```
 
-This file **imports** `AxiomaticClosure.lean` solely to *name* the
+This file **imports** `SolutionInterfaces.lean` solely to *name* the
 **definitions/structures/proved lemmas** it produces:
 `GalerkinSolutionData_R3`, `R3GalerkinScheme`, `R3NSForms`, `R3NSForms.b_self_zero`,
 `stokesTestPairing_R3`, `viscousFormSq_R3` (and `Time`, `L2Sigma_R3`, `L2VF_R3`,
 `memH1VF_R3`).  It does **NOT** import nor reference the axiom block destructively, and
-`AxiomaticClosure.lean` does **NOT** import this file — the dependency is one-directional
-(AxiomaticClosure → GalerkinODE), exactly as P5's `GalerkinScheme.lean`.  **No cycle.**
+`SolutionInterfaces.lean` does **NOT** import this file — the dependency is one-directional
+(SolutionInterfaces → GalerkinODE), exactly as P5's `GalerkinScheme.lean`.  **No cycle.**
 
 ## HONEST scope (no overclaim — the P2 lesson)
 
@@ -57,7 +57,7 @@ The connection to the axiom is **semantic**: we prove
 **NO new `axiom`, `opaque`, `constant`, or `unsafe`.**  The genuine frontier is carried by
 the hypothesis structure `GalerkinODEInput` (a bundle of curve data, not an environment
 axiom) — the honest analogue of P3's `LocalRellichInput` and P5's `SchwartzGalerkinBasis`.
-`AxiomaticClosure.lean` is **NOT edited**.
+`SolutionInterfaces.lean` is **NOT edited**.
 -/
 
 namespace LerayHopf

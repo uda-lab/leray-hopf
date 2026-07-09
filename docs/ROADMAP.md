@@ -6,8 +6,8 @@ debt**, never merged sibling files.
 
 ## Current capstone footprint
 
-`#print axioms exists_lerayHopf_r3_axiomatic` = **3 kernel axioms only** (no project axioms, no sorryAx) — **R³ UNCONDITIONAL**.
-`#print axioms exists_lerayHopf_torus3_axiomatic` = **3 kernel axioms only** (no project axioms, no sorryAx) — **T³ UNCONDITIONAL**.
+`#print axioms exists_lerayHopf_r3` = **3 kernel axioms only** (no project axioms, no sorryAx) — **R³ UNCONDITIONAL**.
+`#print axioms exists_lerayHopf_torus3` = **3 kernel axioms only** (no project axioms, no sorryAx) — **T³ UNCONDITIONAL**.
 Live R3 axiom: none — `galerkin_limit_passage_R3` PROVED (issue #4, PR-6, 2026-07-05).
 Live T³ axiom: none — `aubin_lions` REMOVED (issue #23, PR #89; now the proved def `torusAubinLionsPackage_of_galSeq`).
 
@@ -96,7 +96,7 @@ L²-Fourier base for A/B/γ.
 Parallel-safety: the completed A/B/C files remain separate from the live D work; the only shared
 read-only base is `FourierL2`. The remaining capstone work is sequential.
 
-## Capstone (wiring) stream — sequential, edits `AxiomaticClosure.lean`, gated
+## Capstone (wiring) stream — sequential, edits `SolutionInterfaces.lean`, gated
 
 - **C0 (now): wire + merge track 3** — discharge `FinDimGlobalODE` (already proved); root-import
   `GalerkinODESolve`, final gate, merge. (Removes no axiom yet, but pays the parked-kernel debt
@@ -127,8 +127,8 @@ interleavable with ongoing streams.
   **4 → 0 axioms** (T³ **unconditional**, 2026-07-04).
 - **ℝ³ (0 axioms): DONE.** `galerkin_limit_passage_R3` proved (issue #4 PR-6, 2026-07-05)
   via the Option-A H¹-curl-approx route (`R3TestApproxH1`), NOT via Stream D / Bochner/Simon.
-  `exists_lerayHopf_r3_axiomatic` is unconditional (kernel-only).
+  `exists_lerayHopf_r3` is unconditional (kernel-only).
 - **T³ (0 axioms): DONE.** `aubin_lions` removed (issue #23, PR #89, 2026-07-04) via
-  the mode-wise spectral route; `exists_lerayHopf_torus3_axiomatic` is unconditional.
+  the mode-wise spectral route; `exists_lerayHopf_torus3` is unconditional.
 - **Full kernel-only completion: DONE** (both capstones, 2026-07-05).  `bash scripts/check-axioms-live.sh`
   is the canonical live pin.

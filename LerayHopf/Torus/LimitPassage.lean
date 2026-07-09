@@ -34,7 +34,7 @@ Fix an admissible pair `(ψ, w)`.
 No new axioms.
 -/
 
-import LerayHopf.Torus.AxiomaticClosure
+import LerayHopf.Torus.SolutionInterfaces
 import LerayHopf.Torus.ConvectionExtension
 import LerayHopf.Torus.GalerkinODESolve
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts

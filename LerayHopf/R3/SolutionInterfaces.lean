@@ -9,11 +9,11 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 open MeasureTheory Filter Topology LineDeriv
 
 /-!
-# Axiomatic closure of Leray–Hopf existence on ℝ³
+# Solution interfaces of Leray–Hopf existence on ℝ³
 
-**Milestone R3-c — ℝ³ axiomatic closure.**
+**Milestone R3-c — ℝ³ solution interfaces.**
 
-Port of the Codex-approved T³ `LerayHopf/Torus/AxiomaticClosure.lean` to the whole-space
+Port of the Codex-approved T³ `LerayHopf/Torus/SolutionInterfaces.lean` to the whole-space
 setting, reusing `DissipativeEvolution`, `WeakFormNS`, and `Time` verbatim.
 The T³ 8-round audit lessons are baked in preemptively.
 
@@ -91,12 +91,12 @@ excludes the trivial form.
 - `GalerkinCompactnessPackageFull_R3`: proof-carrying Galerkin compactness package
 - `build_galerkin_package_R3_of_galSeq` : assembly (axiom-free core) — chains AX-2 (spatial_compactness_R3) → AX-3 from an explicit Galerkin sequence
 - `exists_lerayHopf_from_package_full_R3` : lifts a package to `Nonempty (LerayHopfSolutionFull_R3 …)`
-- `exists_lerayHopf_r3_axiomatic`    : main existence theorem — RELOCATED (issue #10) to `GalerkinODECapstone.lean`
+- `exists_lerayHopf_r3`    : main existence theorem — RELOCATED (issue #10) to `GalerkinODECapstone.lean`
 
 ## Assumptions
 
 **ALL axioms discharged — R3 capstone is KERNEL-ONLY (0 project axioms).**
-`#print axioms exists_lerayHopf_r3_axiomatic` = `[propext, Classical.choice, Quot.sound]`.
+`#print axioms exists_lerayHopf_r3` = `[propext, Classical.choice, Quot.sound]`.
 SIX former axioms are now DISCHARGED: AX-SC `spatial_compactness_R3` (issue #2, FK chain — item 4
 below), AX-G `r3GalerkinScheme_exists` (issue #21 — item 1 below), AX-1
 `galerkin_ode_solution_R3` (issue #10 — item 3 below; discharged downstream in
@@ -225,7 +225,7 @@ family on `L²_σ(ℝ³)` exists.  No longer an axiom: it is proved as the `theo
 constructive witness P5 (`nonempty_r3GalerkinScheme_of_basis`) and the single marked density
 input `curlSchwartzDense_holds`.  The proof lives downstream (it needs the witness chain,
 which imports this file), so the structure `R3GalerkinScheme` stays here while its
-inhabitation moves one level down the import DAG.  The capstone `exists_lerayHopf_r3_axiomatic`
+inhabitation moves one level down the import DAG.  The capstone `exists_lerayHopf_r3`
 is relocated further downstream to `LerayHopf/R3/GalerkinODECapstone.lean` (issue #10), below
 both `SchwartzDivFreeBasis` and the axiom-free ODE chain it now routes through. -/
 
@@ -347,7 +347,7 @@ LONGER an axiom anywhere in the codebase.
 - The proved theorem `r3_NSForms_exists` (same conclusion `Nonempty (R3NSForms 𝔊)`, no
   statement weakening) is also now in `ConvectionExtension.lean`.
 - `R3NSForms` (the structure) remains intact — it is still the target type.
-- Net project axioms for the R3 capstone: **0** — `exists_lerayHopf_r3_axiomatic` is KERNEL-ONLY
+- Net project axioms for the R3 capstone: **0** — `exists_lerayHopf_r3` is KERNEL-ONLY
   (`#print axioms` = `[propext, Classical.choice, Quot.sound]`). -/
 
 /-! ### Proved lemma: b u u u = 0 -/
@@ -462,7 +462,7 @@ Galerkin ODE has a global solution unconditionally over the concrete scheme `sch
 via `galerkinSolutionData_unconditional` (`LerayHopf/R3/GalerkinODESolve.lean`), which rests on
 the proved finite-dim ODE solver `finDimGlobalODE_exists` (Picard–Lindelöf on the
 finite-dimensional approximation subspace + the energy estimate
-`‖uₙ(t)‖ ≤ ‖𝔊.P n u₀‖ ≤ ‖u₀‖`).  The capstone `exists_lerayHopf_r3_axiomatic` is rerouted
+`‖uₙ(t)‖ ≤ ‖𝔊.P n u₀‖ ≤ ‖u₀‖`).  The capstone `exists_lerayHopf_r3` is rerouted
 through that concrete data in `LerayHopf/R3/GalerkinODECapstone.lean`, so it no longer depends
 on any per-scheme ODE axiom.  Temam III.3, Theorem 3.1. -/
 
@@ -591,7 +591,7 @@ relocated to `LerayHopf/R3/LimitPassage.lean` (issue #4 PR-6).  It now carries
 the extra hypothesis `htest : R3TestApproxH1 𝔊` (the H¹-graph test-approximation
 property discharged via `nonempty_schwartzGalerkinBasis_H1`).
 
-After PR-6, `exists_lerayHopf_r3_axiomatic` has **zero project axioms**. -/
+After PR-6, `exists_lerayHopf_r3` has **zero project axioms**. -/
 
 /-! ### Proof-carrying solution structures -/
 
@@ -699,9 +699,9 @@ theorem exists_lerayHopf_from_package_full_R3 (𝔊 : R3GalerkinScheme) (F : R3N
        energy_class := pkg.energy_class_limit
        u_aestronglyMeasurable := pkg.u_aestronglyMeasurable_limit }⟩
 
-/-! **Main existence theorem on ℝ³ (axiomatic) — RELOCATED (issue #10).**
+/-! **Main existence theorem on ℝ³ (capstone) — RELOCATED (issue #10).**
 
-`exists_lerayHopf_r3_axiomatic` now lives in `LerayHopf/R3/GalerkinODECapstone.lean`,
+`exists_lerayHopf_r3` now lives in `LerayHopf/R3/GalerkinODECapstone.lean`,
 downstream of this file.  The relocation is forced by the issue-#10 discharge of
 `galerkin_ode_solution_R3`: the capstone sources its per-`n` Galerkin sequence from the
 axiom-free `galerkinSolutionData_unconditional` (`GalerkinODESolve.lean`) over the concrete
@@ -710,7 +710,7 @@ imports this file, so the capstone must sit below it in the DAG to stay acyclic.
 blocks it uses (`r3_NSForms_exists` — now a THEOREM in `ConvectionForm.lean` via the
 thin-swap (issue #48), `build_galerkin_package_R3_of_galSeq`,
 `exists_lerayHopf_from_package_full_R3`) remain defined here or in upstream imports and are
-visible downstream through the import.  See `LerayHopf/Core.lean` for the axiom-free layer; `LerayHopf/R3Axiomatic.lean`
+visible downstream through the import.  See `LerayHopf/Core.lean` for the axiom-free layer; `LerayHopf/R3Capstone.lean`
 re-exports the relocated capstone. -/
 
 end LerayHopf

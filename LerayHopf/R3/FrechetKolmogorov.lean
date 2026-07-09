@@ -22,7 +22,7 @@ Riesz L²-precompactness criterion that mathlib still lacks).  It produces a gen
 whose type is copied **verbatim** from `RellichBall.lean` — no weakening, no added
 hypotheses.  Once proved, `localRellichInput_of_frechetKolmogorov frechetKolmogorov_holds`
 becomes an *unconditional* `LocalRellichInput`, which later (a separate capstone) lets
-`AxiomaticClosure.lean` rewrite `spatial_compactness_R3` from `axiom` to `theorem`.
+`SolutionInterfaces.lean` rewrite `spatial_compactness_R3` from `axiom` to `theorem`.
 
 ## What `FrechetKolmogorovInput` actually demands (copied from `RellichBall.lean`)
 
@@ -113,7 +113,7 @@ supplied directly from the criterion's own data, and `frechetKolmogorov_holds` i
 
 Imports `R3.RellichBall` (for `FrechetKolmogorovInput`, `translate_L2VF`, `L2ballR3`,
 `restrictToBall`), plus targeted mathlib (convolution + uniform-space compactness).  It does
-NOT import `AxiomaticClosure.lean` and does NOT edit the root `LerayHopf.lean` (deferred wiring).
+NOT import `SolutionInterfaces.lean` and does NOT edit the root `LerayHopf.lean` (deferred wiring).
 
 DAG position:
 ```

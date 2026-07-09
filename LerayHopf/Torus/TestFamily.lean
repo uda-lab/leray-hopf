@@ -1,4 +1,4 @@
--- Narrowest import: provides `stokesTestPairing` + `IsGalerkinTest` (via AxiomaticClosure)
+-- Narrowest import: provides `stokesTestPairing` + `IsGalerkinTest` (via SolutionInterfaces)
 -- and `velocitySpan` (defined here). No heavier ODE-solver layer needed. (AGENTS.md rule 10)
 import LerayHopf.Torus.GalerkinScheme
 

@@ -9,7 +9,7 @@ import LerayHopf.R3.GalerkinBasisH1       -- nonempty_schwartzGalerkinBasis_H1 (
 # LerayHopf.R3.GalerkinODECapstone — discharge `galerkin_ode_solution_R3` (issue #10)
 
 This file performs the capstone WIRING that removes the project axiom
-`galerkin_ode_solution_R3` from `exists_lerayHopf_r3_axiomatic`.  It contains NO new
+`galerkin_ode_solution_R3` from `exists_lerayHopf_r3`.  It contains NO new
 mathematics: the finite-dimensional Galerkin ODE is already solved unconditionally over the
 concrete scheme `schemeOfBasis B` in `LerayHopf/R3/GalerkinODESolve.lean`
 (`galerkinSolutionData_unconditional`).  Here we only assemble the per-`n` data into a
@@ -23,7 +23,7 @@ It is the shallowest acyclic point that sees BOTH:
 - `galerkinSolutionData_unconditional` (the unconditional finite-dim solver, from
   `GalerkinODESolve`).
 
-`AxiomaticClosure.lean` (where the axiom is declared and `build_galerkin_package_R3_of_galSeq`
+`SolutionInterfaces.lean` (where the axiom is declared and `build_galerkin_package_R3_of_galSeq`
 lives) is UPSTREAM of `GalerkinODESolve`, so the wiring cannot go there without an import
 cycle; it lands here, one level below `GalerkinODESolve`.
 
@@ -31,7 +31,7 @@ cycle; it lands here, one level below `GalerkinODESolve`.
 
 Routing the capstone through `galSeq_R3_of_basis` (axiom-free, concrete scheme) instead of
 the `galerkin_ode_solution_R3` axiom drops EXACTLY that axiom from
-`exists_lerayHopf_r3_axiomatic`'s `#print axioms`.  After issue #15 (which removed `aubin_lions_R3` — proving its spatial half and swapping its
+`exists_lerayHopf_r3`'s `#print axioms`.  After issue #15 (which removed `aubin_lions_R3` — proving its spatial half and swapping its
 time content 1-for-1 for the single strictly-thinner UNCONDITIONAL
 `galerkinSpaceTimeExtraction_R3`), issue #48 (which reorganized the named axiom `r3_NSForms_exist`
 into the operator-gap form `r3ConvectionGapOp_exists` + the proved theorem `r3_NSForms_exists`
@@ -42,13 +42,13 @@ the capstone is now **KERNEL-ONLY** (0 project axioms, issue #4 PR-6): `galerkin
 `r3ConvectionGapOp_exists` is NO LONGER among them — PROVED (issue #56) as `r3ConvectionGapOp_holds`.
 `galerkin_spacetime_precompact_R3` is NO LONGER among them — PROVED (issue #4 PR-4) in `ArzelaAscoliTime.lean`.
 `galerkin_limit_passage_R3` is NO LONGER among them — PROVED (issue #4 PR-6) as a theorem in `LimitPassage.lean`.
-`#print axioms exists_lerayHopf_r3_axiomatic` = `[propext, Classical.choice, Quot.sound]`.
+`#print axioms exists_lerayHopf_r3` = `[propext, Classical.choice, Quot.sound]`.
 
 ## Declarations added
 
 - `galSeq_R3_of_basis`               — concrete, axiom-free Galerkin sequence over `schemeOfBasis B`
 - `build_galerkin_package_R3_of_basis` — full package via the axiom-free builder
-- `exists_lerayHopf_r3_axiomatic`    — main existence theorem (relocated from `SchwartzDivFreeBasis`)
+- `exists_lerayHopf_r3`    — main existence theorem (relocated from `SchwartzDivFreeBasis`)
 -/
 
 namespace LerayHopf
@@ -79,7 +79,7 @@ noncomputable def build_galerkin_package_R3_of_basis (B : SchwartzGalerkinBasis)
   build_galerkin_package_R3_of_galSeq (schemeOfBasis B) F ν hν T hT u₀
     (galSeq_R3_of_basis B F ν hν u₀) htest
 
-/-- **Main existence theorem on ℝ³ (axiomatic).**  Relocated from
+/-- **Main existence theorem on ℝ³ (capstone).**  Relocated from
 `LerayHopf/R3/SchwartzDivFreeBasis.lean` (issue #10) so that the per-`n` Galerkin sequence is
 sourced from the axiom-free `galerkinSolutionData_unconditional` over the concrete scheme
 `schemeOfBasis B`, discharging `galerkin_ode_solution_R3`.
@@ -91,7 +91,7 @@ The witness scheme is the CONCRETE `schemeOfBasis B`, with `B` drawn from
 `nonempty_schwartzGalerkinBasis` (NOT from `r3GalerkinScheme_exists`, which would discard the
 basis via `Nonempty.elim` and reintroduce the need for the per-scheme ODE axiom).
 
-The name `_axiomatic` is a legacy suffix; as of issue #4 PR-6, this result depends on **ZERO project
+This theorem now carries the release name directly; as of issue #4 PR-6, this result depends on **ZERO project
 axioms** — it is KERNEL-ONLY (`#print axioms` = `[propext, Classical.choice, Quot.sound]`).
 Former project axioms discharged:
 - `galerkin_ode_solution_R3` — here (issue #10)
@@ -106,7 +106,7 @@ Former project axioms discharged:
   in `ArzelaAscoliTime.lean` via `galerkin_spacetime_precompact_of_goodSampling`
 - `galerkin_limit_passage_R3` — PROVED (issue #4 PR-6) as a theorem in `LimitPassage.lean`
 Net project axioms: **0**. -/
-theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
+theorem exists_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),
     Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀) := by

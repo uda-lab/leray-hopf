@@ -55,7 +55,7 @@ No axioms are introduced by this file (`axiom` count: 0), and the file is
 Codex-approved B7) have been discharged by `lean-prover`.
 -/
 
-import LerayHopf.R3.AxiomaticClosure       -- GalerkinSolutionData_R3, R3GalerkinScheme, R3NSForms, weightedFourierComponent
+import LerayHopf.R3.SolutionInterfaces       -- GalerkinSolutionData_R3, R3GalerkinScheme, R3NSForms, weightedFourierComponent
 import LerayHopf.R3.FourierL2              -- viscousFormSq_R3_eq_integral_normSq_fourier (F7, for B4)
 import LerayHopf.R3.RellichBall            -- integrable_viscous_integrand_of_memH1 (for B7's Cauchy–Schwarz)
 -- Deviation from the plan's import table (recorded per task instruction): B6's proof needs

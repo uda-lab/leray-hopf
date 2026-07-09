@@ -8,7 +8,7 @@
 - `LerayHopf/R3/TrilinearEstimate.lean` (lines 1–799)
 - `LerayHopf/R3/DivergenceFree.lean` (lines 1–145)
 - `LerayHopf/R3/Regularity.lean` (lines 1–100)
-- `LerayHopf/R3/AxiomaticClosure.lean` (lines 1–648)
+- `LerayHopf/R3/SolutionInterfaces.lean` (lines 1–648)
 - `docs/scratch/stream-c-convgap-topology.md`
 
 ---
@@ -23,19 +23,19 @@ Evidence (file:line):
 - `TrilinearEstimate.lean:361–369` (B2): `|conv ψu ψv ψw| ≤ (∑_a ‖ψu_a‖_{L²}) · (∑_{a,i} ‖∂_a ψv_i‖_{L²}) · (∑_i ‖ψw_i‖_{L∞})`. Slot v = H¹ seminorm, slot w = L∞.
 - `TrilinearEstimate.lean:725–739` (C3): Under div-free on slot u, `|conv| ≤ C(w) · ‖ψu_a‖_{L²} · ‖ψv_i‖_{L²}` where `C(w) = ∑_{i,a} ‖∂_a ψw_i‖_{L∞-seminorm}`. Two L² slots, but slot w must be Schwartz (C(w) finite only for Schwartz w).
 - `stream-c-convgap-topology.md:114–116`: "In **every** proven bound, **exactly two** factors are L² and the **third** factor lives in L∞/H¹. There is **no** proven (nor true) bound with all three factors in L²."
-- `AxiomaticClosure.lean:227–229` (`R3NSForms.b_bound`): "For a **canonical Schwartz divergence-free** test `w` (`IsSchwartzDivFree_R3 w`), `|b(u,v,w)| ≤ C(w)·‖u‖·‖v‖`." The test slot w is explicitly restricted to Schwartz; slots u, v range over all L²_σ.
+- `SolutionInterfaces.lean:227–229` (`R3NSForms.b_bound`): "For a **canonical Schwartz divergence-free** test `w` (`IsSchwartzDivFree_R3 w`), `|b(u,v,w)| ≤ C(w)·‖u‖·‖v‖`." The test slot w is explicitly restricted to Schwartz; slots u, v range over all L²_σ.
 
 **Conclusion:** The correct domain is:
 - **In slots u, v:** all of L²_σ(ℝ³).
 - **In slot w (test slot):** restricted to `IsSchwartzDivFree_R3 w` (Schwartz div-free class) for the `b_bound` control. The form can be *defined* on all of L²_σ (as a trilinear functional), but the L²-bilinear bound `|b u v w| ≤ C(w)‖u‖‖v‖` is only guaranteed when w is Schwartz.
 - **NOT** L²×L²×L² with a joint-continuity bound in all three slots simultaneously: this is false and was the round-3 error (`b_cont`, `ConvectionForm.lean:44–47`).
-- The downstream use (`galerkin_limit_passage_R3`, `r3Evolution`) puts w in the Schwartz class in every actual application (`AxiomaticClosure.lean:70–76`, `stream-c-convgap-topology.md:69–76`).
+- The downstream use (`galerkin_limit_passage_R3`, `r3Evolution`) puts w in the Schwartz class in every actual application (`SolutionInterfaces.lean:70–76`, `stream-c-convgap-topology.md:69–76`).
 
 ---
 
 ## 2. Which `R3NSForms` fields are genuinely needed downstream
 
-Evidence from `AxiomaticClosure.lean`:
+Evidence from `SolutionInterfaces.lean`:
 
 | Field | Used where | Evidence |
 |---|---|---|
@@ -69,9 +69,9 @@ The refactoring is structurally complete. What remains is discharging the two fr
 
 **The narrower domain does NOT change `R3NSForms` or force interface changes.** Evidence:
 
-- `R3NSForms.b_bound` (`AxiomaticClosure.lean:227–229`) already has the Schwartz-test restriction (`IsSchwartzDivFree_R3 w`). The interface is already stated at the honest domain.
-- `r3_NSForms_exist` (`AxiomaticClosure.lean:272`) is an axiom with an `ALLOW_AXIOM` marker; it asserts `Nonempty (R3NSForms 𝔊)` without change.
-- `ConvectionForm.lean:229` proves `R3NSForms_of_gap` as `ConvectionGap 𝔊 → Nonempty (R3NSForms 𝔊)`, leaving `r3_NSForms_exist` in `AxiomaticClosure.lean` untouched. The assembly path is: discharge `ConvectionGap` → get `r3_NSForms_exist` via `R3NSForms_of_gap`.
+- `R3NSForms.b_bound` (`SolutionInterfaces.lean:227–229`) already has the Schwartz-test restriction (`IsSchwartzDivFree_R3 w`). The interface is already stated at the honest domain.
+- `r3_NSForms_exist` (`SolutionInterfaces.lean:272`) is an axiom with an `ALLOW_AXIOM` marker; it asserts `Nonempty (R3NSForms 𝔊)` without change.
+- `ConvectionForm.lean:229` proves `R3NSForms_of_gap` as `ConvectionGap 𝔊 → Nonempty (R3NSForms 𝔊)`, leaving `r3_NSForms_exist` in `SolutionInterfaces.lean` untouched. The assembly path is: discharge `ConvectionGap` → get `r3_NSForms_exist` via `R3NSForms_of_gap`.
 - The Galerkin-ODE interface (`GalerkinSolutionData_R3`) and limit-passage axiom (`galerkin_limit_passage_R3`) use `b` only at Schwartz test fields, consistent with the narrower domain.
 
 **No capstone-interface changes required.**

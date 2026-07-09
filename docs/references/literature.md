@@ -17,7 +17,7 @@ proof-of-content claims.
 **Relevance:** Founding paper for Leray–Hopf weak solutions on ℝ³. Introduces the energy
 inequality, the mollification-based construction of approximate solutions, and the local
 compactness argument (an early form of Fréchet–Kolmogorov applied ball-by-ball). The
-`exists_lerayHopf_r3_axiomatic` capstone is the Lean statement of the main result of this
+`exists_lerayHopf_r3` capstone is the Lean statement of the main result of this
 paper.
 
 **Verification status:** DOI resolves to the Springer-hosted Project Euclid digitization.
@@ -32,7 +32,7 @@ Full text confirmed accessible at the URL above.
 > DOI: [10.1002/mana.3210040121](https://doi.org/10.1002/mana.3210040121)
 
 **Relevance:** Proves Leray–Hopf existence on bounded/periodic domains using Galerkin
-approximations. The T³ capstone `exists_lerayHopf_torus3_axiomatic` follows the Hopf
+approximations. The T³ capstone `exists_lerayHopf_torus3` follows the Hopf
 construction: finite-dim Galerkin ODE → Aubin–Lions compactness → limit passage.
 The former axioms `aubin_lions` (now the proved def `torusAubinLionsPackage_of_galSeq`,
 issue #23) and `galerkin_limit_passage` (now proved, #25) (T³) and their R³ analogues

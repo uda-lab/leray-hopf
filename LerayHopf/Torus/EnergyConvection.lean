@@ -1,5 +1,5 @@
-import LerayHopf.Torus.AxiomaticClosure
--- AxiomaticClosure import justification: provides `IsGalerkinTest`, `galerkinConvection`,
+import LerayHopf.Torus.SolutionInterfaces
+-- SolutionInterfaces import justification: provides `IsGalerkinTest`, `galerkinConvection`,
 --   `L2Sigma`, `L2VF`, `L2C`, `mFourierCoeff3`, `velocityProjection_n`, and
 --   transitively `H1Sigma.lean` (`memH1VF`, `memH1Sigma`, `memH1Torus`) and
 --   `FunctionSpaces.lean` (`L2C_norm_sq_eq_tsum_coeff_sq` for the ℓ²-Cauchy–Schwarz bound).

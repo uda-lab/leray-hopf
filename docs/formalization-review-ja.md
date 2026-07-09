@@ -18,9 +18,9 @@
 のみ、`sorryAx` なし）。
 
 ```lean
--- LerayHopf/AxiomaticClosure.lean
+-- LerayHopf/Torus/SolutionInterfaces.lean
 exists_lerayHopf_torus3 (u₀ : L2Sigma)    (ν>0) (T>0) : ∃ F,   Nonempty (LerayHopfSolutionFull    F ν T u₀)
--- LerayHopf/R3/AxiomaticClosure.lean
+-- LerayHopf/R3/SolutionInterfaces.lean
 exists_lerayHopf_r3      (u₀ : L2Sigma_R3) (ν>0) (T>0) : ∃ 𝔊 F, Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)
 ```
 
@@ -322,9 +322,9 @@ T³ の **A2 は空間半を証明済 `rellich_L2Sigma` で割り当て**、公�
 | `LerayHopf/GalerkinProjection.lean`, `VelocityGalerkin.lean` | Fourier 截断・速度 Galerkin 射影・実数値性 |
 | `LerayHopf/RellichEmbedding.lean` | **Fourier-tail Rellich**（L1–L5, `rellich_seq_compact`） |
 | `LerayHopf/H1Sigma.lean` | `h1EnergySq`, `viscousFormSq`, **`rellich_L2Sigma`**（成分＋対角） |
-| `LerayHopf/AxiomaticClosure.lean` | T³ 4 公理＋組立 `exists_lerayHopf_torus3` |
+| `LerayHopf/Torus/SolutionInterfaces.lean` | T³ 4 公理＋組立 `exists_lerayHopf_torus3` |
 | `LerayHopf/R3/Domain.lean` | ℝ³ L² 空間・成分射影 |
 | `LerayHopf/R3/DivergenceFree.lean` | **弱発散×Schwartz** `L2Sigma_R3`・Leray 射影 |
 | `LerayHopf/R3/Regularity.lean` | `memH1VF_R3`(MemSobolev), Fourier 積分粘性形式 |
-| `LerayHopf/R3/AxiomaticClosure.lean` | ℝ³ 6 公理＋組立 `exists_lerayHopf_r3` |
+| `LerayHopf/R3/SolutionInterfaces.lean` | ℝ³ 6 公理＋組立 `exists_lerayHopf_r3` |
 | `docs/STATUS.md` | 公理台帳・Codex 監査ログ |

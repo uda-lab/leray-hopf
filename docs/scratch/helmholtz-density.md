@@ -4,7 +4,7 @@
 **Author:** lean-planner
 **Status:** task contract (no Lean edited; docs only)
 **Lane:** parallel with Rellich-on-balls and ODE-continuation tracks — stays in its lane
-(it touches only a NEW sibling file; does NOT edit `AxiomaticClosure.lean`).
+(it touches only a NEW sibling file; does NOT edit `SolutionInterfaces.lean`).
 
 ## Goal
 
@@ -22,7 +22,7 @@ combines with P5's `nonempty_r3GalerkinScheme_of_basis` (GalerkinScheme.lean:338
 discharge `r3GalerkinScheme_exists`. **That capstone wiring is OUT OF SCOPE here** — this
 milestone produces only the basis-existence result, in a NEW standalone sibling file.
 
-**Confirmation: no `AxiomaticClosure.lean` edit.** The axiom-removal capstone (rewiring
+**Confirmation: no `SolutionInterfaces.lean` edit.** The axiom-removal capstone (rewiring
 `r3GalerkinScheme_exists` through this result) is a later sequential PR, explicitly
 deferred. This milestone is read-only with respect to every existing Lean file; it only
 ADDS `LerayHopf/R3/SchwartzDivFreeBasis.lean`.
@@ -161,12 +161,12 @@ Justify any import beyond these. Do NOT import `AxiomaticClosure` directly — g
 ### DAG position
 ```
 DivergenceFree.lean
-  └── … ── AxiomaticClosure.lean
+  └── … ── SolutionInterfaces.lean
               └── GalerkinScheme.lean        (SchwartzGalerkinBasis)
                       └── SchwartzDivFreeBasis.lean   [THIS FILE]
                             (NOT imported by anything yet; capstone wires it later)
 ```
-No cycle. `AxiomaticClosure.lean` is untouched.
+No cycle. `SolutionInterfaces.lean` is untouched.
 
 ### Namespace / opens
 ```
@@ -318,7 +318,7 @@ axiom statement (the SDF Prop), so the capstone becomes mechanical.
   `nonempty_schwartzGalerkinBasis` carrying exactly ONE marked axiom
   (`curlSchwartzDense_holds`) OR one marked `sorry`, per orchestrator decision at gate.
   No OTHER axiom/opaque/sorry anywhere in the file.
-- `AxiomaticClosure.lean` and all other existing files UNCHANGED (confirmed by git diff).
+- `SolutionInterfaces.lean` and all other existing files UNCHANGED (confirmed by git diff).
 - Codex `/codex:adversarial-review --effort xhigh` → approve on C-A…C-E before proof work.
 - Report records: the curl-density (4) frontier as the single survivor, and that the capstone
   (wiring `r3GalerkinScheme_exists` through C1 + P5's `nonempty_r3GalerkinScheme_of_basis`)

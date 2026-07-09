@@ -12,7 +12,7 @@ axiom-free convection functional defined on fields of `L2Sigma_R3` that carry a
 component-wise Schwartz representative (the `IsSchwartzDivFree_R3` class).
 
 It does **not** mention `R3NSForms` (that conditional assembly lives in the sibling
-`LerayHopf/R3/ConvectionForm.lean`, which imports `AxiomaticClosure.lean`).
+`LerayHopf/R3/ConvectionForm.lean`, which imports `SolutionInterfaces.lean`).
 
 ## Why a *partial* form, not a total one
 

@@ -3,7 +3,7 @@
 **Track:** Pillar B (parallel with Helmholtz density + ODE continuation — stay in lane).
 **Milestone slug:** `rellich-balls`
 **File deliverable:** `LerayHopf/R3/RellichBall.lean` (NEW, standalone sibling).
-**Hard constraint:** do NOT edit `LerayHopf/R3/AxiomaticClosure.lean` (axiom removal is a later
+**Hard constraint:** do NOT edit `LerayHopf/R3/SolutionInterfaces.lean` (axiom removal is a later
 sequential capstone), do NOT edit `LerayHopf/R3/SpatialCompactness.lean`. Planner writes docs only.
 **Target consumed:** the field `LocalRellichInput.ballCompact`
 (`LerayHopf/R3/SpatialCompactness.lean:94-99`).
@@ -247,7 +247,7 @@ exactly (the `K`/`IsCompact K`/membership shape).
 **Optional capstone (NOT this milestone — note only):** once `FrechetKolmogorovInput` is itself
 discharged (future mathlib FK PR or a dedicated `frechet-kolmogorov` milestone), `Nonempty
 LocalRellichInput` follows, and a SEPARATE sequential PR can rewrite `spatial_compactness_R3`
-from `axiom` to `theorem`. Out of scope here. Do NOT touch `AxiomaticClosure.lean`.
+from `axiom` to `theorem`. Out of scope here. Do NOT touch `SolutionInterfaces.lean`.
 
 ---
 
@@ -257,7 +257,7 @@ from `axiom` to `theorem`. Out of scope here. Do NOT touch `AxiomaticClosure.lea
 already exist in `LerayHopf/R3/SpatialCompactness.lean`. `RellichBall.lean` should
 `import LerayHopf.R3.SpatialCompactness` (it is a sibling that BUILDS ON the P3 plumbing — this
 is allowed; the prohibition is only against editing it and against importing/editing
-`AxiomaticClosure.lean`). This avoids re-proving `restrictToBall` lemmas. Confirm at Gate 1 that
+`SolutionInterfaces.lean`). This avoids re-proving `restrictToBall` lemmas. Confirm at Gate 1 that
 importing SpatialCompactness (not AxiomaticClosure) keeps the new deliverable's `#print axioms`
 clean.
 
@@ -327,7 +327,7 @@ UNCHANGED (AxiomaticClosure not touched); preflight green.
       hypothesis). If route (ii) §2.2 is forced, ONE marked `axiom frechetKolmogorov_L2ball`
       with `-- ALLOW_AXIOM` + assumptions-section entry, Codex-approved.
 - [ ] `#print axioms localRellichInput_of_frechetKolmogorov` no `sorryAx`.
-- [ ] `AxiomaticClosure.lean` NOT edited; `exists_lerayHopf_r3` axiom set unchanged.
+- [ ] `SolutionInterfaces.lean` NOT edited; `exists_lerayHopf_r3` axiom set unchanged.
 - [ ] `bash scripts/agent-preflight.sh` green. Codex Gates 1, 2, 3 approve.
 
 **Honest partial fallback (Hard rule 8):** if G-PLANCHEREL (T0b) blocks this cycle, leave T0b's

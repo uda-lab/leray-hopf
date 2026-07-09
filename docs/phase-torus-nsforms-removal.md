@@ -3,7 +3,7 @@
 **Author:** lean-planner
 **Date:** 2026-06-21
 **Goal as stated:** PROVE `Nonempty Torus3NSForms` (construct the witness), driving
-`exists_lerayHopf_torus3_axiomatic` from 4 project axioms to 3 — the real goal, not
+`exists_lerayHopf_torus3` from 4 project axioms to 3 — the real goal, not
 frontier-isolation.
 **Scope rule:** planning document only. No Lean edits proposed inline; this produces a
 contract for `lean-coder` / `lean-prover`.
@@ -20,7 +20,7 @@ already landed the finite Galerkin lemmas
 **These lemmas do not exist in the actual working tree.** The repo HEAD is `3a66d66`
 (`main`). I verified:
 
-- `LerayHopf/AxiomaticClosure.lean` (read in full) contains `galerkinConvection`
+- `LerayHopf/Torus/SolutionInterfaces.lean` (read in full) contains `galerkinConvection`
   (def at :89), `IsGalerkinTest` (:123), `Torus3NSForms` (:151), the axiom
   `torus3_NSForms_exist` (:203), and the assembly. It contains **none** of the
   `galerkinConvection_add_*`, `_smul_*`, `_bound`, `_antisymm`, `coeff_zero_outside_box`
@@ -163,7 +163,7 @@ the `b_bound` wall and no further.
 ### 2.1 The space objects
 - `P := ` the trig-polynomial divergence-free subspace of `L2Sigma`. Realisable as
   `⨆ n, (velocityProjection_n n).range ⊓ L2Sigma`, or as the span of the finite Fourier
-  modes. `IsGalerkinTest w ↔ w ∈ P` (already true by the def at `AxiomaticClosure.lean:123`).
+  modes. `IsGalerkinTest w ↔ w ∈ P` (already true by the def at `SolutionInterfaces.lean:123`).
 - A Hamel basis `𝓑` of `L2Sigma` containing a basis of `P` as a subset, via
   `Basis.extend` / `LinearIndependent.extend` on a basis of `P`. `Classical`-powered;
   allowed (kernel axiom).
@@ -282,7 +282,7 @@ witness, which is RED.
 
 ### PR-0 (prerequisite, GREEN) — finite Galerkin lemmas + level stability
 Owner: `lean-coder` (signatures) → `lean-prover` (bodies). File:
-`LerayHopf/AxiomaticClosure.lean` (these are upstream finite facts) OR a new
+`LerayHopf/Torus/SolutionInterfaces.lean` (these are upstream finite facts) OR a new
 `LerayHopf/GalerkinConvectionLemmas.lean` imported by it.
 - `galerkinConvection_add_1/2/3`, `_smul_1/2/3` — multilinearity of the finite form.
 - `coeff_zero_outside_box` — Fourier coeffs vanish outside `fourierBox n`.
@@ -314,7 +314,7 @@ Either:
   torus3_NSForms_exist; b algebra/bound/pin now theorem content via Torus3NSForms_of_gap`)
   in `TorusConvectionForm.lean`; re-route the capstone in a new `Torus3NSForms_provider`
   lemma so `torus3_NSForms_exist` is no longer referenced by
-  `exists_lerayHopf_torus3_axiomatic`. Then UPDATE the pins:
+  `exists_lerayHopf_torus3`. Then UPDATE the pins:
   - `scripts/print_axioms.lean` comment block: replace `torus3_NSForms_exist` with
     `torusConvectionGap_exists` in the torus expected set.
   - `scripts/check-axioms-live.sh` lines 11–14 and 141–144: same substitution. **Count
@@ -350,7 +350,7 @@ Either:
 ## 7. Definition of done
 
 - **If RED is accepted (recommended):** no Lean change; this document is the deliverable.
-  `exists_lerayHopf_torus3_axiomatic` stays at 4 project axioms. Report to owner that 4 → 3
+  `exists_lerayHopf_torus3` stays at 4 project axioms. Report to owner that 4 → 3
   is blocked on the missing torus weak-convection operator (the same frontier R3 isolates
   but does not discharge).
 - **If GREEN fallback (4a) is authorised:** PR-0, PR-1, PR-2 land sorry-free; PR-3 swaps to
@@ -365,7 +365,7 @@ Either:
 
 - ABSOLUTE FLOOR honored: no path here adds a new axiom/sorry to reach the goal; the goal
   is declared unreachable at the floor rather than papered over. `Classical.choice` only.
-- `Torus3NSForms` and `exists_lerayHopf_torus3_axiomatic` are NOT weakened anywhere.
+- `Torus3NSForms` and `exists_lerayHopf_torus3` are NOT weakened anywhere.
 - The rejected raw-`tsum` total form is NOT used (it is named in §1.2 as the non-summable
   trap that the smooth-test bound cannot rescue).
 - `galerkinConvection_antisymm` is used ONLY with its `Vₙ` hypotheses (§1.3, §5 PR-0).

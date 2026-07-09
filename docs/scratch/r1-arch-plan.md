@@ -51,9 +51,9 @@ Changing `DissipativeEvolution.instNACG` / `instIPS` / `instCS` from fields to
 
 Dependent files (grepped for `DissipativeEvolution`):
 - `LerayHopf/EvolutionTriple.lean` — definition site; `WeakFormNS` uses `letI` blocks
-- `LerayHopf/AxiomaticClosure.lean` — `torus3Evolution`, `GalerkinSolutionData`,
+- `LerayHopf/Torus/SolutionInterfaces.lean` — `torus3Evolution`, `GalerkinSolutionData`,
   `build_galerkin_package_of_galSeq`, assembly
-- `LerayHopf/R3/AxiomaticClosure.lean` — `r3Evolution`, the ℝ³ counterpart
+- `LerayHopf/R3/SolutionInterfaces.lean` — `r3Evolution`, the ℝ³ counterpart
 - `LerayHopf/Bochner/GelfandTriple.lean` — `ofDissipativeEvolution` signature and body
 
 Changing `GelfandTriple.instNACG_V` etc. from fields to typeclass params touches:
@@ -61,7 +61,7 @@ Changing `GelfandTriple.instNACG_V` etc. from fields to typeclass params touches
 - `LerayHopf/Bochner/TimeSobolev.lean` — `GelfandTriple.ιCLM`, `Vprime`,
   `hToVprime`, `W1pTime`, `w1pTime_continuous_in_H` — all use `letI := GT.instNACG_V`
   and similar
-- `LerayHopf/AxiomaticClosure.lean` — `GelfandTriple.IsOfDissipativeEvolution` uses
+- `LerayHopf/Torus/SolutionInterfaces.lean` — `GelfandTriple.IsOfDissipativeEvolution` uses
   `GT.instNACG_H`, `GT.instIPS_H` via `HEq`
 
 Total dependent files for the combined field→param refactor: **5 files with dense
@@ -81,8 +81,8 @@ non-trivial `letI`-threading rewrites is HIGH RISK for a single PR.
 
 **Current state:** The separation is ALREADY IMPLEMENTED:
 - `import LerayHopf.Core` — axiom-free, documented
-- `import LerayHopf.Torus.Axiomatic` — torus axiomatic layer
-- `import LerayHopf.R3Axiomatic` — ℝ³ axiomatic layer
+- `import LerayHopf.Torus.Capstone` — torus axiomatic layer
+- `import LerayHopf.R3Capstone` — ℝ³ axiomatic layer
 - `import LerayHopf` — intentional re-export of all three
 
 The root module docstring (lines 25–31) explicitly documents this.  There is nothing
@@ -186,8 +186,8 @@ GelfandTriple.lean (field change)
        └─→ LerayHopf.lean (import-only; no decl changes)
 ```
 
-`AxiomaticClosure.lean` does NOT use `GT.ι_linear` or `GT.ι_continuous` directly
-(confirmed by grep: `GelfandTriple` is imported in `AxiomaticClosure.lean` only via
+`SolutionInterfaces.lean` does NOT use `GT.ι_linear` or `GT.ι_continuous` directly
+(confirmed by grep: `GelfandTriple` is imported in `SolutionInterfaces.lean` only via
 `Bochner/GelfandTriple.lean`, and the `GelfandTriple.IsOfDissipativeEvolution` Prop
 is defined there — its `Set.range (fun v => cast hH (GT.ι v))` expression is a
 coercion site that should be transparent after the CLM change).

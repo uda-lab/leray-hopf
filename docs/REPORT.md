@@ -101,14 +101,13 @@ exists_lerayHopf_torus3 (u₀ : L2Sigma) (ν > 0) (T > 0) :
 ```
 `LerayHopfSolutionFull` is **proof-carrying**: weak NS equation (smooth/Galerkin div-free tests,
 ν-scaled, compact support in (0,T)), the energy inequality on [0,T], the initial trace, and the
-**energy class** `u ∈ L²(0,T;H¹_σ)`. `#print axioms` = the 4 axioms + `propext`/`Choice`/`Quot`,
-**no `sorryAx`**.
+**energy class** `u ∈ L²(0,T;H¹_σ)`. `#print axioms` is now kernel-only
+(`propext`/`Choice`/`Quot`), with **no project axioms** and **no `sorryAx`**.
 
-**The 4 axioms** (`AxiomaticClosure.lean`): `torus3_NSForms_exist` (the convection form, pinned to
-the concrete `galerkinConvection` so `b=0` is excluded; viscous form is *concrete*, not axiomatized),
-`galerkin_ode_solution` (A1, Temam III.3), `aubin_lions` (A2, spatial half *discharged* by the
-proved `rellich_L2Sigma`, Temam III.2.1), `galerkin_limit_passage` (A3, existential good
-representative a.e.-tied to the limit, Temam III.3). `b(u,u,u)=0` is a *proved lemma*.
+**Historical note.** The earlier torus closure lived in
+`LerayHopf/Torus/SolutionInterfaces.lean` and once bundled four project axioms:
+`torus3_NSForms_exist`, `galerkin_ode_solution`, `aubin_lions`, and
+`galerkin_limit_passage`. All four are now discharged; `b(u,u,u)=0` is a proved lemma.
 
 **Integrity:** the axiom set survived an **8-round** Codex `--effort xhigh` adversarial audit
 (→ approve) that forced fixes to a hidden inconsistency (under-specified forms), a false 3D bound,
@@ -153,7 +152,7 @@ frechetKolmogorov_holds`). That leaves a +1 honest cost of the whole space.
 **Integrity.** Codex `--effort xhigh` axiom audit → approve in **2 rounds** (the 8-round T³ lessons
 applied preemptively): it forced (i) a `range_schwartz` field to exclude the identity Galerkin scheme,
 and (ii) reformulating compactness from *global* (false without tightness) to *local-on-balls* (true).
-`#print axioms exists_lerayHopf_r3_axiomatic` = the 5 axioms + `propext`/`Choice`/`Quot`
+`#print axioms exists_lerayHopf_r3` = the 5 axioms + `propext`/`Choice`/`Quot`
 (no `sorryAx`).
 
 This is the project's headline result: **whole-space ℝ³ Leray–Hopf weak existence, closed modulo

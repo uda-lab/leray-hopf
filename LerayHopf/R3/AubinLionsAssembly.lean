@@ -5,16 +5,16 @@ import LerayHopf.R3.LimitPassage
 # LerayHopf.R3.AubinLionsAssembly — package assembly through the proved Aubin–Lions constructor
 
 This file holds the Galerkin compactness package builder
-`build_galerkin_package_R3_of_galSeq`, RELOCATED here (issue #15) from `AxiomaticClosure.lean`.
+`build_galerkin_package_R3_of_galSeq`, RELOCATED here (issue #15) from `SolutionInterfaces.lean`.
 
 ## Why this file exists (DAG position)
 
-The former `axiom aubin_lions_R3` (in `AxiomaticClosure.lean`) is REMOVED.  Its spatial half is
+The former `axiom aubin_lions_R3` (in `SolutionInterfaces.lean`) is REMOVED.  Its spatial half is
 genuinely PROVED axiom-free (the `steklovAvg_spatial_extraction` chain), and its time half is
 isolated as the strictly-thinner `galerkinSpaceTimeExtraction_R3`; the `AubinLionsPackage_R3` is
 produced by `aubinLionsPackage_R3_of_timeCompactness`
-(`LerayHopf/R3/AubinLionsLimitPassage.lean`).  That constructor imports `AxiomaticClosure`, so the
-package builder that consumes it cannot live in `AxiomaticClosure` without an import cycle.  It
+(`LerayHopf/R3/AubinLionsLimitPassage.lean`).  That constructor imports `SolutionInterfaces`, so the
+package builder that consumes it cannot live in `SolutionInterfaces` without an import cycle.  It
 lands here, one level below `AubinLionsLimitPassage`, mirroring the #10/#24 capstone relocation.
 
 ## The axiom-set delta (issue #15)
@@ -28,7 +28,7 @@ lands here, one level below `AubinLionsLimitPassage`, mirroring the #10/#24 caps
   `timeCompactnessInput_R3` axiom from the prior revision of this PR (which only fed this extraction)
   is dropped.  `TimeCompactnessInput` remains a plain hypothesis *type*, never inherently an axiom.
 
-So the capstone `exists_lerayHopf_r3_axiomatic` swaps `aubin_lions_R3` →
+So the capstone `exists_lerayHopf_r3` swaps `aubin_lions_R3` →
 `galerkinSpaceTimeExtraction_R3` for the time-compactness layer (a 1-for-1 thin swap), with the
 spatial half now PROVED.
 
@@ -41,7 +41,7 @@ namespace LerayHopf
 
 open MeasureTheory
 
-/-! ### Assembly (relocated from `AxiomaticClosure.lean`, issue #15)
+/-! ### Assembly (relocated from `SolutionInterfaces.lean`, issue #15)
 
 NOTE (axiom collapse): the prior revision of this PR introduced a redundant
 `timeCompactnessInput_R3` axiom (a separate `n`-uniform L² time-equicontinuity modulus); it has been
@@ -57,10 +57,10 @@ from an EXPLICIT Galerkin sequence `galSeq`, chaining the proved Aubin–Lions p
 `LocalRellichInput` and the time half by the unconditional `galerkinSpaceTimeExtraction_R3`)
 → AX-3 limit passage.
 
-RELOCATED here from `AxiomaticClosure.lean` (issue #15): the former Step 1 applied the
+RELOCATED here from `SolutionInterfaces.lean` (issue #15): the former Step 1 applied the
 `aubin_lions_R3` axiom; it now applies the proved constructor, so this builder sits downstream of
 `AubinLionsLimitPassage`.  The name, signature, and produced structure are byte-identical to the
-former `AxiomaticClosure` version, so the capstone (`build_galerkin_package_R3_of_basis`,
+former `SolutionInterfaces` version, so the capstone (`build_galerkin_package_R3_of_basis`,
 `GalerkinODECapstone.lean`) is unchanged except for seeing this definition through its import.
 
 The steps are:

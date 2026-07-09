@@ -11,7 +11,7 @@ Plan reference: `docs/scratch/torus-aubinlions-modewise-plan.md` §3/§5.
 
 -- `TorusModeTail` (T-AL-5, PR #88) transitively provides the whole campaign chain:
 -- TorusModeCompactness (T-AL-3/4) → {GalerkinODESolve, TestFamily, ConvectionExtension,
--- ScalarEquicontinuity} → AxiomaticClosure (AubinLionsPackage in scope).
+-- ScalarEquicontinuity} → SolutionInterfaces (AubinLionsPackage in scope).
 import LerayHopf.Torus.ModeTail
 -- `TorusProjectionAdjoint` is REQUIRED: P0.16's proof depends on
 -- `velocityProjection_n_pythagoras` (TorusProjectionAdjoint.lean:136), which the
@@ -352,7 +352,7 @@ private theorem integral_sq_sub_tendsto_zero_of_galSeq
 
 /-! ## P0.7 — the REPLACEMENT def (ALL FIVE fields; the axiom-deletion target)
 
-Binder list is byte-identical to `axiom aubin_lions` (`AxiomaticClosure.lean:376`) —
+Binder list is byte-identical to `axiom aubin_lions` (`SolutionInterfaces.lean:376`) —
 same types in the same order, so the consumer rewire is a pure name swap.  The
 `spatial` binder is UNUSED by the mode-wise proof (renamed `_spatial`; the consumer
 keeps feeding `rellich_L2Sigma` positionally).  `Type`-valued, so a `noncomputable

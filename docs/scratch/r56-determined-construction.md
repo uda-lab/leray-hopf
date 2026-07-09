@@ -359,7 +359,7 @@ must-prove crux is the same finite identity:
 
 Delete `axiom r3ConvectionGapOp_exists` (line 664) and re-export C10 (`r3ConvectionGapOp_holds`) under the
 **same name** `r3ConvectionGapOp_exists` (Hard rule #2). Downstream `r3_NSForms_exists` (line 675)
-unchanged — same `Nonempty (ConvectionGapOp 𝔊)`. **No edit to `AxiomaticClosure.lean`.**
+unchanged — same `Nonempty (ConvectionGapOp 𝔊)`. **No edit to `SolutionInterfaces.lean`.**
 
 ### Dependency edges
 

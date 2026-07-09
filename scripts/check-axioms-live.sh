@@ -3,12 +3,12 @@
 # expected axiom sets for the two capstones and two Core representatives.
 #
 # This is the real backstop that `check-axioms.sh` cannot provide: it catches
-# transitive leaks (e.g. a Core import developing a transitive dependency on an
-# axiomatic module) that static import-list scanning misses.
+# transitive leaks (e.g. a Core import developing a transitive dependency on a
+# capstone-only module) that static import-list scanning misses.
 #
 # Expected axiom sets (kernel axioms shared by all):
 #
-#   exists_lerayHopf_torus3_axiomatic — exactly 3 axioms:
+#   exists_lerayHopf_torus3 — exactly 3 axioms:
 #     propext  Classical.choice  Quot.sound  (3 kernel, 0 project)
 #     NOTE: torus3_NSForms_exist REMOVED (issue #22) — Nonempty Torus3NSForms is now the theorem
 #           torus3_NSForms_exists, routed through the TorusConvectionGap interface and the proved
@@ -26,7 +26,7 @@
 #           torusAubinLionsPackage_of_galSeq (TorusAubinLionsAssembly.lean, mode-wise campaign).
 #           Net 𝕋³ project axioms now 0.  THE TORUS IS KERNEL-ONLY.
 #
-#   exists_lerayHopf_r3_axiomatic — exactly 3 axioms (KERNEL-ONLY):
+#   exists_lerayHopf_r3 — exactly 3 axioms (KERNEL-ONLY):
 #     propext  Classical.choice  Quot.sound  (3 kernel)
 #     NOTE: galerkin_limit_passage_R3 REMOVED (issue #4 PR-6) — proved as a theorem
 #           in LerayHopf/R3/LimitPassage.lean.  R3 now kernel-only like 𝕋³.
@@ -187,7 +187,7 @@ assert_core_clean() {
 }
 
 # ---------------------------------------------------------------------------
-# Pin 1: exists_lerayHopf_torus3_axiomatic
+# Pin 1: exists_lerayHopf_torus3
 #   0 project axioms + 3 kernel = 3 total  (KERNEL-ONLY — issue #23 T-AL-6 finish line)
 #   (galerkin_ode_solution removed, issue #24)
 #   (torusConvectionGap_exists REMOVED, issue #53 — proved as torusConvectionGap_holds)
@@ -195,14 +195,14 @@ assert_core_clean() {
 #    + torus_energyClass_of_aubinLions, assembled in TorusGalerkinODECapstone.lean)
 #   (aubin_lions REMOVED, issue #23 — proved as torusAubinLionsPackage_of_galSeq)
 # ---------------------------------------------------------------------------
-assert_axioms "exists_lerayHopf_torus3_axiomatic" \
+assert_axioms "exists_lerayHopf_torus3" \
   "propext Classical.choice Quot.sound"
 
 # NOTE: r3ConvectionGapOp_exists REMOVED (issue #56) — proved sorry-free as r3ConvectionGapOp_holds
 #   (determined-form convection operator, ConvectionExtension.lean C11). Net R3 project axioms now 2.
 # ---------------------------------------------------------------------------
-# Pin 2: exists_lerayHopf_r3_axiomatic
-#   1 project axiom + 3 kernel = 4 total
+# Pin 2: exists_lerayHopf_r3
+#   0 project axioms + 3 kernel = 3 total
 #   (spatial_compactness_R3 removed — issue #2 — now a theorem via the FK chain)
 #   (r3GalerkinScheme_exists removed — issue #21 — now a theorem, SWAPPED for the
 #    thinner curlSchwartzDense_holds density axiom)
@@ -234,7 +234,7 @@ assert_axioms "exists_lerayHopf_torus3_axiomatic" \
 #    (File E, SpacetimePrecompact.lean), assembled sorry-free from the step-curve
 #    total-boundedness engine. Net R3 project axioms now 1.)
 # ---------------------------------------------------------------------------
-assert_axioms "exists_lerayHopf_r3_axiomatic" \
+assert_axioms "exists_lerayHopf_r3" \
   "propext Classical.choice Quot.sound"
 
 # ---------------------------------------------------------------------------

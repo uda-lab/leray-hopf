@@ -2,7 +2,7 @@
 
 **Milestone / issue:** #53 — genuinely remove the torus project axiom
 `torusConvectionGap_exists : Nonempty TorusConvectionGap`, reducing the 𝕋³ capstone
-`exists_lerayHopf_torus3_axiomatic` from **3 → 2** project axioms
+`exists_lerayHopf_torus3` from **3 → 2** project axioms
 (`aubin_lions`, `galerkin_limit_passage` remain). *(NOTE 2026-07-04: both remaining axioms are now also REMOVED — `galerkin_limit_passage` by #25/PR #75 and `aubin_lions` by #23/PR #89; T³ is unconditional. This doc is historical.)*
 
 **Template:** ℝ³ #56 (merged PR #60). Files studied on `main`:
@@ -64,9 +64,9 @@ PR-5 assembles the gap-op core; PR-6 rewires + flips the axiom gate.
 | axiom `torusConvectionGap_exists` | `TorusConvectionForm.lean:664` | to be removed in PR-6 |
 | `Torus3NSForms_of_gap : TorusConvectionGap → Nonempty Torus3NSForms` | `TorusConvectionForm.lean:583` | **sorry-free** — do not touch |
 | `theorem torus3_NSForms_exists` | `TorusConvectionForm.lean:669` | consumer of the axiom; stays, reroutes automatically |
-| `galerkinConvection n` (finite Fourier box form) | `AxiomaticClosure.lean:89` | **given** |
+| `galerkinConvection n` (finite Fourier box form) | `SolutionInterfaces.lean:89` | **given** |
 | `galerkinConvection_{add,smul}_{1,2,3}`, `_bound`, `_antisymm` (over Vₙ), `_level_stable` | `TorusConvectionForm.lean` | **sorry-free** — reuse |
-| `IsGalerkinTest w := ∃ n, velocityProjection_n n w = w` | `AxiomaticClosure.lean:123` | **given** |
+| `IsGalerkinTest w := ∃ n, velocityProjection_n n w = w` | `SolutionInterfaces.lean:123` | **given** |
 | `velocityProjection_n_tendsto` (density of Pₙ → id) | `VelocityGalerkin.lean:349` | **sorry-free** — this IS `galerkinTest_dense` |
 | `velocitySpan n`, `velocityP_fixes_span`, `mem_velocitySpan_of_fixed`, finite-dim | `TorusGalerkinScheme.lean` | **given** |
 | `L2Sigma`, `L2VF`, `L2C`, `mFourierCoeff3`, `fourierBox`, `DivFreeL2`, `mem_L2Sigma_iff` | `Leray.lean`, `FunctionSpaces.lean` | **given** |
@@ -93,9 +93,9 @@ H¹↪L⁶, **no** spatial convection integral. This is the single largest build
 4. `LerayHopf/TorusConvectionForm.lean` — **EDIT (PR-6 only)**: delete the axiom; re-export
    `torusConvectionGap_exists` as a theorem assembling `torusConvectionGapOp_holds` + density.
 5. `scripts/check-axioms-live.sh` — **EDIT (PR-6 only)**: drop `LerayHopf.torusConvectionGap_exists`
-   from the `exists_lerayHopf_torus3_axiomatic` expected set (6 → 5 total; 3 → 2 project).
+   from the `exists_lerayHopf_torus3` expected set (6 → 5 total; 3 → 2 project).
 
-> All new modules sit **below** `AxiomaticClosure.lean`/`SobolevTorus.lean` and **above**
+> All new modules sit **below** `SolutionInterfaces.lean`/`SobolevTorus.lean` and **above**
 > `TorusConvectionForm.lean` in the DAG. `TorusConvectionForm.lean` is imported by
 > `TorusGalerkinODECapstone.lean`, `TorusAxiomatic.lean`, and `LerayHopf.lean` — see "Acyclic rewire".
 
@@ -203,7 +203,7 @@ H¹↪L⁶, **no** spatial convection integral. This is the single largest build
   (mirror R3 `r3_NSForms_exists` body shape: `.elim fun g => ⟨{ … , galerkinTest_dense := … }⟩`).
   `torus3_NSForms_exists` (unchanged) consumes it; `Torus3NSForms_of_gap` (unchanged) does the rest.
 - In `scripts/check-axioms-live.sh`: drop `LerayHopf.torusConvectionGap_exists` from the
-  `exists_lerayHopf_torus3_axiomatic` assert set; update the header comment (3 → 2 project, 6 → 5 total).
+  `exists_lerayHopf_torus3` assert set; update the header comment (3 → 2 project, 6 → 5 total).
 - Run `bash scripts/agent-preflight.sh` + the three grep guardrails before the PR.
 
 ---
@@ -230,7 +230,7 @@ TorusConvectionForm.lean  (axiom → theorem; PR-6)            [PR-6]   ← cons
 check-axioms-live.sh torus pin flip (3→2)                    [PR-6]
 ```
 
-**Acyclic rewire.** The new modules import `AxiomaticClosure.lean` (for `galerkinConvection`,
+**Acyclic rewire.** The new modules import `SolutionInterfaces.lean` (for `galerkinConvection`,
 `IsGalerkinTest`, `Torus3NSForms`), `SobolevTorus.lean`, `VelocityGalerkin.lean`,
 `TorusGalerkinScheme.lean`, and `R3/TensorIntersection.lean` — all **upstream** of
 `TorusConvectionForm.lean`. `TorusConvectionForm.lean` then imports the new
@@ -282,7 +282,7 @@ these are the exact traps codex caught on R3 #56/#48 and torus #22):
 5. **`TorusConvectionGapOp` + `torusConvectionGapOp_holds`** (PR-4) — full-structure review: no
    `TorusConvectionGap`/`Torus3NSForms` field smuggled in; six fields match the gap's first six;
    density genuinely separated out.
-6. **PR-6 axiom flip** — confirm `#print axioms exists_lerayHopf_torus3_axiomatic` shows exactly
+6. **PR-6 axiom flip** — confirm `#print axioms exists_lerayHopf_torus3` shows exactly
    `propext Classical.choice Quot.sound aubin_lions galerkin_limit_passage` (no
    `torusConvectionGap_exists`, no `sorryAx`) before merge. *(Historical: `aubin_lions` and `galerkin_limit_passage` were subsequently removed by #23/PR #89 and #25/PR #75 respectively.)*
 
@@ -295,7 +295,7 @@ these are the exact traps codex caught on R3 #56/#48 and torus #22):
   `torusGalerkinTest_dense` (PR-5/4), and the re-exported `theorem torusConvectionGap_exists` (PR-6)
   are **sorry-free** (must-prove targets).
 - `axiom torusConvectionGap_exists` is **deleted**; the name survives as a theorem (Hard Rule #2).
-- `scripts/check-axioms-live.sh` `exists_lerayHopf_torus3_axiomatic` pin reduced to **2 project +
+- `scripts/check-axioms-live.sh` `exists_lerayHopf_torus3` pin reduced to **2 project +
   3 kernel = 5 total**; CI axiom-leak gate green.
 - No new `axiom`/`opaque`/`constant`/`unsafe` anywhere in the new files.
 - `Torus3NSForms_of_gap`, `torus3_NSForms_exists`, and the capstone are **untouched** in statement

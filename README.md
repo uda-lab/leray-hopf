@@ -13,12 +13,12 @@ Two capstone existence theorems are proved and machine-checked. Both are now
 
 ```lean
 -- LerayHopf/Torus/GalerkinODECapstone.lean   (𝕋³)
-theorem exists_lerayHopf_torus3_axiomatic (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν)
+theorem exists_lerayHopf_torus3 (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ F : Torus3NSForms, Nonempty (LerayHopfSolutionFull F ν T u₀)
 
 -- LerayHopf/R3/GalerkinODECapstone.lean      (ℝ³)
-theorem exists_lerayHopf_r3_axiomatic (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
+theorem exists_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),
       Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)
@@ -50,7 +50,7 @@ Mazur weak-limit closure, and the determined-form convection extensions — is
 > declarations outside the two capstone cones are tracked in [`docs/STATUS.md`](docs/STATUS.md).
 
 Public summaries should cite the proof-carrying `LerayHopfSolutionFull` /
-`LerayHopfSolutionFull_R3` structures and the `_axiomatic` capstones above. The older
+`LerayHopfSolutionFull_R3` structures and the capstones above. The older
 generic `ExistsLerayHopf` / `LerayHopfSolution` layer is scaffold-only and should not
 be described as a PDE existence theorem.
 

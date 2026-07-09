@@ -2,11 +2,11 @@
 
 **Milestone / stream:** `stream-c-convection-operator`
 **Objective:** substantiate (toward eventually discharging) the `r3_NSForms_exist`
-axiom in `LerayHopf/R3/AxiomaticClosure.lean` by constructing a *concrete*
+axiom in `LerayHopf/R3/SolutionInterfaces.lean` by constructing a *concrete*
 `R3NSForms 𝔊` — i.e. a genuine trilinear convection form `b` defined on **all** of
 `L2Sigma_R3`, not just on Schwartz-representable fields.
 **New file deliverable:** `LerayHopf/R3/ConvectionOperator.lean` (sibling; substantiation only).
-**Plan reference:** `HANDOFF.md` §5 P1 ("very heavy"); `LerayHopf/R3/AxiomaticClosure.lean`
+**Plan reference:** `HANDOFF.md` §5 P1 ("very heavy"); `LerayHopf/R3/SolutionInterfaces.lean`
 lines 185–272 (`R3NSForms`, `r3_NSForms_exist`); `LerayHopf/R3/TrilinearEstimate.lean`
 (R3-d proved Schwartz-level content); `LerayHopf/R3/DivergenceFree.lean`
 (`convIntegralSchwartz`, `L2Sigma_R3`); `LerayHopf/R3/Regularity.lean`
@@ -59,7 +59,7 @@ This (a) makes the *axiom-free remainder* maximal, (b) names the genuine gap hon
 is the literal P1 pillar — discharging `ConvectionGap` later (once Mathlib or a future
 stream supplies the weak-derivative calculus) discharges `r3_NSForms_exist` for free.
 
-`AxiomaticClosure.lean` is **NOT edited** (capstone wiring deferred; see §8).
+`SolutionInterfaces.lean` is **NOT edited** (capstone wiring deferred; see §8).
 
 ---
 
@@ -128,7 +128,7 @@ import LerayHopf.R3.TrilinearEstimate   -- R3-d proved lemmas (pulls DivergenceF
 import LerayHopf.R3.Regularity          -- IsSchwartzDivFree_R3, memH1VF_R3, L2VF norms
 ```
 
-Do **not** import `AxiomaticClosure.lean` if it can be avoided; but `R3NSForms` is defined
+Do **not** import `SolutionInterfaces.lean` if it can be avoided; but `R3NSForms` is defined
 there, so the conditional assembly theorem (G) **must** import it. Resolve by putting
 Tier S (partial form, no `R3NSForms` mention) in this file and Tier G in a thin sibling
 `LerayHopf/R3/ConvectionForm.lean` that imports both `ConvectionOperator` and
@@ -268,7 +268,7 @@ DivergenceFree (convIntegralSchwartz)        Regularity (IsSchwartzDivFree_R3, n
                                                        →  G3 (optional, also uses Tier S)
 ```
 
-No edge points into `AxiomaticClosure.lean` (it is unedited; only imported by Tier G).
+No edge points into `SolutionInterfaces.lean` (it is unedited; only imported by Tier G).
 
 ---
 
@@ -282,7 +282,7 @@ No edge points into `AxiomaticClosure.lean` (it is unedited; only imported by Ti
 
 ---
 
-## 8. Confirm: no `AxiomaticClosure.lean` edit
+## 8. Confirm: no `SolutionInterfaces.lean` edit
 
 Confirmed. This stream **substantiates** `r3_NSForms_exist` in sibling files only:
 - it proves the axiom-free Schwartz-level partial form (Tier S);
@@ -292,7 +292,7 @@ Confirmed. This stream **substantiates** `r3_NSForms_exist` in sibling files onl
 The **capstone** — actually replacing `axiom r3_NSForms_exist` with `R3NSForms_of_gap`
 applied to a discharged `ConvectionGap` — is **deferred** (it cannot happen until
 `ConvectionGap` is dischargeable, i.e. until the P1 pillar lands). When that day comes, the
-edit to `AxiomaticClosure.lean` is one line and is owned by a future coder task, not this one.
+edit to `SolutionInterfaces.lean` is one line and is owned by a future coder task, not this one.
 
 ---
 
@@ -319,7 +319,7 @@ Review **statements** before proofs:
 - **MUST-PROVE (sorry-free):** S1–S11 (Tier S partial form, axiom-free) and G1–G2 (the
   isolated gap structure + the conditional `R3NSForms_of_gap`). G3 optional.
 - **`lake build` green**, preflight clean, no new `axiom`/`sorry`/`opaque`.
-- `AxiomaticClosure.lean` unchanged.
+- `SolutionInterfaces.lean` unchanged.
 - The contract's honest scope is met: maximal axiom-free remainder extracted; the
   irreducible P1 gap isolated as one minimal named hypothesis with a trivial conditional
   to `R3NSForms`.

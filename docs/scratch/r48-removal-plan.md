@@ -20,14 +20,14 @@
 **Scope:** READ-ONLY planning (this file only). Produces the task contract for `lean-coder` / `lean-prover`.
 
 **Source files read (verbatim):**
-- `LerayHopf/R3/AxiomaticClosure.lean` (lines 200–330: `R3NSForms` structure, the `r3_NSForms_exist` axiom at :300, `r3Evolution`)
+- `LerayHopf/R3/SolutionInterfaces.lean` (lines 200–330: `R3NSForms` structure, the `r3_NSForms_exist` axiom at :300, `r3Evolution`)
 - `LerayHopf/R3/ConvectionForm.lean` (FULL: `ConvectionGap` structure :146, `R3NSForms_of_gap` :230 — **already sorry-free**, plus H1–H4/P1/P2 density chain :337–527 — **already sorry-free**)
 - `LerayHopf/R3/ConvectionOperator.lean` (FULL: Tier-S `convFormSchwartz_*` — all 11 lemmas sorry-free)
 - `LerayHopf/R3/TrilinearEstimate.lean` (FULL: the 12 R3-d `convIntegralSchwartz_*` lemmas — all sorry-free)
 - `LerayHopf/TorusConvectionForm.lean` (lines 460–671: the accepted torus #22 precedent — `TorusConvectionGap` :523, `Torus3NSForms_of_gap` :583, `torusConvectionGap_exists` axiom :664, `torus3_NSForms_exists` theorem :669)
-- `LerayHopf/R3/GalerkinODECapstone.lean` (lines 80–101: the capstone `exists_lerayHopf_r3_axiomatic`, which calls `r3_NSForms_exist` at :97)
+- `LerayHopf/R3/GalerkinODECapstone.lean` (lines 80–101: the capstone `exists_lerayHopf_r3`, which calls `r3_NSForms_exist` at :97)
 - `LerayHopf/R3/CurlDensityCapstone.lean` (lines 5–82: `curlSchwartzDense_holds` is a **proved theorem**, sorry-free + axiom-free, NOT an axiom)
-- `LerayHopf/R3Axiomatic.lean` (axiom inventory)
+- `LerayHopf/R3Capstone.lean` (axiom inventory)
 - `docs/scratch/r3-48-nsforms-plan.md` (the earlier #48 partial-discharge plan, now superseded — its density work P1/P2 is already merged into `ConvectionForm.lean`)
 
 ---
@@ -40,7 +40,7 @@ The prompt asked us to decide between (A) full removal via a total algebraic tri
 
 2. **The ONE genuinely-provable gap field is also already proved.** `convectionGap_schwartz_dense` (`ConvectionForm.lean:522`) derives `schwartz_dense` from `CurlSchwartzDense`, and `curlSchwartzDense_holds` is itself a **proved, axiom-free theorem** (`CurlDensityCapstone.lean:62`). So `schwartz_dense` is unconditionally available with no axiom cost.
 
-3. **The only thing that was never done is the final rewire.** Unlike the torus — which has `torusConvectionGap_exists` (axiom) + `torus3_NSForms_exists` (theorem) + a rerouted capstone — the R3 side never introduced `r3ConvectionGap_exists` and never rerouted `exists_lerayHopf_r3_axiomatic`. The capstone still calls the **fat** axiom `r3_NSForms_exist` directly (`GalerkinODECapstone.lean:97`).
+3. **The only thing that was never done is the final rewire.** Unlike the torus — which has `torusConvectionGap_exists` (axiom) + `torus3_NSForms_exists` (theorem) + a rerouted capstone — the R3 side never introduced `r3ConvectionGap_exists` and never rerouted `exists_lerayHopf_r3`. The capstone still calls the **fat** axiom `r3_NSForms_exist` directly (`GalerkinODECapstone.lean:97`).
 
 **Verdict: route (B) — the thin-swap — and it is a SMALL, bounded, immediately-landable PR**, because every supporting theorem already exists. The PR is purely the torus-#22-style rewire: introduce the thin axiom, prove `r3_NSForms_exists` from it through the existing `R3NSForms_of_gap`, and reroute the capstone to consume the proved theorem instead of the fat axiom. Net effect on the R3 capstone's axiom set: `r3_NSForms_exist` (fat) is **removed** and replaced by the strictly-thinner `r3ConvectionGap_exists`. Axiom *count* stays the same (a 1-for-1 swap), but the **fat structure-existence axiom is eliminated** and all of its trilinear/bound/pin content becomes theorem content. This is exactly the accepted torus #22 result and exactly what issue #48 asks for ("3 project axioms to 2 by removing this axiom — or the honest thinner-gap swap").
 
@@ -73,7 +73,7 @@ So the honest, bounded, completing deliverable is the route-(B) thin-swap, and t
 
 ## 2. File / declaration decomposition
 
-Two files are touched. **No edit to `AxiomaticClosure.lean`** (the fat axiom there is left in place but becomes *unused by the capstone*; see §5 soundness flag 1 for the disposition options). The work mirrors `TorusConvectionForm.lean:655–671` and the torus capstone reroute (#24).
+Two files are touched. **No edit to `SolutionInterfaces.lean`** (the fat axiom there is left in place but becomes *unused by the capstone*; see §5 soundness flag 1 for the disposition options). The work mirrors `TorusConvectionForm.lean:655–671` and the torus capstone reroute (#24).
 
 ### File 1 — `LerayHopf/R3/ConvectionForm.lean` (append a new section at end, before `end LerayHopf`)
 
@@ -105,11 +105,11 @@ theorem r3_NSForms_exists (𝔊 : R3GalerkinScheme) : Nonempty (R3NSForms 𝔊) 
 
 ### File 2 — `LerayHopf/R3/GalerkinODECapstone.lean` (one-line edit at :97)
 
-Owner: this is a proof-body edit inside `exists_lerayHopf_r3_axiomatic` (a `:= by` block), so **lean-prover** owns it. It is a single-token reroute.
+Owner: this is a proof-body edit inside `exists_lerayHopf_r3` (a `:= by` block), so **lean-prover** owns it. It is a single-token reroute.
 
 | # | Name | Kind | Status | Owner | Change |
 |---|---|---|---|---|---|
-| C1 | `exists_lerayHopf_r3_axiomatic` | existing `theorem` (reroute its body) | **must-prove** (stays sorry-free) | lean-prover | replace `r3_NSForms_exist (schemeOfBasis B)` with `r3_NSForms_exists (schemeOfBasis B)` at line 97 |
+| C1 | `exists_lerayHopf_r3` | existing `theorem` (reroute its body) | **must-prove** (stays sorry-free) | lean-prover | replace `r3_NSForms_exist (schemeOfBasis B)` with `r3_NSForms_exists (schemeOfBasis B)` at line 97 |
 
 The surrounding line is `obtain ⟨F⟩ := r3_NSForms_exist (schemeOfBasis B)`; after the edit it reads `obtain ⟨F⟩ := r3_NSForms_exists (schemeOfBasis B)`. Everything downstream (`build_galerkin_package_R3_of_basis B F ν hν T hT u₀`, etc.) is unchanged — `F : R3NSForms (schemeOfBasis B)` has the same type.
 
@@ -117,10 +117,10 @@ Also update the `_axiomatic` doc-comment inventory in this file (the `FOUR remai
 
 ### Optional follow-up (NOT this PR) — dispose of the now-unused fat axiom
 
-After C1, `r3_NSForms_exist` in `AxiomaticClosure.lean:300` is no longer referenced by the capstone (verify with `#print axioms exists_lerayHopf_r3_axiomatic`). Disposition options, to be decided by the orchestrator under soundness review (see §5 flag 1):
+After C1, `r3_NSForms_exist` in `SolutionInterfaces.lean:300` is no longer referenced by the capstone (verify with `#print axioms exists_lerayHopf_r3`). Disposition options, to be decided by the orchestrator under soundness review (see §5 flag 1):
 - **(a) Leave it.** Harmless dead axiom; CI axiom-leak gate keys on `#print axioms` of the capstone, which will no longer list it. Lowest-risk, matches "no edit to AxiomaticClosure" boundary.
-- **(b) Demote it to a proved theorem** `r3_NSForms_exist := r3_NSForms_exists` (so any other consumer keeps compiling) — only if a grep shows other live consumers. Grep at plan time found the only non-doc consumer is the capstone at :97; `R3Axiomatic.lean` and doc strings reference it textually only.
-- **(c) Delete it** if grep confirms the capstone is the sole consumer. Cleanest, but edits `AxiomaticClosure.lean` (outside this PR's minimal boundary). Recommend deferring (a)/(c) to a tiny follow-up after the swap PR is green.
+- **(b) Demote it to a proved theorem** `r3_NSForms_exist := r3_NSForms_exists` (so any other consumer keeps compiling) — only if a grep shows other live consumers. Grep at plan time found the only non-doc consumer is the capstone at :97; `R3Capstone.lean` and doc strings reference it textually only.
+- **(c) Delete it** if grep confirms the capstone is the sole consumer. Cleanest, but edits `SolutionInterfaces.lean` (outside this PR's minimal boundary). Recommend deferring (a)/(c) to a tiny follow-up after the swap PR is green.
 
 **Recommendation: ship the swap with option (a) (leave the fat axiom dead), then a one-line follow-up PR for (c).** Keeps this PR minimal and the boundary clean.
 
@@ -150,8 +150,8 @@ After C1, `r3_NSForms_exist` in `AxiomaticClosure.lean:300` is no longer referen
 
 > **PR "#48: thin-swap `r3_NSForms_exist` → `r3ConvectionGap_exists`"**
 > 1. In `ConvectionForm.lean`, append `r3ConvectionGap_exists` (R1, ALLOW_AXIOM) and `r3_NSForms_exists` (R2, one-line proof via existing `R3NSForms_of_gap`).
-> 2. In `GalerkinODECapstone.lean`, reroute the body of `exists_lerayHopf_r3_axiomatic` from `r3_NSForms_exist` to `r3_NSForms_exists` (C1), and update the `_axiomatic` doc-comment axiom inventory.
-> 3. Leave the now-dead fat axiom in `AxiomaticClosure.lean` (option (a)); verify `#print axioms exists_lerayHopf_r3_axiomatic` no longer lists `r3_NSForms_exist` and now lists `r3ConvectionGap_exists`.
+> 2. In `GalerkinODECapstone.lean`, reroute the body of `exists_lerayHopf_r3` from `r3_NSForms_exist` to `r3_NSForms_exists` (C1), and update the `_axiomatic` doc-comment axiom inventory.
+> 3. Leave the now-dead fat axiom in `SolutionInterfaces.lean` (option (a)); verify `#print axioms exists_lerayHopf_r3` no longer lists `r3_NSForms_exist` and now lists `r3ConvectionGap_exists`.
 
 **Recommended FIRST task to hand to `lean-coder`:** Add the `r3ConvectionGap_exists` axiom (R1) and the `r3_NSForms_exists` theorem signature (R2) to `ConvectionForm.lean`. This is the smallest, self-contained, build-checkable unit; the file already imports everything needed (`ConvectionOperator`, `AxiomaticClosure`, `SchwartzDivFreeBasis`) and `R3NSForms_of_gap` is in-file, so R2's body compiles immediately. Then hand C1 (the capstone reroute) to `lean-prover`.
 
@@ -177,7 +177,7 @@ After C1, `r3_NSForms_exist` in `AxiomaticClosure.lean:300` is no longer referen
 
 - **R1 `r3ConvectionGap_exists` (the new axiom statement) — REQUIRED `/codex:adversarial-review --effort xhigh` before merge.** Verify: (a) it is genuinely thinner than `r3_NSForms_exist` (all `R3NSForms` algebra is theorem content via `R3NSForms_of_gap`); (b) it is TRUE and NON-VACUOUS (the `b_extends`/`convFormSchwartz_eq_witness` pin excludes `b=0`); (c) the MIXED honesty label (`b_multilinear`/`b_antisymm_gap` equi-level) is acceptable, matching the accepted torus `torusConvectionGap_exists`; (d) no over-strength (no false all-three-slot continuity — already removed). This is the soundness gate of the PR; the orchestrator owns the codex call (workers cannot run slash commands).
 - **R2 `r3_NSForms_exists` reroute** — light review: confirm it proves the identical conclusion the fat axiom asserted (conclusion-preserving swap) and is sorry-free via the existing `R3NSForms_of_gap`.
-- **C1 capstone reroute** — confirm `#print axioms exists_lerayHopf_r3_axiomatic` drops `r3_NSForms_exist` and now lists `r3ConvectionGap_exists` (and still the other R3 axioms), proving the swap actually took effect.
+- **C1 capstone reroute** — confirm `#print axioms exists_lerayHopf_r3` drops `r3_NSForms_exist` and now lists `r3ConvectionGap_exists` (and still the other R3 axioms), proving the swap actually took effect.
 
 `R3NSForms_of_gap`, the Tier-S `convFormSchwartz_*`, the 12 TrilinearEstimate lemmas, and the density chain were already reviewed when merged; they do NOT need re-review for this PR.
 
@@ -187,12 +187,12 @@ After C1, `r3_NSForms_exist` in `AxiomaticClosure.lean:300` is no longer referen
 
 - `r3ConvectionGap_exists` added with `ALLOW_AXIOM` marker + an entry in the file's assumptions section.
 - `r3_NSForms_exists` added, **sorry-free**, proved via the existing `R3NSForms_of_gap` (must-prove target).
-- `exists_lerayHopf_r3_axiomatic` rerouted to consume `r3_NSForms_exists`; stays **sorry-free** (must-prove target).
-- `#print axioms exists_lerayHopf_r3_axiomatic` no longer lists `LerayHopf.r3_NSForms_exist`; it now lists `LerayHopf.r3ConvectionGap_exists` (strictly thinner). The fat structure-existence axiom is eliminated from the capstone's axiom set.
+- `exists_lerayHopf_r3` rerouted to consume `r3_NSForms_exists`; stays **sorry-free** (must-prove target).
+- `#print axioms exists_lerayHopf_r3` no longer lists `LerayHopf.r3_NSForms_exist`; it now lists `LerayHopf.r3ConvectionGap_exists` (strictly thinner). The fat structure-existence axiom is eliminated from the capstone's axiom set.
 - `lake build` green; `scripts/agent-preflight.sh` + the grep guardrails (`check-no-sorry`, `check-no-axiom` ALLOW-marker, `check-theorem-names`) pass.
 - Codex `/codex:adversarial-review` on R1 returns no soundness blocker (orchestrator-run).
 
-**Must-prove targets:** `r3_NSForms_exists` (R2), rerouted `exists_lerayHopf_r3_axiomatic` (C1).
+**Must-prove targets:** `r3_NSForms_exists` (R2), rerouted `exists_lerayHopf_r3` (C1).
 **Scaffold / residual axiom:** `r3ConvectionGap_exists` (R1) — marked, reviewed, strictly thinner.
 
 ---

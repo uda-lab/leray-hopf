@@ -23,11 +23,11 @@ Side branches (independent of the existence spine):
 
 The import surface is now split:
 - `import LerayHopf.Core`            — axiom-free, sorryAx-free spatial/regularity layer
-- `import LerayHopf.Torus.Axiomatic` — T³ axiomatic closure (2 project axioms)
-- `import LerayHopf.R3Axiomatic`     — ℝ³ axiomatic closure (2 project axioms)
+- `import LerayHopf.Torus.Capstone` — T³ kernel-only capstone re-export
+- `import LerayHopf.R3Capstone`     — ℝ³ kernel-only capstone re-export
 - `import LerayHopf`                 — (this file) re-exports all three layers
 
-Core work that does not require the axiomatic closures should use
+Core work that does not require the capstone re-exports should use
 `import LerayHopf.Core` to stay project-axiom-free.
 
 No claim is made that existence, regularity, uniqueness, or nonuniqueness of the
@@ -45,9 +45,9 @@ import LerayHopf.Statement
 import LerayHopf.ExistenceFromPackage
 import LerayHopf.EnergyEstimate
 
--- Axiomatic closure layers (project axioms live here)
-import LerayHopf.Torus.Axiomatic
-import LerayHopf.R3Axiomatic
+-- Capstone re-export layers
+import LerayHopf.Torus.Capstone
+import LerayHopf.R3Capstone
 
 -- Torus H¹_σ submodule + Parseval scaffold (issue #53 PR-1)
 import LerayHopf.Torus.EnergyConvection

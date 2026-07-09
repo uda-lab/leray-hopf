@@ -11,9 +11,9 @@ core A (in-progress torus convection), the four remaining are the two **compactn
 | # | axiom | file:line | consumed by |
 |---|-------|-----------|-------------|
 | R3-B | `galerkin_spacetime_precompact_R3` | `LerayHopf/R3/ArzelaAscoliTime.lean:123` | `perBall_ae_subseq` → `diag_ae_subseq` → `u_lim_aestronglyMeasurable` (T4 assembly) → feeds `AubinLionsPackage_R3` (`AubinLionsLimitPassage.lean`) |
-| R3-C | `galerkin_limit_passage_R3` | `LerayHopf/R3/AxiomaticClosure.lean:558` | `AubinLionsAssembly.lean:84` (`build_galerkin_package_R3_of_galSeq`) → capstone |
-| T-B | ~~`aubin_lions` (torus)~~ | ~~`LerayHopf/AxiomaticClosure.lean:367`~~ | **REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq`; line refs void** |
-| T-C | `galerkin_limit_passage` (torus) | `LerayHopf/AxiomaticClosure.lean:421` | `AxiomaticClosure.lean:538` → capstone |
+| R3-C | `galerkin_limit_passage_R3` | `LerayHopf/R3/SolutionInterfaces.lean:558` | `AubinLionsAssembly.lean:84` (`build_galerkin_package_R3_of_galSeq`) → capstone |
+| T-B | ~~`aubin_lions` (torus)~~ | ~~`LerayHopf/Torus/SolutionInterfaces.lean:367`~~ | **REMOVED 2026-07-04, #23 / PR #89 — now the proved def `torusAubinLionsPackage_of_galSeq`; line refs void** |
+| T-C | `galerkin_limit_passage` (torus) | `LerayHopf/Torus/SolutionInterfaces.lean:421` | `SolutionInterfaces.lean:538` → capstone |
 
 ## Mathematical content (precise function-space setting)
 

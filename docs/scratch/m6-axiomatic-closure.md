@@ -17,7 +17,7 @@ compactness supplied as an explicit hypothesis (discharged on T³ by the proved
 - **Commit 1 (foundational, NO axioms):** `H1Sigma.lean` + `EvolutionTriple.lean`.
   All concrete/provable. Axiom-free, sorry-free after the prover pass.
 - **Commit 2 (the 4 axioms + assembly), gated by the Codex axiom audit:**
-  `AxiomaticClosure.lean` + spine wiring + `LerayHopf.lean`/`STATUS.md`.
+  `SolutionInterfaces.lean` + spine wiring + `LerayHopf.lean`/`STATUS.md`.
 
 ## Commit 1 — `H1Sigma.lean`
 
@@ -64,7 +64,7 @@ structure DissipativeEvolution where
   FALL BACK to stating `WeakFormNS` concretely over `L2Sigma`+forms and flag it — the math
   is identical; this is a Lean-ergonomics fallback, not a soundness change.
 
-## Commit 2 — `AxiomaticClosure.lean` (the 4 axioms — Codex-audited BEFORE proving)
+## Commit 2 — `SolutionInterfaces.lean` (the 4 axioms — Codex-audited BEFORE proving)
 
 ### A4 — convection + viscous forms. **NON-VACUITY IS THE CRUX.**
 A bare abstract `b` with only antisymmetry + bound is satisfiable by `b := 0` ⇒ the theorem

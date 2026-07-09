@@ -1,4 +1,4 @@
-import LerayHopf.R3.AxiomaticClosure
+import LerayHopf.R3.SolutionInterfaces
 import Mathlib.Analysis.InnerProductSpace.Projection.Submodule
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.LinearAlgebra.FiniteDimensional.Defs
@@ -15,32 +15,32 @@ open scoped Topology
 
 This file substantiates — axiom-free and (once `lean-prover` fills the bodies)
 sorry-free — the analytic content of the `r3GalerkinScheme_exists` axiom in
-`AxiomaticClosure.lean`.  It *constructs* a Galerkin approximation-projection
+`SolutionInterfaces.lean`.  It *constructs* a Galerkin approximation-projection
 family from a single honest density hypothesis: the orthogonal projections onto
 the finite prefix spans of a countable Schwartz, divergence-free basis.
 
 ## Architecture
 
-This file **imports** `AxiomaticClosure.lean` (the original standalone constraint has
+This file **imports** `SolutionInterfaces.lean` (the original standalone constraint has
 been lifted) so that the deliverable can directly *witness* the structure: it produces
 `Nonempty R3GalerkinScheme` (`nonempty_r3GalerkinScheme_of_basis`), not merely the
 field-by-field conjunction.  The connection to the axiom is now **structural**, not just
-semantic.  There is NO import cycle: `AxiomaticClosure.lean` does NOT import this file
-(the dependency is one-directional, AxiomaticClosure → GalerkinScheme).
+semantic.  There is NO import cycle: `SolutionInterfaces.lean` does NOT import this file
+(the dependency is one-directional, SolutionInterfaces → GalerkinScheme).
 
 The G2 over-strength previously flagged by this file (the `tendsto_id` field quantified
 over all `u : L2VF_R3`, too strong for a divergence-free basis) has been **RESOLVED**, not
 merely surfaced: `R3GalerkinScheme.tendsto_id` has been weakened to the honest Σ-restricted
-form `∀ u, u ∈ L2Sigma_R3 → …` (a soundness fix in `AxiomaticClosure.lean`).  D5
+form `∀ u, u ∈ L2Sigma_R3 → …` (a soundness fix in `SolutionInterfaces.lean`).  D5
 (`galerkinP_tendsto_id`) now matches that field shape exactly.
 
 DAG position:
 ```
 Domain.lean
     └── DivergenceFree.lean   (L2VF_R3, L2Sigma_R3, L2VF_projComponent_R3, Domain3)
-            └── … ── AxiomaticClosure.lean   (R3GalerkinScheme structure)
+            └── … ── SolutionInterfaces.lean   (R3GalerkinScheme structure)
                     └── GalerkinScheme.lean   [THIS FILE]
-                            (imports AxiomaticClosure; NOT imported by it — no cycle)
+                            (imports SolutionInterfaces; NOT imported by it — no cycle)
 ```
 
 ## Declarations (dependency order)
@@ -68,7 +68,7 @@ basis: such a basis is total only in `L2Sigma_R3`, not in all of `L²(ℝ³; ℝ
 land in the closed div-free subspace, so the unrestricted form would force every `u` to
 be divergence-free).  This was a latent over-strength (Codex-confirmed at gate-1).
 
-It has been **RESOLVED** by a soundness fix in `AxiomaticClosure.lean`: the
+It has been **RESOLVED** by a soundness fix in `SolutionInterfaces.lean`: the
 `R3GalerkinScheme.tendsto_id` field is now `∀ u, u ∈ L2Sigma_R3 → …`.  D5
 (`galerkinP_tendsto_id`) proves exactly that honest Σ-restricted statement, so it matches
 the weakened field shape directly, and the deliverable D7' witnesses `Nonempty
@@ -322,7 +322,7 @@ headline deliverable `nonempty_r3GalerkinScheme_of_basis` (D7') assembles these 
 actual `R3GalerkinScheme`.
 
 The `tendsto_id` conjunct is the Σ-restricted form, which (after the soundness fix in
-`AxiomaticClosure.lean`) now matches the `R3GalerkinScheme.tendsto_id` field exactly: a
+`SolutionInterfaces.lean`) now matches the `R3GalerkinScheme.tendsto_id` field exactly: a
 divergence-free basis is total only in `L2Sigma_R3`, so convergence is claimed precisely
 where it is true. -/
 theorem galerkinScheme_properties_of_basis (B : SchwartzGalerkinBasis) :

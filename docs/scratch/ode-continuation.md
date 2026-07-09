@@ -13,7 +13,7 @@ analytic content of `galerkin_ode_solution_R3`.
 **Models to mirror EXACTLY:** P5 (`GalerkinScheme.lean`) and `GalerkinODE.lean` — standalone
 new file under `LerayHopf/R3/`, isolated-hypothesis discipline if a residual frontier remains,
 `#print axioms`-clean deliverable, root-build inclusion in `LerayHopf.lean`, Codex statement +
-final gates, **never edit `AxiomaticClosure.lean`** (axiom removal is a later sequential capstone).
+final gates, **never edit `SolutionInterfaces.lean`** (axiom removal is a later sequential capstone).
 
 ---
 
@@ -29,13 +29,13 @@ This milestone attempts to **construct** a `GalerkinODEInput` axiom-free, i.e. d
 two gaps. The deliverable is the term `galerkinODEInput_R3` producing the structure with its
 five fields `u, u_initial, u_inVn, u_hasDeriv, u_ode`.
 
-**The new file MAY import `AxiomaticClosure.lean` and `GalerkinODE.lean`** to reference the
+**The new file MAY import `SolutionInterfaces.lean` and `GalerkinODE.lean`** to reference the
 structures/defs by name (`GalerkinODEInput`, `R3GalerkinScheme`, `R3NSForms`,
 `stokesTestPairing_R3`, `galerkinSpan`, `galerkinP`, …) — these are defs/structures, not the
-axiom. It does NOT edit `AxiomaticClosure.lean` and is NOT imported by it (one-directional DAG,
+axiom. It does NOT edit `SolutionInterfaces.lean` and is NOT imported by it (one-directional DAG,
 no cycle), exactly like `GalerkinScheme.lean`/`GalerkinODE.lean`.
 
-> **DAG check (lean-coder):** `AxiomaticClosure.lean → GalerkinODE.lean → GalerkinODEExistence.lean`
+> **DAG check (lean-coder):** `SolutionInterfaces.lean → GalerkinODE.lean → GalerkinODEExistence.lean`
 > and `GalerkinScheme.lean → GalerkinODEExistence.lean` (for `galerkinP`/`galerkinSpan`/
 > finite-dim instances). Confirm NO cycle. Note: `GalerkinODEInput`/`R3GalerkinScheme` are
 > abstract — `𝔊.P n` is an opaque CLO with the field axioms (`norm_le`, `idem`, `range_schwartz`,
@@ -135,7 +135,7 @@ To run Picard-Lindelöf one must rewrite `u_ode`
 ### 1.4 THE DECISIVE STRUCTURAL BLOCKER — abstraction barrier (new finding)
 
 `galerkinODEInput_R3` is quantified over an ABSTRACT `𝔊 : R3GalerkinScheme` and abstract
-`F : R3NSForms 𝔊`. From the abstract `R3GalerkinScheme` (`AxiomaticClosure.lean:139`) all we know
+`F : R3NSForms 𝔊`. From the abstract `R3GalerkinScheme` (`SolutionInterfaces.lean:139`) all we know
 about `𝔊.P n` is: `norm_le`, `idem`, `preserves_sigma`, `range_schwartz`, `tendsto_id`. We do
 **NOT** get a finite BASIS of `V_n = range(𝔊.P n)` — only that it has component-wise Schwartz
 range and (via `idem`+`norm_le`) is an idempotent non-expansive operator. `FiniteDimensional V_n`
@@ -148,7 +148,7 @@ This means `galerkinODEInput_R3 (𝔊 F ν hν u₀ n)` as a theorem over an ARB
 is **false/unprovable** without additional structure on `𝔊`. Two honest fixes:
 
 - **(barrier-fix-FD)** Add to `R3GalerkinScheme` a field `finrank_P : FiniteDimensional ℝ
-  (LinearMap.range (P n))` (or expose the basis). This is a sanctioned `AxiomaticClosure.lean`
+  (LinearMap.range (P n))` (or expose the basis). This is a sanctioned `SolutionInterfaces.lean`
   soundness/strengthening edit — **OUT OF SCOPE here** (axiom-block edits are the later capstone).
   The Helmholtz/P5 track owns `R3GalerkinScheme` construction; coordinate via orchestrator.
 - **(barrier-fix-CONCRETE)** Prove `galerkinODEInput_R3` only for the CONCRETE scheme produced by
@@ -345,7 +345,7 @@ environment axiom. This is the honest analogue of P3's `LocalRellichInput` and P
 `SchwartzGalerkinBasis`, and is **strictly smaller** than the parent `GalerkinODEInput` because
 R-repr (weak-form↔vector-field) is now PROVED (R1/R2/R3), not assumed.
 
-**`AxiomaticClosure.lean` is NOT edited.** The abstraction-barrier finite-dimensionality fix
+**`SolutionInterfaces.lean` is NOT edited.** The abstraction-barrier finite-dimensionality fix
 (§1.4 barrier-fix-FD) is explicitly DEFERRED to the later sequential capstone; this milestone
 sidesteps it by working with the concrete `schemeOfBasis B` (barrier-fix-CONCRETE).
 
@@ -368,7 +368,7 @@ Review the **statements** before any proof is attempted:
    weaker than `GalerkinODEInput` (R-repr is proved, not assumed).
 3. **`galerkinODE_vectorField` (R1) + `…_spec` (R2).** Confirm the Riesz construction is sound
    on the finite-dim `V_n` (completeness from `FiniteDimensional`, auto-continuity of the
-   linear functional), the sign/`ν` conventions match `u_ode` (`AxiomaticClosure.lean:339`), and
+   linear functional), the sign/`ν` conventions match `u_ode` (`SolutionInterfaces.lean:339`), and
    the `V_n ↔ L2Sigma_R3 ↔ L2VF_R3` coercions are faithful (div-free Schwartz membership real).
 4. **`galerkinODEInput_of_globalCurve` (R3) + D.** Confirm the five assembled fields match
    `GalerkinODEInput` byte-for-byte (`GalerkinODE.lean:88-105`), that `u_ode` is genuinely DERIVED
@@ -392,7 +392,7 @@ Review the **statements** before any proof is attempted:
   honest remaining frontier; the milestone does **NOT** make `galerkin_ode_solution_R3` axiom-free
   unconditionally, but it SHRINKS the frontier from "global existence + representation" to
   "global existence only".
-- **`AxiomaticClosure.lean` NOT edited;** no import cycle; the §1.4 FD-field fix deferred.
+- **`SolutionInterfaces.lean` NOT edited;** no import cycle; the §1.4 FD-field fix deferred.
 - **Zero new axioms / opaque / unsafe.** Only transient `ALLOW_SORRY` during coder→prover handoff.
 - `#print axioms galerkinODEInput_of_basis` → only `[propext, Classical.choice, Quot.sound]`.
 - `#print axioms exists_lerayHopf_r3` unchanged (this file not imported by the closure path).

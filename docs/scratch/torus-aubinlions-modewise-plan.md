@@ -1,9 +1,9 @@
-> CAMPAIGN COMPLETE (2026-07-04). All 6 PRs merged (T-AL-1..6 = #78/#79/#80/#85/#88/#89); axiom aubin_lions DELETED; exists_lerayHopf_torus3_axiomatic UNCONDITIONAL (#print axioms kernel-only); issue #23 closed. The body below is the historical plan.
+> CAMPAIGN COMPLETE (2026-07-04). All 6 PRs merged (T-AL-1..6 = #78/#79/#80/#85/#88/#89); axiom aubin_lions DELETED; exists_lerayHopf_torus3 UNCONDITIONAL (#print axioms kernel-only); issue #23 closed. The body below is the historical plan.
 
 # Torus `aubin_lions` removal — the MODE-WISE SPECTRAL route (torus 1 → 0)
 
 **Architect doc (fable, 2026-07-03). PLAN ONLY — no Lean edited by this doc.**
-Campaign issue: #23 (under umbrella #26). Prize: `exists_lerayHopf_torus3_axiomatic`
+Campaign issue: #23 (under umbrella #26). Prize: `exists_lerayHopf_torus3`
 becomes **unconditional** (`#print axioms` = `propext`, `Classical.choice`, `Quot.sound`
 only) — ZERO project axioms on the torus capstone.
 
@@ -20,11 +20,11 @@ spectral scheme's band-limited tests fire `u_ode` directly).
 
 ## 0. The target, verbatim (verified on main @ 148ee59)
 
-`axiom aubin_lions` at `LerayHopf/AxiomaticClosure.lean:376–386`. Binders:
+`axiom aubin_lions` at `LerayHopf/Torus/SolutionInterfaces.lean:376–386`. Binders:
 `(F : Torus3NSForms) (ν) (hν : 0 < ν) (T) (hT : 0 < T) (u₀ : L2Sigma)`
 `(galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)` `(spatial : …rellich-shaped…)`.
 Conclusion: **`AubinLionsPackage F ν T u₀ galSeq`** — a `Type`-valued structure
-(`AxiomaticClosure.lean:311–338`) with exactly **five** fields, each a separate
+(`SolutionInterfaces.lean:311–338`) with exactly **five** fields, each a separate
 pressure-test obligation for the P0.7 dry run:
 
 1. `φ : ℕ → ℕ`,
@@ -44,7 +44,7 @@ swap, then feed `rellich_L2Sigma` at the consumer as today) or drop it (it becom
 **keep the binder byte-identical** to the axiom's for a no-drama consumer rewire; mark it
 `_spatial` if unused. No-weakening is automatic (same hypotheses, same conclusion type).
 
-### Available inputs per `GalerkinSolutionData F ν u₀ n` (`AxiomaticClosure.lean:237–284`)
+### Available inputs per `GalerkinSolutionData F ν u₀ n` (`SolutionInterfaces.lean:237–284`)
 
 - `u_ode` (line 264): ∀ `t ≥ 0`, ∀ `w : L2Sigma` with `velocityProjection_n n w = w`:
   `⟪deriv u_n t, w⟫ + ν·stokesTestPairing (u_n t) w + F.b (u_n t) (u_n t) w = 0`.
@@ -56,8 +56,8 @@ swap, then feed `rellich_L2Sigma` at the consumer as today) or drop it (it becom
 
 ### Existing tools this plan consumes (all verified present)
 
-- `Torus3NSForms.b_bound` (`AxiomaticClosure.lean:170`): `IsGalerkinTest w → ∃ C, ∀ u v, |b u v w| ≤ C‖u‖‖v‖`.
-- `stokesTestPairing` def (`AxiomaticClosure.lean:104–108`): the explicit mode sum
+- `Torus3NSForms.b_bound` (`SolutionInterfaces.lean:170`): `IsGalerkinTest w → ∃ C, ∀ u v, |b u v w| ≤ C‖u‖‖v‖`.
+- `stokesTestPairing` def (`SolutionInterfaces.lean:104–108`): the explicit mode sum
   `∑_j ∑'_k (2π)²|k|² Re(û_j(k)·conj(ŵ_j(k)))` — for band-limited `w` the k-sum is a
   **finite** `fourierBox` sum, so `|stokesTestPairing u w| ≤ C(w)·‖u‖` is a finite
   Cauchy–Schwarz (NEW small lemma, S1 below; no analogue exists yet — grep-verified).
@@ -256,7 +256,7 @@ dispatch.** Statement text is frozen by the architect; provers never edit statem
 | T-AL-3 | Step A+B wiring: equi-Lipschitz lemma (P0.3) + apply S3 over `testFamily` → the extraction `φ` + uniform per-test limits | new `LerayHopf/TorusModeCompactness.lean` | opus | consumes T-AL-1/2 |
 | T-AL-4 | Step C+D: Riesz limit curve, weak convergence ∀t, measurability, finite-dim strong part (DCT) | same file | **fable** (statement subtleties: ∀t vs a.e., forward-only domain) with sonnet chore split | the soundness-critical PR |
 | T-AL-5 | Step E: uniform tail + limit-curve Fatou tail | same file or `TorusModeTail.lean` | opus (Fatou mirror of `viscousEnn_lsc`) | reuse quartet patterns |
-| T-AL-6 | Step F assembly `torusAubinLionsPackage_of_galSeq` + **delete `axiom aubin_lions`** + rewire `build_galerkin_package_of_galSeq` + `check-axioms-live.sh` pin torus→0 + STATUS.md banner | `AxiomaticClosure.lean`, `TorusGalerkinODECapstone.lean`, scripts | lean-coder (sonnet) + pr-reviewer + modularity-reviewer fan-out | acyclicity note: the assembly file must sit downstream of `AxiomaticClosure` (mirror the #75 relocation pattern) |
+| T-AL-6 | Step F assembly `torusAubinLionsPackage_of_galSeq` + **delete `axiom aubin_lions`** + rewire `build_galerkin_package_of_galSeq` + `check-axioms-live.sh` pin torus→0 + STATUS.md banner | `SolutionInterfaces.lean`, `TorusGalerkinODECapstone.lean`, scripts | lean-coder (sonnet) + pr-reviewer + modularity-reviewer fan-out | acyclicity note: the assembly file must sit downstream of `AxiomaticClosure` (mirror the #75 relocation pattern) |
 
 Estimated scale: 5–6 merged PRs, days-to-2-weeks-class at the #25 cadence — NOT
 months-class. The single riskiest node is T-AL-4's statement design (∀t-vs-a.e. and
@@ -293,14 +293,14 @@ forward-only-time traps — both bitten before; see memories
   and point here. Comment-only edit; needs one incremental rebuild of the R3 chain, so
   batch it with the next R3-touching PR rather than shipping alone.
 - **Issue #25:** work merged in PR #75; close with a pointer (bookkeeping).
-- After torus-zero: do NOT rename `exists_lerayHopf_torus3_axiomatic` (no-rename rule);
+- After torus-zero: do NOT rename `exists_lerayHopf_torus3` (no-rename rule);
   add a doc-comment + STATUS banner announcing unconditionality; a separate alias theorem
   can be proposed to the owner if they want a headline name.
 
 ## 5. Definition of done
 
-- `axiom aubin_lions` deleted from `AxiomaticClosure.lean`; no new axiom/opaque anywhere.
-- `#print axioms exists_lerayHopf_torus3_axiomatic` = kernel axioms only (torus **0**
+- `axiom aubin_lions` deleted from `SolutionInterfaces.lean`; no new axiom/opaque anywhere.
+- `#print axioms exists_lerayHopf_torus3` = kernel axioms only (torus **0**
   project axioms); `scripts/check-axioms-live.sh` pin updated and EXIT=0 **run locally**.
 - `bash scripts/agent-preflight.sh` green (incremental); grep-guardrails PASS.
 - Issues #23 closed, #26 updated (1 domain done); STATUS.md banner updated.

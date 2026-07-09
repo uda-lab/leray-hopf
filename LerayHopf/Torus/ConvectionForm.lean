@@ -1,4 +1,4 @@
-import LerayHopf.Torus.AxiomaticClosure
+import LerayHopf.Torus.SolutionInterfaces
 
 open MeasureTheory Filter Topology Complex
 
@@ -58,7 +58,7 @@ is the operator content carried by `TorusConvectionGap`, now supplied by the pro
 - `TorusConvectionGap` — the isolated weak-convection-operator gap (mirror of ℝ³ `ConvectionGap`)
 - `Torus3NSForms_of_gap` — sorry-free `TorusConvectionGap → Nonempty Torus3NSForms`
 - `torus3_NSForms_exists` — theorem replacing the removed fat axiom, via the proved gap
-- `exists_lerayHopf_torus3_axiomatic` — relocated capstone, rerouted through the proved gap
+- `exists_lerayHopf_torus3` — relocated capstone, rerouted through the proved gap
 
 ## Axiom status
 
@@ -660,16 +660,16 @@ The determined-form construction in `LerayHopf/Torus/ConvectionExtension.lean`
 declared in `Torus/ConvectionExtension.lean`; they are visible here transitively via the import
 `LerayHopf.Torus.ConvectionExtension` (added to `Torus/GalerkinODECapstone`). -/
 
-/-! **Main existence theorem on 𝕋³ (axiomatic) — RELOCATED (issue #24).**
+/-! **Main existence theorem on 𝕋³ (capstone) — RELOCATED (issue #24).**
 
-`exists_lerayHopf_torus3_axiomatic` now lives in `LerayHopf/Torus/GalerkinODECapstone.lean`,
+`exists_lerayHopf_torus3` now lives in `LerayHopf/Torus/GalerkinODECapstone.lean`,
 downstream of this file.  The relocation is forced by the issue-#24 discharge of
 `galerkin_ode_solution`: the capstone sources its per-`n` Galerkin sequence from the axiom-free
 `galerkinSolutionData_torus` (`TorusGalerkinODESolve.lean`) over the finite-dim `velocitySpan n`.
 That ODE chain imports this file, so the capstone must sit below it in the DAG to stay acyclic.
 The building blocks it uses (`torus3_NSForms_exists`, `build_galerkin_package_of_galSeq`,
 `exists_lerayHopf_from_package_full`) remain defined upstream and are visible downstream through the
-import.  See `LerayHopf/Core.lean` for the axiom-free layer; `LerayHopf/Torus/Axiomatic.lean`
+import.  See `LerayHopf/Core.lean` for the axiom-free layer; `LerayHopf/Torus/Capstone.lean`
 re-exports the relocated capstone. -/
 
 end LerayHopf

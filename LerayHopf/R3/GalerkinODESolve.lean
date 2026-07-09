@@ -38,7 +38,7 @@ see `docs/scratch/findim-global-ode.md` §1.4) is simply not needed.
 
 ## DAG (no cycle)
 
-`AxiomaticClosure → GalerkinODE → GalerkinODEExistence → GalerkinODESolve [THIS FILE]` and
+`SolutionInterfaces → GalerkinODE → GalerkinODEExistence → GalerkinODESolve [THIS FILE]` and
 `GalerkinScheme → GalerkinODEExistence`. This file is imported by no other `LerayHopf` module
 (one-directional DAG, like the existing siblings); root `LerayHopf.lean` adds it after the
 `import LerayHopf.R3.GalerkinODEExistence` line (deferred — done by the root consolidation step).
