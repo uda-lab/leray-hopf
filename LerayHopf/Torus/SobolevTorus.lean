@@ -1,4 +1,4 @@
-import LerayHopf.FunctionSpaces
+import LerayHopf.Torus.FunctionSpaces
 import Mathlib.Topology.Algebra.InfiniteSum.Basic
 
 /-!

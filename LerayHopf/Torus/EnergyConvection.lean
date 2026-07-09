@@ -1,4 +1,4 @@
-import LerayHopf.AxiomaticClosure
+import LerayHopf.Torus.AxiomaticClosure
 -- AxiomaticClosure import justification: provides `IsGalerkinTest`, `galerkinConvection`,
 --   `L2Sigma`, `L2VF`, `L2C`, `mFourierCoeff3`, `velocityProjection_n`, and
 --   transitively `H1Sigma.lean` (`memH1VF`, `memH1Sigma`, `memH1Torus`) and

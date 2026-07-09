@@ -1,4 +1,4 @@
-import LerayHopf.GalerkinProjection
+import LerayHopf.Torus.GalerkinProjection
 import Mathlib.Analysis.RCLike.Basic
 
 open MeasureTheory Filter Topology

@@ -1,4 +1,4 @@
-import LerayHopf.AxiomaticClosure
+import LerayHopf.Torus.AxiomaticClosure
 import Mathlib.Analysis.InnerProductSpace.Projection.Submodule
 import Mathlib.LinearAlgebra.FiniteDimensional.Defs
 

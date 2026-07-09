@@ -9,7 +9,7 @@ full reusability for both the T³ and ℝ³ Galerkin applications.
 
 ## Provenance
 
-These five lemmas are extracted verbatim from `LerayHopf.TorusTraceEnergy` (lines ~274–539),
+These five lemmas are extracted verbatim from `LerayHopf.Torus.TraceEnergy` (lines ~274–539),
 where they were `private`.  They are duplicated here (rather than rewired) to avoid any risk
 of perturbing the T³ kernel-only pin (`exists_lerayHopf_torus3_axiomatic`, 𝕋³:0).  The torus
 file is left byte-for-byte untouched.

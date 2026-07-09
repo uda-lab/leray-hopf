@@ -1,5 +1,5 @@
-import LerayHopf.GalerkinProjection
-import LerayHopf.SobolevTorus
+import LerayHopf.Torus.GalerkinProjection
+import LerayHopf.Torus.SobolevTorus
 import Mathlib.Analysis.Normed.Operator.Compact.Basic
 import Mathlib.Topology.MetricSpace.Pseudo.Basic
 import Mathlib.Analysis.RCLike.Lemmas
@@ -22,7 +22,7 @@ No H¹ normed-space structure is built here (deferred to a later milestone).
 ## Main results (lemma chain L1 → L2 → L3 → L4 → Bonus → L5)
 
 - `L2C_norm_sq_eq_tsum_coeff_sq`       (L1) : Parseval identity `‖f‖² = ∑' k, ‖f̂(k)‖²`
-                                              (proved in `LerayHopf.FunctionSpaces`, available here).
+                                              (proved in `LerayHopf.Torus.FunctionSpaces`, available here).
 - `L2C_norm_sub_fourierProjection_sq`  (L2) : `‖f - P_N f‖² = ∑_{k ∉ box} ‖f̂(k)‖²`.
 - `H1_tail_bound`                      (L3) : tail bound `∑_{k ∉ box} ‖f̂(k)‖² ≤ M²/(1+N²)`.
 - `H1_ball_uniform_L2_approx`          (L4) : uniform L²-approximation on the H¹-ball.
@@ -38,7 +38,7 @@ namespace LerayHopf
 
 /-! ### L1: Parseval — `‖f‖² = ∑' k, ‖f̂(k)‖²`
 
-`L2C_norm_sq_eq_tsum_coeff_sq` is proved in `LerayHopf.FunctionSpaces` (upstream) and
+`L2C_norm_sq_eq_tsum_coeff_sq` is proved in `LerayHopf.Torus.FunctionSpaces` (upstream) and
 is available here via the transitive import chain
 `RellichEmbedding → GalerkinProjection → Leray → DivergenceFree → FunctionSpaces`. -/
 

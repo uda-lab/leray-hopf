@@ -432,7 +432,7 @@ The `Summable` predicate on `Fin 3 → ℤ` is available from
 weighted norm, or that the inclusion `H1Torus ↪ L2C` is continuous/compact.
 These are the core M3 tasks. For M2, the definition suffices as scaffold.
 
-**D-12 · `LerayHopf.H1SigmaSubspace`** — scaffold-only for M2
+**D-12 · `LerayHopf.Torus.H1SigmaSubspace`** — scaffold-only for M2
 
 ```lean
 /-- H¹_σ(T³): the divergence-free H¹ subspace (real vector fields). -/

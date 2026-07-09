@@ -44,9 +44,9 @@ find . \( -name '.git' -o -name '.lake' -o -path './.claude/worktrees' \) -prune
 # ---------------------------------------------------------------------------
 CORE="LerayHopf/Core.lean"
 AXIOMATIC_MODULES=(
-  "LerayHopf.AxiomaticClosure"
+  "LerayHopf.Torus.AxiomaticClosure"
   "LerayHopf.R3.AxiomaticClosure"
-  "LerayHopf.TorusAxiomatic"
+  "LerayHopf.Torus.Axiomatic"
   "LerayHopf.R3Axiomatic"
 )
 
@@ -103,9 +103,9 @@ done
 #         (Redundant with check-no-axiom.sh, but makes the intent explicit here.)
 # ---------------------------------------------------------------------------
 AXIOMATIC_FILES=(
-  "LerayHopf/AxiomaticClosure.lean"
+  "LerayHopf/Torus/AxiomaticClosure.lean"
   "LerayHopf/R3/AxiomaticClosure.lean"
-  "LerayHopf/TorusConvectionForm.lean"
+  "LerayHopf/Torus/ConvectionForm.lean"
 )
 
 for f in "${AXIOMATIC_FILES[@]}"; do

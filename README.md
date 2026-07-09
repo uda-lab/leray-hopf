@@ -12,7 +12,7 @@ Two capstone existence theorems are proved and machine-checked. Both are now
 **no `sorryAx`**:
 
 ```lean
--- LerayHopf/TorusGalerkinODECapstone.lean   (𝕋³)
+-- LerayHopf/Torus/GalerkinODECapstone.lean   (𝕋³)
 theorem exists_lerayHopf_torus3_axiomatic (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) :
     ∃ F : Torus3NSForms, Nonempty (LerayHopfSolutionFull F ν T u₀)

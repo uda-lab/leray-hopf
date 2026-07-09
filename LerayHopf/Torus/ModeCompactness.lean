@@ -1,5 +1,5 @@
 /-
-# LerayHopf.TorusModeCompactness
+# LerayHopf.Torus.ModeCompactness
 
 T-AL-3 node (torus `aubin_lions` mode-wise campaign, issue #23):
 mode-wise Galerkin extraction — equi-Lipschitz test pairings + T-AL-2 engine assembly.
@@ -13,10 +13,10 @@ the architect-verified glue body.  Every term is sorry-free.
 
 Assumptions: none (no project axioms, no opaque/unsafe; all leaves proved).
 -/
-import LerayHopf.TorusGalerkinODESolve    -- GalerkinSolutionData, velocityProjection_n_norm_le, IsGalerkinTest
-import LerayHopf.TorusProjectionAdjoint   -- velocity-projection orthogonality calculus (self-adjointness at fixed points)
-import LerayHopf.TorusTestFamily          -- P0.3 leaf: stokesTestPairing_bound_of_galerkinTest
-import LerayHopf.TorusConvectionExtension -- P0.3 leaf: velocityProjection_n_eq_of_le (level promotion m ≤ n)
+import LerayHopf.Torus.GalerkinODESolve    -- GalerkinSolutionData, velocityProjection_n_norm_le, IsGalerkinTest
+import LerayHopf.Torus.ProjectionAdjoint   -- velocity-projection orthogonality calculus (self-adjointness at fixed points)
+import LerayHopf.Torus.TestFamily          -- P0.3 leaf: stokesTestPairing_bound_of_galerkinTest
+import LerayHopf.Torus.ConvectionExtension -- P0.3 leaf: velocityProjection_n_eq_of_le (level promotion m ≤ n)
 import LerayHopf.Bochner.ScalarEquicontinuity  -- T-AL-2 engine: exists_uniform_subseq_of_lipschitz_family
 
 open MeasureTheory Filter Topology Set

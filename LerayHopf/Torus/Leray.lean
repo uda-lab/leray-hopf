@@ -1,4 +1,4 @@
-import LerayHopf.DivergenceFree
+import LerayHopf.Torus.DivergenceFree
 import Mathlib.Analysis.InnerProductSpace.LinearMap
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Algebra.Module.Submodule.Lattice

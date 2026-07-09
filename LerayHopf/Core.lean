@@ -1,14 +1,14 @@
 -- Abstract types and domain definitions
-import LerayHopf.Basic
-import LerayHopf.TorusDomain
-import LerayHopf.FunctionSpaces
+import LerayHopf.Torus.Basic
+import LerayHopf.Torus.Domain
+import LerayHopf.Torus.FunctionSpaces
 
 -- Functional-analytic spatial layer (𝕋³)
-import LerayHopf.DivergenceFree
-import LerayHopf.SobolevTorus
-import LerayHopf.Leray
-import LerayHopf.GalerkinProjection
-import LerayHopf.VelocityGalerkin
+import LerayHopf.Torus.DivergenceFree
+import LerayHopf.Torus.SobolevTorus
+import LerayHopf.Torus.Leray
+import LerayHopf.Torus.GalerkinProjection
+import LerayHopf.Torus.VelocityGalerkin
 
 -- Abstract ODE/energy skeleton (no axioms, no sorry)
 import LerayHopf.EnergySkeleton
@@ -47,7 +47,7 @@ Downstream core work that does not need the axiomatic closures should
 `import LerayHopf.Core` instead of `import LerayHopf`.
 
 Axiomatic layers live in:
-- `LerayHopf.TorusAxiomatic` (imports `LerayHopf.AxiomaticClosure`)
+- `LerayHopf.Torus.Axiomatic` (imports `LerayHopf.Torus.AxiomaticClosure`)
 - `LerayHopf.R3Axiomatic`   (imports `LerayHopf.R3.AxiomaticClosure`)
 
 The full `import LerayHopf` surface continues to export both layers.
@@ -56,8 +56,9 @@ The full `import LerayHopf` surface continues to export both layers.
 
 ### Torus (𝕋³) layer — fully sorry-free and axiom-free
 
-`Basic`, `TorusDomain`, `FunctionSpaces`, `DivergenceFree`, `SobolevTorus`,
-`Leray`, `GalerkinProjection`, `VelocityGalerkin`, `EnergySkeleton`,
+`Torus.Basic`, `Torus.Domain`, `Torus.FunctionSpaces`, `Torus.DivergenceFree`,
+`Torus.SobolevTorus`, `Torus.Leray`, `Torus.GalerkinProjection`,
+`Torus.VelocityGalerkin`, `EnergySkeleton`,
 `GalerkinPackage`, `NonuniquenessStatement`, `BlowupLowerBound`.
 
 ### ℝ³ layer — fully sorry-free and axiom-free (spatial/Fourier sublayer)

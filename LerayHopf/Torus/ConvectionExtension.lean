@@ -1,6 +1,6 @@
-import LerayHopf.TorusEnergyConvection
-import LerayHopf.TorusGalerkinScheme
-import LerayHopf.TorusConvectionForm
+import LerayHopf.Torus.EnergyConvection
+import LerayHopf.Torus.GalerkinScheme
+import LerayHopf.Torus.ConvectionForm
 import LerayHopf.R3.TensorIntersection
 import Mathlib.LinearAlgebra.TensorProduct.Map
 import Mathlib.LinearAlgebra.LinearPMap
@@ -10,7 +10,7 @@ import Mathlib.Analysis.Normed.Operator.Extend
 /-!
 # TorusConvectionExtension — determined-form construction of the full torus `b` form (torus #53)
 
-**File:** `LerayHopf/TorusConvectionExtension.lean`
+**File:** `LerayHopf/Torus/ConvectionExtension.lean`
 
 ## What this file builds
 

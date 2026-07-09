@@ -358,8 +358,8 @@ is fully sorry-free.
 
 **Imports needed:**
 ```lean
-import LerayHopf.GalerkinProjection
-import LerayHopf.SobolevTorus
+import LerayHopf.Torus.GalerkinProjection
+import LerayHopf.Torus.SobolevTorus
 import Mathlib.Analysis.Normed.Operator.Compact.Basic
 import Mathlib.Topology.MetricSpace.Bounded
 import Mathlib.Analysis.RCLike.Lemmas

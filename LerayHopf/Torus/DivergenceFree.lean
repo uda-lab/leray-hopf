@@ -1,4 +1,4 @@
-import LerayHopf.FunctionSpaces
+import LerayHopf.Torus.FunctionSpaces
 import Mathlib.Analysis.RCLike.Basic
 
 open MeasureTheory

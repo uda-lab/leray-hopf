@@ -1,4 +1,4 @@
-import LerayHopf.H1Sigma
+import LerayHopf.Torus.H1Sigma
 import LerayHopf.EnergyEstimate
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 

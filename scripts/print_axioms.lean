@@ -59,7 +59,7 @@
 --   localCompactness_R3_of_ballCompact (Core R3 representative) — EXACTLY:
 --     propext  Classical.choice  Quot.sound  (no project axioms)
 
-import LerayHopf.TorusAxiomatic
+import LerayHopf.Torus.Axiomatic
 import LerayHopf.R3Axiomatic
 import LerayHopf.Core
 
