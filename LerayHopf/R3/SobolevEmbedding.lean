@@ -1,13 +1,14 @@
 import LerayHopf.R3.Regularity
-import LerayHopf.R3.ConvectionForm
+import LerayHopf.R3.WeightedFourierCommute  -- mulBdd (issue #113 PR-1: explicit — the B6-export
+  -- section uses it, previously reached only transitively via the now-dropped ConvectionForm
+  -- → SolutionInterfaces import)
 import LerayHopf.Analysis.PlancherelKernels
 -- PlancherelKernels import justification: the four gradient–Fourier Plancherel kernels
 -- (`opNorm_le_sqrt_sum_sq`, `normSq_toLp_two`, `normSq_lineDeriv_toLp`,
 -- `integral_normSq_fderiv_le`) used by A3 below moved there (issue #111 PR-2) so they can
 -- be shared with `EnergyClassConvection.lean`/`GalerkinTrilinearBound.lean`.
--- ConvectionForm import justification (A4): provides the proved density theorem
--- `schwartzDivFree_dense_of_curlDense` and (transitively, via `CurlDensityCapstone`)
--- `curlSchwartzDense_holds`, both required by `h1Sigma_dense_in_L2Sigma`.
+-- A4 (`h1Sigma_dense_in_L2Sigma`, needing ConvectionForm's density theorem) moved to
+-- `H1SigmaDensity.lean` (issue #113 PR-1) — this file no longer imports ConvectionForm.
 import Mathlib.Analysis.FunctionalSpaces.SobolevInequality
 import Mathlib.MeasureTheory.Function.Holder
 -- Holder import justification: `ContinuousLinearMap.holderL` and the
@@ -58,10 +59,10 @@ In dimension 3 with `p = 2`, the Sobolev conjugate is `p' = 6`:
   gradient control (the `integral_normSq_fderiv_le` Plancherel kernel) → Fourier-domain Schwartz
   `H¹`-approximant `φₙ = 𝓕⁻¹(smulLeftCLM (1+‖ξ‖²)^(-1/2) ηₙ)` → Fatou. **PROVED sorry-free.**
 
-- **A4** `h1Sigma_dense_in_L2Sigma` — elements of `L2Sigma_R3` satisfying `memH1VF_R3`
-  are dense in `L2Sigma_R3`.
-  Proof plan: Schwartz ⊂ H¹ + `schwartzDivFree_dense_of_curlDense` + `curlSchwartzDense_holds`.
-  **Must-prove (A4), body `-- ALLOW_SORRY: PR-1 must-prove (A4), prover pass`.**
+- **A4** `h1Sigma_dense_in_L2Sigma` — MOVED to `H1SigmaDensity.lean` (issue #113 PR-1): it is
+  the only declaration in this file's original scope that needs `ConvectionForm.lean`
+  (`schwartzDivFree_dense_of_curlDense`/`curlSchwartzDense_holds`), so it now lives with that
+  import in its own file, downstream of this one.
 
 ## Mathlib decls consumed
 
@@ -78,9 +79,10 @@ In dimension 3 with `p = 2`, the Sobolev conjugate is `p' = 6`:
 
 None — this file introduces no `axiom`/`opaque`.
 
-**Status (prover pass):** A2 (`gns_L6_cc1_R3`), A3 (`gns_L6_of_memH1_R3`) and A4
-(`h1Sigma_dense_in_L2Sigma`) are all PROVED sorry-free (A3 depends only on
-`propext`/`Classical.choice`/`Quot.sound` — no `sorryAx`, no project axiom). A3 is assembled from:
+**Status (prover pass):** A2 (`gns_L6_cc1_R3`) and A3 (`gns_L6_of_memH1_R3`) are both PROVED
+sorry-free (A3 depends only on `propext`/`Classical.choice`/`Quot.sound` — no `sorryAx`, no
+project axiom). A4 (`h1Sigma_dense_in_L2Sigma`, also PROVED sorry-free) is in
+`H1SigmaDensity.lean`. A3 is assembled from:
 - the four Plancherel kernels (`PlancherelKernels.opNorm_le_sqrt_sum_sq`,
   `PlancherelKernels.normSq_toLp_two`, `PlancherelKernels.normSq_lineDeriv_toLp`,
   `PlancherelKernels.integral_normSq_fderiv_le` — moved to `LerayHopf/Analysis/PlancherelKernels.lean`,
@@ -944,29 +946,6 @@ theorem memH1VF_R3_of_isSchwartzDivFree
     {v : L2Sigma_R3} (hv : IsSchwartzDivFree_R3 v) :
     memH1VF_R3 (v : L2VF_R3) :=
   memH1VF_R3_of_schwartz_components (v : L2VF_R3) hv
-
-/-- **A4 `h1Sigma_dense_in_L2Sigma` [must-prove].**
-The `H¹` divergence-free velocity fields (those satisfying `memH1VF_R3`) are **dense** in
-`L2Sigma_R3`.
-
-For every `u ∈ L2Sigma_R3`, there is a sequence `s : ℕ → L2Sigma_R3` with
-`∀ n, memH1VF_R3 (s n : L2VF_R3)` and `Filter.Tendsto s atTop (nhds u)`.
-
-**Proof plan (for prover pass):**
-1. Every Schwartz function is in all Sobolev spaces: `SchwartzMap.memSobolev` gives
-   `MemSobolev 1 2 (φ.toLp 2 volume : 𝓢'(...))` for any `φ : 𝓢(Domain3, ℂ)`.
-2. Hence `IsSchwartzDivFree_R3 v ⟹ memH1VF_R3 (v : L2VF_R3)` (each component
-   is a Schwartz `L²`-class, hence H¹ via `SchwartzMap.memSobolev`).
-3. `schwartzDivFree_dense_of_curlDense curlSchwartzDense_holds` (proved in `ConvectionForm.lean:594`
-   and `CurlDensityCapstone.lean`) gives density of `IsSchwartzDivFree_R3` in `L2Sigma_R3`.
-4. Combine (2)+(3): H¹_σ ⊇ Schwartz_σ which is dense → H¹_σ is dense. -/
-theorem h1Sigma_dense_in_L2Sigma (u : L2Sigma_R3) :
-    ∃ s : ℕ → L2Sigma_R3,
-      (∀ n, memH1VF_R3 (s n : L2VF_R3)) ∧
-        Filter.Tendsto s Filter.atTop (nhds u) := by
-  obtain ⟨s, hsdiv, hstendsto⟩ :=
-    schwartzDivFree_dense_of_curlDense curlSchwartzDense_holds u
-  exact ⟨s, fun n => memH1VF_R3_of_isSchwartzDivFree (hsdiv n), hstendsto⟩
 
 /-! ### B6 export — Schwartz `H¹`-approximants with gradient convergence
 

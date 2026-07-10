@@ -1,5 +1,7 @@
 import LerayHopf.R3.EnergyClassConvection
 import LerayHopf.R3.ConvectionForm
+import LerayHopf.R3.H1SigmaDensity  -- h1Sigma_dense_in_L2Sigma (issue #113 PR-1: split out of
+  -- SobolevEmbedding.lean; was reached transitively via SobolevEmbedding, no longer)
 import LerayHopf.R3.TensorIntersection
 import LerayHopf.Analysis.TensorEdgeGluing
 import LerayHopf.Analysis.BilinearExtension
