@@ -58,7 +58,9 @@ be described as a PDE existence theorem.
 
 - **Lean sources:** `LerayHopf/` — `R3/` (ℝ³), `Torus/` (𝕋³), `Bochner/` (Gelfand-triple
   time theory), and the top-level shared/abstract `*.lean` files. See
-  [`docs/architecture.md`](docs/architecture.md) for a module map by layer.
+  [`docs/architecture.md`](docs/architecture.md) for a module map by layer, and
+  [`docs/pdelib-staging.md`](docs/pdelib-staging.md) for the inventory of which
+  generic-layer content is ready to lift into the external `pdelib` project.
 - **Mathematical scope / roadmap:** [`docs/milestone.md`](docs/milestone.md),
   [`docs/leray_hopf_lean_mvp_plan.md`](docs/leray_hopf_lean_mvp_plan.md),
   [`docs/ROADMAP.md`](docs/ROADMAP.md).
