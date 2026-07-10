@@ -40,6 +40,15 @@ remaining frontier — global-in-time existence of the finite-dim quadratic ODE 
 no continuation-from-a-priori-bound theorem) — is **isolated** in the hypothesis structure
 `FinDimGlobalODE` (S0), supplied by the caller, NOT proved here.
 
+### Also here (issue #112 PR-B: generic-layer witness + equality bridge)
+
+- `r3FieldForms` (R0a) — the `Galerkin.FieldForms (galerkinSpan B n)` witness packaging
+  `R3NSForms.b`/`stokesTestPairing_R3`, deduplicating `GalerkinODESolve.lean`'s CLM tower
+  against `LerayHopf/Galerkin/QuadraticField.lean`'s generic construction. Sorry-free.
+- `galerkinODE_vectorField_eq_generic` — the equality bridge `galerkinODE_vectorField … =
+  (r3FieldForms …).vectorField ν`, from which `GalerkinODESolve.lean`'s C1/A1/A2/A3/G1
+  theorems are now derived as corollaries.
+
 ## Import justification (NO import cycle)
 
 ```
