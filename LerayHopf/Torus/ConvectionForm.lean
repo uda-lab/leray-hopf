@@ -1,4 +1,5 @@
 import LerayHopf.Torus.SolutionInterfaces
+import LerayHopf.Torus.GalerkinScheme  -- coeff_zero_outside_box (issue #111 PR-5, dedupe)
 
 open MeasureTheory Filter Topology Complex
 
@@ -99,25 +100,12 @@ private lemma norm_mFourierCoeff3_le (f : L2C) (k : Fin 3 → ℤ) :
     (torus3_mFourierBasis.repr f) k
   rwa [torus3_mFourierBasis.repr.norm_map f] at h
 
-/-! ### Galerkin support: coefficients vanish outside the box -/
+/-! ### Galerkin support: coefficients vanish outside the box
 
-/-- If `u ∈ Vₙ` (i.e. `velocityProjection_n n u = u`), then the `j`-th Fourier
-coefficient of `u` vanishes for `k ∉ fourierBox n`.
-
-Proof: `velocityProjection_n_component_comm` says
-`L2VF_projComponentC j (velocityProjection_n n u) = fourierProjection_n n (L2VF_projComponentC j u)`,
-and `fourierProjection_n_mFourierCoeff` says the coefficient is 0 outside the box. -/
-lemma coeff_zero_outside_box (n : ℕ) (u : L2VF)
-    (hu : velocityProjection_n n u = u) (j : Fin 3) (k : Fin 3 → ℤ)
-    (hk : k ∉ fourierBox n) :
-    mFourierCoeff3 (L2VF_projComponentC j u) k = 0 := by
-  have hcomm := velocityProjection_n_component_comm n u j
-  rw [hu] at hcomm
-  -- Rewrite the coefficient's argument to the `restrictScalars`-wrapped projection (`conv` so
-  -- the forward rewrite fires exactly once on the argument inside `mFourierCoeff3`), unfold the
-  -- `restrictScalars` coe, then `fourierProjection_n_mFourierCoeff` + `if_neg`.
-  conv_lhs => rw [hcomm]
-  rw [ContinuousLinearMap.coe_restrictScalars', fourierProjection_n_mFourierCoeff, if_neg hk]
+`coeff_zero_outside_box` now lives in `GalerkinScheme.lean` (issue #111 PR-5: it was
+independently duplicated, byte-identically, in both files; the `GalerkinScheme.lean` copy is
+canonical since it is also needed downstream by the ODE solver, which does not import this
+file). -/
 
 /-! ### Trilinearity of `galerkinConvection n` — all sorry-free (finite Finset sums) -/
 

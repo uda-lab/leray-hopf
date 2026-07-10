@@ -67,37 +67,6 @@ instance instSeparableSpace_graphSpace :
 
 /-! ### H¹ membership of Schwartz-component fields -/
 
-/-- A field with Schwartz component representatives is `H¹`.  Local copy of the private
-`memH1VF_R3_of_schwartz`/`memH1VF_R3_of_isSchwartzDivFree`, stated on the raw component
-witness (avoids the `L2Sigma_R3` subtype). -/
-private theorem memH1VF_R3_of_components (u : L2VF_R3)
-    (h : ∃ φ : Fin 3 → SchwartzMap Domain3 ℝ, ∀ j : Fin 3,
-        L2VF_projComponent_R3 j u = (φ j).toLp 2 (volume : Measure Domain3)) :
-    memH1VF_R3 u := by
-  obtain ⟨ψ, hψ⟩ := h
-  intro j
-  set φ : SchwartzMap Domain3 ℂ := (ψ j).postcompCLM (RCLike.ofRealCLM (K := ℂ)) with hφ
-  have hgeq : (L2VF_projComponentC_R3 j u)
-      = φ.toLp 2 (volume : Measure Domain3) := by
-    apply MeasureTheory.Lp.ext_iff.mpr
-    have hLHS : (⇑(L2VF_projComponentC_R3 j u) : Domain3 → ℂ)
-        =ᵐ[volume] fun a => RCLike.ofRealCLM (K := ℂ) (L2VF_projComponent_R3 j u a) := by
-      simpa [L2VF_projComponentC_R3] using
-        (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL (L2VF_projComponent_R3 j u)
-    have hcomp : (⇑(L2VF_projComponent_R3 j u) : Domain3 → ℝ)
-        =ᵐ[volume] ⇑(ψ j) := by
-      rw [hψ j]; exact (ψ j).coeFn_toLp 2 (volume : Measure Domain3)
-    have hRHS : (⇑(φ.toLp 2 (volume : Measure Domain3)) : Domain3 → ℂ) =ᵐ[volume] ⇑φ :=
-      φ.coeFn_toLp 2 (volume : Measure Domain3)
-    filter_upwards [hLHS, hcomp, hRHS] with a hL hc hR
-    rw [hL, hc, hR, hφ, SchwartzMap.postcompCLM_apply]
-  have hcoe : ((L2VF_projComponentC_R3 j u) : 𝓢'(Domain3, ℂ))
-      = (φ : 𝓢'(Domain3, ℂ)) := by
-    rw [hgeq]; exact MeasureTheory.Lp.toTemperedDistribution_toLp_eq φ
-  rw [show (L2VF_projComponentC_R3 j u : 𝓢'(Domain3, ℂ))
-      = (φ : 𝓢'(Domain3, ℂ)) from hcoe]
-  exact φ.memSobolev
-
 /-- `H¹` is closed under subtraction (via `memH1VF_R3_add` + `memH1VF_R3_smul (-1)`). -/
 private theorem memH1VF_R3_sub {u v : L2VF_R3} (hu : memH1VF_R3 u) (hv : memH1VF_R3 v) :
     memH1VF_R3 (u - v) := by
@@ -107,21 +76,7 @@ private theorem memH1VF_R3_sub {u v : L2VF_R3} (hu : memH1VF_R3 u) (hv : memH1VF
 /-- Every curl field `curlSchwartzL2 θ` is `H¹` (its components are Schwartz, A3). -/
 private theorem memH1VF_R3_curl (θ : Fin 3 → SchwartzMap Domain3 ℝ) :
     memH1VF_R3 (curlSchwartzL2 θ) :=
-  memH1VF_R3_of_components _ (curlSchwartz_isSchwartz θ)
-
-/-- Helper: the supremum of finite prefix spans of an enumeration `e` equals the span of its
-entire range (local copy of the private `iSup_prefixSpan_eq_span_range`). -/
-private theorem iSup_prefixSpan_eq_span_range' (e : ℕ → L2VF_R3) :
-    (⨆ n : ℕ, Submodule.span ℝ (Set.range (fun k : Fin n => e (k : ℕ))))
-      = Submodule.span ℝ (Set.range e) := by
-  apply le_antisymm
-  · refine iSup_le fun n => Submodule.span_mono ?_
-    rintro x ⟨k, rfl⟩
-    exact ⟨(k : ℕ), rfl⟩
-  · rw [Submodule.span_le]
-    rintro x ⟨k, rfl⟩
-    refine Submodule.mem_iSup_of_mem (k+1) ?_
-    exact Submodule.subset_span ⟨⟨k, Nat.lt_succ_self k⟩, rfl⟩
+  memH1VF_R3_of_schwartz_components _ (curlSchwartz_isSchwartz θ)
 
 /-! ### The H¹-graph-dense countable curl family -/
 
@@ -171,7 +126,7 @@ private theorem exists_graphDenseSeq :
     have hsup : (⨆ n : ℕ, Submodule.span ℝ
           (Set.range (fun k : Fin n => curlSchwartzL2 (ψ (k : ℕ)))))
         = Submodule.span ℝ (Set.range (fun k => curlSchwartzL2 (ψ k))) :=
-      iSup_prefixSpan_eq_span_range' (fun k => curlSchwartzL2 (ψ k))
+      iSup_prefixSpan_eq_span_range (fun k => curlSchwartzL2 (ψ k))
     rw [hsup]
     refine le_trans curlSchwartzDense_holds ?_
     refine Submodule.topologicalClosure_minimal _ ?_
@@ -264,7 +219,7 @@ theorem nonempty_schwartzGalerkinBasis_H1 :
     linarith
   · -- viscous error `< ε`, via wFC decomposition + `(a+b)² ≤ 2a²+2b²`
     show viscousFormSq_R3 1 (curlSchwartzL2 (ψ k) - wv) < ε
-    have hwH1 : memH1VF_R3 wv := memH1VF_R3_of_components wv hw
+    have hwH1 : memH1VF_R3 wv := memH1VF_R3_of_schwartz_components wv hw
     have hkH1 : memH1VF_R3 (curlSchwartzL2 (ψ k)) := memH1VF_R3_curl (ψ k)
     have hθH1 : memH1VF_R3 (curlSchwartzL2 θ) := memH1VF_R3_curl θ
     have hdH1 : memH1VF_R3 (curlSchwartzL2 (ψ k) - wv) := memH1VF_R3_sub hkH1 hwH1

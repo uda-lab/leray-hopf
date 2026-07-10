@@ -812,26 +812,6 @@ theorem perBall_ae_subseq
   filter_upwards [hae] with t ht
   exact ht
 
-/-- Factorization of a nested family of extractions: if `Φ (k+1) = Φ k ∘ ρ k` with each `ρ k`
-strictly monotone, then for `k ≤ n` the extraction `Φ n` is `Φ k` post-composed with a strictly
-monotone map. (Local copy of `SpatialCompactness.nested_extraction_factor`, which is `private`.) -/
-private theorem nested_extraction_factor (Φ ρ : ℕ → ℕ → ℕ)
-    (hρ : ∀ k, StrictMono (ρ k)) (hstep : ∀ k, Φ (k + 1) = Φ k ∘ ρ k) :
-    ∀ k n, k ≤ n → ∃ R : ℕ → ℕ, StrictMono R ∧ Φ n = Φ k ∘ R := by
-  intro k n hkn
-  induction n with
-  | zero =>
-    obtain rfl : k = 0 := Nat.le_zero.mp hkn
-    exact ⟨id, strictMono_id, rfl⟩
-  | succ m ih =>
-    rcases Nat.lt_or_ge k (m + 1) with hlt | hge
-    · obtain ⟨R, hR, hReq⟩ := ih (Nat.lt_succ_iff.mp hlt)
-      refine ⟨R ∘ ρ m, hR.comp (hρ m), ?_⟩
-      rw [hstep m, hReq]
-      rfl
-    · obtain rfl : k = m + 1 := Nat.le_antisymm hkn hge
-      exact ⟨id, strictMono_id, rfl⟩
-
 /-- **`diag_ae_subseq` — Diagonal subsequence converging a.e. in `t` for ALL ball radii `k : ℕ`.**
 
 From refine-capable `perBall_ae_subseq`, construct by induction a Cantor tower

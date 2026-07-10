@@ -421,7 +421,7 @@ scalar-multiplied by a continuous, compactly-supported test factor `φ` whose su
 inside `Ioo 0 T`, is interval-integrable on `0..T`. The test factor is bounded (continuous
 with compact support), so the `smul` stays in `L¹`; for `T < 0` the support constraint forces
 `φ = 0`. -/
-private theorem intervalIntegrable_smul_of_integrableOn_Icc
+theorem intervalIntegrable_smul_of_integrableOn_Icc
     {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {T : ℝ} {g : ℝ → E} {φ : ℝ → ℝ}
     (hg : Integrable g (volume.restrict (Set.Icc 0 T)))
     (hφc : Continuous φ) (hφcs : HasCompactSupport φ)

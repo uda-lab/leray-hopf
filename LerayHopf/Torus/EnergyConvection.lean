@@ -1,4 +1,5 @@
 import LerayHopf.Torus.SolutionInterfaces
+import LerayHopf.Torus.GalerkinScheme  -- coeff_zero_outside_box (issue #111 PR-5)
 -- SolutionInterfaces import justification: provides `IsGalerkinTest`, `galerkinConvection`,
 --   `L2Sigma`, `L2VF`, `L2C`, `mFourierCoeff3`, `velocityProjection_n`, and
 --   transitively `H1Sigma.lean` (`memH1VF`, `memH1Sigma`, `memH1Torus`) and
@@ -167,22 +168,6 @@ theorem memH1VF_smul (c : ℝ) {u : L2VF} (hu : memH1VF u) :
 
 /-! ### Fourier support of Galerkin-box elements -/
 
-/-- If `u ∈ Vₙ` (i.e. `velocityProjection_n n u = u`), then the `j`-th Fourier coefficient of
-`u` vanishes for `k ∉ fourierBox n`.
-
-Local copy of `coeff_zero_outside_box` (which lives in the downstream `TorusConvectionForm.lean`,
-not importable here): `velocityProjection_n_component_comm` rewrites the component of the
-projection to the `restrictScalars`-wrapped `fourierProjection_n`, whose coefficient is `0`
-outside the box (`fourierProjection_n_mFourierCoeff` + `if_neg`). -/
-private lemma coeff_zero_outside_box' (n : ℕ) (u : L2VF)
-    (hu : velocityProjection_n n u = u) (j : Fin 3) (k : Fin 3 → ℤ)
-    (hk : k ∉ fourierBox n) :
-    mFourierCoeff3 (L2VF_projComponentC j u) k = 0 := by
-  have hcomm := velocityProjection_n_component_comm n u j
-  rw [hu] at hcomm
-  conv_lhs => rw [hcomm]
-  rw [ContinuousLinearMap.coe_restrictScalars', fourierProjection_n_mFourierCoeff, if_neg hk]
-
 /-! ### The H¹_σ submodule of `L2Sigma` -/
 
 /-- **`H1SigmaTorus` — the div-free H¹ submodule of `L2Sigma`.**
@@ -212,19 +197,6 @@ theorem mem_H1SigmaTorus_iff (u : L2Sigma) :
   Iff.rfl
 
 /-! ### ℓ² / weighted-ℓ² summability of Fourier coefficients (local helpers) -/
-
-/-- The squared Fourier coefficients of any `f : L2C` are summable (from `lp` membership).
-
-Local copy of `summable_norm_mFourierCoeff3_sq` (which lives in the downstream
-`TorusGalerkinODESolve.lean`); proved here directly from `Memℓp (repr f) 2`. -/
-private theorem summable_coeff_sq (f : L2C) :
-    Summable (fun k : Fin 3 → ℤ => ‖mFourierCoeff3 f k‖ ^ 2) := by
-  have hmem : Memℓp (torus3_mFourierBasis.repr f) 2 := (torus3_mFourierBasis.repr f).2
-  have hp : (0 : ℝ) < (2 : ENNReal).toReal := by norm_num
-  have := (memℓp_gen_iff hp).mp hmem
-  refine this.congr (fun k => ?_)
-  rw [show ((2 : ENNReal).toReal) = (2 : ℝ) by norm_num, Real.rpow_two]
-  rfl
 
 /-- The H¹-gradient-weighted squared coefficients are summable for an H¹ component:
 `∑_l (∑ᵢ (lᵢ)²) · ‖v̂(l)‖² < ∞`.  Dominated by the full H¹ weight `(1 + ∑ᵢ(lᵢ)²)`. -/
@@ -269,11 +241,11 @@ theorem convSummand_norm_summable (u : L2VF) (v : L2VF) (hv : memH1VF v)
   -- `‖Wc(·)‖` is finitely supported (Galerkin test ⟹ `w ∈ Vₙ`).
   obtain ⟨n, hn⟩ := hw
   have hWsupp : ∀ m : Fin 3 → ℤ, m ∉ fourierBox n → Wc m = 0 := by
-    intro m hm; exact coeff_zero_outside_box' n (w : L2VF) hn i m hm
+    intro m hm; exact coeff_zero_outside_box n (w : L2VF) hn i m hm
   have hWsumm : Summable (fun m : Fin 3 → ℤ => ‖Wc m‖) :=
     summable_of_ne_finset_zero (s := fourierBox n)
       (fun m hm => by rw [hWsupp m hm, norm_zero])
-  have hUsq : Summable (fun k : Fin 3 → ℤ => ‖U k‖ ^ 2) := summable_coeff_sq _
+  have hUsq : Summable (fun k : Fin 3 → ℤ => ‖U k‖ ^ 2) := Torus.summable_norm_mFourierCoeff3_sq _
   have hVw : Summable (fun l : Fin 3 → ℤ => (∑ j : Fin 3, (l j : ℝ) ^ 2) * ‖V l‖ ^ 2) :=
     summable_grad_weight_sq (hv i)
   -- The dominating sum `G kl := π · ‖Wc m‖ · (‖U k‖² + (lₐ)² ‖V l‖²)`, `m = -(k+l)`, is summable.
@@ -399,7 +371,7 @@ theorem galerkinTestSpan_subset_H1Sigma {w : L2Sigma} (hw : IsGalerkinTest w) :
   obtain ⟨n, hn⟩ := hw
   -- The H¹-weight sum is supported on `fourierBox n`: the coefficient vanishes outside the box.
   refine summable_of_ne_finset_zero (s := fourierBox n) (fun k hk => ?_)
-  rw [coeff_zero_outside_box' n (w : L2VF) hn j k hk, norm_zero]
+  rw [coeff_zero_outside_box n (w : L2VF) hn j k hk, norm_zero]
   ring
 
 /-! ### The total Fourier convection form `convFormFourier`

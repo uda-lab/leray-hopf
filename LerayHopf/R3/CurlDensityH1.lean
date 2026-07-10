@@ -51,13 +51,6 @@ divergence-free `w`, the exact vector potential symbol solving `curl ψ = w` is
 multiplier `(a² + ‖ξ‖²)⁻¹` is smooth and of temperate growth (no cutoff needed), and the
 resulting curl Fourier symbol is `‖ξ‖²/(a² + ‖ξ‖²) · ŵ`, which `→ ŵ` as `a → 0`. -/
 
-/-- Local complexification of a real Schwartz map (the CurlDensity `schwartzC` is private). -/
-private noncomputable def cxifyH1 (f : SchwartzMap Domain3 ℝ) : SchwartzMap Domain3 ℂ :=
-  f.postcompCLM (RCLike.ofRealCLM (K := ℂ))
-
-private theorem cxifyH1_apply (f : SchwartzMap Domain3 ℝ) (x : Domain3) :
-    cxifyH1 f x = (f x : ℂ) := rfl
-
 /-- The coordinate multiplier `ξ ↦ (ξ m : ℂ)` has temperate growth (it is a CLM). -/
 private theorem hasTemperateGrowth_coordC (m : Fin 3) :
     Function.HasTemperateGrowth (fun ξ : Domain3 => ((ξ m : ℝ) : ℂ)) := by
@@ -133,49 +126,6 @@ private theorem symbolHatOf_apply (a : ℝ) (ha : 0 < a) (wh : Fin 3 → Schwart
   rw [symbolHatOf, SchwartzMap.smulLeftCLM_apply_apply (hasTemperateGrowth_symbolMul a ha)]
   rw [smul_eq_mul]
 
-/-! ### Reality machinery (local re-proofs; the CurlDensity versions are private) -/
-
-/-- **Fourier of a Hermitian Schwartz function is real-valued** (local copy of the private
-`CurlDensity.fourier_hermitian_real`). -/
-private theorem fourierH1_hermitian_real
-    (g : SchwartzMap Domain3 ℂ)
-    (hg : ∀ v : Domain3, g (-v) = (starRingEnd ℂ) (g v)) (ξ : Domain3) :
-    (starRingEnd ℂ) ((𝓕 g : SchwartzMap Domain3 ℂ) ξ) = (𝓕 g : SchwartzMap Domain3 ℂ) ξ := by
-  have hcoe : ((𝓕 g : SchwartzMap Domain3 ℂ) : Domain3 → ℂ) = 𝓕 ((g : Domain3 → ℂ)) :=
-    SchwartzMap.fourier_coe g
-  rw [show (𝓕 g : SchwartzMap Domain3 ℂ) ξ = 𝓕 ((g : Domain3 → ℂ)) ξ from congrFun hcoe ξ]
-  rw [Real.fourier_eq, ← integral_conj]
-  have hconj : (∫ v : Domain3, (starRingEnd ℂ) ((Real.fourierChar (-(inner ℝ v ξ : ℝ))) • g v)
-        ∂(volume : Measure Domain3))
-      = ∫ v : Domain3, (Real.fourierChar (-(inner ℝ (-v) ξ : ℝ))) • g (-v)
-        ∂(volume : Measure Domain3) := by
-    refine integral_congr_ae ?_
-    filter_upwards with v
-    simp only [Circle.smul_def, smul_eq_mul, inner_neg_left, map_mul, neg_neg]
-    rw [hg v]
-    rw [← Circle.coe_inv_eq_conj, ← AddChar.map_neg_eq_inv, neg_neg]
-  rw [hconj]
-  rw [integral_neg_eq_self (fun v => (Real.fourierChar (-(inner ℝ v ξ : ℝ))) • g v)
-    (volume : Measure Domain3)]
-
-/-- **Fourier of a complexified real Schwartz function is Hermitian** (local copy of the private
-`CurlDensity.fourier_schwartzC_hermitian`). -/
-private theorem fourierH1_cxify_hermitian (φ : SchwartzMap Domain3 ℝ) (ξ : Domain3) :
-    (𝓕 (cxifyH1 φ) : SchwartzMap Domain3 ℂ) (-ξ)
-      = (starRingEnd ℂ) ((𝓕 (cxifyH1 φ) : SchwartzMap Domain3 ℂ) ξ) := by
-  have hcoe : ((𝓕 (cxifyH1 φ) : SchwartzMap Domain3 ℂ) : Domain3 → ℂ)
-        = 𝓕 ((cxifyH1 φ : Domain3 → ℂ)) := SchwartzMap.fourier_coe (cxifyH1 φ)
-  rw [show (𝓕 (cxifyH1 φ) : SchwartzMap Domain3 ℂ) (-ξ)
-        = 𝓕 ((cxifyH1 φ : Domain3 → ℂ)) (-ξ) from congrFun hcoe (-ξ),
-    show (𝓕 (cxifyH1 φ) : SchwartzMap Domain3 ℂ) ξ
-        = 𝓕 ((cxifyH1 φ : Domain3 → ℂ)) ξ from congrFun hcoe ξ]
-  rw [Real.fourier_eq, Real.fourier_eq, ← integral_conj]
-  refine integral_congr_ae ?_
-  filter_upwards with v
-  simp only [Circle.smul_def, smul_eq_mul, inner_neg_right, map_mul, cxifyH1_apply,
-    Complex.conj_ofReal, neg_neg]
-  rw [← Circle.coe_inv_eq_conj, ← AddChar.map_neg_eq_inv, neg_neg]
-
 /-! ### The real potential and its Fourier transform -/
 
 /-- The Yukawa-regularized **real** vector potential `ψ_k = Re(𝓕⁻ ψ̂_k)`. -/
@@ -210,7 +160,7 @@ private theorem symbolHatOf_hermitian (a : ℝ) (ha : 0 < a) (wh : Fin 3 → Sch
 /-- The real potential's complexification equals `𝓕⁻ ψ̂_k` (since `ψ̂_k` is Hermitian). -/
 private theorem cxify_potOf (a : ℝ) (ha : 0 < a) (wh : Fin 3 → SchwartzMap Domain3 ℂ)
     (hHerm : ∀ b : Fin 3, ∀ v : Domain3, wh b (-v) = (starRingEnd ℂ) (wh b v)) (k : Fin 3) :
-    cxifyH1 (potOf a ha wh hHerm k) = 𝓕⁻ (symbolHatOf a ha wh k) := by
+    schwartzC (potOf a ha wh hHerm k) = 𝓕⁻ (symbolHatOf a ha wh k) := by
   have hΦreal : ∀ ξ : Domain3,
       (starRingEnd ℂ) ((𝓕⁻ (symbolHatOf a ha wh k)) ξ) = (𝓕⁻ (symbolHatOf a ha wh k)) ξ := by
     intro ξ
@@ -223,11 +173,11 @@ private theorem cxify_potOf (a : ℝ) (ha : 0 < a) (wh : Fin 3 → SchwartzMap D
       have e1 : (𝓕⁻ (symbolHatOf a ha wh k)) ξ
           = 𝓕⁻ ((symbolHatOf a ha wh k : Domain3 → ℂ)) ξ := congrFun hcoeInv ξ
       rw [e1, Real.fourierInv_eq_fourier_neg, ← hcoeF]
-    rw [hΦpt, fourierH1_hermitian_real (symbolHatOf a ha wh k)
+    rw [hΦpt, fourier_hermitian_real (symbolHatOf a ha wh k)
       (symbolHatOf_hermitian a ha wh hHerm k)]
   apply SchwartzMap.ext
   intro ξ
-  rw [cxifyH1, potOf, SchwartzMap.postcompCLM_apply, SchwartzMap.postcompCLM_apply,
+  rw [schwartzC, potOf, SchwartzMap.postcompCLM_apply, SchwartzMap.postcompCLM_apply,
     RCLike.ofRealCLM_apply, RCLike.reCLM_apply, RCLike.re_to_complex]
   have := hΦreal ξ
   rw [Complex.conj_eq_iff_re] at this
@@ -237,29 +187,15 @@ private theorem cxify_potOf (a : ℝ) (ha : 0 < a) (wh : Fin 3 → SchwartzMap D
 regularized symbol. -/
 private theorem fourier_cxify_potOf (a : ℝ) (ha : 0 < a) (wh : Fin 3 → SchwartzMap Domain3 ℂ)
     (hHerm : ∀ b : Fin 3, ∀ v : Domain3, wh b (-v) = (starRingEnd ℂ) (wh b v)) (k : Fin 3) :
-    (𝓕 (cxifyH1 (potOf a ha wh hHerm k)) : SchwartzMap Domain3 ℂ) = symbolHatOf a ha wh k := by
+    (𝓕 (schwartzC (potOf a ha wh hHerm k)) : SchwartzMap Domain3 ℂ) = symbolHatOf a ha wh k := by
   rw [cxify_potOf a ha wh hHerm k, fourier_fourierInv_eq]
 
 /-! ## Stage 2 — the curl Fourier symbol `𝓕(curl ψ_a)_j = ‖ξ‖²/(a²+‖ξ‖²) · ŵ_j` -/
 
-/-- `(cxify f).toLp` is the real-to-complex embedding of `f.toLp` (local copy of the private
-`CurlDensity.toLp_schwartzC_eq`). -/
-private theorem toLp_cxifyH1 (f : SchwartzMap Domain3 ℝ) :
-    (cxifyH1 f).toLp 2 (volume : Measure Domain3)
-      = (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
-          (f.toLp 2 (volume : Measure Domain3)) := by
-  haveI : Fact ((1 : ENNReal) ≤ 2) := ⟨by norm_num⟩
-  refine Lp.ext ?_
-  filter_upwards [(cxifyH1 f).coeFn_toLp 2 (volume : Measure Domain3),
-    (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL (f.toLp 2 (volume : Measure Domain3)),
-    f.coeFn_toLp 2 (volume : Measure Domain3)] with x hx hc hf
-  rw [hx, hc, hf, cxifyH1_apply, RCLike.ofRealCLM_apply]
-  rfl
-
 /-- `potentialComponentC ψ k` is the complex L²-class of the complexified potential. -/
-private theorem potentialComponentC_cxifyH1 (ψ : Fin 3 → SchwartzMap Domain3 ℝ) (k : Fin 3) :
-    potentialComponentC ψ k = (cxifyH1 (ψ k)).toLp 2 (volume : Measure Domain3) := by
-  rw [potentialComponentC, toLp_cxifyH1]
+private theorem potentialComponentC_schwartzC (ψ : Fin 3 → SchwartzMap Domain3 ℝ) (k : Fin 3) :
+    potentialComponentC ψ k = (schwartzC (ψ k)).toLp 2 (volume : Measure Domain3) := by
+  rw [potentialComponentC, toLp_schwartzC_eq]
 
 /-- The Fourier transform of the `k`-th potential component (as an `L²`-class) is a.e. the
 regularized symbol `ψ̂_k`. -/
@@ -269,9 +205,9 @@ private theorem fourier_potentialComponentC_potOf (a : ℝ) (ha : 0 < a)
     ((𝓕 (potentialComponentC (potOf a ha wh hHerm) k) : L2C_R3) : Domain3 → ℂ)
       =ᵐ[volume] ((symbolHatOf a ha wh k : SchwartzMap Domain3 ℂ) : Domain3 → ℂ) := by
   have h1 : (𝓕 (potentialComponentC (potOf a ha wh hHerm) k) : L2C_R3)
-      = (𝓕 (cxifyH1 (potOf a ha wh hHerm k))).toLp 2 (volume : Measure Domain3) := by
-    rw [potentialComponentC_cxifyH1]
-    exact SchwartzMap.toLp_fourier_eq (cxifyH1 (potOf a ha wh hHerm k))
+      = (𝓕 (schwartzC (potOf a ha wh hHerm k))).toLp 2 (volume : Measure Domain3) := by
+    rw [potentialComponentC_schwartzC]
+    exact SchwartzMap.toLp_fourier_eq (schwartzC (potOf a ha wh hHerm k))
   rw [h1, fourier_cxify_potOf a ha wh hHerm k]
   exact (symbolHatOf a ha wh k).coeFn_toLp 2 (volume : Measure Domain3)
 
@@ -350,122 +286,8 @@ private theorem fourier_curl_potOf_ae (a : ℝ) (ha : 0 < a)
 
 /-! ## Stage 3 — Parseval error bridge and dominated convergence in the scale `a`
 
-Local re-proofs of the private CurlDensity Parseval helpers, then the L² and viscous
+Uses the now-public `CurlDensity` Parseval helpers directly, then builds the L² and viscous
 error expressions in Fourier form and their `a → 0` limits. -/
-
-/-- Complex inner product of two real-to-complex embeddings equals the cast of the real
-inner product (local copy of the private `CurlDensity.complexInner_compLpL_ofReal`). -/
-private theorem complexInner_compLpL_ofReal_H1
-    (a b : Lp ℝ 2 (volume : Measure Domain3)) :
-    (inner ℂ ((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) a)
-        ((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) b) : ℂ)
-      = ((inner ℝ a b : ℝ) : ℂ) := by
-  have hreal : (inner ℝ a b : ℝ)
-      = ∫ x, (a : Domain3 → ℝ) x * (b : Domain3 → ℝ) x ∂(volume : Measure Domain3) := by
-    rw [MeasureTheory.L2.inner_def]
-    refine integral_congr_ae ?_
-    filter_upwards with x
-    rw [RCLike.inner_apply, conj_trivial]
-    ring
-  rw [MeasureTheory.L2.inner_def, hreal]
-  calc (∫ x, (inner ℂ
-        (((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) a : Domain3 → ℂ) x)
-        (((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) b : Domain3 → ℂ) x) : ℂ)
-          ∂(volume : Measure Domain3))
-      = ∫ x, (((a : Domain3 → ℝ) x * (b : Domain3 → ℝ) x : ℝ) : ℂ)
-          ∂(volume : Measure Domain3) := by
-        refine integral_congr_ae ?_
-        filter_upwards [(RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL a,
-          (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL b] with x hax hbx
-        rw [hax, hbx]
-        simp only [RCLike.ofRealCLM_apply, RCLike.inner_apply, RCLike.conj_ofReal]
-        rw [mul_comm]
-        norm_cast
-    _ = ((∫ x, (a : Domain3 → ℝ) x * (b : Domain3 → ℝ) x ∂(volume : Measure Domain3) : ℝ) : ℂ) :=
-        integral_ofReal
-
-/-- The real inner product on `L2VF_R3` decomposes as a sum over the three components (local
-copy of the private `CurlDensity.inner_L2VF_eq_sum_component`). -/
-private theorem inner_L2VF_eq_sum_component_H1 (a b : L2VF_R3) :
-    (inner ℝ a b : ℝ)
-      = ∑ j : Fin 3, (inner ℝ (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b) : ℝ) := by
-  have hcomp : ∀ j : Fin 3,
-      (inner ℝ (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b) : ℝ)
-        = ∫ x, (L2VF_projComponent_R3 j a : Domain3 → ℝ) x
-            * (L2VF_projComponent_R3 j b : Domain3 → ℝ) x ∂(volume : Measure Domain3) := by
-    intro j
-    rw [MeasureTheory.L2.inner_def]
-    refine integral_congr_ae ?_
-    filter_upwards with x
-    simp only [RCLike.inner_apply, conj_trivial]; ring
-  have hint : ∀ j : Fin 3, Integrable (fun x => (L2VF_projComponent_R3 j a : Domain3 → ℝ) x
-      * (L2VF_projComponent_R3 j b : Domain3 → ℝ) x) (volume : Measure Domain3) := by
-    intro j
-    have hI := MeasureTheory.L2.integrable_inner (𝕜 := ℝ)
-      (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b)
-    refine hI.congr ?_
-    filter_upwards with x
-    simp only [RCLike.inner_apply, conj_trivial]; ring
-  simp_rw [hcomp]
-  rw [← integral_finsetSum _ (fun j _ => hint j), MeasureTheory.L2.inner_def]
-  refine integral_congr_ae ?_
-  have hcoe : ∀ᵐ x ∂(volume : Measure Domain3), ∀ j : Fin 3,
-      (L2VF_projComponent_R3 j a : Domain3 → ℝ) x = (a : Domain3 → EuclideanSpace ℝ (Fin 3)) x j
-        ∧ (L2VF_projComponent_R3 j b : Domain3 → ℝ) x
-            = (b : Domain3 → EuclideanSpace ℝ (Fin 3)) x j := by
-    rw [MeasureTheory.ae_all_iff]
-    intro j
-    filter_upwards [(EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL a,
-      (EuclideanSpace.proj (𝕜 := ℝ) j).coeFn_compLpL b] with x hax hbx
-    exact ⟨hax, hbx⟩
-  filter_upwards [hcoe] with x hx
-  rw [PiLp.inner_apply]
-  refine Finset.sum_congr rfl ?_
-  intro j _
-  rw [RCLike.inner_apply, conj_trivial, (hx j).1, (hx j).2]
-  ring
-
-/-- **Vector Parseval bridge** (local copy of the private
-`CurlDensity.inner_L2VF_eq_integral_sum_fourier`). -/
-private theorem inner_L2VF_eq_integral_sum_fourier_H1 (a b : L2VF_R3) :
-    ((inner ℝ a b : ℝ) : ℂ)
-      = ∫ ξ : Domain3, ∑ j : Fin 3,
-          (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j a) : L2C_R3) ξ)
-            * (𝓕 (L2VF_projComponentC_R3 j b) : L2C_R3) ξ
-        ∂(volume : Measure Domain3) := by
-  have hcomp : ∀ j : Fin 3,
-      ((inner ℝ (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b) : ℝ) : ℂ)
-        = ∫ ξ : Domain3,
-            (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j a) : L2C_R3) ξ)
-              * (𝓕 (L2VF_projComponentC_R3 j b) : L2C_R3) ξ ∂(volume : Measure Domain3) := by
-    intro j
-    rw [← complexInner_compLpL_ofReal_H1 (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b)]
-    rw [show (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
-            (L2VF_projComponent_R3 j a) = L2VF_projComponentC_R3 j a from
-          (ContinuousLinearMap.comp_apply _ _ _).symm,
-      show (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
-            (L2VF_projComponent_R3 j b) = L2VF_projComponentC_R3 j b from
-          (ContinuousLinearMap.comp_apply _ _ _).symm]
-    rw [← MeasureTheory.Lp.inner_fourier_eq, MeasureTheory.L2.inner_def]
-    refine integral_congr_ae ?_
-    filter_upwards with ξ
-    simp only [RCLike.inner_apply]; ring
-  have hint : ∀ j : Fin 3, Integrable
-      (fun ξ : Domain3 => (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j a) : L2C_R3) ξ)
-        * (𝓕 (L2VF_projComponentC_R3 j b) : L2C_R3) ξ) (volume : Measure Domain3) := by
-    intro j
-    have hI := MeasureTheory.L2.integrable_inner (𝕜 := ℂ)
-      (𝓕 (L2VF_projComponentC_R3 j a)) (𝓕 (L2VF_projComponentC_R3 j b))
-    refine hI.congr ?_
-    filter_upwards with ξ
-    simp only [RCLike.inner_apply]; ring
-  rw [show ((inner ℝ a b : ℝ) : ℂ)
-        = ((∑ j : Fin 3, (inner ℝ (L2VF_projComponent_R3 j a)
-            (L2VF_projComponent_R3 j b) : ℝ) : ℝ) : ℂ) from by
-          rw [inner_L2VF_eq_sum_component_H1]]
-  push_cast
-  rw [Finset.sum_congr rfl (fun j _ => hcomp j)]
-  rw [integral_finsetSum _ (fun j _ => hint j)]
 
 /-- `𝓕` on `L2C_R3` distributes over subtraction. -/
 private theorem fourier_sub_L2C (A B : L2C_R3) : 𝓕 (A - B) = 𝓕 A - 𝓕 B :=
@@ -598,7 +420,7 @@ private theorem l2_err_eq (a : ℝ) (ha : 0 < a)
       = ∫ ξ : Domain3, ∑ j : Fin 3,
           (a ^ 2 / (a ^ 2 + ‖ξ‖ ^ 2)) ^ 2 * ‖wh j ξ‖ ^ 2 ∂(volume : Measure Domain3) := by
   set e := curlSchwartzL2 (potOf a ha wh hHerm) - w with he
-  have hpars := inner_L2VF_eq_integral_sum_fourier_H1 e e
+  have hpars := inner_L2VF_eq_integral_sum_fourier e e
   rw [real_inner_self_eq_norm_sq] at hpars
   have hall : ∀ᵐ ξ ∂(volume : Measure Domain3), ∀ j : Fin 3,
       ((𝓕 (L2VF_projComponentC_R3 j e) : L2C_R3) : Domain3 → ℂ) ξ
@@ -669,22 +491,22 @@ theorem curl_approx_H1 (w : L2Sigma_R3) (hw : IsSchwartzDivFree_R3 w)
       viscousFormSq_R3 1 (curlSchwartzL2 ψ - (w : L2VF_R3)) < ε := by
   classical
   obtain ⟨ψw, hψw⟩ := hw
-  set wh : Fin 3 → SchwartzMap Domain3 ℂ := fun b => 𝓕 (cxifyH1 (ψw b)) with hwhdef
+  set wh : Fin 3 → SchwartzMap Domain3 ℂ := fun b => 𝓕 (schwartzC (ψw b)) with hwhdef
   -- Hermitian symmetry of `ŵ`
   have hHerm : ∀ b : Fin 3, ∀ v : Domain3, wh b (-v) = (starRingEnd ℂ) (wh b v) := by
-    intro b v; exact fourierH1_cxify_hermitian (ψw b) v
+    intro b v; exact fourier_schwartzC_hermitian (ψw b) v
   -- the Fourier transform of the `j`-th component of `w` is a.e. `ŵ_j`
   have hwj : ∀ j : Fin 3, ((𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) : Domain3 → ℂ)
       =ᵐ[volume] ((wh j : SchwartzMap Domain3 ℂ) : Domain3 → ℂ) := by
     intro j
     have hcomp : L2VF_projComponentC_R3 j (w : L2VF_R3)
-        = (cxifyH1 (ψw j)).toLp 2 (volume : Measure Domain3) := by
-      rw [L2VF_projComponentC_R3, ContinuousLinearMap.comp_apply, hψw j, ← toLp_cxifyH1]
+        = (schwartzC (ψw j)).toLp 2 (volume : Measure Domain3) := by
+      rw [L2VF_projComponentC_R3, ContinuousLinearMap.comp_apply, hψw j, ← toLp_schwartzC_eq]
     have h1 : (𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3)
-        = (𝓕 (cxifyH1 (ψw j))).toLp 2 (volume : Measure Domain3) := by
-      rw [hcomp]; exact SchwartzMap.toLp_fourier_eq (cxifyH1 (ψw j))
+        = (𝓕 (schwartzC (ψw j))).toLp 2 (volume : Measure Domain3) := by
+      rw [hcomp]; exact SchwartzMap.toLp_fourier_eq (schwartzC (ψw j))
     rw [h1]
-    exact (𝓕 (cxifyH1 (ψw j))).coeFn_toLp 2 (volume : Measure Domain3)
+    exact (𝓕 (schwartzC (ψw j))).coeFn_toLp 2 (volume : Measure Domain3)
   -- transversality of `ŵ` a.e.
   have htr : ∀ᵐ ξ ∂(volume : Measure Domain3), ∑ i : Fin 3, (ξ i : ℂ) * wh i ξ = 0 := by
     have htrans := (mem_sigma_iff_fourier_transverse (w : L2VF_R3)).1 (SetLike.coe_mem w)

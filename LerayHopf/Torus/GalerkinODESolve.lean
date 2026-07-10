@@ -887,16 +887,6 @@ private theorem galerkin_energy_bound_curve (F : Torus3NSForms) (ν : ℝ) (hν 
     pow_le_pow_left₀ (norm_nonneg _) hnorm 2
   linarith
 
-/-- The squared Fourier coefficients of any `f : L2C` are summable (from `lp` membership). -/
-theorem summable_norm_mFourierCoeff3_sq (f : L2C) :
-    Summable (fun k : Fin 3 → ℤ => ‖mFourierCoeff3 f k‖ ^ 2) := by
-  have hmem : Memℓp (torus3_mFourierBasis.repr f) 2 := (torus3_mFourierBasis.repr f).2
-  have hp : (0 : ℝ) < (2 : ENNReal).toReal := by norm_num
-  have := (memℓp_gen_iff hp).mp hmem
-  refine this.congr (fun k => ?_)
-  rw [show ((2 : ENNReal).toReal) = (2 : ℝ) by norm_num, Real.rpow_two]
-  rfl
-
 /-- The Galerkin projection is L²-nonexpansive: `‖Pₙ u‖ ≤ ‖u‖`.
 
 By Pythagoras + per-component Parseval, `‖Pₙ u‖² = ∑ⱼ∑_{k∈box}‖ûⱼ(k)‖² ≤ ∑ⱼ∑'ₖ‖ûⱼ(k)‖² = ‖u‖²`

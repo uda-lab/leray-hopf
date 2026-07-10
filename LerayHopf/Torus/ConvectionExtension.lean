@@ -173,16 +173,6 @@ lemma cs_per_m (fU fV : L2C) (m : Fin 3 → ℤ)
   rw [e1, e2]
 
 
--- local Parseval-summability
-lemma summable_coeff_sq' (f : L2C) :
-    Summable (fun k : Fin 3 → ℤ => ‖mFourierCoeff3 f k‖ ^ 2) := by
-  have hmem : Memℓp (torus3_mFourierBasis.repr f) 2 := (torus3_mFourierBasis.repr f).2
-  have hp : (0 : ℝ) < (2 : ENNReal).toReal := by norm_num
-  have := (memℓp_gen_iff hp).mp hmem
-  refine this.congr (fun k => ?_)
-  rw [show ((2 : ENNReal).toReal) = (2 : ℝ) by norm_num, Real.rpow_two]
-  rfl
-
 noncomputable def convSummandW (u v w : L2VF) (i a : Fin 3) (k l : Fin 3 → ℤ) : ℂ :=
   mFourierCoeff3 (L2VF_projComponentC a u) k *
     ((2 * (Real.pi : ℂ) * Complex.I * (-((-(k + l)) a) : ℂ)) *
@@ -264,7 +254,7 @@ theorem convSummandW_norm_summable (u v : L2VF) (w : L2Sigma) (hw : IsGalerkinTe
   set V : (Fin 3 → ℤ) → ℝ := fun l => ‖mFourierCoeff3 (L2VF_projComponentC i v) l‖
   set Wc : (Fin 3 → ℤ) → ℝ := fun m => ‖mFourierCoeff3 (L2VF_projComponentC i (w:L2VF)) m‖
   have hdom := dom_summable U V Wc n
-    ((summable_coeff_sq' _).congr (fun k => rfl)) ((summable_coeff_sq' _).congr (fun l => rfl))
+    ((Torus.summable_norm_mFourierCoeff3_sq _).congr (fun k => rfl)) ((Torus.summable_norm_mFourierCoeff3_sq _).congr (fun l => rfl))
     (fun _ => norm_nonneg _) (fun _ => norm_nonneg _) (fun _ => norm_nonneg _)
     (fun m hm => by simp only [Wc, hWsupp m hm, norm_zero])
   refine Summable.of_nonneg_of_le (fun kl => norm_nonneg _) (fun kl => ?_)
@@ -311,8 +301,8 @@ lemma dom_tsum_le (fU fV : L2C) (Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
   classical
   set U : (Fin 3 → ℤ) → ℝ := fun k => ‖mFourierCoeff3 fU k‖ with hUdef
   set V : (Fin 3 → ℤ) → ℝ := fun l => ‖mFourierCoeff3 fV l‖ with hVdef
-  have hUsq : Summable (fun k => U k ^ 2) := (summable_coeff_sq' fU).congr (fun k => rfl)
-  have hVsq : Summable (fun l => V l ^ 2) := (summable_coeff_sq' fV).congr (fun l => rfl)
+  have hUsq : Summable (fun k => U k ^ 2) := (Torus.summable_norm_mFourierCoeff3_sq fU).congr (fun k => rfl)
+  have hVsq : Summable (fun l => V l ^ 2) := (Torus.summable_norm_mFourierCoeff3_sq fV).congr (fun l => rfl)
   have hsum := dom_summable U V Wc n hUsq hVsq (fun _ => norm_nonneg _) (fun _ => norm_nonneg _) hWnn hWsupp
   -- reindex to (m,k): factor through the (m,k) form, then sum over finite m.
   let e : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) × (Fin 3 → ℤ) :=
@@ -346,7 +336,7 @@ lemma dom_tsum_le (fU fV : L2C) (Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
   rw [hfin, Finset.sum_mul]
   refine Finset.sum_le_sum (fun m _ => ?_)
   refine mul_le_mul_of_nonneg_left ?_ (hWnn m)
-  exact cs_per_m fU fV m (summable_coeff_sq' fU) (summable_coeff_sq' fV)
+  exact cs_per_m fU fV m (Torus.summable_norm_mFourierCoeff3_sq fU) (Torus.summable_norm_mFourierCoeff3_sq fV)
 
 -- the bilinear value
 noncomputable def convValW (u v : L2VF) (w : L2Sigma) : ℝ :=
@@ -453,7 +443,7 @@ theorem convValW_bound (w : L2Sigma) (hw : IsGalerkinTest w) :
       (fun k => ‖mFourierCoeff3 (L2VF_projComponentC a u) k‖)
       (fun l => ‖mFourierCoeff3 (L2VF_projComponentC i v) l‖)
       (fun m => ‖mFourierCoeff3 (L2VF_projComponentC i (w:L2VF)) m‖) n
-      ((summable_coeff_sq' _).congr (fun k => rfl)) ((summable_coeff_sq' _).congr (fun l => rfl))
+      ((Torus.summable_norm_mFourierCoeff3_sq _).congr (fun k => rfl)) ((Torus.summable_norm_mFourierCoeff3_sq _).congr (fun l => rfl))
       (fun _ => norm_nonneg _) (fun _ => norm_nonneg _) (fun _ => norm_nonneg _)
       (fun m hm => by rw [hWsupp i m hm, norm_zero])
     have hchain : ∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),

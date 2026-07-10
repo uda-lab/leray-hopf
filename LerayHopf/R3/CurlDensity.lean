@@ -144,15 +144,15 @@ noncomputable def potentialComponentC (ψ : Fin 3 → SchwartzMap Domain3 ℝ) (
     ((ψ k).toLp 2 (volume : Measure Domain3))
 
 /-- Complexification of a real Schwartz map by post-composing with `ℝ →L[ℝ] ℂ`. -/
-private noncomputable def schwartzC (f : SchwartzMap Domain3 ℝ) : SchwartzMap Domain3 ℂ :=
+noncomputable def schwartzC (f : SchwartzMap Domain3 ℝ) : SchwartzMap Domain3 ℂ :=
   f.postcompCLM (RCLike.ofRealCLM (K := ℂ))
 
-private theorem schwartzC_apply (f : SchwartzMap Domain3 ℝ) (x : Domain3) :
+theorem schwartzC_apply (f : SchwartzMap Domain3 ℝ) (x : Domain3) :
     schwartzC f x = (f x : ℂ) := rfl
 
 /-- The complex L²-class of a complexified real Schwartz map is the `compLpL`-embedding of the
 real class — i.e. exactly `potentialComponentC`-shaped. -/
-private theorem toLp_schwartzC_eq (f : SchwartzMap Domain3 ℝ) :
+theorem toLp_schwartzC_eq (f : SchwartzMap Domain3 ℝ) :
     (schwartzC f).toLp 2 (volume : Measure Domain3)
       = (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
           (f.toLp 2 (volume : Measure Domain3)) := by
@@ -302,7 +302,7 @@ This is the conjugate symmetry of the Fourier transform of a (complexified) real
 pushing `conj` through the integral defining `𝓕`, the unit-modulus character contributes
 `conj(𝐞(-⟪v,ξ⟫)) = 𝐞(⟪v,ξ⟫) = 𝐞(-⟪v,-ξ⟫)`, while `conj` acts trivially on the real-valued
 integrand `schwartzC φ`. -/
-private theorem fourier_schwartzC_hermitian (φ : SchwartzMap Domain3 ℝ) (ξ : Domain3) :
+theorem fourier_schwartzC_hermitian (φ : SchwartzMap Domain3 ℝ) (ξ : Domain3) :
     (𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) (-ξ)
       = (starRingEnd ℂ) ((𝓕 (schwartzC φ) : SchwartzMap Domain3 ℂ) ξ) := by
   -- Move to the underlying function `𝓕 (schwartzC φ : Domain3 → ℂ)`.
@@ -330,7 +330,7 @@ def IsTransverseAt (û : Fin 3 → ℂ) (ξ : Domain3) : Prop :=
 
 /-- The complex L²-inner product of the complexifications of two real Lp components equals the
 cast of their real L²-inner product.  Both sides are the integral of the pointwise product. -/
-private theorem complexInner_compLpL_ofReal
+theorem complexInner_compLpL_ofReal
     (a b : Lp ℝ 2 (volume : Measure Domain3)) :
     (inner ℂ ((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) a)
         ((RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3) b) : ℂ)
@@ -363,7 +363,7 @@ private theorem complexInner_compLpL_ofReal
 
 /-- **Component decomposition of the `L2VF_R3` inner product.**  The real inner product on
 `L2VF_R3 = L²(ℝ³; ℝ³)` is the sum over the three coordinates of the component inner products. -/
-private theorem inner_L2VF_eq_sum_component (a b : L2VF_R3) :
+theorem inner_L2VF_eq_sum_component (a b : L2VF_R3) :
     (inner ℝ a b : ℝ)
       = ∑ j : Fin 3, (inner ℝ (L2VF_projComponent_R3 j a) (L2VF_projComponent_R3 j b) : ℝ) := by
   -- each component inner as an integral of the pointwise product
@@ -411,7 +411,7 @@ Fourier transforms:
 Assembles `inner_L2VF_eq_sum_component` (vector → component inners), `complexInner_compLpL_ofReal`
 (real → complex component inner), `Lp.inner_fourier_eq` (Plancherel per component), and the
 finite-sum/integral swap. -/
-private theorem inner_L2VF_eq_integral_sum_fourier (a b : L2VF_R3) :
+theorem inner_L2VF_eq_integral_sum_fourier (a b : L2VF_R3) :
     ((inner ℝ a b : ℝ) : ℂ)
       = ∫ ξ : Domain3, ∑ j : Fin 3,
           (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j a) : L2C_R3) ξ)
@@ -801,7 +801,7 @@ Pointwise integral argument (mirrors `fourier_schwartzC_hermitian`): pushing `co
 integral defining `𝓕 g ξ = ∫ 𝐞(-⟪v,ξ⟫) g v` turns the unit-modulus character into its
 inverse `𝐞(⟪v,ξ⟫)` and conjugates the integrand to `g(-v)` (Hermitian); the substitution
 `v ↦ -v` (negation is measure preserving) restores `∫ 𝐞(-⟪v,ξ⟫) g v = 𝓕 g ξ`. -/
-private theorem fourier_hermitian_real
+theorem fourier_hermitian_real
     (g : SchwartzMap Domain3 ℂ)
     (hg : ∀ v : Domain3, g (-v) = (starRingEnd ℂ) (g v)) (ξ : Domain3) :
     (starRingEnd ℂ) ((𝓕 g : SchwartzMap Domain3 ℂ) ξ) = (𝓕 g : SchwartzMap Domain3 ℂ) ξ := by

@@ -70,193 +70,6 @@ open MeasureTheory Metric Set
 open MeasureTheory FourierTransform
 open scoped Topology InnerProductSpace FourierTransform SchwartzMap NNReal
 
-/-! ## Local stokes-linearity helpers
-
-`stokesTestPairing_R3`'s slot-linearity (right slot) is proved in `GalerkinODEExistence.lean` but
-only as `private` lemmas there, so it is re-derived here (along with its Schwartz/integrability
-infrastructure) as local `private` helpers.  Combined with stokes symmetry (proved pointwise, no
-integrability), this gives the left-slot linearity needed to package the `−ν·stokes` term as a
-`ContinuousLinearMap` for C1.
--/
-
-/-- Local copy: span elements have complex Schwartz component representatives. -/
-private theorem solve_galerkinSpan_exists_schwartzC
-    (B : SchwartzGalerkinBasis) (n : ℕ) (w : galerkinSpan B n) :
-    ∃ φ : Fin 3 → SchwartzMap Domain3 ℂ,
-      ∀ j : Fin 3,
-        L2VF_projComponentC_R3 j (w : L2VF_R3) = (φ j).toLp 2 (volume : Measure Domain3) := by
-  obtain ⟨ψ, hψ⟩ := galerkinP_range_schwartz B n (w : L2VF_R3)
-  have hfix : galerkinP B n (w : L2VF_R3) = (w : L2VF_R3) :=
-    (galerkinSpan B n).starProjection_eq_self_iff.mpr w.2
-  refine ⟨fun j => (ψ j).postcompCLM (𝕜 := ℝ) (RCLike.ofRealCLM (K := ℂ)), fun j => ?_⟩
-  have hreal : L2VF_projComponent_R3 j (w : L2VF_R3)
-      = (ψ j).toLp 2 (volume : Measure Domain3) := by
-    rw [← hfix]; exact hψ j
-  have hcomp : L2VF_projComponentC_R3 j (w : L2VF_R3)
-      = (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
-          (L2VF_projComponent_R3 j (w : L2VF_R3)) := rfl
-  rw [hcomp, hreal]
-  apply Lp.ext_iff.mpr
-  have h1 : (RCLike.ofRealCLM (K := ℂ)).compLpL 2 (volume : Measure Domain3)
-        ((ψ j).toLp 2 (volume : Measure Domain3))
-      =ᵐ[volume] fun x => RCLike.ofRealCLM (K := ℂ) (((ψ j).toLp 2 (volume : Measure Domain3)) x) :=
-    ContinuousLinearMap.coeFn_compLpL _ _
-  have h2 : ((ψ j).toLp 2 (volume : Measure Domain3) : Domain3 → ℝ)
-      =ᵐ[volume] (ψ j) := (ψ j).coeFn_toLp 2 (volume : Measure Domain3)
-  have h3 : (((ψ j).postcompCLM (𝕜 := ℝ) (RCLike.ofRealCLM (K := ℂ))).toLp
-        2 (volume : Measure Domain3) : Domain3 → ℂ)
-      =ᵐ[volume] ((ψ j).postcompCLM (𝕜 := ℝ) (RCLike.ofRealCLM (K := ℂ))) :=
-    ((ψ j).postcompCLM (𝕜 := ℝ) (RCLike.ofRealCLM (K := ℂ))).coeFn_toLp
-      2 (volume : Measure Domain3)
-  filter_upwards [h1, h2, h3] with x hx1 hx2 hx3
-  rw [hx1, hx3]
-  simp only [SchwartzMap.postcompCLM_apply]
-  rw [hx2]
-
-/-- Local copy: the Fourier transform of a span element's component is a.e. Schwartz. -/
-private theorem solve_galerkinSpan_fourier_ae
-    (B : SchwartzGalerkinBasis) (n : ℕ) (w : galerkinSpan B n) (j : Fin 3) :
-    ∃ S : SchwartzMap Domain3 ℂ,
-      ((𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) : Domain3 → ℂ)
-        =ᵐ[volume] (S : Domain3 → ℂ) := by
-  obtain ⟨φ, hφ⟩ := solve_galerkinSpan_exists_schwartzC B n w
-  refine ⟨𝓕 (φ j), ?_⟩
-  have hF : (𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3)
-      = (𝓕 (φ j)).toLp 2 (volume : Measure Domain3) := by
-    rw [hφ j]; exact SchwartzMap.toLp_fourier_eq (φ j)
-  rw [hF]
-  exact (𝓕 (φ j)).coeFn_toLp 2 (volume : Measure Domain3)
-
-/-- Local copy: per-component integrand of `stokesTestPairing_R3` is integrable on span elements. -/
-private theorem solve_stokes_integrand_integrable
-    (B : SchwartzGalerkinBasis) (n : ℕ) (u w : galerkinSpan B n) (j : Fin 3) :
-    Integrable (fun ξ : Domain3 =>
-      (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
-        ((𝓕 (L2VF_projComponentC_R3 j (u : L2VF_R3)) : L2C_R3) ξ *
-          (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) ξ)).re)
-      (volume : Measure Domain3) := by
-  obtain ⟨Su, hSu⟩ := solve_galerkinSpan_fourier_ae B n u j
-  obtain ⟨Sw, hSw⟩ := solve_galerkinSpan_fourier_ae B n w j
-  set M : ℝ := ‖Su.toBoundedContinuousFunction‖ with hMdef
-  have hM0 : 0 ≤ M := norm_nonneg _
-  have hdom : Integrable (fun ξ : Domain3 =>
-      (2 * Real.pi) ^ 2 * M * (‖ξ‖ ^ 2 * ‖Sw ξ‖)) (volume : Measure Domain3) := by
-    have hbase : Integrable (fun ξ : Domain3 => ‖ξ‖ ^ 2 * ‖Sw ξ‖) (volume : Measure Domain3) :=
-      Sw.integrable_pow_mul (volume : Measure Domain3) 2
-    have := hbase.const_mul ((2 * Real.pi) ^ 2 * M)
-    refine this.congr ?_
-    filter_upwards with ξ
-    ring
-  refine Integrable.mono' hdom ?_ ?_
-  · have hcont : Continuous (fun ξ : Domain3 =>
-        (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * (Su ξ * (starRingEnd ℂ) (Sw ξ)).re) :=
-      (continuous_const.mul ((continuous_pow 2).comp continuous_norm)).mul
-        (Complex.continuous_re.comp
-          (Su.continuous.mul (Complex.continuous_conj.comp Sw.continuous)))
-    refine hcont.aestronglyMeasurable.congr ?_
-    filter_upwards [hSu, hSw] with ξ hξu hξw
-    simp only [hξu, hξw]
-  · filter_upwards [hSu, hSw] with ξ hξu hξw
-    rw [hξu, hξw]
-    have hpi : (0 : ℝ) ≤ (2 * Real.pi) ^ 2 := by positivity
-    have hSubd : ‖Su ξ‖ ≤ M := by
-      rw [hMdef, ← Su.toBoundedContinuousFunction_apply ξ]
-      exact (Su.toBoundedContinuousFunction).norm_coe_le_norm ξ
-    calc ‖(2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * (Su ξ * (starRingEnd ℂ) (Sw ξ)).re‖
-        = (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(Su ξ * (starRingEnd ℂ) (Sw ξ)).re‖ := by
-          rw [norm_mul, norm_mul, Real.norm_eq_abs ((2 * Real.pi) ^ 2),
-            abs_of_nonneg hpi, Real.norm_eq_abs (‖ξ‖ ^ 2), abs_of_nonneg (by positivity)]
-      _ ≤ (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * (‖Su ξ‖ * ‖Sw ξ‖) := by
-          have hre : ‖(Su ξ * (starRingEnd ℂ) (Sw ξ)).re‖ ≤ ‖Su ξ‖ * ‖Sw ξ‖ := by
-            refine (Complex.abs_re_le_norm _).trans ?_
-            rw [norm_mul, Complex.norm_conj]
-          exact mul_le_mul_of_nonneg_left hre (by positivity)
-      _ ≤ (2 * Real.pi) ^ 2 * M * (‖ξ‖ ^ 2 * ‖Sw ξ‖) := by
-          have hkey : (2 * Real.pi) ^ 2 * (‖ξ‖ ^ 2 * ‖Sw ξ‖) * ‖Su ξ‖
-              ≤ (2 * Real.pi) ^ 2 * (‖ξ‖ ^ 2 * ‖Sw ξ‖) * M :=
-            mul_le_mul_of_nonneg_left hSubd (by positivity)
-          calc (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * (‖Su ξ‖ * ‖Sw ξ‖)
-              = (2 * Real.pi) ^ 2 * (‖ξ‖ ^ 2 * ‖Sw ξ‖) * ‖Su ξ‖ := by ring
-            _ ≤ (2 * Real.pi) ^ 2 * (‖ξ‖ ^ 2 * ‖Sw ξ‖) * M := hkey
-            _ = (2 * Real.pi) ^ 2 * M * (‖ξ‖ ^ 2 * ‖Sw ξ‖) := by ring
-
-/-- Local copy: right-additivity of `stokesTestPairing_R3` on span elements. -/
-private theorem solve_stokes_add_right
-    (B : SchwartzGalerkinBasis) (n : ℕ) (u w w' : galerkinSpan B n) :
-    stokesTestPairing_R3 (u : L2VF_R3) ((w + w' : galerkinSpan B n) : L2VF_R3)
-      = stokesTestPairing_R3 (u : L2VF_R3) (w : L2VF_R3)
-        + stokesTestPairing_R3 (u : L2VF_R3) (w' : L2VF_R3) := by
-  unfold stokesTestPairing_R3
-  rw [← Finset.sum_add_distrib]
-  refine Finset.sum_congr rfl (fun j _ => ?_)
-  have hae : (𝓕 (L2VF_projComponentC_R3 j ((w + w' : galerkinSpan B n) : L2VF_R3)) : L2C_R3)
-      =ᵐ[volume] fun ξ =>
-        (𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) ξ
-          + (𝓕 (L2VF_projComponentC_R3 j (w' : L2VF_R3)) : L2C_R3) ξ := by
-    have hsum : ((w + w' : galerkinSpan B n) : L2VF_R3) = (w : L2VF_R3) + (w' : L2VF_R3) := rfl
-    have hLp : (𝓕 (L2VF_projComponentC_R3 j ((w + w' : galerkinSpan B n) : L2VF_R3)) : L2C_R3)
-        = (𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3)
-          + (𝓕 (L2VF_projComponentC_R3 j (w' : L2VF_R3)) : L2C_R3) := by
-      rw [hsum, map_add]
-      exact fourier_add (L2VF_projComponentC_R3 j (w : L2VF_R3))
-        (L2VF_projComponentC_R3 j (w' : L2VF_R3))
-    rw [hLp]
-    exact Lp.coeFn_add _ _
-  rw [show (∫ ξ : Domain3,
-        (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
-          ((𝓕 (L2VF_projComponentC_R3 j (u : L2VF_R3)) : L2C_R3) ξ *
-            (starRingEnd ℂ)
-              ((𝓕 (L2VF_projComponentC_R3 j ((w + w' : galerkinSpan B n) : L2VF_R3))
-                : L2C_R3) ξ)).re
-        ∂(volume : Measure Domain3))
-      = ∫ ξ : Domain3,
-          ((2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
-            ((𝓕 (L2VF_projComponentC_R3 j (u : L2VF_R3)) : L2C_R3) ξ *
-              (starRingEnd ℂ)
-                ((𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) ξ)).re
-          + (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
-            ((𝓕 (L2VF_projComponentC_R3 j (u : L2VF_R3)) : L2C_R3) ξ *
-              (starRingEnd ℂ)
-                ((𝓕 (L2VF_projComponentC_R3 j (w' : L2VF_R3)) : L2C_R3) ξ)).re)
-          ∂(volume : Measure Domain3) from ?_]
-  · exact integral_add (solve_stokes_integrand_integrable B n u w j)
-      (solve_stokes_integrand_integrable B n u w' j)
-  · refine integral_congr_ae ?_
-    filter_upwards [hae] with ξ hξ
-    rw [hξ]
-    rw [map_add, mul_add, Complex.add_re, mul_add]
-
-/-- Local copy: right-homogeneity of `stokesTestPairing_R3` on span elements. -/
-private theorem solve_stokes_smul_right
-    (B : SchwartzGalerkinBasis) (n : ℕ) (u w : galerkinSpan B n) (c : ℝ) :
-    stokesTestPairing_R3 (u : L2VF_R3) ((c • w : galerkinSpan B n) : L2VF_R3)
-      = c * stokesTestPairing_R3 (u : L2VF_R3) (w : L2VF_R3) := by
-  unfold stokesTestPairing_R3
-  rw [Finset.mul_sum]
-  refine Finset.sum_congr rfl (fun j _ => ?_)
-  have hae : (𝓕 (L2VF_projComponentC_R3 j ((c • w : galerkinSpan B n) : L2VF_R3)) : L2C_R3)
-      =ᵐ[volume] fun ξ =>
-        (c : ℂ) • (𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) ξ := by
-    have hsmul : ((c • w : galerkinSpan B n) : L2VF_R3) = c • (w : L2VF_R3) := rfl
-    have hLp : (𝓕 (L2VF_projComponentC_R3 j ((c • w : galerkinSpan B n) : L2VF_R3)) : L2C_R3)
-        = (c : ℂ) • (𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) := by
-      rw [hsmul, map_smul,
-        RCLike.real_smul_eq_coe_smul (K := ℂ) c (L2VF_projComponentC_R3 j (w : L2VF_R3))]
-      exact fourier_smul (c : ℂ) (L2VF_projComponentC_R3 j (w : L2VF_R3))
-    rw [hLp]
-    exact Lp.coeFn_smul _ _
-  rw [← integral_const_mul]
-  refine integral_congr_ae ?_
-  filter_upwards [hae] with ξ hξ
-  rw [hξ]
-  rw [smul_eq_mul, map_mul, Complex.conj_ofReal]
-  rw [show ((𝓕 (L2VF_projComponentC_R3 j (u : L2VF_R3)) : L2C_R3) ξ *
-        ((c : ℂ) * (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) ξ)))
-      = (c : ℂ) * ((𝓕 (L2VF_projComponentC_R3 j (u : L2VF_R3)) : L2C_R3) ξ *
-          (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) ξ)) by ring]
-  rw [Complex.re_ofReal_mul]
-  ring
-
 /-! ## C1 — the Galerkin field is `C¹` on the finite-dim `V_n`
 
 `galerkinODE_vectorField B F ν n` is the Riesz representative of the functional
@@ -265,17 +78,6 @@ finite-dimensional `V_n := galerkinSpan B n` every multilinear map is continuous
 continuous bilinear map is `ContDiff ℝ ⊤`, so the field is `C¹`. The helper defs split it into a
 continuous-linear part (the `−ν·stokes` term) and a continuous-bilinear part (the `b` term).
 -/
-
-/-- Local: `galerkinSpanToSigma` is additive. -/
-private theorem solve_gST_add (B : SchwartzGalerkinBasis) (n : ℕ) (w w' : galerkinSpan B n) :
-    galerkinSpanToSigma B n (w + w')
-      = galerkinSpanToSigma B n w + galerkinSpanToSigma B n w' := by
-  apply Subtype.ext; rfl
-
-/-- Local: `galerkinSpanToSigma` is ℝ-homogeneous. -/
-private theorem solve_gST_smul (B : SchwartzGalerkinBasis) (n : ℕ) (c : ℝ) (w : galerkinSpan B n) :
-    galerkinSpanToSigma B n (c • w) = c • galerkinSpanToSigma B n w := by
-  apply Subtype.ext; rfl
 
 /-- The Riesz inverse as a `ContinuousLinearMap` `(V_n →L[ℝ] ℝ) →L[ℝ] V_n`. -/
 private noncomputable def rieszSymmCLM (B : SchwartzGalerkinBasis) (n : ℕ) :
@@ -296,10 +98,10 @@ private noncomputable def bInner (B : SchwartzGalerkinBasis) (F : R3NSForms (sch
           (galerkinSpanToSigma B n w)
       map_add' := by
         intro w w'
-        rw [solve_gST_add, F.b_add_3]; ring
+        rw [galerkinSpanToSigma_add, F.b_add_3]; ring
       map_smul' := by
         intro c w
-        rw [solve_gST_smul, F.b_smul_3]
+        rw [galerkinSpanToSigma_smul, F.b_smul_3]
         simp only [RingHom.id_apply, smul_eq_mul]; ring }
 
 @[simp] private theorem bInner_apply (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBasis B))
@@ -315,13 +117,13 @@ private noncomputable def bMid (B : SchwartzGalerkinBasis) (F : R3NSForms (schem
       map_add' := by
         intro u' u''
         ext w
-        simp only [ContinuousLinearMap.add_apply, bInner_apply, solve_gST_add,
+        simp only [ContinuousLinearMap.add_apply, bInner_apply, galerkinSpanToSigma_add,
           F.b_add_2]; ring
       map_smul' := by
         intro c u'
         ext w
         simp only [RingHom.id_apply, ContinuousLinearMap.smul_apply, bInner_apply,
-          solve_gST_smul, F.b_smul_2, smul_eq_mul]; ring }
+          galerkinSpanToSigma_smul, F.b_smul_2, smul_eq_mul]; ring }
 
 @[simp] private theorem bMid_apply (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBasis B))
     (n : ℕ) (u u' : galerkinSpan B n) :
@@ -336,12 +138,12 @@ private noncomputable def bOut (B : SchwartzGalerkinBasis) (F : R3NSForms (schem
         intro u u''
         ext u' w
         simp only [ContinuousLinearMap.add_apply, bMid_apply, bInner_apply,
-          solve_gST_add, F.b_add_1]; ring
+          galerkinSpanToSigma_add, F.b_add_1]; ring
       map_smul' := by
         intro c u
         ext u' w
         simp only [RingHom.id_apply, ContinuousLinearMap.smul_apply, bMid_apply, bInner_apply,
-          solve_gST_smul, F.b_smul_1, smul_eq_mul]; ring }
+          galerkinSpanToSigma_smul, F.b_smul_1, smul_eq_mul]; ring }
 
 @[simp] private theorem bOut_apply (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBasis B))
     (n : ℕ) (u : galerkinSpan B n) :
@@ -367,7 +169,7 @@ noncomputable def galerkinODE_bilinearPart
 /-! ### Linear `−ν·stokes`-part -/
 
 /-- Inner functional: `w ↦ -ν·stokes(σu, σw)`, linear in `w` by the stokes right-slot
-linearity (`solve_stokes_add_right`/`_smul_right`). -/
+linearity (`stokesTestPairing_R3_add_right`/`_smul_right`). -/
 private noncomputable def stokesInner (B : SchwartzGalerkinBasis) (ν : ℝ) (n : ℕ)
     (u : galerkinSpan B n) : galerkinSpan B n →L[ℝ] ℝ :=
   LinearMap.toContinuousLinearMap
@@ -376,12 +178,12 @@ private noncomputable def stokesInner (B : SchwartzGalerkinBasis) (ν : ℝ) (n 
         intro w w'
         rw [show ((w + w' : galerkinSpan B n) : L2VF_R3)
             = ((w : galerkinSpan B n) + (w' : galerkinSpan B n) : galerkinSpan B n) from rfl,
-          solve_stokes_add_right]; ring
+          stokesTestPairing_R3_add_right]; ring
       map_smul' := by
         intro c w
         rw [show ((c • w : galerkinSpan B n) : L2VF_R3)
             = ((c • w : galerkinSpan B n) : galerkinSpan B n) from rfl,
-          solve_stokes_smul_right]
+          stokesTestPairing_R3_smul_right]
         simp only [RingHom.id_apply, smul_eq_mul]; ring }
 
 @[simp] private theorem stokesInner_apply (B : SchwartzGalerkinBasis) (ν : ℝ) (n : ℕ)
@@ -416,7 +218,7 @@ private theorem stokesInner_add (B : SchwartzGalerkinBasis) (ν : ℝ) (n : ℕ)
   rw [stokesTestPairing_R3_symm ((u + u' : galerkinSpan B n) : L2VF_R3),
     show ((u + u' : galerkinSpan B n) : L2VF_R3)
       = ((u : galerkinSpan B n) + (u' : galerkinSpan B n) : galerkinSpan B n) from rfl,
-    solve_stokes_add_right, stokesTestPairing_R3_symm (w : L2VF_R3) (u : L2VF_R3),
+    stokesTestPairing_R3_add_right, stokesTestPairing_R3_symm (w : L2VF_R3) (u : L2VF_R3),
     stokesTestPairing_R3_symm (w : L2VF_R3) (u' : L2VF_R3)]
 
 /-- Left-homogeneity of `−ν·stokes(·, w)` on span elements, via right-homogeneity + symmetry. -/
@@ -427,7 +229,7 @@ private theorem stokesInner_smul (B : SchwartzGalerkinBasis) (ν : ℝ) (n : ℕ
   rw [stokesTestPairing_R3_symm ((c • u : galerkinSpan B n) : L2VF_R3),
     show ((c • u : galerkinSpan B n) : L2VF_R3)
       = ((c • u : galerkinSpan B n) : galerkinSpan B n) from rfl,
-    solve_stokes_smul_right, stokesTestPairing_R3_symm (w : L2VF_R3) (u : L2VF_R3)]
+    stokesTestPairing_R3_smul_right, stokesTestPairing_R3_symm (w : L2VF_R3) (u : L2VF_R3)]
 
 /-- Outer map: `u ↦ stokesInner u`, linear in `u` by left-linearity of stokes. -/
 private noncomputable def stokesOut (B : SchwartzGalerkinBasis) (ν : ℝ) (n : ℕ) :
