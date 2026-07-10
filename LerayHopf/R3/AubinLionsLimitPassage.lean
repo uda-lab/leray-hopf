@@ -28,7 +28,7 @@ theory would supply). The deliverables are otherwise proved axiom-free.
   `steklovAvg_approx` (time-modulus average↔curve estimate), and `galerkin_norm_le_u0`.
 
 * `kineticEnergy_lsc_bound` (E1) — #14-P discharge, now `sorry`-FREE (issue #31). The full
-  norm-lsc-transfer + ball-exhaustion proof (`kineticEnergyLscTransfer`, `continuous_restrictToBall`,
+  norm-lsc-transfer + ball-exhaustion proof (`Bochner.kineticEnergy_lsc_transfer`, `continuous_restrictToBall`,
   `norm_restrictToBall_le`, `normSq_restrictToBall_eq_setIntegral`,
   `tendsto_normSq_restrictToBall`), wired through the #14-C
   `u_aestronglyMeasurable` field and `galerkin_norm_le_u0`. The former residual `MemLp`-gap `sorry`
@@ -86,6 +86,7 @@ import LerayHopf.R3.FourierL2            -- 𝓕, L2C_R3, viscousFormSq_R3_eq_in
 import LerayHopf.R3.WeightedFourierCommute -- mulBdd bounded-multiplier commute + truncated weight (closes the viscous/H¹ Steklov Jensen gate)
 import LerayHopf.R3.GalerkinODE          -- galerkinCurve_reg_mem (H¹ regularity of any curve in the Galerkin subspace)
 import LerayHopf.R3.SobolevEmbedding     -- memSobolev_of_finite_weightedFourier_R3 (H¹ from finite weighted-Fourier integral; the memH1 conjunct of viscous_pointwise_lsc)
+import LerayHopf.Bochner.TimeSobolev     -- Bochner.kineticEnergy_lsc_transfer (issue #111 PR-3; verified acyclic)
 import Mathlib.MeasureTheory.Integral.Bochner.Set   -- set/interval integrals over balls
 import Mathlib.MeasureTheory.Function.UnifTight      -- UnifTight + tendsto_Lp_of_tendsto_ae (Vitali) for the C2 dominated-Lp passage
 import Mathlib.MeasureTheory.Function.UniformIntegrable -- UnifIntegrable + unifIntegrable_of for the C2 dominated-Lp passage
@@ -258,36 +259,11 @@ theorem galerkin_curve_continuous (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
 -- currently uses it (the docstring above mentioning it in the E1 proof route predates a
 -- later refactor of that route), so no rewiring is needed beyond the deletion.
 
-/-- **Abstract a.e.-`t` norm-lsc transfer (local copy of `Bochner.TimeSobolev`'s
-`kineticEnergy_lsc_transfer`).** Inlined here because `AubinLionsLimitPassage` does not import
-`Bochner.TimeSobolev` (and adding an import is a `lean-coder`-owned change). Same statement and
-proof: from `L²(μ)`-convergence of an a.e.-strongly-measurable sequence `f` to an
-a.e.-strongly-measurable limit `g`, with a uniform a.e. pointwise bound `‖f n t‖ ≤ M`, the limit
-inherits the bound at `μ`-a.e. `t`.
-
-The isolated measurability pillar `hg : AEStronglyMeasurable g μ` is mandatory (Lane-D
-statement-gate fix; without it the statement is FALSE via a Vitali-set counterexample — see the
-`Bochner.TimeSobolev` docstring). Route: L²-convergence ⇒ convergence in measure
-(`tendstoInMeasure_of_tendsto_eLpNorm`, which itself requires `hg`) ⇒ a.e.-convergent subsequence
-(`TendstoInMeasure.exists_seq_tendsto_ae`) ⇒ pass the bound through the a.e. limit. -/
-private theorem kineticEnergyLscTransfer {β : Type*} [NormedAddCommGroup β]
-    {μ : Measure ℝ} {f : ℕ → ℝ → β} {g : ℝ → β} {M : ℝ}
-    (hf : ∀ n, AEStronglyMeasurable (f n) μ)
-    (hg : AEStronglyMeasurable g μ)
-    (hconv : Tendsto (fun n => eLpNorm (fun t => f n t - g t) 2 μ) atTop (𝓝 0))
-    (hbound : ∀ n, ∀ᵐ t ∂μ, ‖f n t‖ ≤ M) :
-    ∀ᵐ t ∂μ, ‖g t‖ ≤ M := by
-  -- L²-convergence ⇒ convergence in measure (uses `hg`), then extract an a.e. subsequence.
-  have hconv' : Tendsto (fun n => eLpNorm (f n - g) 2 μ) atTop (𝓝 0) := hconv
-  have htim : TendstoInMeasure μ f atTop g :=
-    tendstoInMeasure_of_tendsto_eLpNorm (by norm_num) hf hg hconv'
-  obtain ⟨φ, _hφ, hae⟩ := htim.exists_seq_tendsto_ae
-  -- The uniform bound holds for all `n` simultaneously at a.e. `t`.
-  have hbound_all : ∀ᵐ t ∂μ, ∀ k, ‖f (φ k) t‖ ≤ M :=
-    (ae_all_iff.2 fun k => hbound (φ k))
-  -- At a.e. `t`: `‖f (φ k) t‖ → ‖g t‖` and `‖f (φ k) t‖ ≤ M`, so `‖g t‖ ≤ M`.
-  filter_upwards [hae, hbound_all] with t htlim htbd
-  exact le_of_tendsto' htlim.norm htbd
+-- `kineticEnergyLscTransfer` (was a local copy of `Bochner.TimeSobolev.kineticEnergy_lsc_transfer`,
+-- same statement, different internal proof route) is gone; this file now imports
+-- `Bochner.TimeSobolev` directly and uses the shared version (issue #111 PR-3, verified acyclic:
+-- TimeSobolev's transitive imports are GelfandTriple → EvolutionTriple → Torus.Basic/EnergyEstimate
+-- + mathlib, none of which reach this file or its importers).
 
 /-! ### Tier E-prep — ball-restriction plumbing for the a.e.-`t` norm-lsc transfer
 
@@ -333,7 +309,7 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     have hμ_ge : ∀ᵐ t ∂μ, 0 ≤ t := by
       rw [hμ]; refine ae_restrict_of_forall_mem measurableSet_Icc ?_; intro t ht; exact ht.1
     -- ════ For each integer radius `k`: the limit's ball restriction is L²-bounded by ‖u₀‖. ════
-    -- This is the `kineticEnergyLscTransfer` (norm-lsc) step, applied in `β = L2ballR3 k`, with
+    -- This is the `Bochner.kineticEnergy_lsc_transfer` (norm-lsc) step, applied in `β = L2ballR3 k`, with
     --   f n := t ↦ restrictToBall k ((galSeq (alPkg.φ n)).u t),   g := t ↦ restrictToBall k (u t).
     have hperBall : ∀ k : ℕ,
         ∀ᵐ t ∂μ, ‖restrictToBall (k : ℝ) (alPkg.u t)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
@@ -377,8 +353,8 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
       -- no time-integrability of a junk-`0`-collapsible integrand is needed.
       have hconv : Tendsto (fun n => eLpNorm (fun t => f n t - g t) 2 μ) atTop (𝓝 0) := by
         simpa only [hf, hg, hμ, hR] using alPkg.strong_convergence R
-      -- (5) assemble: `kineticEnergyLscTransfer` gives the a.e. ball-restricted bound.
-      exact kineticEnergyLscTransfer hf_meas hg_meas hconv hf_bound
+      -- (5) assemble: `kineticEnergy_lsc_transfer` gives the a.e. ball-restricted bound.
+      exact Bochner.kineticEnergy_lsc_transfer hf_meas hg_meas hconv hf_bound
     -- ════ Combine over all radii `k`, then exhaust `R → ∞` to recover the full L²(ℝ³) bound. ════
     have hallBall : ∀ᵐ t ∂μ, ∀ k : ℕ,
         ‖restrictToBall (k : ℝ) (alPkg.u t)‖ ≤ ‖(u₀ : L2VF_R3)‖ :=
