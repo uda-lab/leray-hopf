@@ -71,7 +71,10 @@ issue #113 PR-1), `EnergyClassConvection.lean`, `GalerkinCurveBounds.lean`,
 `GoodRepresentative.lean`, `LimitPassage.lean`, `WeightedFourierCommute.lean`,
 `StokesFourier.lean` (`stokesTestPairing_R3_eq_sum_inner_negLap`, the NS-specific
 Plancherel–Laplacian reformulation of `stokesTestPairing_R3` as a weakly-continuous form —
-split out of `CurlDensity.lean`, issue #113 PR-2).
+split out of `CurlDensity.lean`, issue #113 PR-2), `ViscousWeakLsc.lean` (Tier E energy
+inequality: `galerkin_norm_le_u0`/`kineticEnergy_lsc_bound` (kinetic-lsc half) and
+`viscous_pointwise_lsc`/`viscous_lsc_under_strongL2` (viscous half, Fourier–Plancherel
+weak-lsc route) — split out of `AubinLionsLimitPassage.lean`, issue #114 Tier 1 commit 1).
 
 Interface + re-export: `SolutionInterfaces.lean` (support layer: `R3NSForms`,
 `LerayHopfSolutionFull_R3`, assembly helpers — capstone itself in
