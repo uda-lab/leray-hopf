@@ -2,6 +2,8 @@ import LerayHopf.R3.ConvectionOperator
 import LerayHopf.R3.SolutionInterfaces
 import LerayHopf.R3.SchwartzDivFreeBasis
 import LerayHopf.R3.CurlDensityCapstone  -- curlSchwartzDense_holds (proved theorem, issue #3/#21)
+import LerayHopf.R3.SpatialCompactness  -- restrictToBall family (already transitive via
+  -- SolutionInterfaces; direct import for explicit-dependency hygiene, issue #111 PR-3)
 
 /-!
 # Tier G — The isolated convection gap and the conditional concrete `R3NSForms` (ℝ³)
@@ -919,64 +921,13 @@ private theorem normSq_mulBddR_CF (φ : Domain3 → ℝ)
   filter_upwards [mulBddR_coeFn φ hφ g] with x hx
   simp only [RCLike.inner_apply, conj_trivial, hx]; ring
 
-/-- `restrictToBall R 0 = 0` (local copy to avoid circular import with AubinLionsLimitPassage). -/
-private theorem restrictToBall_zero_CF (R : ℝ) :
-    restrictToBall R (0 : L2VF_R3) = (0 : L2ballR3 R) := by
-  apply Lp.ext
-  filter_upwards [MemLp.coeFn_toLp ((Lp.memLp (0 : L2VF_R3)).restrict
-          (Metric.closedBall (0 : Domain3) R)),
-    Lp.coeFn_zero (E := EuclideanSpace ℝ (Fin 3)) (p := 2)
-        (μ := (volume : Measure Domain3).restrict (Metric.closedBall (0 : Domain3) R)),
-    ae_mono Measure.restrict_le_self
-        (Lp.coeFn_zero (E := EuclideanSpace ℝ (Fin 3)) (p := 2)
-          (μ := (volume : Measure Domain3)))] with x h1 h2 h3
-  exact h1.trans (h3.trans h2.symm)
-
-/-- `restrictToBall R (u - v) = restrictToBall R u - restrictToBall R v`. -/
-private theorem restrictToBall_sub_CF (R : ℝ) (u v : L2VF_R3) :
-    restrictToBall R (u - v) = restrictToBall R u - restrictToBall R v := by
-  apply Lp.ext
-  filter_upwards [
-    MemLp.coeFn_toLp ((Lp.memLp (u - v)).restrict (Metric.closedBall (0 : Domain3) R)),
-    MemLp.coeFn_toLp ((Lp.memLp u).restrict (Metric.closedBall (0 : Domain3) R)),
-    MemLp.coeFn_toLp ((Lp.memLp v).restrict (Metric.closedBall (0 : Domain3) R)),
-    Lp.coeFn_sub (restrictToBall R u) (restrictToBall R v),
-    ae_mono Measure.restrict_le_self (Lp.coeFn_sub u v)] with x h1 h2 h3 h4 h5
-  -- Bridge definitional equality: restrictToBall R w = MemLp.toLp ↑↑w ... by def
-  have eq1 : (↑↑(restrictToBall R (u - v)) : Domain3 → EuclideanSpace ℝ (Fin 3)) x =
-      (↑↑(u - v) : Domain3 → EuclideanSpace ℝ (Fin 3)) x := h1
-  have eq2 : (↑↑(restrictToBall R u) : Domain3 → EuclideanSpace ℝ (Fin 3)) x =
-      (↑↑u : Domain3 → EuclideanSpace ℝ (Fin 3)) x := h2
-  have eq3 : (↑↑(restrictToBall R v) : Domain3 → EuclideanSpace ℝ (Fin 3)) x =
-      (↑↑v : Domain3 → EuclideanSpace ℝ (Fin 3)) x := h3
-  rw [eq1, h5]
-  simp only [h4, Pi.sub_apply, eq2, eq3]
-
-/-- `‖restrictToBall R w‖² = ∫_{B_R} ‖w x‖² ∂vol`. -/
-private theorem normSq_restrictToBall_CF (R : ℝ) (w : L2VF_R3) :
-    ‖restrictToBall R w‖ ^ 2 =
-      ∫ x in Metric.closedBall (0 : Domain3) R,
-        ‖(w : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 ∂(volume : Measure Domain3) := by
-  set μR := (volume : Measure Domain3).restrict (Metric.closedBall (0 : Domain3) R)
-  have hstep1 : ‖restrictToBall R w‖ ^ 2 =
-      ∫ x, ‖((restrictToBall R w) x : EuclideanSpace ℝ (Fin 3))‖ ^ 2 ∂μR := by
-    rw [← real_inner_self_eq_norm_sq (restrictToBall R w), MeasureTheory.L2.inner_def]
-    refine integral_congr_ae ?_
-    filter_upwards with x; exact real_inner_self_eq_norm_sq _
-  rw [hstep1]
-  refine integral_congr_ae ?_
-  filter_upwards [MemLp.coeFn_toLp ((Lp.memLp w).restrict
-      (Metric.closedBall (0 : Domain3) R))] with x hx
-  -- restrictToBall R w = MemLp.toLp ↑↑w ... by def; congr 2 closes the norm-sq equality via hx
-  congr 2
-
-/-- `‖w‖² = ∫ ‖w x‖² ∂vol` for `w : L2VF_R3`. -/
-private theorem normSq_VF_eq_integral_CF (w : L2VF_R3) :
-    ‖(w : L2VF_R3)‖ ^ 2 =
-      ∫ x, ‖(w : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 ∂(volume : Measure Domain3) := by
-  rw [← real_inner_self_eq_norm_sq w, MeasureTheory.L2.inner_def]
-  refine integral_congr_ae ?_
-  filter_upwards with x; exact real_inner_self_eq_norm_sq _
+-- `restrictToBall_zero_CF` (unused dead code), `restrictToBall_sub_CF`, `normSq_restrictToBall_CF`,
+-- and `normSq_VF_eq_integral_CF` (the last two byte-identical to `SpatialCompactness`'s
+-- `normSq_restrictToBall_eq_setIntegral`/`normSq_eq_integral_normSq` up to notation) were
+-- private duplicates here (some explicitly to avoid a circular import with
+-- `AubinLionsLimitPassage`, which no longer applies now that the whole `restrictToBall`
+-- family lives in `R3.SpatialCompactness`, issue #111 PR-3); deleted, callers below use the
+-- imported public versions directly.
 
 set_option maxHeartbeats 800000 in
 /-- **Key convergence lemma.** Schwartz φ, component `j`, sequence `fn : ℕ → L2VF_R3`
@@ -1079,7 +1030,7 @@ private theorem mulBddR_projComp_norm_tendsto_CF
       _ = Φ ^ 2 * ∫ x in B,
             ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 ∂volume :=
           integral_const_mul _ _
-      _ = Φ ^ 2 * X ^ 2 := by rw [← normSq_restrictToBall_CF]
+      _ = Φ ^ 2 * X ^ 2 := by rw [← normSq_restrictToBall_eq_setIntegral]
   -- Tail bound: ∫_{Bᶜ} (φs g)² ≤ ε_R² · M²
   have h_tail_bound :
       ∫ x in Bᶜ, (⇑φs x * (g : Domain3 → ℝ) x) ^ 2 ∂volume ≤ ε_R ^ 2 * M ^ 2 := by
@@ -1115,7 +1066,7 @@ private theorem mulBddR_projComp_norm_tendsto_CF
           setIntegral_le_integral (h_fn_int.const_mul (ε_R ^ 2))
             (ae_of_all _ fun x => by positivity)
       _ = ε_R ^ 2 * ‖fn n‖ ^ 2 := by
-          rw [integral_const_mul, ← normSq_VF_eq_integral_CF]
+          rw [integral_const_mul, ← normSq_eq_integral_normSq]
       _ ≤ ε_R ^ 2 * M ^ 2 :=
           mul_le_mul_of_nonneg_left
             (sq_le_sq' (by linarith [norm_nonneg (fn n : L2VF_R3), hM0]) (hbd n))
@@ -1236,7 +1187,7 @@ theorem fb_tendsto_of_perball {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊)
     intro k
     have h := (hperball k).sub_const (restrictToBall (k : ℝ) (u : L2VF_R3))
     simp only [sub_self] at h
-    exact h.congr fun n => (restrictToBall_sub_CF (k : ℝ) (un n : L2VF_R3) (u : L2VF_R3)).symm
+    exact h.congr fun n => (restrictToBall_sub (k : ℝ) (un n : L2VF_R3) (u : L2VF_R3)).symm
   -- Operator norm of cI ≤ 1
   have hcI_norm_le_one : ‖cI‖ ≤ 1 := by
     have h_proj : ‖(EuclideanSpace.proj (𝕜 := ℝ) i :
