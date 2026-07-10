@@ -69,17 +69,20 @@ The proof is the classical mollification + Arzelà–Ascoli + total-boundedness 
 
 The top-level `frechetKolmogorov_holds` assembles 1–4 into the FK criterion.
 
-## Closing `RellichBall.lean`'s residual `sorry` (`integrable_viscous_integrand_of_memH1`)
+## History: `RellichBall.lean`'s residual `sorry` (`integrable_viscous_integrand_of_memH1`)
 
 That residual `sorry` (H¹ ⇒ concrete `(2π)²‖ξ‖²`-weighted L²-integrability of the L²-Fourier
-transform) is a pure proof-body fill on an *existing* statement in `RellichBall.lean`; it is a
-`lean-prover` task and must NOT be restated/weakened.  Its only genuinely missing ingredient
-is an a.e. characterization of `TemperedDistribution.smulLeftCLM` for the UNBOUNDED weight
-`(1+‖ξ‖²)^(1/2)` on an `Lp`-coerced distribution (mathlib's `Lp.toTemperedDistribution_smul_eq`
-covers only `MemLp`-bounded multipliers).  We expose that single missing ingredient here as a
-helper SIGNATURE `memH1_weightedL2_integrable` (distribution-faithful, derived directly from the
-`MemSobolev 1 2` definition of `memH1VF_R3`), so the prover can wire it into the RellichBall
-body without editing any RellichBall *statement*.
+transform) was eventually discharged directly in `RellichBall.lean`, via a **self-contained**
+`private` Bessel-weight helper chain there (`RellichBall.memH1_weightedL2_integrable_R` and
+its supporting lemmas) — NOT via a helper exposed from this file, since `RellichBall.lean` is
+*upstream* of `FrechetKolmogorov.lean` (this file imports `RellichBall`, not the reverse), so a
+helper defined here could never have been importable there. This file used to carry its own
+now-orphaned copy of that same Bessel-weight scaffolding (`besselWeightC` family,
+`memH1_weightedL2_integrable`) built on the aspiration described in the superseded version of
+this section; it had zero callers anywhere in the repo (confirmed by repo-wide grep) and was
+deleted (issue #113 PR-2). See `RellichBall.lean`'s own docstring at
+`memH1_weightedL2_integrable_R` for the (intentionally duplicated, not further refactored here)
+self-contained route actually used.
 
 ## Honest scope (no overclaim) — ONE isolated frontier remains
 
@@ -124,7 +127,6 @@ R3/SpatialCompactness.lean   (L2ballR3, restrictToBall, LocalRellichInput)
 
 ## Declarations (dependency order)
 
-- `memH1_weightedL2_integrable`            : helper SIG for RellichBall's residual sorry (H¹ ⇒ weighted-L² integrability)
 - `MollifierKernel`                        : concrete smooth compactly-supported scalar kernel (mollifier data)
 - `mollifyRep`                             : explicit continuous representative of the mollified field (`η ⋆ f`)
 - `exists_normalized_mollifierKernel`      : mass-one nonneg smooth kernel of support `≤ r` (from `ContDiffBump.normed`)
@@ -145,129 +147,6 @@ identity `convL2_coeFn_ae` is now fully proved (finite-set inner-product-duality
 `frechetKolmogorov_holds` is a real discharge of an existing hypothesis type, not a new
 hypothesis.
 -/
-
-/-! ### Helper for RellichBall's residual `sorry` -/
-
-/-- The Bessel weight `ξ ↦ ((1 + ‖ξ‖²)^(1/2) : ℝ) : ℂ` of order `s = 1` (`s/2 = 1/2`), the
-multiplier appearing in `memSobolev_iff_exists_smulLeftCLM_fourier` for `MemSobolev 1 2`. -/
-private noncomputable def besselWeightC : Domain3 → ℂ :=
-  fun ξ => (((1 + ‖ξ‖ ^ 2) ^ ((1 : ℝ) / 2) : ℝ) : ℂ)
-
-/-- The Bessel weight is real-valued and nonnegative, with squared modulus `1 + ‖ξ‖²`. -/
-private theorem normSq_besselWeightC (ξ : Domain3) : ‖besselWeightC ξ‖ ^ 2 = 1 + ‖ξ‖ ^ 2 := by
-  have hnn : (0 : ℝ) ≤ 1 + ‖ξ‖ ^ 2 := by positivity
-  rw [besselWeightC, Complex.norm_real, Real.norm_eq_abs,
-    abs_of_nonneg (Real.rpow_nonneg hnn _),
-    ← Real.rpow_natCast ((1 + ‖ξ‖ ^ 2) ^ ((1 : ℝ) / 2)) 2, ← Real.rpow_mul hnn]
-  norm_num
-
-/-- The Bessel weight has temperate growth (`= ofReal ∘ (1+‖·‖²)^(1/2)`). -/
-private theorem hasTemperateGrowth_besselWeightC :
-    Function.HasTemperateGrowth besselWeightC := by
-  have hr : Function.HasTemperateGrowth (fun ξ : Domain3 => (1 + ‖ξ‖ ^ 2) ^ ((1 : ℝ) / 2)) :=
-    Function.hasTemperateGrowth_one_add_norm_sq_rpow Domain3 ((1 : ℝ) / 2)
-  have hc := (Complex.ofRealCLM.hasTemperateGrowth).comp hr
-  exact hc
-
-/-- The Bessel weight is continuous. -/
-private theorem continuous_besselWeightC : Continuous besselWeightC :=
-  hasTemperateGrowth_besselWeightC.1.continuous
-
-/-- **Local integrability of the weighted Fourier transform.** For `g : L2C_R3`, the pointwise
-product `ξ ↦ besselWeightC ξ • g ξ` (an unbounded-multiplier product) is locally integrable:
-on each ball the continuous weight is bounded and `g ∈ L²` is integrable. -/
-private theorem locallyIntegrable_besselWeight_smul (g : L2C_R3) :
-    LocallyIntegrable (fun ξ : Domain3 => besselWeightC ξ • (g : Domain3 → ℂ) ξ)
-      (volume : Measure Domain3) := by
-  intro x
-  -- a nbhd of `x`: the closed unit ball around `x` (a compact set, member of `𝓝 x`).
-  refine ⟨Metric.closedBall x 1, Metric.closedBall_mem_nhds x one_pos, ?_⟩
-  have hK : IsCompact (Metric.closedBall x 1) := isCompact_closedBall x 1
-  -- `g` is integrable on the (finite-measure) ball.
-  have hg_int : IntegrableOn (g : Domain3 → ℂ) (Metric.closedBall x 1) volume :=
-    ((Lp.memLp g).locallyIntegrable (by norm_num)).integrableOn_isCompact hK
-  -- the continuous weight is bounded on the compact ball.
-  obtain ⟨C, hC⟩ := hK.exists_bound_of_continuousOn
-    (continuous_besselWeightC.continuousOn (s := Metric.closedBall x 1))
-  -- product is integrable on the ball: `weight • g`, weight bounded, g integrable.
-  have hmul : IntegrableOn (fun ξ => besselWeightC ξ * (g : Domain3 → ℂ) ξ)
-      (Metric.closedBall x 1) volume := by
-    refine hg_int.bdd_mul (c := C) ?_ ?_
-    · exact (continuous_besselWeightC.aestronglyMeasurable).restrict
-    · refine ae_restrict_of_forall_mem measurableSet_closedBall (fun y hy => ?_)
-      exact hC y hy
-  simpa only [smul_eq_mul] using hmul
-
-/-- **Helper for `RellichBall.integrable_viscous_integrand_of_memH1`.**
-
-For `w ∈ H¹(ℝ³)` (i.e. `memH1VF_R3 w`, defined as `TemperedDistribution.MemSobolev 1 2` on each
-complex component `cⱼ = L2VF_projComponentC_R3 j w`), the L²-Fourier transform `𝓕 cⱼ` is
-square-integrable against the genuine `H¹` weight `1 + ‖ξ‖²`. -/
-theorem memH1_weightedL2_integrable (w : L2VF_R3) (hw : memH1VF_R3 w) (j : Fin 3) :
-    Integrable (fun ξ : Domain3 =>
-        (1 + ‖ξ‖ ^ 2) * ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2)
-      (volume : Measure Domain3) := by
-  classical
-  -- Abbreviation for the complex component and its L²-Fourier transform.
-  set cF : L2C_R3 := 𝓕 (L2VF_projComponentC_R3 j w) with hcF
-  -- From `MemSobolev 1 2 (cⱼ : 𝓢')` get an `Lp 2` witness `f'` for the weighted Fourier transform.
-  have hsob : TemperedDistribution.MemSobolev (1 : ℝ) 2
-      (L2VF_projComponentC_R3 j w : 𝓢'(Domain3, ℂ)) := hw j
-  obtain ⟨f', hf'⟩ :=
-    TemperedDistribution.memSobolev_iff_exists_smulLeftCLM_fourier.mp hsob
-  -- `hf'` : `smulLeftCLM ℂ (weight) (𝓕 (cⱼ : 𝓢')) = (f' : 𝓢')`, weight `= (1+‖ξ‖²)^(1/2)`.
-  -- Bridge `𝓕 (cⱼ : 𝓢')` to the L²-Fourier `(cF : 𝓢')`.
-  have hbridge : (𝓕 (L2VF_projComponentC_R3 j w : 𝓢'(Domain3, ℂ)))
-      = (cF : 𝓢'(Domain3, ℂ)) := by
-    rw [hcF]; exact (MeasureTheory.Lp.fourier_toTemperedDistribution_eq _)
-  rw [hbridge] at hf'
-  -- The weight function `(1+‖ξ‖²)^(1/2)` (ℂ-coerced) is exactly `besselWeightC`.
-  have hweq : (fun x : Domain3 => (((1 + ‖x‖ ^ 2) ^ ((1 : ℝ) / 2) : ℝ) : ℂ)) = besselWeightC := rfl
-  rw [hweq] at hf'
-  -- du Bois–Reymond: extract the a.e. identity `besselWeightC • cF = f'`.
-  have hlhs_li : LocallyIntegrable (fun ξ : Domain3 => besselWeightC ξ • (cF : Domain3 → ℂ) ξ)
-      (volume : Measure Domain3) := locallyIntegrable_besselWeight_smul cF
-  have hrhs_li : LocallyIntegrable (f' : Domain3 → ℂ) (volume : Measure Domain3) :=
-    (Lp.memLp f').locallyIntegrable (by norm_num)
-  have hae : (fun ξ : Domain3 => besselWeightC ξ • (cF : Domain3 → ℂ) ξ)
-      =ᵐ[volume] (f' : Domain3 → ℂ) := by
-    refine ae_eq_of_integral_contDiff_smul_eq hlhs_li hrhs_li ?_
-    intro g g_smooth g_cpt
-    -- Test function as a Schwartz map.
-    have hg_supp : HasCompactSupport (Complex.ofRealCLM ∘ g) := g_cpt.comp_left rfl
-    have hg_diff := Complex.ofRealCLM.contDiff.comp g_smooth
-    set φ : SchwartzMap Domain3 ℂ := hg_supp.toSchwartzMap hg_diff with hφ
-    have hφ_coe : (φ : Domain3 → ℂ) = fun x => ((g x : ℝ) : ℂ) := rfl
-    -- Pair both sides of `hf'` with `φ`.
-    have hpair : smulLeftCLM ℂ besselWeightC (cF : 𝓢'(Domain3, ℂ)) φ
-        = ((f' : 𝓢'(Domain3, ℂ)) φ) := by rw [hf']
-    -- LHS distribution pairing: `smulLeftCLM weight (cF : 𝓢') φ = (cF : 𝓢') (weight • φ)`.
-    rw [TemperedDistribution.smulLeftCLM_apply_apply,
-        MeasureTheory.Lp.toTemperedDistribution_apply,
-        MeasureTheory.Lp.toTemperedDistribution_apply] at hpair
-    -- Convert goal into `hpair` by matching the integrands pointwise.
-    rw [show (fun x => (g x : ℝ) • (besselWeightC x • (cF : Domain3 → ℂ) x))
-          = fun x => ((SchwartzMap.smulLeftCLM ℂ besselWeightC φ) x) • (cF : Domain3 → ℂ) x from ?_,
-        show (fun x => (g x : ℝ) • (f' : Domain3 → ℂ) x)
-          = fun x => (φ x) • (f' : Domain3 → ℂ) x from ?_]
-    · exact hpair
-    · funext x
-      show (g x : ℝ) • (f' : Domain3 → ℂ) x = (φ x) • (f' : Domain3 → ℂ) x
-      rw [hφ_coe]
-      simp only [Complex.real_smul, smul_eq_mul]
-    · funext x
-      show (g x : ℝ) • (besselWeightC x • (cF : Domain3 → ℂ) x)
-          = ((SchwartzMap.smulLeftCLM ℂ besselWeightC φ) x) • (cF : Domain3 → ℂ) x
-      rw [SchwartzMap.smulLeftCLM_apply_apply hasTemperateGrowth_besselWeightC, hφ_coe]
-      simp only [Complex.real_smul, smul_eq_mul]
-      ring
-  -- Now the integrand `(1+‖ξ‖²)·‖cF ξ‖² = ‖besselWeightC ξ • cF ξ‖² =ᵐ ‖f' ξ‖²`, which is integrable.
-  have hf'_sq : Integrable (fun ξ : Domain3 => ‖(f' : Domain3 → ℂ) ξ‖ ^ 2)
-      (volume : Measure Domain3) :=
-    (memLp_two_iff_integrable_sq_norm (Lp.aestronglyMeasurable f')).mp (Lp.memLp f')
-  refine hf'_sq.congr ?_
-  filter_upwards [hae] with ξ hξ
-  rw [← hξ, norm_smul, mul_pow, normSq_besselWeightC]
 
 /-! ### Concrete mollifier — kernel data and explicit continuous representative
 

@@ -64,16 +64,41 @@ Analytic frontier (formerly axiomatized, now proved): `GalerkinScheme.lean`,
 `AubinLionsLimitPassage.lean`, `AubinLionsAssembly.lean`, `CurlDensity.lean`,
 `CurlDensityCapstone.lean`, `CurlDensityH1.lean`, `GalerkinBasisH1.lean`,
 `FrechetKolmogorov.lean`, `ConvectionOperator.lean`, `ConvectionForm.lean`,
-`ConvectionExtension.lean`, `TensorIntersection.lean`, `SobolevEmbedding.lean`,
+`ConvectionExtension.lean`, `SobolevEmbedding.lean`,
 `H1SigmaDensity.lean` (`h1Sigma_dense_in_L2Sigma` — split out of `SobolevEmbedding.lean`,
 issue #113 PR-1), `EnergyClassConvection.lean`, `GalerkinCurveBounds.lean`,
 `GalerkinTrilinearBound.lean`, `GalerkinTimeModulus.lean`, `SpacetimePrecompact.lean`,
-`GoodRepresentative.lean`, `LimitPassage.lean`, `WeightedFourierCommute.lean`.
+`GoodRepresentative.lean`, `LimitPassage.lean`, `WeightedFourierCommute.lean`,
+`StokesFourier.lean` (`stokesTestPairing_R3_eq_sum_inner_negLap`, the NS-specific
+Plancherel–Laplacian reformulation of `stokesTestPairing_R3` as a weakly-continuous form —
+split out of `CurlDensity.lean`, issue #113 PR-2).
 
 Interface + re-export: `SolutionInterfaces.lean` (support layer: `R3NSForms`,
 `LerayHopfSolutionFull_R3`, assembly helpers — capstone itself in
 `GalerkinODECapstone.lean`); root-level `LerayHopf/R3Capstone.lean` (re-exports the
 full chain).
+
+## Generic analysis layer — `LerayHopf/Analysis/`
+
+Domain-neutral analytic infrastructure with **zero Galerkin/solution-package imports** —
+pure `Lp`/Fourier/Schwartz/tensor-algebra facts that happen to be needed by both the Torus and
+ℝ³ analytic frontiers, extracted out of the lane-specific files that originally carried them
+(issue #111, issue #113 PR-2). This is the layer earmarked as `pdelib` lift candidates (issue
+#113 PR-4 tracks writing up the staging plan) — none of it depends on
+`GalerkinScheme`/`SolutionInterfaces` (either lane), so any of it can migrate to a standalone
+package without pulling the NS-specific solution machinery along.
+
+| File | Content |
+|---|---|
+| `TensorEdgeGluing.lean` | Shared tensor/edge-gluing layer for the `(S⊗V)+(V⊗S)`-determined bilinear-form reconstruction (issue #111 PR-1) |
+| `PlancherelKernels.lean` | Shared gradient–Fourier Plancherel kernels (issue #111 PR-2) |
+| `BilinearExtension.lean` | Extend a bounded bilinear form off a dense submodule to the whole space (issue #111 PR-4) |
+| `TensorIntersection.lean` | `S⊗V ∩ V⊗S = S⊗S` linear-algebra lemma. Relocated from `R3/` (issue #113 PR-2); namespace kept as `LerayHopf.R3.TensorIntersection` for name stability, so its path and namespace deliberately disagree — see the file's own docstring |
+| `RealComplexLpBridge.lean` | Real-part CLM `L²(ℝ³;ℂ) → L²(ℝ³;ℝ)` and bounded real-multiplier `L²` infrastructure, extracted from `R3/EnergyClassConvection.lean` (issue #113 PR-2) |
+| `SpectralWeakGradient.lean` | The spectral H¹ weak-gradient component `gradComp_of_memH1` and its IBP identity, extracted from `R3/EnergyClassConvection.lean` (issue #113 PR-2) |
+| `LpInterpolation.lean` | `L²∩L⁶ ↪ L³` Hölder interpolation plus component `MemLp` facts, extracted from `R3/EnergyClassConvection.lean` (issue #113 PR-2) |
+| `WeakLeibniz.lean` | H¹·H¹ weak Leibniz product rule via Schwartz approximation, extracted from `R3/EnergyClassConvection.lean` (issue #113 PR-2) |
+| `FourierParseval.lean` | `schwartzC` complexification, the vector Parseval bridge, Hermitian-reality facts, and the du Bois-Reymond Hermitian/anti-Hermitian preimage machinery, extracted from `R3/CurlDensity.lean` (issue #113 PR-2) |
 
 ## Shared spatial core — `LerayHopf/Core.lean`
 

@@ -103,6 +103,84 @@ def memH1VF_R3 (u : L2VF_R3) : Prop :=
     TemperedDistribution.MemSobolev 1 2
       (L2VF_projComponentC_R3 j u : 𝓢'(Domain3, ℂ))
 
+/-! ### `memH1VF_R3` closure under the vector-space operations
+
+Relocated from `EnergyClassConvection.lean` (issue #113 PR-2): needed here since
+`Analysis/SpectralWeakGradient.lean`'s `gradComp_of_memH1_add`/`_smul` (which is upstream of
+`EnergyClassConvection.lean`) reference `memH1VF_R3_add`/`memH1VF_R3_smul` in their statements.
+Names/statements unchanged. -/
+
+/-- If `u, v ∈ L2VF_R3` both satisfy `memH1VF_R3`, then so does `u + v`.
+
+Proof: `L2VF_projComponentC_R3 j` is ℝ-linear, so the j-th component of `u + v` equals
+the sum of the j-th components of `u` and `v`. Then `MemSobolev.add` closes the goal. -/
+theorem memH1VF_R3_add {u v : L2VF_R3} (hu : memH1VF_R3 u) (hv : memH1VF_R3 v) :
+    memH1VF_R3 (u + v) := by
+  intro j
+  -- L2VF_projComponentC_R3 j is ℝ-linear, so map_add applies.
+  have hadd : L2VF_projComponentC_R3 j (u + v) =
+      L2VF_projComponentC_R3 j u + L2VF_projComponentC_R3 j v :=
+    map_add _ u v
+  -- The coercion Lp F p μ → 𝓢'(E, F) is additive via Lp.toTemperedDistributionCLM.map_add'.
+  -- Concretely: (f + g : Lp) as 𝓢' = (f : 𝓢') + (g : 𝓢').
+  have hcoe_add : (L2VF_projComponentC_R3 j (u + v) : 𝓢'(Domain3, ℂ)) =
+      (L2VF_projComponentC_R3 j u : 𝓢'(Domain3, ℂ)) +
+      (L2VF_projComponentC_R3 j v : 𝓢'(Domain3, ℂ)) := by
+    -- (f + g : Lp) maps to (f : 𝓢') + (g : 𝓢') via the additive map Lp.toTemperedDistribution.
+    simp only [hadd]
+    exact (MeasureTheory.Lp.toTemperedDistributionCLM ℂ (volume : Measure Domain3) 2).map_add
+      (L2VF_projComponentC_R3 j u) (L2VF_projComponentC_R3 j v)
+  rw [hcoe_add]
+  exact (hu j).add (hv j)
+
+/-- If `u ∈ L2VF_R3` satisfies `memH1VF_R3 u`, then so does `c • u` for any `c : ℝ`.
+
+Proof: `L2VF_projComponentC_R3 j (c • u) = c • L2VF_projComponentC_R3 j u` (ℝ-linearity).
+The Lp coercion `(c • f : Lp ℂ 2 μ) = (c : ℂ) • f` as tempered distributions
+(since `c` acts via real scalar multiplication, which equals complex multiplication by `c`).
+Then `MemSobolev.smul (c : ℂ)` closes the goal. -/
+theorem memH1VF_R3_smul {u : L2VF_R3} (c : ℝ) (hu : memH1VF_R3 u) :
+    memH1VF_R3 (c • u) := by
+  intro j
+  have hsmul : L2VF_projComponentC_R3 j (c • u) = c • L2VF_projComponentC_R3 j u :=
+    map_smul _ c u
+  -- We need (c • f : Lp ℂ 2) as 𝓢' = (c : ℂ) • (f : 𝓢').
+  -- Lp.toTemperedDistributionCLM is ℂ-linear; the ℝ-scalar action on Lp ℂ 2 satisfies
+  -- c • f = (c : ℂ) • f (since ℂ is an ℝ-algebra and ℝ-action = complex multiplication by c).
+  -- We need (c • f : Lp ℂ 2) as 𝓢' = (c : ℂ) • (f : 𝓢').
+  -- Lp.toTemperedDistributionCLM is ℂ-linear. For c : ℝ acting on Lp ℂ 2,
+  -- the ℝ-scalar action satisfies c • f = (c : ℂ) • f (real scalar = complex multiplication by c ↑ ℂ).
+  -- Concretely, Lp.toTemperedDistribution (c • f) = (c : ℂ) • Lp.toTemperedDistribution f.
+  rw [show (L2VF_projComponentC_R3 j (c • u) : 𝓢'(Domain3, ℂ)) =
+        (c : ℂ) • (L2VF_projComponentC_R3 j u : 𝓢'(Domain3, ℂ)) from by
+    rw [hsmul]
+    -- The coercion Lp F p μ → 𝓢' satisfies: (r • f : Lp ℂ 2) ↦ (r : ℂ) • (f : 𝓢').
+    -- Use that the CLM map_smul gives this.
+    have := (MeasureTheory.Lp.toTemperedDistributionCLM ℂ (volume : Measure Domain3) 2).map_smul
+      (c : ℂ) (L2VF_projComponentC_R3 j u)
+    simp only [MeasureTheory.Lp.toTemperedDistributionCLM_apply] at this
+    -- After applying the CLM map_smul, we have:
+    -- this : Lp.toTemperedDistribution ((c : ℂ) • f) = (c : ℂ) • Lp.toTemperedDistribution f
+    -- Goal: Lp.toTemperedDistribution (c • f) = (c : ℂ) • Lp.toTemperedDistribution f
+    -- Here c • f (ℝ-scalar) = (c : ℂ) • f (ℂ-scalar) as Lp elements.
+    rw [← algebraMap_smul ℂ c (L2VF_projComponentC_R3 j u)]
+    exact this]
+  exact (hu j).smul (c : ℂ)
+
+/-- `memH1VF_R3 (0 : L2VF_R3)`.
+
+Proof: the j-th component of `0` is `0`, and `memSobolev_fun_zero` gives `MemSobolev 1 2 0`. -/
+theorem memH1VF_R3_zero : memH1VF_R3 (0 : L2VF_R3) := by
+  intro j
+  -- L2VF_projComponentC_R3 j 0 = 0 (CLM preserves zero).
+  have hzero : L2VF_projComponentC_R3 j (0 : L2VF_R3) = 0 := map_zero _
+  have hcoe_zero : (L2VF_projComponentC_R3 j (0 : L2VF_R3) : 𝓢'(Domain3, ℂ)) = 0 := by
+    rw [hzero]
+    exact (MeasureTheory.Lp.toTemperedDistributionCLM ℂ (volume : Measure Domain3) 2).map_zero
+  rw [hcoe_zero]
+  -- memSobolev_fun_zero : MemSobolev s p (0 : 𝓢'(E, F)) for any s, p.
+  exact TemperedDistribution.memSobolev_fun_zero Domain3 ℂ 1 2
+
 /-! ### 3–5. Viscous forms via Fourier integral -/
 
 /-- The **viscous (Stokes) test-slot pairing** on `L²(ℝ³; ℝ³)`, defined via the Fourier

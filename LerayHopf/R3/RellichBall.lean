@@ -253,12 +253,13 @@ private theorem componentC_translate_ae (h : Domain3) (w : L2VF_R3) (j : Fin 3) 
 
 /-! ### Local Bessel-weight helpers for the T0b integrability input
 
-The H¹ ⇒ weighted-L² integrability technique below is identical to
-`FrechetKolmogorov.memH1_weightedL2_integrable`, but that file IMPORTS this one, so the
-helper cannot be reused (it would be circular).  These `private` declarations replicate the
-needed Bessel-weight machinery self-contained in `RellichBall`, using only `FourierL2`'s
-imports (`Mathlib.Analysis.Fourier.LpSpace` + `Mathlib.Analysis.Distribution.Sobolev`,
-transitively).  They support exactly one lemma, `integrable_viscous_integrand_of_memH1`. -/
+The H¹ ⇒ weighted-L² integrability technique below is self-contained in `RellichBall`, using
+only `FourierL2`'s imports (`Mathlib.Analysis.Fourier.LpSpace` +
+`Mathlib.Analysis.Distribution.Sobolev`, transitively) — `FrechetKolmogorov.lean` IMPORTS this
+file, so a helper defined there could never have been reused here (it would be circular); a
+now-deleted copy of this same machinery once lived in `FrechetKolmogorov.lean` for that reason
+(issue #113 PR-2 removed it as dead code, since it never had any callers). These `private`
+declarations support exactly one lemma, `integrable_viscous_integrand_of_memH1`. -/
 
 /-- The Bessel weight `ξ ↦ ((1 + ‖ξ‖²)^(1/2) : ℝ) : ℂ` of order `s = 1` (`s/2 = 1/2`), the
 multiplier appearing in `memSobolev_iff_exists_smulLeftCLM_fourier` for `MemSobolev 1 2`. -/
@@ -305,10 +306,10 @@ private theorem locallyIntegrable_besselWeight_smul_R (g : L2C_R3) :
       exact hC y hy
   simpa only [smul_eq_mul] using hmul
 
-/-- **Local H¹ ⇒ Bessel-weighted-L² integrability** (self-contained replica of
-`FrechetKolmogorov.memH1_weightedL2_integrable`, which cannot be imported here).  For
-`w ∈ H¹(ℝ³)`, the L²-Fourier transform `𝓕 cⱼ` is square-integrable against the genuine `H¹`
-weight `1 + ‖ξ‖²`. -/
+/-- **Local H¹ ⇒ Bessel-weighted-L² integrability**, self-contained here since a helper defined
+in the downstream `FrechetKolmogorov.lean` could never be imported back into this (upstream)
+file.  For `w ∈ H¹(ℝ³)`, the L²-Fourier transform `𝓕 cⱼ` is square-integrable against the
+genuine `H¹` weight `1 + ‖ξ‖²`. -/
 private theorem memH1_weightedL2_integrable_R (w : L2VF_R3) (hw : memH1VF_R3 w) (j : Fin 3) :
     Integrable (fun ξ : Domain3 =>
         (1 + ‖ξ‖ ^ 2) * ‖(𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ‖ ^ 2)
