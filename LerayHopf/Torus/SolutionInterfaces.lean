@@ -2,6 +2,10 @@ import LerayHopf.EvolutionTriple
 import LerayHopf.Torus.H1Sigma
 import LerayHopf.EnergyEstimate
 import LerayHopf.Torus.GalerkinProjection
+import LerayHopf.Torus.Leray  -- L2Sigma (issue #113 PR-1: explicit — was relying on transitivity)
+import LerayHopf.Torus.VelocityGalerkin  -- velocityProjection_n(_preserves_L2Sigma) (issue #113
+  -- PR-1: was reached transitively via H1Sigma → VelocityGalerkin, no longer since H1Sigma's
+  -- import was narrowed to Leray)
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 
 open MeasureTheory Filter Topology
