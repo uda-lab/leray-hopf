@@ -1,4 +1,5 @@
 import LerayHopf.Torus.GalerkinProjection
+import LerayHopf.Torus.Leray  -- L2Sigma, DivFreeL2 (issue #113 PR-1: no longer transitive via GalerkinProjection)
 import Mathlib.Analysis.RCLike.Basic
 
 open MeasureTheory Filter Topology
@@ -33,8 +34,11 @@ used in the proof of `velocityProjection_n_component_comm`.
 
 ## Main definitions
 
-- `L2VF_injectComponent j`              : `Lp ℝ 2 haarTorus3 →L[ℝ] L2VF` — injection of j-th component
 - `velocityProjection_n n`              : `L2VF →L[ℝ] L2VF` — componentwise Galerkin projection
+
+`L2VF_injectComponent j : Lp ℝ 2 haarTorus3 →L[ℝ] L2VF` (used below in step 4) lives in
+`DivergenceFree.lean` next to its adjoint `L2VF_projComponent` (moved there, issue #113 PR-1),
+reached here via the `Leray` import.
 
 ## Main theorems
 
@@ -44,25 +48,6 @@ used in the proof of `velocityProjection_n_component_comm`.
 -/
 
 namespace LerayHopf
-
-/-! ### Injection CLM: scalar Lp function → j-th component of L2VF -/
-
-/-- Inject a scalar field `f ∈ Lp ℝ 2 haarTorus3` as the `j`-th component of a velocity field
-in `L2VF = Lp (EuclideanSpace ℝ (Fin 3)) 2 haarTorus3`.
-
-Concretely, `L2VF_injectComponent j f` is the a.e.-class of `x ↦ f(x) • eⱼ`,
-where `eⱼ = EuclideanSpace.single j (1 : ℝ)` is the `j`-th standard basis vector.
-
-**Construction:**
-- `(ContinuousLinearMap.id ℝ ℝ).smulRight (EuclideanSpace.single j (1 : ℝ)) : ℝ →L[ℝ] VelocityValue`
-  maps `r ↦ r • eⱼ`.
-- `.compLpL 2 haarTorus3` lifts this CLM pointwise to `Lp ℝ 2 haarTorus3 →L[ℝ] L2VF`.
-
-This is the pointwise-adjoint of `L2VF_projComponent j` in the sense that
-`⟪L2VF_injectComponent j f, u⟫ = ⟪f, L2VF_projComponent j u⟫` for `f ∈ Lp ℝ 2` and `u ∈ L2VF`
-(as a real inner product). -/
-noncomputable def L2VF_injectComponent (j : Fin 3) : Lp ℝ 2 haarTorus3 →L[ℝ] L2VF :=
-  ((ContinuousLinearMap.id ℝ ℝ).smulRight (EuclideanSpace.single j (1 : ℝ))).compLpL 2 haarTorus3
 
 /-! ### D-31: Velocity-field Galerkin projection -/
 

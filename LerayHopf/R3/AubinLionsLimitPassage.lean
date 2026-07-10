@@ -86,6 +86,9 @@ import LerayHopf.R3.FourierL2            -- 𝓕, L2C_R3, viscousFormSq_R3_eq_in
 import LerayHopf.R3.WeightedFourierCommute -- mulBdd bounded-multiplier commute + truncated weight (closes the viscous/H¹ Steklov Jensen gate)
 import LerayHopf.R3.GalerkinODE          -- galerkinCurve_reg_mem (H¹ regularity of any curve in the Galerkin subspace)
 import LerayHopf.R3.SobolevEmbedding     -- memSobolev_of_finite_weightedFourier_R3 (H¹ from finite weighted-Fourier integral; the memH1 conjunct of viscous_pointwise_lsc)
+import LerayHopf.R3.ConvectionForm       -- fb_tendsto_of_perball, isSchwartzDivFree_add, and
+  -- (transitively via CurlDensityCapstone) stokesTestPairing_R3_eq_sum_inner_negLap (issue #113
+  -- PR-1: explicit — was reached only via SobolevEmbedding's now-dropped ConvectionForm import)
 import LerayHopf.Bochner.TimeSobolev     -- Bochner.kineticEnergy_lsc_transfer (issue #111 PR-3; verified acyclic)
 import Mathlib.MeasureTheory.Integral.Bochner.Set   -- set/interval integrals over balls
 import Mathlib.MeasureTheory.Function.UnifTight      -- UnifTight + tendsto_Lp_of_tendsto_ae (Vitali) for the C2 dominated-Lp passage

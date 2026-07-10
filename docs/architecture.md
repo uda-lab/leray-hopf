@@ -54,7 +54,8 @@ Interface + re-export: `SolutionInterfaces.lean` (support layer: `Torus3NSForms`
 Spatial linear layer (axiom-free, sorry-free): `Domain.lean`, `DivergenceFree.lean`
 (`L2Sigma_R3`, weak-divergence × Schwartz test), `Regularity.lean` (`memH1VF_R3`,
 `MemSobolev`), `FourierL2.lean`, `RellichBall.lean`, `SpatialCompactness.lean`,
-`TrilinearEstimate.lean`.
+`TrilinearEstimate.lean`, `CurlSchwartzConstruction.lean` (curl-of-Schwartz-potential
+construction, `CurlSchwartzDense` — split out of `SchwartzDivFreeBasis.lean`, issue #113 PR-1).
 
 Analytic frontier (formerly axiomatized, now proved): `GalerkinScheme.lean`,
 `SchwartzDivFreeBasis.lean` (`r3GalerkinScheme_exists`), `GalerkinODE.lean`,
@@ -64,9 +65,10 @@ Analytic frontier (formerly axiomatized, now proved): `GalerkinScheme.lean`,
 `CurlDensityCapstone.lean`, `CurlDensityH1.lean`, `GalerkinBasisH1.lean`,
 `FrechetKolmogorov.lean`, `ConvectionOperator.lean`, `ConvectionForm.lean`,
 `ConvectionExtension.lean`, `TensorIntersection.lean`, `SobolevEmbedding.lean`,
-`EnergyClassConvection.lean`, `GalerkinCurveBounds.lean`, `GalerkinTrilinearBound.lean`,
-`GalerkinTimeModulus.lean`, `SpacetimePrecompact.lean`, `GoodRepresentative.lean`,
-`LimitPassage.lean`, `WeightedFourierCommute.lean`.
+`H1SigmaDensity.lean` (`h1Sigma_dense_in_L2Sigma` — split out of `SobolevEmbedding.lean`,
+issue #113 PR-1), `EnergyClassConvection.lean`, `GalerkinCurveBounds.lean`,
+`GalerkinTrilinearBound.lean`, `GalerkinTimeModulus.lean`, `SpacetimePrecompact.lean`,
+`GoodRepresentative.lean`, `LimitPassage.lean`, `WeightedFourierCommute.lean`.
 
 Interface + re-export: `SolutionInterfaces.lean` (support layer: `R3NSForms`,
 `LerayHopfSolutionFull_R3`, assembly helpers — capstone itself in

@@ -1,4 +1,5 @@
-import LerayHopf.Torus.VelocityGalerkin
+import LerayHopf.Torus.Leray  -- L2Sigma, isClosed_L2Sigma (+ DivergenceFree transitively:
+  -- L2VF_projComponent(C), L2VF_injectComponent) — issue #113 PR-1: no longer via VelocityGalerkin
 import LerayHopf.Torus.SobolevTorus
 import LerayHopf.Torus.RellichEmbedding
 
