@@ -21,7 +21,6 @@ the Galerkin level, so the constant cannot secretly depend on them.
 
 - `sum_gradSq_eq_viscousFormSq_of_schwartzRep`  : C1 — `∑_{i,a} ‖∂_a ψ_i‖²_{L²} = V₁ v`
 - `eLpNorm_six_le_of_schwartzRep`               : C2 — `‖ψ_i‖_{L⁶} ≤ C₆·√(V₁ v)`
-- `eLpNorm_three_le_interp_pub`                 : C3 — `‖f‖₃ ≤ ‖f‖₂^{1/2}·‖f‖₆^{1/2}` (public)
 - `convIntegralSchwartz_bound_energy`           : C4 — energy-class trilinear bound (`∃ C_b` outside)
 - `bForm_galerkin_abs_le`                       : C5 — same bound for `F.b` on level-`n` states
 - `galerkin_bForm_curve_continuousOn`           : C6 — `b`-integrand continuous along the curve
@@ -30,12 +29,14 @@ the Galerkin level, so the constant cannot secretly depend on them.
 Dependency edges (plan): C1 → C2 → C4; C3 → C4 → C5 → C6; B10 → C5; B6 → C6;
 B6, B7, C6 → B9.
 
-**Fresh-build note (plan §2, risk R8):** C2/C3/C4 re-derive facts whose only existing
-versions are `private` (`eLpNorm_three_le_interp`, `EnergyClassConvection.lean:510`;
-`normSq_lineDeriv_toLp`, `SobolevEmbedding.lean:243`;
-`eLpNorm_fderiv_le_sum_lineDeriv`, `EnergyClassConvection.lean:1174`).  `eLpNorm_three_le_interp_pub`
-is a fresh PUBLIC copy of the private `eLpNorm_three_le_interp`; the original is neither
-moved nor de-privatized.  No existing declaration is renamed, weakened, or edited.
+**Post-#111-PR-2 note (supersedes the original "risk R8" note about re-derived facts):**
+C1/C2/C4 used to re-derive, byte-for-byte, facts whose only existing versions were `private`
+(`eLpNorm_three_le_interp`, `normSq_toLp_two`/`normSq_lineDeriv_toLp`,
+`opNorm_le_sqrt_sum_sq_local`/`fderiv_apply_single_eq_lineDeriv`/`eLpNorm_fderiv_le_sum_lineDeriv`
+— the byte-for-byte `_C`/`_C2`/`_pub`-suffixed re-derivations this file used to carry). Those
+six declarations are gone; C1/C2/C4 now call the shared PUBLIC versions in
+`LerayHopf.Analysis.PlancherelKernels` (issue #111 PR-2) directly. No remaining declaration
+in this file is renamed, weakened, or edited relative to before.
 
 **B9 landing note:** `galerkin_pairing_FTC` (plan task B9) was DEFERRED from PR-1
 (`GalerkinCurveBounds.lean` header + "B9 — DEFERRED" section) because its FTC step needs
@@ -52,6 +53,7 @@ the PR-2 prover slice, reusing the C1–C4 private helper library.
 
 import LerayHopf.R3.GalerkinCurveBounds     -- B6, B10, GalerkinSolutionData_R3, R3NSForms, viscousFormSq_R3, stokesTestPairing_R3
 import LerayHopf.R3.TrilinearEstimate       -- convIntegralSchwartz, lineDerivOpCLM, convIntegralSchwartz_bound_H1 (C4 template)
+import LerayHopf.Analysis.PlancherelKernels -- the shared Plancherel-kernel quartet + eLpNorm_three_le_interp (issue #111 PR-2)
 
 namespace LerayHopf
 
@@ -61,45 +63,6 @@ open scoped LineDeriv
 variable {𝔊 : R3GalerkinScheme} {F : R3NSForms 𝔊} {ν : ℝ} {u₀ : L2Sigma_R3} {n : ℕ}
 
 /-! ### C1 — gradient-energy Plancherel identity for Schwartz representatives -/
-
-/-- Fresh copy of the private `normSq_toLp_two` (`SobolevEmbedding.lean:227`):
-`‖g.toLp 2‖² = ∫ ‖g ξ‖²` for a complex Schwartz `g`. -/
-private theorem normSq_toLp_two_C (g : SchwartzMap Domain3 ℂ) :
-    ‖g.toLp 2 (volume : Measure Domain3)‖ ^ 2
-      = ∫ ξ : Domain3, ‖g ξ‖ ^ 2 ∂(volume : Measure Domain3) := by
-  have hII : inner ℂ (g.toLp 2 (volume : Measure Domain3)) (g.toLp 2 (volume : Measure Domain3))
-      = ∫ x, inner ℂ (g x) (g x) ∂(volume : Measure Domain3) :=
-    SchwartzMap.inner_toL2_toL2_eq g g _
-  rw [norm_sq_eq_re_inner (𝕜 := ℂ), hII, ← integral_re]
-  · refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
-    show RCLike.re (inner ℂ (g ξ) (g ξ)) = ‖g ξ‖ ^ 2
-    rw [inner_self_eq_norm_sq_to_K]; norm_cast
-  · refine (L2.integrable_inner (g.toLp 2 (volume : Measure Domain3))
-      (g.toLp 2 (volume : Measure Domain3))).congr ?_
-    filter_upwards [g.coeFn_toLp 2 (volume : Measure Domain3)] with x hx; rw [hx]
-
-open scoped FourierTransform in
-/-- Fresh copy of the private `normSq_lineDeriv_toLp` (`SobolevEmbedding.lean:243`):
-per-direction Schwartz Plancherel `‖(∂_m g).toLp 2‖² = ∫ (2π)² ⟨ξ,m⟩² ‖𝓕 g ξ‖²`. -/
-private theorem normSq_lineDeriv_toLp_C (φ : SchwartzMap Domain3 ℂ) (m : Domain3) :
-    ‖(∂_{m} φ).toLp 2 (volume : Measure Domain3)‖ ^ 2
-      = ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * (inner ℝ ξ m) ^ 2 * ‖(𝓕 φ) ξ‖ ^ 2
-        ∂(volume : Measure Domain3) := by
-  rw [← SchwartzMap.norm_fourier_toL2_eq, normSq_toLp_two_C]
-  refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
-  show ‖(𝓕 (∂_{m} φ)) ξ‖ ^ 2 = (2 * Real.pi) ^ 2 * (inner ℝ ξ m) ^ 2 * ‖(𝓕 φ) ξ‖ ^ 2
-  have hg : (inner ℝ · m : Domain3 → ℝ).HasTemperateGrowth :=
-    ((innerSL ℝ).flip m).hasTemperateGrowth
-  have hpt : (𝓕 (∂_{m} φ)) ξ = (2 * Real.pi * Complex.I) * (inner ℝ ξ m : ℝ) * (𝓕 φ) ξ := by
-    rw [SchwartzMap.fourier_lineDerivOp_eq φ m, SchwartzMap.smul_apply,
-      SchwartzMap.smulLeftCLM_apply_apply hg]
-    simp only [smul_eq_mul, Complex.real_smul]; ring
-  rw [hpt, norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real, Real.norm_eq_abs, sq_abs]
-  have hI : ‖(2 * Real.pi * Complex.I)‖ = 2 * Real.pi := by
-    rw [show (2 * Real.pi * Complex.I) = ((2 * Real.pi : ℝ) : ℂ) * Complex.I by push_cast; ring]
-    rw [norm_mul, Complex.norm_I, mul_one, Complex.norm_real, Real.norm_eq_abs,
-      abs_of_nonneg (by positivity)]
-  rw [hI]
 
 open scoped FourierTransform in
 /-- **C1 per-component.** For a single component `i` with real Schwartz representative `ψi`
@@ -202,7 +165,7 @@ private theorem component_gradSq_eq (v : L2VF_R3) (i : Fin 3) (ψi : SchwartzMap
           rw [Finset.mul_sum, Finset.sum_mul]
   rw [hsplit]
   refine Finset.sum_congr rfl (fun a _ => ?_)
-  rw [← normSq_lineDeriv_toLp_C φ (EuclideanSpace.single a (1 : ℝ))]
+  rw [← PlancherelKernels.normSq_lineDeriv_toLp φ (EuclideanSpace.single a (1 : ℝ))]
   rw [SchwartzMap.norm_toLp, SchwartzMap.norm_toLp]
   congr 2
   refine eLpNorm_congr_norm_ae (Filter.Eventually.of_forall fun x => ?_)
@@ -245,79 +208,6 @@ private theorem lineDeriv_postcomp_apply (ψi : SchwartzMap Domain3 ℝ) (m x : 
     (Complex.ofRealCLM.hasFDerivAt).comp x (ψi.differentiableAt.hasFDerivAt)
   rw [hHF.fderiv, ContinuousLinearMap.comp_apply, Complex.ofRealCLM_apply]
 
-/-- Fresh copy of the private `opNorm_le_sqrt_sum_sq_local` (`EnergyClassConvection.lean:1136`). -/
-private theorem opNorm_le_sqrt_sum_sq_C2 {ι : Type*} [Fintype ι]
-    (b : OrthonormalBasis ι ℝ Domain3) (L : Domain3 →L[ℝ] ℂ) :
-    ‖L‖ ≤ Real.sqrt (∑ i, ‖L (b i)‖ ^ 2) := by
-  apply ContinuousLinearMap.opNorm_le_bound _ (Real.sqrt_nonneg _)
-  intro v
-  have hn1 : (0:ℝ) ≤ ∑ i, (inner ℝ (b i) v) ^ 2 := Finset.sum_nonneg (fun i _ => sq_nonneg _)
-  have hv : L v = ∑ i, (inner ℝ (b i) v) • L (b i) := by
-    conv_lhs => rw [← b.sum_repr' v]
-    rw [map_sum]; simp [map_smul]
-  rw [hv, mul_comm]
-  calc ‖∑ i, (inner ℝ (b i) v) • L (b i)‖
-      ≤ ∑ i, ‖(inner ℝ (b i) v) • L (b i)‖ := norm_sum_le _ _
-    _ = ∑ i, |inner ℝ (b i) v| * ‖L (b i)‖ := by simp [norm_smul, Real.norm_eq_abs]
-    _ ≤ Real.sqrt ((∑ i, (inner ℝ (b i) v) ^ 2) * (∑ i, ‖L (b i)‖ ^ 2)) := by
-        apply Real.le_sqrt_of_sq_le
-        calc (∑ i, |inner ℝ (b i) v| * ‖L (b i)‖) ^ 2
-            ≤ (∑ i, |inner ℝ (b i) v| ^ 2) * (∑ i, ‖L (b i)‖ ^ 2) :=
-              Finset.sum_mul_sq_le_sq_mul_sq _ _ _
-          _ = (∑ i, (inner ℝ (b i) v) ^ 2) * (∑ i, ‖L (b i)‖ ^ 2) := by simp [sq_abs]
-    _ = ‖v‖ * Real.sqrt (∑ i, ‖L (b i)‖ ^ 2) := by
-        rw [Real.sqrt_mul hn1]
-        congr 1
-        have hvn : ∑ i, (inner ℝ (b i) v) ^ 2 = ‖v‖ ^ 2 := by
-          have := b.sum_sq_norm_inner_right v
-          simpa [Real.norm_eq_abs, sq_abs] using this
-        rw [hvn, Real.sqrt_sq (norm_nonneg _)]
-
-/-- Fresh copy of the private `fderiv_apply_single_eq_lineDeriv` (`EnergyClassConvection.lean:1164`). -/
-private theorem fderiv_single_eq_lineDeriv_C2 (φ : SchwartzMap Domain3 ℂ) (i : Fin 3) (x : Domain3) :
-    fderiv ℝ (φ : Domain3 → ℂ) x (EuclideanSpace.single i (1 : ℝ))
-      = (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ) (EuclideanSpace.single i (1 : ℝ)) φ) x := by
-  rw [LineDeriv.lineDerivOpCLM_apply, SchwartzMap.lineDerivOp_apply]
-  exact ((SchwartzMap.hasFDerivAt φ x).hasLineDerivAt
-    (EuclideanSpace.single i (1 : ℝ))).lineDeriv.symm
-
-/-- Fresh copy of the private `eLpNorm_fderiv_le_sum_lineDeriv` (`EnergyClassConvection.lean:1174`). -/
-private theorem eLpNorm_fderiv_le_sum_lineDeriv_C2 (φ : SchwartzMap Domain3 ℂ) :
-    eLpNorm (fderiv ℝ (φ : Domain3 → ℂ)) 2 (volume : Measure Domain3) ≤
-      ∑ i : Fin 3, eLpNorm
-        (fun x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
-          (EuclideanSpace.single i (1 : ℝ)) φ) x) 2 (volume : Measure Domain3) := by
-  set b : OrthonormalBasis (Fin 3) ℝ Domain3 := EuclideanSpace.basisFun (Fin 3) ℝ with hb
-  set d : Fin 3 → Domain3 → ℂ := fun i x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
-    (EuclideanSpace.single i (1 : ℝ)) φ) x with hd
-  have hpt : ∀ x, ‖fderiv ℝ (φ : Domain3 → ℂ) x‖ ≤ ∑ i : Fin 3, ‖d i x‖ := by
-    intro x
-    refine (opNorm_le_sqrt_sum_sq_C2 b (fderiv ℝ (φ : Domain3 → ℂ) x)).trans ?_
-    have hbi : ∀ i, (fderiv ℝ (φ : Domain3 → ℂ) x) (b i) = d i x := by
-      intro i; rw [hb, EuclideanSpace.basisFun_apply, hd]
-      exact fderiv_single_eq_lineDeriv_C2 φ i x
-    have hsum_nonneg : (0:ℝ) ≤ ∑ i, ‖d i x‖ := Finset.sum_nonneg fun i _ => norm_nonneg _
-    calc Real.sqrt (∑ i, ‖(fderiv ℝ (φ : Domain3 → ℂ) x) (b i)‖ ^ 2)
-        = Real.sqrt (∑ i, ‖d i x‖ ^ 2) := by
-          refine congrArg Real.sqrt (Finset.sum_congr rfl (fun i _ => by rw [hbi i]))
-      _ ≤ Real.sqrt ((∑ i, ‖d i x‖) ^ 2) := by
-          refine Real.sqrt_le_sqrt ?_
-          exact Finset.sum_sq_le_sq_sum_of_nonneg (fun i _ => norm_nonneg _)
-      _ = ∑ i, ‖d i x‖ := Real.sqrt_sq hsum_nonneg
-  set e : Fin 3 → Domain3 → ℝ := fun i x => ‖d i x‖ with he
-  have hmeas_e : ∀ i : Fin 3, AEStronglyMeasurable (e i) (volume : Measure Domain3) := by
-    intro i; rw [he]
-    exact ((SchwartzMap.continuous _).norm).aestronglyMeasurable
-  have hmono : eLpNorm (fderiv ℝ (φ : Domain3 → ℂ)) 2 (volume : Measure Domain3)
-      ≤ eLpNorm (fun x => ∑ i : Fin 3, e i x) 2 (volume : Measure Domain3) := by
-    refine eLpNorm_mono_ae_real (Filter.Eventually.of_forall fun x => ?_)
-    exact hpt x
-  refine hmono.trans ?_
-  have htri := eLpNorm_sum_le (μ := (volume : Measure Domain3)) (p := (2 : ENNReal))
-    (s := (Finset.univ : Finset (Fin 3))) (f := e) (fun i _ => hmeas_e i) (by norm_num)
-  refine htri.trans (le_of_eq (Finset.sum_congr rfl (fun i _ => ?_)))
-  rw [he, hd, eLpNorm_norm]
-
 /-! ### C2 — componentwise `L⁶` energy-class bound -/
 
 /-- **C2.** Componentwise `L⁶` bound in terms of the Dirichlet energy: there is an absolute
@@ -353,7 +243,7 @@ theorem eLpNorm_six_le_of_schwartzRep :
   rw [h6eq]
   -- (2) GNS and gradient → sum-of-lineDerivs.
   refine (gns_L6_schwartz φ).trans ?_
-  refine (mul_le_mul_left' (eLpNorm_fderiv_le_sum_lineDeriv_C2 φ) _).trans ?_
+  refine (mul_le_mul_left' (PlancherelKernels.eLpNorm_fderiv_le_sum_lineDeriv φ) _).trans ?_
   -- (3) Identify each directional `L²` mass with `‖(∂_a ψ i).toLp‖`.
   have hcell : ∀ a : Fin 3,
       eLpNorm (fun x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
@@ -406,67 +296,6 @@ theorem eLpNorm_six_le_of_schwartzRep :
   rw [mul_assoc]
   exact mul_le_mul_of_nonneg_left hle (by positivity)
 
-/-! ### C3 — public `L²∩L⁶` interpolation at exponent 3 -/
-
-/-- **C3.** Quantitative `L²∩L⁶` interpolation at exponent `3`:
-`eLpNorm f 3 ≤ (eLpNorm f 2)^{1/2} · (eLpNorm f 6)^{1/2}` for `f : Domain3 → G`.
-
-Fresh PUBLIC copy of the `private` `eLpNorm_three_le_interp` (`EnergyClassConvection.lean:510`);
-the original is neither moved nor de-privatized.  Proof route unchanged from the original:
-the square route `(eLpNorm f 3)² = eLpNorm (‖f‖²) (3/2) ≤ eLpNorm ‖f‖ 6 · eLpNorm ‖f‖ 2`
-(Hölder with `1/6 + 1/2 = 2/3`). -/
-theorem eLpNorm_three_le_interp_pub {G : Type*} [NormedAddCommGroup G] (f : Domain3 → G)
-    (h2 : MemLp f 2 (volume : Measure Domain3))
-    (h6 : MemLp f 6 (volume : Measure Domain3)) :
-    eLpNorm f 3 (volume : Measure Domain3)
-      ≤ (eLpNorm f 2 (volume : Measure Domain3)) ^ (1 / 2 : ℝ)
-        * (eLpNorm f 6 (volume : Measure Domain3)) ^ (1 / 2 : ℝ) := by
-  set g : Domain3 → ℝ := fun x => ‖f x‖ with hg
-  have hg2 : MemLp g 2 (volume : Measure Domain3) := h2.norm
-  have hg6 : MemLp g 6 (volume : Measure Domain3) := h6.norm
-  haveI : ENNReal.HolderTriple 6 2 (3 / 2) := by
-    have h : Real.HolderTriple (6 : ℝ) (2 : ℝ) (3 / 2 : ℝ) := by constructor <;> norm_num
-    have h2' := h.ennrealOfReal
-    have e32 : ENNReal.ofReal (3 / 2 : ℝ) = (3 / 2 : ENNReal) := by
-      rw [ENNReal.ofReal_div_of_pos (by norm_num)]; simp
-    simpa only [ENNReal.ofReal_ofNat, e32] using h2'
-  -- Hölder bound on `g·g`: `eLpNorm (g·g) (3/2) ≤ eLpNorm g 6 · eLpNorm g 2`.
-  have hholder : eLpNorm (fun x => g x * g x) (3 / 2) (volume : Measure Domain3)
-      ≤ eLpNorm g 6 (volume : Measure Domain3) * eLpNorm g 2 (volume : Measure Domain3) := by
-    have := MeasureTheory.eLpNorm_le_eLpNorm_mul_eLpNorm_of_nnnorm (p := (6 : ENNReal))
-      (q := (2 : ENNReal)) (r := (3 / 2 : ENNReal)) hg6.aestronglyMeasurable
-      hg2.aestronglyMeasurable (fun a b : ℝ => a * b) 1
-      (Filter.Eventually.of_forall fun x => by
-        simp only [nnnorm_mul, one_mul]; exact le_refl _)
-    simpa only [ENNReal.coe_one, one_mul] using this
-  -- `eLpNorm (g·g) (3/2) = (eLpNorm f 3)²` and `eLpNorm g p = eLpNorm f p`.
-  have hgg_eq : eLpNorm (fun x => g x * g x) (3 / 2) (volume : Measure Domain3)
-      = eLpNorm f 3 (volume : Measure Domain3) ^ (2 : ℝ) := by
-    have hpow : (fun x => ‖f x‖ ^ (2 : ℝ)) = (fun x => g x * g x) := by
-      funext x; simp [hg, sq]
-    have hkey : eLpNorm (fun x => ‖f x‖ ^ (2 : ℝ)) (3 / 2) (volume : Measure Domain3)
-        = eLpNorm f ((3 / 2) * ENNReal.ofReal 2) (volume : Measure Domain3) ^ (2 : ℝ) :=
-      eLpNorm_norm_rpow f (by norm_num)
-    have h32 : ((3 : ENNReal) / 2) * ENNReal.ofReal 2 = 3 := by
-      rw [show ENNReal.ofReal 2 = (2 : ENNReal) by norm_num [ENNReal.ofReal]]
-      rw [ENNReal.div_mul_cancel] <;> norm_num
-    rw [hpow, h32] at hkey
-    exact hkey
-  have hgn2 : eLpNorm g 2 (volume : Measure Domain3) = eLpNorm f 2 (volume : Measure Domain3) := by
-    rw [hg, eLpNorm_norm]
-  have hgn6 : eLpNorm g 6 (volume : Measure Domain3) = eLpNorm f 6 (volume : Measure Domain3) := by
-    rw [hg, eLpNorm_norm]
-  rw [hgg_eq, hgn2, hgn6] at hholder
-  -- `(eLpNorm f 3)² ≤ eLpNorm f 6 · eLpNorm f 2`; take square roots (rpow 1/2).
-  have hsq : eLpNorm f 3 (volume : Measure Domain3)
-      ≤ (eLpNorm f 6 (volume : Measure Domain3) * eLpNorm f 2 (volume : Measure Domain3))
-          ^ (1/2 : ℝ) := by
-    have hmono := ENNReal.rpow_le_rpow hholder (by norm_num : (0:ℝ) ≤ 1/2)
-    rwa [← ENNReal.rpow_mul, show (2 : ℝ) * (1/2) = 1 by norm_num, ENNReal.rpow_one] at hmono
-  refine hsq.trans (le_of_eq ?_)
-  rw [ENNReal.mul_rpow_of_nonneg _ _ (by norm_num : (0:ℝ) ≤ 1/2), mul_comm]
-
-/-! ### C4 — energy-class trilinear bound on `convIntegralSchwartz` -/
 
 /-- Local scalar Schwartz product used in the C4 Hölder estimate. -/
 private noncomputable def schwartzMul_energy
@@ -658,7 +487,7 @@ private theorem eLpNorm_three_component_toReal_le_energy
     simpa using (ψ a).memLp 2 (volume : Measure Domain3)
   have h6 : MemLp ((ψ a : Domain3 → ℝ)) 6 (volume : Measure Domain3) := by
     simpa using (ψ a).memLp 6 (volume : Measure Domain3)
-  have hinterp := eLpNorm_three_le_interp_pub ((ψ a : Domain3 → ℝ)) h2 h6
+  have hinterp := PlancherelKernels.eLpNorm_three_le_interp ((ψ a : Domain3 → ℝ)) h2 h6
   have hfin_rhs : ((eLpNorm ((ψ a : Domain3 → ℝ)) 2 (volume : Measure Domain3)) ^ (1 / 2 : ℝ)
         * (eLpNorm ((ψ a : Domain3 → ℝ)) 6 (volume : Measure Domain3)) ^ (1 / 2 : ℝ)) ≠ ⊤ := by
     apply ENNReal.mul_ne_top

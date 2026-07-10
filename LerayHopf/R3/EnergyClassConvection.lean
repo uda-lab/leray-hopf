@@ -1,10 +1,14 @@
 import LerayHopf.R3.SobolevEmbedding
 import LerayHopf.R3.ConvectionOperator
+import LerayHopf.Analysis.PlancherelKernels
 -- SobolevEmbedding.lean import justification: provides A1 (HolderTriple instances),
 --   A3 (gns_L6_of_memH1_R3: H¹↪L⁶), A4 (h1Sigma_dense_in_L2Sigma),
 --   and transitively Regularity.lean (memH1VF_R3, IsSchwartzDivFree_R3).
 -- ConvectionOperator.lean import justification: provides convFormSchwartz,
 --   convFormSchwartz_antisymm, convFormSchwartz_eq_witness (used by B5).
+-- PlancherelKernels import justification: `eLpNorm_three_le_interp` and
+--   `eLpNorm_fderiv_le_sum_lineDeriv` moved there (issue #111 PR-2); already transitively
+--   available via SobolevEmbedding but imported directly per dependency discipline.
 
 import Mathlib.Analysis.Distribution.Sobolev
 -- Sobolev.lean import justification: MemSobolev.add, MemSobolev.smul,
@@ -503,60 +507,6 @@ theorem L2L6_inter_mem_L3 {F : Type*} [NormedAddCommGroup F] (f : Domain3 → F)
   rw [not_lt, top_le_iff] at hcon
   rw [hcon] at hfin
   simp at hfin
-
-/-- **Quantitative L²∩L⁶ interpolation at exponent 3.** For `f : Domain3 → F`,
-`eLpNorm f 3 ≤ (eLpNorm f 2)^{1/2} · (eLpNorm f 6)^{1/2}`. The square route:
-`(eLpNorm f 3)² = eLpNorm (‖f‖²) (3/2) ≤ eLpNorm ‖f‖ 6 · eLpNorm ‖f‖ 2` (Hölder `1/6+1/2=2/3`). -/
-private theorem eLpNorm_three_le_interp {F : Type*} [NormedAddCommGroup F] (f : Domain3 → F)
-    (h2 : MemLp f 2 (volume : Measure Domain3))
-    (h6 : MemLp f 6 (volume : Measure Domain3)) :
-    eLpNorm f 3 (volume : Measure Domain3)
-      ≤ (eLpNorm f 2 (volume : Measure Domain3)) ^ (1/2 : ℝ)
-        * (eLpNorm f 6 (volume : Measure Domain3)) ^ (1/2 : ℝ) := by
-  set g : Domain3 → ℝ := fun x => ‖f x‖ with hg
-  have hg2 : MemLp g 2 (volume : Measure Domain3) := h2.norm
-  have hg6 : MemLp g 6 (volume : Measure Domain3) := h6.norm
-  haveI : ENNReal.HolderTriple 6 2 (3 / 2) := by
-    have h : Real.HolderTriple (6 : ℝ) (2 : ℝ) (3 / 2 : ℝ) := by constructor <;> norm_num
-    have h2' := h.ennrealOfReal
-    have e32 : ENNReal.ofReal (3 / 2 : ℝ) = (3 / 2 : ENNReal) := by
-      rw [ENNReal.ofReal_div_of_pos (by norm_num)]; simp
-    simpa only [ENNReal.ofReal_ofNat, e32] using h2'
-  -- Hölder bound on `g·g`: `eLpNorm (g·g) (3/2) ≤ eLpNorm g 6 · eLpNorm g 2`.
-  have hholder : eLpNorm (fun x => g x * g x) (3 / 2) (volume : Measure Domain3)
-      ≤ eLpNorm g 6 (volume : Measure Domain3) * eLpNorm g 2 (volume : Measure Domain3) := by
-    have := MeasureTheory.eLpNorm_le_eLpNorm_mul_eLpNorm_of_nnnorm (p := (6 : ENNReal))
-      (q := (2 : ENNReal)) (r := (3 / 2 : ENNReal)) hg6.aestronglyMeasurable
-      hg2.aestronglyMeasurable (fun a b : ℝ => a * b) 1
-      (Filter.Eventually.of_forall fun x => by
-        simp only [nnnorm_mul, one_mul]; exact le_refl _)
-    simpa only [ENNReal.coe_one, one_mul] using this
-  -- `eLpNorm (g·g) (3/2) = (eLpNorm f 3)²` and `eLpNorm g p = eLpNorm f p`.
-  have hgg_eq : eLpNorm (fun x => g x * g x) (3 / 2) (volume : Measure Domain3)
-      = eLpNorm f 3 (volume : Measure Domain3) ^ (2 : ℝ) := by
-    have hpow : (fun x => ‖f x‖ ^ (2 : ℝ)) = (fun x => g x * g x) := by
-      funext x; simp [hg, sq]
-    have hkey : eLpNorm (fun x => ‖f x‖ ^ (2 : ℝ)) (3 / 2) (volume : Measure Domain3)
-        = eLpNorm f ((3 / 2) * ENNReal.ofReal 2) (volume : Measure Domain3) ^ (2 : ℝ) :=
-      eLpNorm_norm_rpow f (by norm_num)
-    have h32 : ((3 : ENNReal) / 2) * ENNReal.ofReal 2 = 3 := by
-      rw [show ENNReal.ofReal 2 = (2 : ENNReal) by norm_num [ENNReal.ofReal]]
-      rw [ENNReal.div_mul_cancel] <;> norm_num
-    rw [hpow, h32] at hkey
-    exact hkey
-  have hgn2 : eLpNorm g 2 (volume : Measure Domain3) = eLpNorm f 2 (volume : Measure Domain3) := by
-    rw [hg, eLpNorm_norm]
-  have hgn6 : eLpNorm g 6 (volume : Measure Domain3) = eLpNorm f 6 (volume : Measure Domain3) := by
-    rw [hg, eLpNorm_norm]
-  rw [hgg_eq, hgn2, hgn6] at hholder
-  -- `(eLpNorm f 3)² ≤ eLpNorm f 6 · eLpNorm f 2`; take square roots (rpow 1/2).
-  have hsq : eLpNorm f 3 (volume : Measure Domain3)
-      ≤ (eLpNorm f 6 (volume : Measure Domain3) * eLpNorm f 2 (volume : Measure Domain3))
-          ^ (1/2 : ℝ) := by
-    have hmono := ENNReal.rpow_le_rpow hholder (by norm_num : (0:ℝ) ≤ 1/2)
-    rwa [← ENNReal.rpow_mul, show (2 : ℝ) * (1/2) = 1 by norm_num, ENNReal.rpow_one] at hmono
-  refine hsq.trans (le_of_eq ?_)
-  rw [ENNReal.mul_rpow_of_nonneg _ _ (by norm_num : (0:ℝ) ≤ 1/2), mul_comm]
 
 /-! ### B3b — Integrability of the convection integrand -/
 
@@ -1131,85 +1081,6 @@ bound on the (multi-direction) Schwartz sequence — itself a consequence of GNS
 (`gns_L6_schwartz`: `‖φ‖₆ ≤ C·‖∇φ‖₂`) plus an `L²∩L⁶ ↪ L³` interpolation. The `L⁶`-Cauchy
 property follows because the full gradient of the difference sequence tends to `0` in `L²`. -/
 
-/-- Pointwise operator-norm bound for a linear map via an orthonormal basis:
-`‖L‖ ≤ √(∑ᵢ ‖L (bᵢ)‖²)` (a Cauchy–Schwarz / Bessel estimate). -/
-private theorem opNorm_le_sqrt_sum_sq_local {ι : Type*} [Fintype ι]
-    (b : OrthonormalBasis ι ℝ Domain3) (L : Domain3 →L[ℝ] ℂ) :
-    ‖L‖ ≤ Real.sqrt (∑ i, ‖L (b i)‖ ^ 2) := by
-  apply ContinuousLinearMap.opNorm_le_bound _ (Real.sqrt_nonneg _)
-  intro v
-  have hn1 : (0:ℝ) ≤ ∑ i, (inner ℝ (b i) v) ^ 2 := Finset.sum_nonneg (fun i _ => sq_nonneg _)
-  have hv : L v = ∑ i, (inner ℝ (b i) v) • L (b i) := by
-    conv_lhs => rw [← b.sum_repr' v]
-    rw [map_sum]; simp [map_smul]
-  rw [hv, mul_comm]
-  calc ‖∑ i, (inner ℝ (b i) v) • L (b i)‖
-      ≤ ∑ i, ‖(inner ℝ (b i) v) • L (b i)‖ := norm_sum_le _ _
-    _ = ∑ i, |inner ℝ (b i) v| * ‖L (b i)‖ := by simp [norm_smul, Real.norm_eq_abs]
-    _ ≤ Real.sqrt ((∑ i, (inner ℝ (b i) v) ^ 2) * (∑ i, ‖L (b i)‖ ^ 2)) := by
-        apply Real.le_sqrt_of_sq_le
-        calc (∑ i, |inner ℝ (b i) v| * ‖L (b i)‖) ^ 2
-            ≤ (∑ i, |inner ℝ (b i) v| ^ 2) * (∑ i, ‖L (b i)‖ ^ 2) :=
-              Finset.sum_mul_sq_le_sq_mul_sq _ _ _
-          _ = (∑ i, (inner ℝ (b i) v) ^ 2) * (∑ i, ‖L (b i)‖ ^ 2) := by simp [sq_abs]
-    _ = ‖v‖ * Real.sqrt (∑ i, ‖L (b i)‖ ^ 2) := by
-        rw [Real.sqrt_mul hn1]
-        congr 1
-        have hvn : ∑ i, (inner ℝ (b i) v) ^ 2 = ‖v‖ ^ 2 := by
-          have := b.sum_sq_norm_inner_right v
-          simpa [Real.norm_eq_abs, sq_abs] using this
-        rw [hvn, Real.sqrt_sq (norm_nonneg _)]
-
-/-- `fderiv φ x (eᵢ) = (∂_{eᵢ}φ) x` for a complex Schwartz function. -/
-private theorem fderiv_apply_single_eq_lineDeriv (φ : SchwartzMap Domain3 ℂ) (i : Fin 3) (x : Domain3) :
-    fderiv ℝ (φ : Domain3 → ℂ) x (EuclideanSpace.single i (1 : ℝ))
-      = (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ) (EuclideanSpace.single i (1 : ℝ)) φ) x := by
-  rw [LineDeriv.lineDerivOpCLM_apply, SchwartzMap.lineDerivOp_apply]
-  exact ((SchwartzMap.hasFDerivAt φ x).hasLineDerivAt
-    (EuclideanSpace.single i (1 : ℝ))).lineDeriv.symm
-
-/-- The `L²`-norm of the full gradient is bounded by the sum over the three coordinate
-directions of the `L²`-norms of the directional derivatives:
-`eLpNorm (fderiv φ) 2 ≤ ∑ᵢ eLpNorm (∂_{eᵢ}φ) 2`. -/
-private theorem eLpNorm_fderiv_le_sum_lineDeriv (φ : SchwartzMap Domain3 ℂ) :
-    eLpNorm (fderiv ℝ (φ : Domain3 → ℂ)) 2 (volume : Measure Domain3) ≤
-      ∑ i : Fin 3, eLpNorm
-        (fun x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
-          (EuclideanSpace.single i (1 : ℝ)) φ) x) 2 (volume : Measure Domain3) := by
-  set b : OrthonormalBasis (Fin 3) ℝ Domain3 := EuclideanSpace.basisFun (Fin 3) ℝ with hb
-  set d : Fin 3 → Domain3 → ℂ := fun i x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
-    (EuclideanSpace.single i (1 : ℝ)) φ) x with hd
-  -- pointwise: ‖fderiv φ x‖ ≤ ∑ᵢ ‖dᵢ x‖.
-  have hpt : ∀ x, ‖fderiv ℝ (φ : Domain3 → ℂ) x‖ ≤ ∑ i : Fin 3, ‖d i x‖ := by
-    intro x
-    refine (opNorm_le_sqrt_sum_sq_local b (fderiv ℝ (φ : Domain3 → ℂ) x)).trans ?_
-    have hbi : ∀ i, (fderiv ℝ (φ : Domain3 → ℂ) x) (b i) = d i x := by
-      intro i; rw [hb, EuclideanSpace.basisFun_apply, hd]
-      exact fderiv_apply_single_eq_lineDeriv φ i x
-    have hsum_nonneg : (0:ℝ) ≤ ∑ i, ‖d i x‖ := Finset.sum_nonneg fun i _ => norm_nonneg _
-    calc Real.sqrt (∑ i, ‖(fderiv ℝ (φ : Domain3 → ℂ) x) (b i)‖ ^ 2)
-        = Real.sqrt (∑ i, ‖d i x‖ ^ 2) := by
-          refine congrArg Real.sqrt (Finset.sum_congr rfl (fun i _ => by rw [hbi i]))
-      _ ≤ Real.sqrt ((∑ i, ‖d i x‖) ^ 2) := by
-          refine Real.sqrt_le_sqrt ?_
-          exact Finset.sum_sq_le_sq_sum_of_nonneg (fun i _ => norm_nonneg _)
-      _ = ∑ i, ‖d i x‖ := Real.sqrt_sq hsum_nonneg
-  -- eLpNorm bound: monotone (pointwise bound) + triangle over the finite sum.
-  set e : Fin 3 → Domain3 → ℝ := fun i x => ‖d i x‖ with he
-  have hmeas_e : ∀ i : Fin 3, AEStronglyMeasurable (e i) (volume : Measure Domain3) := by
-    intro i; rw [he]
-    exact ((SchwartzMap.continuous _).norm).aestronglyMeasurable
-  -- eLpNorm (fderiv φ) 2 ≤ eLpNorm (∑ᵢ eᵢ) 2.
-  have hmono : eLpNorm (fderiv ℝ (φ : Domain3 → ℂ)) 2 (volume : Measure Domain3)
-      ≤ eLpNorm (fun x => ∑ i : Fin 3, e i x) 2 (volume : Measure Domain3) := by
-    refine eLpNorm_mono_ae_real (Filter.Eventually.of_forall fun x => ?_)
-    exact hpt x
-  refine hmono.trans ?_
-  have htri := eLpNorm_sum_le (μ := (volume : Measure Domain3)) (p := (2 : ENNReal))
-    (s := (Finset.univ : Finset (Fin 3))) (f := e) (fun i _ => hmeas_e i) (by norm_num)
-  refine htri.trans (le_of_eq (Finset.sum_congr rfl (fun i _ => ?_)))
-  rw [he, hd, eLpNorm_norm]
-
 /-- `reS (φ - ψ) x = (reS φ) x - (reS ψ) x` pointwise. -/
 private theorem reS_sub_apply (φ ψ : SchwartzMap Domain3 ℂ) (x : Domain3) :
     (reS (φ - ψ)) x = (reS φ) x - (reS ψ) x := by
@@ -1330,7 +1201,7 @@ private theorem reSchwartz_L3_approx (h hGval : L2C_R3) (a : Fin 3)
     refine hre6.trans ((gns_L6_schwartz (φ n)).trans ?_)
     rw [← hCgns]
     refine mul_le_mul_left' ?_ Cgns
-    refine (eLpNorm_fderiv_le_sum_lineDeriv (φ n)).trans ?_
+    refine (PlancherelKernels.eLpNorm_fderiv_le_sum_lineDeriv (φ n)).trans ?_
     exact Finset.sum_le_sum (fun i _ => hB i n)
   -- C6 and ‖h.re‖₆ are finite, so the L⁶ bound `D6` is finite.
   have hh6_top : eLpNorm (fun x => (h x).re) 6 (volume : Measure Domain3) ≠ ⊤ :=
@@ -1371,7 +1242,7 @@ private theorem reSchwartz_L3_approx (h hGval : L2C_R3) (a : Fin 3)
       ((ψ n).memLp 2 (volume : Measure Domain3)).sub hh2
     have hmem6 : MemLp (fun x => (ψ n) x - (h x).re) 6 (volume : Measure Domain3) :=
       ((ψ n).memLp 6 (volume : Measure Domain3)).sub hh6
-    refine (eLpNorm_three_le_interp _ hmem2 hmem6).trans ?_
+    refine (PlancherelKernels.eLpNorm_three_le_interp _ hmem2 hmem6).trans ?_
     gcongr
     exact hbnd6 n
   -- Squeeze: RHS → 0^{1/2}·D6^{1/2} = 0.
