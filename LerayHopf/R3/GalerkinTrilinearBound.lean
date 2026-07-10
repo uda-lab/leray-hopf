@@ -21,6 +21,9 @@ the Galerkin level, so the constant cannot secretly depend on them.
 
 - `sum_gradSq_eq_viscousFormSq_of_schwartzRep`  : C1 — `∑_{i,a} ‖∂_a ψ_i‖²_{L²} = V₁ v`
 - `eLpNorm_six_le_of_schwartzRep`               : C2 — `‖ψ_i‖_{L⁶} ≤ C₆·√(V₁ v)`
+- `schwartz_trilinear_bound_L326_energy`        : C4 helper, public — the `(3,2,6)`-Hölder
+  per-term trilinear bound `|∫ f·g·h| ≤ ‖f‖_{L³}·‖g‖_{L²}·‖h‖_{L⁶}` for a scalar Schwartz
+  triple; a reusable fact independent of the Galerkin context, made citable this cycle
 - `convIntegralSchwartz_bound_energy`           : C4 — energy-class trilinear bound (`∃ C_b` outside)
 - `bForm_galerkin_abs_le`                       : C5 — same bound for `F.b` on level-`n` states
 - `galerkin_bForm_curve_continuousOn`           : C6 — `b`-integrand continuous along the curve
@@ -361,8 +364,14 @@ private theorem schwartz_mul_L2_norm_le_L3_L6_energy (f h : SchwartzMap Domain3 
   · refine (eLpNorm_congr_norm_ae (Filter.Eventually.of_forall fun x => ?_)).le.trans hholder
     simp [schwartzMul_energy]
 
-/-- Per-term `(3,2,6)` Hölder bound for a scalar Schwartz triple. -/
-private theorem schwartz_trilinear_bound_L326_energy (f g h : SchwartzMap Domain3 ℝ) :
+/-- **`(3,2,6)`-Hölder trilinear bound for a scalar Schwartz triple.**
+`|∫ f·g·h| ≤ ‖f‖_{L³}·‖g‖_{L²}·‖h‖_{L⁶}`, split via `(3,6) → 2` Hölder on `f·h` then
+Cauchy–Schwarz against `g`. This is the capstone of the C4 trilinear-bound machinery in this
+file — the two helpers it consumes (`schwartz_integral_abs_mul_le_energy`,
+`schwartz_mul_L2_norm_le_L3_L6_energy`) are small and file-local, but this per-term bound is
+a genuinely reusable fact independent of the Galerkin-specific context (`convIntegralSchwartz_bound_energy`)
+that consumes it below, so it is public. -/
+theorem schwartz_trilinear_bound_L326_energy (f g h : SchwartzMap Domain3 ℝ) :
     |∫ x : Domain3, (f x) * (g x) * (h x) ∂(volume : Measure Domain3)|
       ≤ (eLpNorm (f : Domain3 → ℝ) 3 (volume : Measure Domain3)).toReal
         * ‖g.toLp 2 (volume : Measure Domain3)‖

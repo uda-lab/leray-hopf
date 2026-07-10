@@ -167,67 +167,25 @@ private theorem reS_sub_apply (φ ψ : SchwartzMap Domain3 ℂ) (x : Domain3) :
     (reS (φ - ψ)) x = (reS φ) x - (reS ψ) x := by
   rw [reS_apply, reS_apply, reS_apply, SchwartzMap.sub_apply, Complex.sub_re]
 
-/-- **L³ approximation of the un-differentiated `H¹` test factor.**
-For `h : L2C_R3` in `H^{1,2}` and direction `eₐ` with weak `eₐ`-derivative `(hG : 𝓢')`, there is
-a real Schwartz sequence `ψₙ` (the real parts of the multi-direction Brick-1 sequence) that
-converges to `reLp h` in `L²`, whose `eₐ`-derivatives converge to `reLp hGval` in `L²`, **and**
-which converges to `h.re` in `L³`. The `L³` convergence uses the uniform `L⁶` (GNS) bound on the
-full gradient together with the `L²∩L⁶ ↪ L³` interpolation. -/
-private theorem reSchwartz_L3_approx (h hGval : L2C_R3) (a : Fin 3)
+/-- **L³-convergence step.**  Given the value-L²-convergent real Schwartz sequence `ψₙ = reS φₙ`
+(from the multi-direction Brick-1 sequence `φ`, whose full gradient family `hφgrad` supplies a
+uniform `L⁶` bound via GNS), `ψₙ` also converges to `h.re` in `L³`, via the interpolation
+`‖g‖₃ ≤ ‖g‖₂^{1/2}·‖g‖₆^{1/2}` applied to `ψₙ - h.re`. -/
+private theorem reSchwartz_L3_conv_of_valueConv (h : L2C_R3)
     (hh : MemSobolev 1 2 (h : 𝓢'(Domain3, ℂ)))
-    (hG : (∂_{EuclideanSpace.single a (1 : ℝ)} (h : 𝓢'(Domain3, ℂ))) = (hGval : 𝓢'(Domain3, ℂ))) :
-    ∃ ψ : ℕ → SchwartzMap Domain3 ℝ,
-      Filter.Tendsto (fun n => (ψ n).toLp 2 (volume : Measure Domain3))
-          Filter.atTop (nhds (reLp h)) ∧
-      Filter.Tendsto (fun n =>
-          (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) (ψ n)).toLp 2
-            (volume : Measure Domain3))
-          Filter.atTop (nhds (reLp hGval)) ∧
-      ∃ Φ : Lp ℝ 3 (volume : Measure Domain3),
-        (⇑Φ =ᵐ[volume] fun x => (h x).re) ∧
-        Filter.Tendsto (fun n => (ψ n).toLp 3 (volume : Measure Domain3))
-          Filter.atTop (nhds Φ) := by
-  classical
-  -- Multi-direction Brick-1 sequence φₙ.
-  obtain ⟨φ, hφval, hφgrad⟩ := schwartz_h1_gradConv_multi h hh
-  -- Direction-a gradient limit gₐ with ∂ₐ(h:𝓢')=(gₐ:𝓢'); identify gₐ = hGval.
-  obtain ⟨ga, hga_spec, hφga0⟩ := hφgrad (EuclideanSpace.single a (1 : ℝ))
-  have hga_eq : ga = hGval := L2C_eq_of_toTempered_eq (by rw [← hga_spec, hG])
-  have hφga : Filter.Tendsto
-      (fun n => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
-        (EuclideanSpace.single a (1 : ℝ)) (φ n)).toLp 2 (volume : Measure Domain3))
-      Filter.atTop (nhds hGval) := by rw [← hga_eq]; exact hφga0
-  set ψ : ℕ → SchwartzMap Domain3 ℝ := fun n => reS (φ n) with hψdef
-  -- (1) value L²: (ψₙ).toLp 2 = reLp (φₙ.toLp 2) → reLp h.
-  have hval2 : Filter.Tendsto (fun n => (ψ n).toLp 2 (volume : Measure Domain3))
-      Filter.atTop (nhds (reLp h)) := by
-    have heq : (fun n => (ψ n).toLp 2 (volume : Measure Domain3))
-        = fun n => reLp (φ n |>.toLp 2 (volume : Measure Domain3)) := by
-      funext n; rw [hψdef]; exact reS_toLp_eq_reLp (φ n)
-    rw [heq]; exact (reLp.continuous.tendsto h).comp hφval
-  -- (2) gradient L² (direction a): (∂ₐψₙ).toLp 2 = reLp ((∂ₐφₙ).toLp 2) → reLp hGval.
-  have hgrad2 : Filter.Tendsto (fun n =>
-      (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) (ψ n)).toLp 2
-        (volume : Measure Domain3)) Filter.atTop (nhds (reLp hGval)) := by
-    have heq : (fun n =>
-        (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) (ψ n)).toLp
-          2 (volume : Measure Domain3))
-        = fun n => reLp ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
-            (EuclideanSpace.single a (1 : ℝ)) (φ n)).toLp 2 (volume : Measure Domain3)) := by
-      funext n
-      apply Lp.ext
-      filter_upwards [(lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
-          (EuclideanSpace.single a (1 : ℝ)) (ψ n)).coeFn_toLp 2 (volume : Measure Domain3),
-        reLp_coeFn ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
-          (EuclideanSpace.single a (1 : ℝ)) (φ n)).toLp 2 (volume : Measure Domain3)),
-        (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
-          (EuclideanSpace.single a (1 : ℝ)) (φ n)).coeFn_toLp 2 (volume : Measure Domain3)]
-        with x h1 h2 h3
-      rw [h1, h2, h3, hψdef, lineDerivOp_reS]
-    rw [heq]; exact (reLp.continuous.tendsto hGval).comp hφga
-  refine ⟨ψ, hval2, hgrad2, ?_⟩
-  -- (3) L³ convergence, via interpolation `‖g‖₃ ≤ ‖g‖₂^{1/2}·‖g‖₆^{1/2}` applied to `ψₙ - h.re`,
-  -- using value-L²-convergence (→0) and a uniform `L⁶` bound (GNS on the full gradient).
+    (φ : ℕ → SchwartzMap Domain3 ℂ)
+    (hφgrad : ∀ m : Domain3, ∃ (g : L2C_R3)
+        (_ : (∂_{m} (h : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ))),
+      Filter.Tendsto
+        (fun n => (∂_{m} (φ n)).toLp 2 (volume : Measure Domain3))
+        Filter.atTop (nhds g))
+    (ψ : ℕ → SchwartzMap Domain3 ℝ) (hψdef : ψ = fun n => reS (φ n))
+    (hval2 : Filter.Tendsto (fun n => (ψ n).toLp 2 (volume : Measure Domain3))
+      Filter.atTop (nhds (reLp h))) :
+    ∃ Φ : Lp ℝ 3 (volume : Measure Domain3),
+      (⇑Φ =ᵐ[volume] fun x => (h x).re) ∧
+      Filter.Tendsto (fun n => (ψ n).toLp 3 (volume : Measure Domain3))
+        Filter.atTop (nhds Φ) := by
   -- `h.re ∈ L⁶` (A3/GNS) and `h.re ∈ L²` (Lp membership).
   have hh6 : MemLp (fun x => (h x).re) 6 (volume : Measure Domain3) :=
     (gns_L6_of_memH1_R3 h hh).re
@@ -360,6 +318,65 @@ private theorem reSchwartz_L3_approx (h hGval : L2C_R3) (a : Fin 3)
       from funext heqnorm]
   have := (ENNReal.tendsto_toReal (by simp : (0:ENNReal) ≠ ⊤)).comp h3to0
   rwa [ENNReal.toReal_zero] at this
+
+/-- **L³ approximation of the un-differentiated `H¹` test factor.**
+For `h : L2C_R3` in `H^{1,2}` and direction `eₐ` with weak `eₐ`-derivative `(hG : 𝓢')`, there is
+a real Schwartz sequence `ψₙ` (the real parts of the multi-direction Brick-1 sequence) that
+converges to `reLp h` in `L²`, whose `eₐ`-derivatives converge to `reLp hGval` in `L²`, **and**
+which converges to `h.re` in `L³` (`reSchwartz_L3_conv_of_valueConv`). -/
+private theorem reSchwartz_L3_approx (h hGval : L2C_R3) (a : Fin 3)
+    (hh : MemSobolev 1 2 (h : 𝓢'(Domain3, ℂ)))
+    (hG : (∂_{EuclideanSpace.single a (1 : ℝ)} (h : 𝓢'(Domain3, ℂ))) = (hGval : 𝓢'(Domain3, ℂ))) :
+    ∃ ψ : ℕ → SchwartzMap Domain3 ℝ,
+      Filter.Tendsto (fun n => (ψ n).toLp 2 (volume : Measure Domain3))
+          Filter.atTop (nhds (reLp h)) ∧
+      Filter.Tendsto (fun n =>
+          (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) (ψ n)).toLp 2
+            (volume : Measure Domain3))
+          Filter.atTop (nhds (reLp hGval)) ∧
+      ∃ Φ : Lp ℝ 3 (volume : Measure Domain3),
+        (⇑Φ =ᵐ[volume] fun x => (h x).re) ∧
+        Filter.Tendsto (fun n => (ψ n).toLp 3 (volume : Measure Domain3))
+          Filter.atTop (nhds Φ) := by
+  classical
+  -- Multi-direction Brick-1 sequence φₙ.
+  obtain ⟨φ, hφval, hφgrad⟩ := schwartz_h1_gradConv_multi h hh
+  -- Direction-a gradient limit gₐ with ∂ₐ(h:𝓢')=(gₐ:𝓢'); identify gₐ = hGval.
+  obtain ⟨ga, hga_spec, hφga0⟩ := hφgrad (EuclideanSpace.single a (1 : ℝ))
+  have hga_eq : ga = hGval := L2C_eq_of_toTempered_eq (by rw [← hga_spec, hG])
+  have hφga : Filter.Tendsto
+      (fun n => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
+        (EuclideanSpace.single a (1 : ℝ)) (φ n)).toLp 2 (volume : Measure Domain3))
+      Filter.atTop (nhds hGval) := by rw [← hga_eq]; exact hφga0
+  set ψ : ℕ → SchwartzMap Domain3 ℝ := fun n => reS (φ n) with hψdef
+  -- (1) value L²: (ψₙ).toLp 2 = reLp (φₙ.toLp 2) → reLp h.
+  have hval2 : Filter.Tendsto (fun n => (ψ n).toLp 2 (volume : Measure Domain3))
+      Filter.atTop (nhds (reLp h)) := by
+    have heq : (fun n => (ψ n).toLp 2 (volume : Measure Domain3))
+        = fun n => reLp (φ n |>.toLp 2 (volume : Measure Domain3)) := by
+      funext n; rw [hψdef]; exact reS_toLp_eq_reLp (φ n)
+    rw [heq]; exact (reLp.continuous.tendsto h).comp hφval
+  -- (2) gradient L² (direction a): (∂ₐψₙ).toLp 2 = reLp ((∂ₐφₙ).toLp 2) → reLp hGval.
+  have hgrad2 : Filter.Tendsto (fun n =>
+      (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) (ψ n)).toLp 2
+        (volume : Measure Domain3)) Filter.atTop (nhds (reLp hGval)) := by
+    have heq : (fun n =>
+        (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) (EuclideanSpace.single a (1 : ℝ)) (ψ n)).toLp
+          2 (volume : Measure Domain3))
+        = fun n => reLp ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
+            (EuclideanSpace.single a (1 : ℝ)) (φ n)).toLp 2 (volume : Measure Domain3)) := by
+      funext n
+      apply Lp.ext
+      filter_upwards [(lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
+          (EuclideanSpace.single a (1 : ℝ)) (ψ n)).coeFn_toLp 2 (volume : Measure Domain3),
+        reLp_coeFn ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
+          (EuclideanSpace.single a (1 : ℝ)) (φ n)).toLp 2 (volume : Measure Domain3)),
+        (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
+          (EuclideanSpace.single a (1 : ℝ)) (φ n)).coeFn_toLp 2 (volume : Measure Domain3)]
+        with x h1 h2 h3
+      rw [h1, h2, h3, hψdef, lineDerivOp_reS]
+    rw [heq]; exact (reLp.continuous.tendsto hGval).comp hφga
+  exact ⟨ψ, hval2, hgrad2, reSchwartz_L3_conv_of_valueConv h hh φ hφgrad ψ hψdef hval2⟩
 
 /-- **Per-component Schwartz approximation with real-part gradient convergence.**
 For `f : L2C_R3` in `H^{1,2}` and direction `eₐ` whose weak derivative distribution equals
@@ -549,39 +566,26 @@ private theorem tendsto_integral_pairing {p q : ENNReal} [ENNReal.HolderConjugat
     ((B.lpPairing (volume : Measure Domain3) p q c).continuous.tendsto k₀).comp hk
   simpa only [hpair] using hcont
 
-/-- **H¹-test weak Leibniz.** Same as `h1Leibniz2`, but the test factor is an `H¹` function `vt`
-(with weak `eₐ`-derivative `vtG`) rather than a Schwartz function. The un-differentiated test is
-paired in `L³` (its multi-direction Schwartz approximants converge in `L³` via
-`reSchwartz_L3_approx`); the differentiated test in `L²`. -/
-theorem h1Leibniz2_H1test (f g fG gG vt vtG : L2C_R3) (a : Fin 3)
-    (hf : MemSobolev 1 2 (f : 𝓢'(Domain3, ℂ)))
-    (hg : MemSobolev 1 2 (g : 𝓢'(Domain3, ℂ)))
-    (hfG : (∂_{EuclideanSpace.single a (1 : ℝ)} (f : 𝓢'(Domain3, ℂ))) = (fG : 𝓢'(Domain3, ℂ)))
-    (hgG : (∂_{EuclideanSpace.single a (1 : ℝ)} (g : 𝓢'(Domain3, ℂ))) = (gG : 𝓢'(Domain3, ℂ)))
+/-- **RHS pairing-limit step.**  The `L^{3/2}` coefficients `cR1 := fG.re·g.re`,
+`cR2 := f.re·gG.re` (via `L²·L⁶` Hölder) pair against the L³-convergent Schwartz sequence `ψ`
+to give the limit `∫ (fG.re·g.re + f.re·gG.re)·ψₙ → ∫ (fG.re·g.re + f.re·gG.re)·vt.re`. -/
+private theorem h1Leibniz2_H1test_RHS_limit (f g fG gG vt : L2C_R3)
     (hvt : MemSobolev 1 2 (vt : 𝓢'(Domain3, ℂ)))
-    (hvtG : (∂_{EuclideanSpace.single a (1 : ℝ)} (vt : 𝓢'(Domain3, ℂ))) = (vtG : 𝓢'(Domain3, ℂ)))
     (hf6 : MemLp (fun x => (f x).re) 6 (volume : Measure Domain3))
-    (hf3 : MemLp (fun x => (f x).re) 3 (volume : Measure Domain3))
-    (hg6 : MemLp (fun x => (g x).re) 6 (volume : Measure Domain3)) :
-    ∫ x : Domain3, (f x).re * (g x).re * (vtG x).re ∂(volume : Measure Domain3)
-      = -∫ x : Domain3,
-          ((fG x).re * (g x).re + (f x).re * (gG x).re) * (vt x).re
-          ∂(volume : Measure Domain3) := by
-  classical
-  set m : Domain3 := EuclideanSpace.single a (1 : ℝ) with hm
-  -- L³ approximation of the test factor `vt`.
-  obtain ⟨ψ, hψ_val, hψ_grad, Φ, hΦae, hψ3⟩ := reSchwartz_L3_approx vt vtG a hvt hvtG
+    (hg6 : MemLp (fun x => (g x).re) 6 (volume : Measure Domain3))
+    (ψ : ℕ → SchwartzMap Domain3 ℝ)
+    (Φ : Lp ℝ 3 (volume : Measure Domain3))
+    (hΦae : (⇑Φ : Domain3 → ℝ) =ᵐ[volume] fun x => (vt x).re)
+    (hψ3 : Filter.Tendsto (fun n => (ψ n).toLp 3 (volume : Measure Domain3))
+      Filter.atTop (nhds Φ)) :
+    Filter.Tendsto
+      (fun n => ∫ x : Domain3, ((fG x).re * (g x).re + (f x).re * (gG x).re) * (ψ n) x
+        ∂(volume : Measure Domain3))
+      Filter.atTop (nhds (∫ x : Domain3,
+        ((fG x).re * (g x).re + (f x).re * (gG x).re) * (vt x).re ∂(volume : Measure Domain3))) := by
   -- Membership facts for the coefficient functions.
-  have hfre2 : MemLp (fun x => (f x).re) 2 (volume : Measure Domain3) := (Lp.memLp f).re
-  have hgre2 : MemLp (fun x => (g x).re) 2 (volume : Measure Domain3) := (Lp.memLp g).re
   have hfGre2 : MemLp (fun x => (fG x).re) 2 (volume : Measure Domain3) := (Lp.memLp fG).re
   have hgGre2 : MemLp (fun x => (gG x).re) 2 (volume : Measure Domain3) := (Lp.memLp gG).re
-  -- Coefficient `cLHS = f.re·g.re ∈ L²` (via L³·L⁶).
-  haveI hHT362 : ENNReal.HolderTriple 6 3 2 := instHolderTriple_6_3_2
-  have hcLHS_mem : MemLp (fun x => (f x).re * (g x).re) 2 (volume : Measure Domain3) :=
-    MeasureTheory.MemLp.ae_eq (Filter.Eventually.of_forall fun x => by simp [Pi.mul_apply, mul_comm])
-      (hf3.mul (p := 6) (q := 3) (r := 2) hg6)
-  set cLHS : Lp ℝ 2 (volume : Measure Domain3) := hcLHS_mem.toLp with hcLHS
   -- Coefficients `cR1 = fG.re·g.re`, `cR2 = f.re·gG.re ∈ L^{3/2}` (via L²·L⁶).
   haveI hHT263 : ENNReal.HolderTriple 6 2 (3/2) := by
     have h : Real.HolderTriple (6 : ℝ) (2 : ℝ) (3/2 : ℝ) := by constructor <;> norm_num
@@ -606,13 +610,131 @@ theorem h1Leibniz2_H1test (f g fG gG vt vtG : L2C_R3) (a : Fin 3)
   haveI : Fact ((1 : ENNReal) ≤ 3/2) := ⟨by
     rw [ENNReal.le_div_iff_mul_le (by norm_num) (by norm_num)]; norm_num⟩
   haveI : Fact ((1 : ENNReal) ≤ 3) := ⟨by norm_num⟩
-  haveI : Fact ((1 : ENNReal) ≤ 2) := ⟨by norm_num⟩
   haveI hHC23 : ENNReal.HolderConjugate (3/2 : ENNReal) 3 := by
     have h : Real.HolderTriple (3/2 : ℝ) (3 : ℝ) (1 : ℝ) := by constructor <;> norm_num
     have h2 := h.ennrealOfReal
     have e32 : ENNReal.ofReal (3 / 2 : ℝ) = (3 / 2 : ENNReal) := by
       rw [ENNReal.ofReal_div_of_pos (by norm_num)]; simp
     simpa only [ENNReal.ofReal_ofNat, ENNReal.ofReal_one, e32] using h2
+  have hp1 := tendsto_integral_pairing (p := 3/2) (q := 3) cR1 hψ3
+  have hp2 := tendsto_integral_pairing (p := 3/2) (q := 3) cR2 hψ3
+  -- Rewrite each pairing to the component integrals.
+  have hr1n : ∀ n, ∫ x : Domain3, (cR1 x) * ((ψ n).toLp 3 (volume : Measure Domain3) x)
+        ∂(volume : Measure Domain3)
+      = ∫ x : Domain3, (fG x).re * (g x).re * (ψ n) x ∂(volume : Measure Domain3) := by
+    intro n
+    refine MeasureTheory.integral_congr_ae ?_
+    filter_upwards [hcR1_mem.coeFn_toLp, (ψ n).coeFn_toLp 3 (volume : Measure Domain3)]
+      with x hcx hkx
+    rw [hcx, hkx]
+  have hr2n : ∀ n, ∫ x : Domain3, (cR2 x) * ((ψ n).toLp 3 (volume : Measure Domain3) x)
+        ∂(volume : Measure Domain3)
+      = ∫ x : Domain3, (f x).re * (gG x).re * (ψ n) x ∂(volume : Measure Domain3) := by
+    intro n
+    refine MeasureTheory.integral_congr_ae ?_
+    filter_upwards [hcR2_mem.coeFn_toLp, (ψ n).coeFn_toLp 3 (volume : Measure Domain3)]
+      with x hcx hkx
+    rw [hcx, hkx]
+  have hr1lim : ∫ x : Domain3, (cR1 x) * (Φ x) ∂(volume : Measure Domain3)
+      = ∫ x : Domain3, (fG x).re * (g x).re * (vt x).re ∂(volume : Measure Domain3) := by
+    refine MeasureTheory.integral_congr_ae ?_
+    filter_upwards [hcR1_mem.coeFn_toLp, hΦae] with x hcx hkx
+    rw [hcx, hkx]
+  have hr2lim : ∫ x : Domain3, (cR2 x) * (Φ x) ∂(volume : Measure Domain3)
+      = ∫ x : Domain3, (f x).re * (gG x).re * (vt x).re ∂(volume : Measure Domain3) := by
+    refine MeasureTheory.integral_congr_ae ?_
+    filter_upwards [hcR2_mem.coeFn_toLp, hΦae] with x hcx hkx
+    rw [hcx, hkx]
+  -- Integrability for splitting the sum-integral.
+  haveI hHT3321 : ENNReal.HolderTriple (3/2) 3 1 := by
+    have h : Real.HolderTriple (3/2 : ℝ) (3 : ℝ) (1 : ℝ) := by constructor <;> norm_num
+    have h2 := h.ennrealOfReal
+    have e32 : ENNReal.ofReal (3 / 2 : ℝ) = (3 / 2 : ENNReal) := by
+      rw [ENNReal.ofReal_div_of_pos (by norm_num)]; simp
+    simpa only [ENNReal.ofReal_ofNat, ENNReal.ofReal_one, e32] using h2
+  have hint1 : ∀ n, MeasureTheory.Integrable
+      (fun x => (fG x).re * (g x).re * (ψ n) x) (volume : Measure Domain3) := by
+    intro n
+    have := ((ψ n).memLp 3 (volume : Measure Domain3)).mul (p := 3/2) (q := 3) (r := 1) hcR1_mem
+    rw [memLp_one_iff_integrable] at this
+    refine this.congr ?_
+    filter_upwards with x
+    simp only [Pi.mul_apply]
+  have hint2 : ∀ n, MeasureTheory.Integrable
+      (fun x => (f x).re * (gG x).re * (ψ n) x) (volume : Measure Domain3) := by
+    intro n
+    have := ((ψ n).memLp 3 (volume : Measure Domain3)).mul (p := 3/2) (q := 3) (r := 1) hcR2_mem
+    rw [memLp_one_iff_integrable] at this
+    refine this.congr ?_
+    filter_upwards with x
+    simp only [Pi.mul_apply]
+  -- Combine: the n-integral = R1ₙ + R2ₙ, with limit hr1lim + hr2lim.
+  have hsplit : ∀ n, ∫ x : Domain3, ((fG x).re * (g x).re + (f x).re * (gG x).re) * (ψ n) x
+      ∂(volume : Measure Domain3)
+      = (∫ x : Domain3, (fG x).re * (g x).re * (ψ n) x ∂(volume : Measure Domain3))
+        + ∫ x : Domain3, (f x).re * (gG x).re * (ψ n) x ∂(volume : Measure Domain3) := by
+    intro n
+    rw [← MeasureTheory.integral_add (hint1 n) (hint2 n)]
+    refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+    ring
+  -- integrability of the two limit coefficients against `vt.re`.
+  have hvt_re3 : MemLp (fun x => (vt x).re) 3 (volume : Measure Domain3) :=
+    L2L6_inter_mem_L3 _ (Lp.memLp vt).re ((gns_L6_of_memH1_R3 vt hvt).re)
+  have hintlim1 : MeasureTheory.Integrable
+      (fun x => (fG x).re * (g x).re * (vt x).re) (volume : Measure Domain3) := by
+    have := ((hvt_re3).mul (p := 3/2) (q := 3) (r := 1) hcR1_mem)
+    rw [memLp_one_iff_integrable] at this
+    refine this.congr ?_; filter_upwards with x; simp only [Pi.mul_apply]
+  have hintlim2 : MeasureTheory.Integrable
+      (fun x => (f x).re * (gG x).re * (vt x).re) (volume : Measure Domain3) := by
+    have := ((hvt_re3).mul (p := 3/2) (q := 3) (r := 1) hcR2_mem)
+    rw [memLp_one_iff_integrable] at this
+    refine this.congr ?_; filter_upwards with x; simp only [Pi.mul_apply]
+  have hcomb := ((hp1.congr hr1n).add (hp2.congr hr2n))
+  rw [hr1lim, hr2lim, ← MeasureTheory.integral_add hintlim1 hintlim2] at hcomb
+  have hcomb2 : Filter.Tendsto
+      (fun n => ∫ x : Domain3, ((fG x).re * (g x).re + (f x).re * (gG x).re) * (ψ n) x
+        ∂(volume : Measure Domain3)) Filter.atTop
+      (nhds (∫ x : Domain3, ((fG x).re * (g x).re * (vt x).re
+        + (f x).re * (gG x).re * (vt x).re) ∂(volume : Measure Domain3))) :=
+    hcomb.congr (fun n => (hsplit n).symm)
+  refine hcomb2.mono_right (le_of_eq (congrArg nhds ?_))
+  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+  ring
+
+/-- **H¹-test weak Leibniz.** Same as `h1Leibniz2`, but the test factor is an `H¹` function `vt`
+(with weak `eₐ`-derivative `vtG`) rather than a Schwartz function. The un-differentiated test is
+paired in `L³` (its multi-direction Schwartz approximants converge in `L³` via
+`reSchwartz_L3_approx`, and pair against the `L^{3/2}` coefficients via
+`h1Leibniz2_H1test_RHS_limit`); the differentiated test in `L²`. -/
+theorem h1Leibniz2_H1test (f g fG gG vt vtG : L2C_R3) (a : Fin 3)
+    (hf : MemSobolev 1 2 (f : 𝓢'(Domain3, ℂ)))
+    (hg : MemSobolev 1 2 (g : 𝓢'(Domain3, ℂ)))
+    (hfG : (∂_{EuclideanSpace.single a (1 : ℝ)} (f : 𝓢'(Domain3, ℂ))) = (fG : 𝓢'(Domain3, ℂ)))
+    (hgG : (∂_{EuclideanSpace.single a (1 : ℝ)} (g : 𝓢'(Domain3, ℂ))) = (gG : 𝓢'(Domain3, ℂ)))
+    (hvt : MemSobolev 1 2 (vt : 𝓢'(Domain3, ℂ)))
+    (hvtG : (∂_{EuclideanSpace.single a (1 : ℝ)} (vt : 𝓢'(Domain3, ℂ))) = (vtG : 𝓢'(Domain3, ℂ)))
+    (hf6 : MemLp (fun x => (f x).re) 6 (volume : Measure Domain3))
+    (hf3 : MemLp (fun x => (f x).re) 3 (volume : Measure Domain3))
+    (hg6 : MemLp (fun x => (g x).re) 6 (volume : Measure Domain3)) :
+    ∫ x : Domain3, (f x).re * (g x).re * (vtG x).re ∂(volume : Measure Domain3)
+      = -∫ x : Domain3,
+          ((fG x).re * (g x).re + (f x).re * (gG x).re) * (vt x).re
+          ∂(volume : Measure Domain3) := by
+  classical
+  set m : Domain3 := EuclideanSpace.single a (1 : ℝ) with hm
+  -- L³ approximation of the test factor `vt`.
+  obtain ⟨ψ, hψ_val, hψ_grad, Φ, hΦae, hψ3⟩ := reSchwartz_L3_approx vt vtG a hvt hvtG
+  -- Membership facts for the coefficient functions.
+  have hfre2 : MemLp (fun x => (f x).re) 2 (volume : Measure Domain3) := (Lp.memLp f).re
+  have hgre2 : MemLp (fun x => (g x).re) 2 (volume : Measure Domain3) := (Lp.memLp g).re
+  -- Coefficient `cLHS = f.re·g.re ∈ L²` (via L³·L⁶).
+  haveI hHT362 : ENNReal.HolderTriple 6 3 2 := instHolderTriple_6_3_2
+  have hcLHS_mem : MemLp (fun x => (f x).re * (g x).re) 2 (volume : Measure Domain3) :=
+    MeasureTheory.MemLp.ae_eq (Filter.Eventually.of_forall fun x => by simp [Pi.mul_apply, mul_comm])
+      (hf3.mul (p := 6) (q := 3) (r := 2) hg6)
+  set cLHS : Lp ℝ 2 (volume : Measure Domain3) := hcLHS_mem.toLp with hcLHS
+  haveI : Fact ((1 : ENNReal) ≤ 2) := ⟨by norm_num⟩
   haveI hHC22 : ENNReal.HolderConjugate (2 : ENNReal) 2 := ⟨by
     rw [inv_one]; exact ENNReal.inv_two_add_inv_two⟩
   -- Per-n Schwartz Leibniz identity (Schwartz test `ψ n`).
@@ -649,97 +771,9 @@ theorem h1Leibniz2_H1test (f g fG gG vt vtG : L2C_R3) (a : Fin 3)
       rw [hcx, hkx]
     rw [← hk0]
     refine hpair.congr (fun n => hkn n)
-  -- RHS limit: `∫ (fG.re·g.re + f.re·gG.re)·ψₙ → ∫(...)·vt.re` (pairing 3/2,3), split in two.
-  have hRHS : Filter.Tendsto
-      (fun n => ∫ x : Domain3, ((fG x).re * (g x).re + (f x).re * (gG x).re) * (ψ n) x
-        ∂(volume : Measure Domain3))
-      Filter.atTop (nhds (∫ x : Domain3,
-        ((fG x).re * (g x).re + (f x).re * (gG x).re) * (vt x).re ∂(volume : Measure Domain3))) := by
-    have hp1 := tendsto_integral_pairing (p := 3/2) (q := 3) cR1 hψ3
-    have hp2 := tendsto_integral_pairing (p := 3/2) (q := 3) cR2 hψ3
-    -- Rewrite each pairing to the component integrals.
-    have hr1n : ∀ n, ∫ x : Domain3, (cR1 x) * ((ψ n).toLp 3 (volume : Measure Domain3) x)
-          ∂(volume : Measure Domain3)
-        = ∫ x : Domain3, (fG x).re * (g x).re * (ψ n) x ∂(volume : Measure Domain3) := by
-      intro n
-      refine MeasureTheory.integral_congr_ae ?_
-      filter_upwards [hcR1_mem.coeFn_toLp, (ψ n).coeFn_toLp 3 (volume : Measure Domain3)]
-        with x hcx hkx
-      rw [hcx, hkx]
-    have hr2n : ∀ n, ∫ x : Domain3, (cR2 x) * ((ψ n).toLp 3 (volume : Measure Domain3) x)
-          ∂(volume : Measure Domain3)
-        = ∫ x : Domain3, (f x).re * (gG x).re * (ψ n) x ∂(volume : Measure Domain3) := by
-      intro n
-      refine MeasureTheory.integral_congr_ae ?_
-      filter_upwards [hcR2_mem.coeFn_toLp, (ψ n).coeFn_toLp 3 (volume : Measure Domain3)]
-        with x hcx hkx
-      rw [hcx, hkx]
-    have hr1lim : ∫ x : Domain3, (cR1 x) * (Φ x) ∂(volume : Measure Domain3)
-        = ∫ x : Domain3, (fG x).re * (g x).re * (vt x).re ∂(volume : Measure Domain3) := by
-      refine MeasureTheory.integral_congr_ae ?_
-      filter_upwards [hcR1_mem.coeFn_toLp, hΦae] with x hcx hkx
-      rw [hcx, hkx]
-    have hr2lim : ∫ x : Domain3, (cR2 x) * (Φ x) ∂(volume : Measure Domain3)
-        = ∫ x : Domain3, (f x).re * (gG x).re * (vt x).re ∂(volume : Measure Domain3) := by
-      refine MeasureTheory.integral_congr_ae ?_
-      filter_upwards [hcR2_mem.coeFn_toLp, hΦae] with x hcx hkx
-      rw [hcx, hkx]
-    -- Integrability for splitting the sum-integral.
-    haveI hHT3321 : ENNReal.HolderTriple (3/2) 3 1 := by
-      have h : Real.HolderTriple (3/2 : ℝ) (3 : ℝ) (1 : ℝ) := by constructor <;> norm_num
-      have h2 := h.ennrealOfReal
-      have e32 : ENNReal.ofReal (3 / 2 : ℝ) = (3 / 2 : ENNReal) := by
-        rw [ENNReal.ofReal_div_of_pos (by norm_num)]; simp
-      simpa only [ENNReal.ofReal_ofNat, ENNReal.ofReal_one, e32] using h2
-    have hint1 : ∀ n, MeasureTheory.Integrable
-        (fun x => (fG x).re * (g x).re * (ψ n) x) (volume : Measure Domain3) := by
-      intro n
-      have := ((ψ n).memLp 3 (volume : Measure Domain3)).mul (p := 3/2) (q := 3) (r := 1) hcR1_mem
-      rw [memLp_one_iff_integrable] at this
-      refine this.congr ?_
-      filter_upwards with x
-      simp only [Pi.mul_apply]
-    have hint2 : ∀ n, MeasureTheory.Integrable
-        (fun x => (f x).re * (gG x).re * (ψ n) x) (volume : Measure Domain3) := by
-      intro n
-      have := ((ψ n).memLp 3 (volume : Measure Domain3)).mul (p := 3/2) (q := 3) (r := 1) hcR2_mem
-      rw [memLp_one_iff_integrable] at this
-      refine this.congr ?_
-      filter_upwards with x
-      simp only [Pi.mul_apply]
-    -- Combine: the n-integral = R1ₙ + R2ₙ, with limit hr1lim + hr2lim.
-    have hsplit : ∀ n, ∫ x : Domain3, ((fG x).re * (g x).re + (f x).re * (gG x).re) * (ψ n) x
-        ∂(volume : Measure Domain3)
-        = (∫ x : Domain3, (fG x).re * (g x).re * (ψ n) x ∂(volume : Measure Domain3))
-          + ∫ x : Domain3, (f x).re * (gG x).re * (ψ n) x ∂(volume : Measure Domain3) := by
-      intro n
-      rw [← MeasureTheory.integral_add (hint1 n) (hint2 n)]
-      refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
-      ring
-    -- integrability of the two limit coefficients against `vt.re`.
-    have hvt_re3 : MemLp (fun x => (vt x).re) 3 (volume : Measure Domain3) :=
-      L2L6_inter_mem_L3 _ (Lp.memLp vt).re ((gns_L6_of_memH1_R3 vt hvt).re)
-    have hintlim1 : MeasureTheory.Integrable
-        (fun x => (fG x).re * (g x).re * (vt x).re) (volume : Measure Domain3) := by
-      have := ((hvt_re3).mul (p := 3/2) (q := 3) (r := 1) hcR1_mem)
-      rw [memLp_one_iff_integrable] at this
-      refine this.congr ?_; filter_upwards with x; simp only [Pi.mul_apply]
-    have hintlim2 : MeasureTheory.Integrable
-        (fun x => (f x).re * (gG x).re * (vt x).re) (volume : Measure Domain3) := by
-      have := ((hvt_re3).mul (p := 3/2) (q := 3) (r := 1) hcR2_mem)
-      rw [memLp_one_iff_integrable] at this
-      refine this.congr ?_; filter_upwards with x; simp only [Pi.mul_apply]
-    have hcomb := ((hp1.congr hr1n).add (hp2.congr hr2n))
-    rw [hr1lim, hr2lim, ← MeasureTheory.integral_add hintlim1 hintlim2] at hcomb
-    have hcomb2 : Filter.Tendsto
-        (fun n => ∫ x : Domain3, ((fG x).re * (g x).re + (f x).re * (gG x).re) * (ψ n) x
-          ∂(volume : Measure Domain3)) Filter.atTop
-        (nhds (∫ x : Domain3, ((fG x).re * (g x).re * (vt x).re
-          + (f x).re * (gG x).re * (vt x).re) ∂(volume : Measure Domain3))) :=
-      hcomb.congr (fun n => (hsplit n).symm)
-    refine hcomb2.mono_right (le_of_eq (congrArg nhds ?_))
-    refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
-    ring
+  -- RHS limit: `∫ (fG.re·g.re + f.re·gG.re)·ψₙ → ∫(...)·vt.re` (pairing 3/2,3), via the
+  -- extracted step.
+  have hRHS := h1Leibniz2_H1test_RHS_limit f g fG gG vt hvt hf6 hg6 ψ Φ hΦae hψ3
   -- Equate the two limits.
   have hlim : (∫ x : Domain3, (f x).re * (g x).re * (vtG x).re ∂(volume : Measure Domain3))
       = -(∫ x : Domain3, ((fG x).re * (g x).re + (f x).re * (gG x).re) * (vt x).re
