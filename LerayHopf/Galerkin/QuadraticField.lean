@@ -1,6 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.Dual
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Analysis.Calculus.ContDiff.FiniteDimension
+import LerayHopf.Galerkin.DissipativeODE
 
 /-!
 # Generic quadratic-plus-linear Galerkin vector field (issue #112)
@@ -22,8 +23,13 @@ alone. PR-B (issue #112 lane rewiring) supplies the two lane witnesses `torusFie
 `r3FieldForms` and bridges each lane's existing `galerkinODE_vectorField` to
 `(FieldForms).vectorField` by `ext_inner_right` + both specs (plan §3.3).
 
-Mathlib-only imports (pdelib-grade layer — flagged in `docs/pdelib-staging.md`); this file
-imports no `LerayHopf` module and is consumed by nothing in `LerayHopf` yet (PR-A has no
+Generic-layer only: mathlib plus `LerayHopf.Galerkin.DissipativeODE` (itself mathlib-only) —
+no NS/domain/Galerkin-scheme content. The `DissipativeODE` import is needed for
+`forwardGlobalSolution_exists`'s frozen proof route (plan §3.2): it is derived from
+`DissipativeODE.forwardGlobalSolution_exists` applied to `vectorField_contDiff` and
+`inner_self_vectorField_nonpos`. Pdelib-grade is a property of the `LerayHopf/Galerkin/`
+generic layer as a whole (flagged in `docs/pdelib-staging.md`) and is preserved by this
+intra-layer dependency; this file is consumed by nothing in `LerayHopf` yet (PR-A has no
 consumers by design; wiring happens in PR-B).
 
 ## Scaffold status
