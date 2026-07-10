@@ -1,5 +1,5 @@
 /-
-# LerayHopf.R3.ViscousWeakLsc — Tier E: energy inequality (kinetic + viscous halves)
+# LerayHopf.R3.EnergyWeakLsc — Tier E: energy inequality (kinetic + viscous halves)
 
 **Split off `R3.AubinLionsLimitPassage.lean` (issue #114 Tier 1, commit 1).** Verbatim move of
 the former "Tier E" super-section: "Tier E — energy inequality" (kinetic-lsc half),
@@ -16,7 +16,7 @@ both pervasively elsewhere (well beyond the moved viscous section), so leaving t
 force `AubinLionsLimitPassage.lean` to import this file while this file also needed to import
 `AubinLionsLimitPassage.lean` back — a cycle. Moving the whole "Tier E" super-section here
 (kinetic half included) is the only clean fix; `AubinLionsLimitPassage.lean` gets both back via
-`import LerayHopf.R3.ViscousWeakLsc`.
+`import LerayHopf.R3.EnergyWeakLsc`.
 
 **One visibility change:** `viscousFormSq_aestronglyMeasurable_of_memH1` was `private`
 in the source file but is called from `AubinLionsLimitPassage.lean`'s remainder — made public

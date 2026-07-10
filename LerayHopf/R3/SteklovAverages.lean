@@ -39,7 +39,7 @@ import LerayHopf.R3.SolutionInterfaces   -- R3GalerkinScheme, R3NSForms, Galerki
                                           -- AubinLionsPackage_R3 (theorem-signature types)
 import LerayHopf.R3.SpatialCompactness   -- LocalRellichInput, localCompactness_R3_of_ballCompact,
                                           -- restrictToBall, L2ballR3
-import LerayHopf.R3.ViscousWeakLsc       -- galerkin_norm_le_u0, galerkin_curve_continuous,
+import LerayHopf.R3.EnergyWeakLsc        -- galerkin_norm_le_u0, galerkin_curve_continuous,
                                           -- viscousFormSq_curve_continuousOn (Tier E, issue #114
                                           -- Tier 1 commit 1)
 import LerayHopf.R3.GalerkinODE          -- galerkinCurve_reg_mem, viscousFormSq_R3_eq_smul

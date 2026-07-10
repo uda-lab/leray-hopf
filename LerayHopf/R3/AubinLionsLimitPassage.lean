@@ -82,7 +82,7 @@ import LerayHopf.R3.SolutionInterfaces     -- AubinLionsPackage_R3, GalerkinSolu
 import LerayHopf.R3.SpatialCompactness   -- localCompactness_R3_of_ballCompact, LocalRellichInput
 import LerayHopf.R3.ArzelaAscoliTime     -- issue #44: T0.1/T0.2 axioms + T1–T4 Arzelà–Ascoli chain + u_lim_aestronglyMeasurable
 import LerayHopf.R3.TrilinearEstimate    -- b-bound analytic core (downstream of R3NSForms.b_bound)
-import LerayHopf.R3.ViscousWeakLsc       -- Tier E (kinetic + viscous halves): galerkin_norm_le_u0,
+import LerayHopf.R3.EnergyWeakLsc        -- Tier E (kinetic + viscous halves): galerkin_norm_le_u0,
                                           -- galerkin_curve_continuous, kineticEnergy_lsc_bound,
                                           -- viscous_pointwise_lsc, viscous_lsc_under_strongL2,
                                           -- inner_tendsto_of_perball, weak_tendsto_of_inner_tendsto, and friends
@@ -194,12 +194,12 @@ theorem bForm_tendsto_of_strongL2 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
 
 -- Tier E — energy inequality (kinetic-lsc half: galerkin_norm_le_u0, galerkin_curve_continuous,
 -- kineticEnergy_lsc_bound) and Tier E-prep, plus Tier E (viscous half), all moved verbatim to
--- `R3.ViscousWeakLsc` (issue #114 Tier 1 commit 1). The kinetic-half content moved WITH the
+-- `R3.EnergyWeakLsc` (issue #114 Tier 1 commit 1). The kinetic-half content moved WITH the
 -- viscous half despite the section label, not because of topic but because the viscous-half
 -- theorems (`viscous_pointwise_lsc`, `viscous_lsc_under_strongL2`,
 -- `liminf_viscousFormSq_lt_top_ae`) call `galerkin_norm_le_u0`/`kineticEnergy_lsc_bound`
 -- directly, and this file (which also needs both pervasively elsewhere below) cannot import
--- `R3.ViscousWeakLsc` back without a cycle if they stayed here. Imported above.
+-- `R3.EnergyWeakLsc` back without a cycle if they stayed here. Imported above.
 
 -- Tier C-prep — Steklov interval-average building blocks for the Aubin–Lions route — moved
 -- verbatim to `R3.SteklovAverages` (issue #114 Tier 1 commit 2), together with its Tier H/Tier S
