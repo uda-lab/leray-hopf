@@ -484,7 +484,11 @@ plan's equality-bridge rule (no redefinition of `galerkinODE_vectorField`). -/
 theorem galerkinODE_vectorField_eq_generic
     (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBasis B)) (ν : ℝ) (n : ℕ) :
     galerkinODE_vectorField B F ν n = (r3FieldForms B F n).vectorField ν := by
-  sorry -- ALLOW_SORRY: PR-B scaffold, prover fills (issue #112)
+  funext u
+  refine ext_inner_right ℝ (fun w => ?_)
+  rw [Submodule.coe_inner (galerkinSpan B n) (galerkinODE_vectorField B F ν n u) w,
+    galerkinODE_vectorField_spec B F ν n u w, (r3FieldForms B F n).vectorField_spec]
+  rfl
 
 /-! ### S0 — the residual isolated frontier hypothesis -/
 

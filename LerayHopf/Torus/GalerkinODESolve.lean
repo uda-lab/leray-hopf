@@ -286,7 +286,11 @@ the generic `FieldForms` construction — proved by `ext_inner_right` + both spe
 plan's equality-bridge rule (no redefinition of `galerkinODE_vectorField`). -/
 theorem galerkinODE_vectorField_eq_generic (F : Torus3NSForms) (ν : ℝ) (n : ℕ) :
     galerkinODE_vectorField F ν n = (torusFieldForms F n).vectorField ν := by
-  sorry -- ALLOW_SORRY: PR-B scaffold, prover fills (issue #112)
+  funext u
+  refine ext_inner_right ℝ (fun w => ?_)
+  rw [Submodule.coe_inner (velocitySpan n) (galerkinODE_vectorField F ν n u) w,
+    galerkinODE_vectorField_spec F ν n u w, (torusFieldForms F n).vectorField_spec]
+  rfl
 
 /-! ## B.2 — C1: the Galerkin field is `C¹`
 
@@ -444,33 +448,31 @@ private theorem galerkinODE_vectorField_eq_parts (F : Torus3NSForms) (ν : ℝ) 
 /-- **C1 (the enabler).** The Galerkin field `G_n` is `C¹` on the finite-dim `Vₙ`. -/
 theorem galerkinODE_vectorField_contDiff (F : Torus3NSForms) (ν : ℝ) (n : ℕ) :
     ContDiff ℝ 1 (galerkinODE_vectorField F ν n) := by
-  have hfun : galerkinODE_vectorField F ν n
-      = fun u => galerkinODE_bilinearPart F ν n u u + galerkinODE_linearPart F ν n u := by
-    funext u; exact galerkinODE_vectorField_eq_parts F ν n u
-  rw [hfun]
-  have hbil : ContDiff ℝ 1 (fun u => galerkinODE_bilinearPart F ν n u u) :=
-    (galerkinODE_bilinearPart F ν n).contDiff.clm_apply contDiff_id
-  have hlin : ContDiff ℝ 1 (fun u => galerkinODE_linearPart F ν n u) :=
-    (galerkinODE_linearPart F ν n).contDiff
-  exact hbil.add hlin
+  rw [galerkinODE_vectorField_eq_generic]
+  exact (torusFieldForms F n).vectorField_contDiff ν
 
 /-! ## B.3 — A1/A2/A3: dissipation identity + the forward a-priori energy bound
 
 Mirror of `R3/GalerkinODESolve.lean`'s A1/A2/A3 (domain-agnostic given B.1/B.2 + the diagonal). -/
+
+/-- Reflect an ambient `HasDerivAt` of a `Vₙ`-curve back to the intrinsic one — the reverse of
+`Galerkin.coe_hasDerivAt`, via the orthogonal-projection retraction `orthogonalProjectionOnto`
+(a continuous linear left inverse of the subspace inclusion). Lets the ambient-curve energy/
+a-priori corollaries below feed the generic intrinsic-curve `Galerkin` lemmas. -/
+private theorem hasDerivAt_intrinsic_of_coe (n : ℕ) (c : ℝ → velocitySpan n)
+    (v : velocitySpan n) (t : ℝ)
+    (h : HasDerivAt (fun s => (c s : L2VF)) (v : L2VF) t) :
+    HasDerivAt c v t := by
+  have hcomp := ((velocitySpan n).orthogonalProjectionOnto).hasFDerivAt.comp_hasDerivAt t h
+  simpa [Function.comp_def] using hcomp
 
 /-- **A1.** `⟪v, G_n v⟫ ≤ 0` for `v ∈ Vₙ` (dissipation at a point), from R2 + `b_self_zero` +
 `stokesTestPairing_diag`. -/
 theorem galerkinField_inner_self_nonpos (F : Torus3NSForms) (ν : ℝ) (n : ℕ) (hν : 0 < ν)
     (v : velocitySpan n) :
     inner (𝕜 := ℝ) (v : L2VF) (galerkinODE_vectorField F ν n v : L2VF) ≤ 0 := by
-  have hval : inner (𝕜 := ℝ) (v : L2VF) (galerkinODE_vectorField F ν n v : L2VF)
-      = - ν * viscousFormSq 1 (v : L2VF) := by
-    rw [real_inner_comm]
-    have hspec := galerkinODE_vectorField_spec F ν n v v
-    rw [hspec, Torus3NSForms.b_self_zero F (velocitySpanToSigma n v), sub_zero,
-      stokesTestPairing_diag]
-  rw [hval, neg_mul]
-  exact neg_nonpos.mpr (mul_nonneg hν.le (viscousFormSq_nonneg zero_le_one _))
+  rw [← Submodule.coe_inner, galerkinODE_vectorField_eq_generic]
+  exact (torusFieldForms F n).inner_self_vectorField_nonpos hν v
 
 /-- **A2.** Along any local solution `c' = G_n(c)`, the energy `½‖c t‖²` has derivative
 `-ν·viscousFormSq 1 (c t) ≤ 0`. -/
@@ -480,31 +482,20 @@ theorem energy_hasDerivAt_of_localSolution (F : Torus3NSForms) (ν : ℝ) (n : �
       (galerkinODE_vectorField F ν n (c t) : L2VF) t) :
     HasDerivAt (fun s => (1 / 2 : ℝ) * ‖(c s : L2VF)‖ ^ 2)
       (- ν * viscousFormSq 1 (c t : L2VF)) t := by
-  have hinnerval : inner (𝕜 := ℝ) (c t : L2VF) (galerkinODE_vectorField F ν n (c t) : L2VF)
+  have hc' : HasDerivAt c ((torusFieldForms F n).vectorField ν (c t)) t := by
+    rw [← galerkinODE_vectorField_eq_generic]
+    exact hasDerivAt_intrinsic_of_coe n c _ t hc
+  have hgen := (torusFieldForms F n).energy_hasDerivAt ν c t hc'
+  have hval : -((ν : ℝ) * (torusFieldForms F n).sV (c t) (c t))
       = - ν * viscousFormSq 1 (c t : L2VF) := by
-    rw [real_inner_comm]
-    have hspec := galerkinODE_vectorField_spec F ν n (c t) (c t)
-    rw [hspec, Torus3NSForms.b_self_zero F (velocitySpanToSigma n (c t)), sub_zero,
-      stokesTestPairing_diag]
-  have hinner :
-      HasDerivAt (fun s => inner (𝕜 := ℝ) (c s : L2VF) (c s : L2VF))
-        (inner (𝕜 := ℝ) (c t : L2VF) (galerkinODE_vectorField F ν n (c t) : L2VF)
-          + inner (𝕜 := ℝ) (galerkinODE_vectorField F ν n (c t) : L2VF) (c t : L2VF)) t :=
-    hc.inner ℝ hc
-  have hfun : (fun s => (1 / 2 : ℝ) * ‖(c s : L2VF)‖ ^ 2)
-      = fun s => (1 / 2 : ℝ) * inner (𝕜 := ℝ) (c s : L2VF) (c s : L2VF) := by
-    funext s; rw [real_inner_self_eq_norm_sq]
-  rw [hfun]
-  have hval : (1 / 2 : ℝ) *
-      (inner (𝕜 := ℝ) (c t : L2VF) (galerkinODE_vectorField F ν n (c t) : L2VF)
-        + inner (𝕜 := ℝ) (galerkinODE_vectorField F ν n (c t) : L2VF) (c t : L2VF))
-      = - ν * viscousFormSq 1 (c t : L2VF) := by
-    have hcomm : inner (𝕜 := ℝ) (galerkinODE_vectorField F ν n (c t) : L2VF) (c t : L2VF)
-        = inner (𝕜 := ℝ) (c t : L2VF) (galerkinODE_vectorField F ν n (c t) : L2VF) :=
-      real_inner_comm _ _
-    rw [hcomm, hinnerval]; ring
-  rw [← hval]
-  exact hinner.const_mul (1 / 2 : ℝ)
+    show -((ν : ℝ) * stokesTestPairing (c t : L2VF) (c t : L2VF))
+      = - ν * viscousFormSq 1 (c t : L2VF)
+    rw [stokesTestPairing_diag]; ring
+  have hfun : (fun s => (1 / 2 : ℝ) * ‖c s‖ ^ 2)
+      = fun s => (1 / 2 : ℝ) * ‖(c s : L2VF)‖ ^ 2 := by
+    funext s; rw [Submodule.norm_coe]
+  rw [hval, hfun] at hgen
+  exact hgen
 
 /-- **A3.** Any forward local solution on `[0, T]` stays in the ball `‖c t‖ ≤ ‖c 0‖`. -/
 theorem norm_le_of_forwardSolution (F : Torus3NSForms) (ν : ℝ) (n : ℕ) (hν : 0 < ν)
@@ -512,29 +503,19 @@ theorem norm_le_of_forwardSolution (F : Torus3NSForms) (ν : ℝ) (n : ℕ) (hν
     (hsol : ∀ t ∈ Icc (0 : ℝ) T, HasDerivAt (fun s => (c s : L2VF))
       (galerkinODE_vectorField F ν n (c t) : L2VF) t) :
     ∀ t ∈ Icc (0 : ℝ) T, ‖(c t : L2VF)‖ ≤ ‖(c 0 : L2VF)‖ := by
-  set E : ℝ → ℝ := fun s => (1 / 2 : ℝ) * ‖(c s : L2VF)‖ ^ 2 with hE
-  have hderiv : ∀ s ∈ Icc (0 : ℝ) T,
-      HasDerivAt E (- ν * viscousFormSq 1 (c s : L2VF)) s := fun s hs =>
-    energy_hasDerivAt_of_localSolution F ν n c s (hsol s hs)
-  have hAnti : AntitoneOn E (Icc (0 : ℝ) T) := by
-    refine antitoneOn_of_deriv_nonpos (convex_Icc 0 T) ?_ ?_ ?_
-    · exact fun s hs => (hderiv s hs).continuousAt.continuousWithinAt
-    · intro s hs
-      have hs' : s ∈ Icc (0 : ℝ) T := interior_subset hs
-      exact (hderiv s hs').differentiableAt.differentiableWithinAt
-    · intro s hs
-      have hs' : s ∈ Icc (0 : ℝ) T := interior_subset hs
-      rw [(hderiv s hs').deriv]
-      have : 0 ≤ ν * viscousFormSq 1 (c s : L2VF) :=
-        mul_nonneg hν.le (viscousFormSq_nonneg zero_le_one _)
-      rw [neg_mul]; linarith
+  have hdiss : ∀ w : velocitySpan n,
+      inner (𝕜 := ℝ) w ((torusFieldForms F n).vectorField ν w) ≤ 0 :=
+    fun w => (torusFieldForms F n).inner_self_vectorField_nonpos hν w
+  have hsol' : ∀ t ∈ Icc (0 : ℝ) T,
+      HasDerivAt c ((torusFieldForms F n).vectorField ν (c t)) t := by
+    intro t ht
+    rw [← galerkinODE_vectorField_eq_generic]
+    exact hasDerivAt_intrinsic_of_coe n c _ t (hsol t ht)
   intro t ht
-  have h0 : (0 : ℝ) ∈ Icc (0 : ℝ) T := ⟨le_refl 0, hT⟩
-  have hle : E t ≤ E 0 := hAnti h0 ht ht.1
-  have hsq : ‖(c t : L2VF)‖ ^ 2 ≤ ‖(c 0 : L2VF)‖ ^ 2 := by
-    simp only [hE] at hle; linarith
-  have := Real.sqrt_le_sqrt hsq
-  rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (norm_nonneg _)] at this
+  have hbound := Galerkin.norm_le_of_forwardSolution_of_dissipative
+    ((torusFieldForms F n).vectorField ν) hdiss c hT hsol' t ht
+  rw [Submodule.norm_coe, Submodule.norm_coe]
+  exact hbound
 
 /-! ## B.5 — G1: forward-global existence by tiling (the core)
 
@@ -547,45 +528,9 @@ theorem galerkinField_uniform_local_time (F : Torus3NSForms) (ν : ℝ) (n : ℕ
     ∃ δ : ℝ, 0 < δ ∧ ∀ x₀ ∈ closedBall (0 : velocitySpan n) R, ∀ t₀ : ℝ,
       ∃ α : ℝ → velocitySpan n, α t₀ = x₀ ∧
         ∀ t ∈ Ioo (t₀ - δ) (t₀ + δ),
-          HasDerivAt α (galerkinODE_vectorField F ν n (α t)) t := by
-  set g := galerkinODE_vectorField F ν n with hg
-  have hcd : ∀ x : velocitySpan n, ContDiffAt ℝ 1 g x := fun x =>
-    (galerkinODE_vectorField_contDiff F ν n).contDiffAt
-  have hloc : ∀ y : velocitySpan n, ∃ r > (0 : ℝ), ∃ ε > (0 : ℝ),
-      ∀ x ∈ closedBall y r, ∃ α : ℝ → velocitySpan n, α 0 = x ∧
-        ∀ t ∈ Ioo (0 - ε) (0 + ε), HasDerivAt α (g (α t)) t := fun y =>
-    (hcd y).exists_forall_mem_closedBall_exists_eq_forall_mem_Ioo_hasDerivAt 0
-  choose r hr ε hε Hsol using hloc
-  have hcover : closedBall (0 : velocitySpan n) R ⊆ ⋃ y, ball y (r y) := by
-    intro x _
-    exact mem_iUnion.mpr ⟨x, mem_ball_self (hr x)⟩
-  obtain ⟨I, hI⟩ := (isCompact_closedBall (0 : velocitySpan n) R).elim_finite_subcover
-    (fun y => ball y (r y)) (fun y => isOpen_ball) hcover
-  rcases I.eq_empty_or_nonempty with hIemp | hIne
-  · refine ⟨1, one_pos, fun x₀ hx₀ t₀ => ?_⟩
-    rw [hIemp] at hI
-    simp only [Finset.notMem_empty, iUnion_of_empty, iUnion_empty,
-      subset_empty_iff] at hI
-    exact absurd (hI ▸ hx₀) (Set.notMem_empty x₀)
-  · refine ⟨I.inf' hIne ε, ?_, fun x₀ hx₀ t₀ => ?_⟩
-    · rw [Finset.lt_inf'_iff]
-      exact fun y _ => hε y
-    · set δ := I.inf' hIne ε with hδ
-      have hx₀' : x₀ ∈ ⋃ y ∈ I, ball y (r y) := hI hx₀
-      rw [mem_iUnion₂] at hx₀'
-      obtain ⟨y, hyI, hxy⟩ := hx₀'
-      have hxmem : x₀ ∈ closedBall y (r y) := ball_subset_closedBall hxy
-      obtain ⟨α, hα0, hαsol⟩ := Hsol y x₀ hxmem
-      refine ⟨fun t => α (t - t₀), by simp only [sub_self]; exact hα0, fun t ht => ?_⟩
-      have hδε : δ ≤ ε y := Finset.inf'_le _ hyI
-      have htmem : t - t₀ ∈ Ioo (0 - ε y) (0 + ε y) := by
-        rw [mem_Ioo] at ht ⊢
-        refine ⟨by rw [zero_sub]; linarith [ht.1], by rw [zero_add]; linarith [ht.2]⟩
-      have hd := hαsol (t - t₀) htmem
-      have hsub : HasDerivAt (fun t : ℝ => t - t₀) 1 t := (hasDerivAt_id t).sub_const t₀
-      have hcomp := hd.scomp t hsub
-      simp only [one_smul, Function.comp_def] at hcomp
-      exact hcomp
+          HasDerivAt α (galerkinODE_vectorField F ν n (α t)) t :=
+  Galerkin.uniform_local_time (galerkinODE_vectorField F ν n)
+    (galerkinODE_vectorField_contDiff F ν n) R
 
 /-- Transport an intrinsic `HasDerivAt` in `Vₙ` to the ambient `L2VF` curve. -/
 private theorem solve_hasDerivAt_ambient (F : Torus3NSForms) (ν : ℝ) (n : ℕ)
@@ -599,8 +544,6 @@ private theorem solve_hasDerivAt_ambient (F : Torus3NSForms) (ν : ℝ) (n : ℕ
   have hcomp := hl.comp_hasDerivAt t h
   simpa [Function.comp_def, Submodule.subtypeL_apply] using hcomp
 
-set_option synthInstance.maxHeartbeats 400000 in
-set_option maxHeartbeats 1000000 in
 /-- **G1 helper (splice-agreement).** Two local solutions agreeing at one point agree on the
 overlap. -/
 theorem galerkinField_solution_agree (F : Torus3NSForms) (ν : ℝ) (n : ℕ)
@@ -608,51 +551,9 @@ theorem galerkinField_solution_agree (F : Torus3NSForms) (ν : ℝ) (n : ℕ)
     (hαβ : α t₀ = β t₀)
     (hα : ∀ t ∈ Icc a b, HasDerivAt α (galerkinODE_vectorField F ν n (α t)) t)
     (hβ : ∀ t ∈ Icc a b, HasDerivAt β (galerkinODE_vectorField F ν n (β t)) t) :
-    ∀ t ∈ Icc a b, α t = β t := by
-  set g := galerkinODE_vectorField F ν n with hg
-  have hαc : ContinuousOn α (Icc a b) := fun t ht => (hα t ht).continuousAt.continuousWithinAt
-  have hβc : ContinuousOn β (Icc a b) := fun t ht => (hβ t ht).continuousAt.continuousWithinAt
-  obtain ⟨Mα, hMα⟩ := (((isCompact_Icc).image_of_continuousOn hαc).image continuous_norm).bddAbove
-  obtain ⟨Mβ, hMβ⟩ := (((isCompact_Icc).image_of_continuousOn hβc).image continuous_norm).bddAbove
-  set M : ℝ := max (max Mα Mβ) 0 with hMdef
-  have hM0 : 0 ≤ M := le_max_right _ _
-  have hαM : ∀ t ∈ Icc a b, α t ∈ closedBall (0 : velocitySpan n) M := by
-    intro t ht
-    rw [mem_closedBall, dist_zero_right]
-    refine le_trans (hMα ⟨α t, ⟨t, ht, rfl⟩, rfl⟩) ?_
-    exact le_trans (le_max_left Mα Mβ) (le_max_left _ _)
-  have hβM : ∀ t ∈ Icc a b, β t ∈ closedBall (0 : velocitySpan n) M := by
-    intro t ht
-    rw [mem_closedBall, dist_zero_right]
-    refine le_trans (hMβ ⟨β t, ⟨t, ht, rfl⟩, rfl⟩) ?_
-    exact le_trans (le_max_right Mα Mβ) (le_max_left _ _)
-  have hgcd : ContDiff ℝ 1 g := galerkinODE_vectorField_contDiff F ν n
-  obtain ⟨K, hlip⟩ := (hgcd.contDiffOn (s := closedBall (0 : velocitySpan n) M)).exists_lipschitzOnWith
-    one_ne_zero (convex_closedBall _ _) (isCompact_closedBall _ _)
-  have hbwd : EqOn α β (Icc a t₀) := by
-    have hsub : Icc a t₀ ⊆ Icc a b := Icc_subset_Icc_right ht₀.2
-    refine ODE_solution_unique_of_mem_Icc_left (a := a) (b := t₀) (K := K)
-      (s := fun _ => closedBall (0 : velocitySpan n) M)
-      (fun t' _ => hlip) (hαc.mono hsub)
-      (fun t' ht' => (hα t' (hsub ⟨ht'.1.le, ht'.2⟩)).hasDerivWithinAt)
-      (fun t' ht' => hαM t' (hsub ⟨ht'.1.le, ht'.2⟩))
-      (hβc.mono hsub)
-      (fun t' ht' => (hβ t' (hsub ⟨ht'.1.le, ht'.2⟩)).hasDerivWithinAt)
-      (fun t' ht' => hβM t' (hsub ⟨ht'.1.le, ht'.2⟩)) hαβ
-  have hfwd : EqOn α β (Icc t₀ b) := by
-    have hsub : Icc t₀ b ⊆ Icc a b := Icc_subset_Icc_left ht₀.1
-    refine ODE_solution_unique_of_mem_Icc_right (a := t₀) (b := b) (K := K)
-      (s := fun _ => closedBall (0 : velocitySpan n) M)
-      (fun t' _ => hlip) (hαc.mono hsub)
-      (fun t' ht' => (hα t' (hsub ⟨ht'.1, ht'.2.le⟩)).hasDerivWithinAt)
-      (fun t' ht' => hαM t' (hsub ⟨ht'.1, ht'.2.le⟩))
-      (hβc.mono hsub)
-      (fun t' ht' => (hβ t' (hsub ⟨ht'.1, ht'.2.le⟩)).hasDerivWithinAt)
-      (fun t' ht' => hβM t' (hsub ⟨ht'.1, ht'.2.le⟩)) hαβ
-  intro t ht
-  rcases le_total t t₀ with hle | hle
-  · exact hbwd ⟨ht.1, hle⟩
-  · exact hfwd ⟨hle, ht.2⟩
+    ∀ t ∈ Icc a b, α t = β t :=
+  Galerkin.solution_agree (galerkinODE_vectorField F ν n)
+    (galerkinODE_vectorField_contDiff F ν n) α β hab ht₀ hαβ hα hβ
 
 set_option maxHeartbeats 1600000 in
 /-- Tiling induction: a forward solution exists on `[0, k·δ/2]` for every `k`. -/
@@ -753,76 +654,13 @@ theorem forwardGlobalSolution_exists (F : Torus3NSForms) (ν : ℝ) (hν : 0 < �
       (c 0 : L2VF) = velocityProjection_n n (u₀ : L2VF) ∧
       ∀ t, 0 ≤ t → HasDerivAt (fun s => (c s : L2VF))
         (galerkinODE_vectorField F ν n (c t) : L2VF) t := by
-  classical
-  set g := galerkinODE_vectorField F ν n with hg
   have hx₀mem : velocityProjection_n n (u₀ : L2VF) ∈ velocitySpan n := velocityP_initial_mem n u₀
-  set x₀ : velocitySpan n := ⟨velocityProjection_n n (u₀ : L2VF), hx₀mem⟩ with hx₀
-  set R := ‖x₀‖ with hR
-  obtain ⟨δ, hδ, huniform⟩ := galerkinField_uniform_local_time F ν n R
-  have hstep := solve_exists_on_step F ν hν n x₀ hδ huniform
-  set s2 : ℝ := δ / 2 with hs2def
-  have hs2 : (0 : ℝ) < s2 := by rw [hs2def]; positivity
-  choose ck hck0 hcksol using hstep
-  set N : ℝ → ℕ := fun t => ⌊t / s2⌋₊ + 1 with hN
-  set c : ℝ → velocitySpan n := fun t => ck (N t) t with hc
-  have hltN : ∀ t : ℝ, t < N t * s2 := by
-    intro t
-    rcases lt_or_ge t 0 with ht0 | ht0
-    · have hN1 : (1 : ℝ) ≤ (N t : ℝ) := by
-        rw [hN]; push_cast; have := Nat.zero_le (⌊t / s2⌋₊); push_cast; linarith
-      have hpos : (0 : ℝ) < N t * s2 := mul_pos (by linarith) hs2
-      linarith
-    · have hlt : t / s2 < (⌊t / s2⌋₊ : ℝ) + 1 := Nat.lt_floor_add_one (t / s2)
-      have heq2 : t = (t / s2) * s2 := by field_simp
-      have hmul := mul_lt_mul_of_pos_right hlt hs2
-      rw [← heq2] at hmul
-      rw [hN]; push_cast
-      exact hmul
-  have hmemN : ∀ t, 0 ≤ t → t ∈ Icc (0 : ℝ) (N t * s2) := fun t ht => ⟨ht, le_of_lt (hltN t)⟩
-  have hagree : ∀ j k : ℕ, ∀ t ∈ Icc (0 : ℝ) (min (j * s2) (k * s2)), ck j t = ck k t := by
-    intro j k t ht
-    have hjk : (0 : ℝ) ≤ min (j * s2) (k * s2) := le_min (by positivity) (by positivity)
-    refine galerkinField_solution_agree F ν n (ck j) (ck k) hjk ⟨le_refl 0, hjk⟩
-      (by rw [hck0 j, hck0 k]) ?_ ?_ t ht
-    · intro u hu
-      exact hcksol j u ⟨hu.1, le_trans hu.2 (min_le_left _ _)⟩
-    · intro u hu
-      exact hcksol k u ⟨hu.1, le_trans hu.2 (min_le_right _ _)⟩
-  refine ⟨c, ?_, ?_⟩
-  · show (ck (N 0) 0 : L2VF) = velocityProjection_n n (u₀ : L2VF)
-    rw [hck0 (N 0)]
-  · intro t ht
-    have hsol := hcksol (N t) t (hmemN t ht)
-    have hsol_amb := solve_hasDerivAt_ambient F ν n (ck (N t)) t hsol
-    have hN1 : ∀ u : ℝ, u < s2 → N u = 1 := by
-      intro u hu
-      show ⌊u / s2⌋₊ + 1 = 1
-      have hfloor : ⌊u / s2⌋₊ = 0 := by
-        apply Nat.floor_eq_zero.mpr
-        rw [div_lt_one hs2]; exact hu
-      rw [hfloor]
-    have hev : (fun s => (c s : L2VF)) =ᶠ[nhds t]
-        (fun u => (ck (N t) u : L2VF)) := by
-      rcases eq_or_lt_of_le ht with ht0 | ht0
-      · rw [← ht0]
-        have hVnhds : Iio s2 ∈ nhds (0 : ℝ) := Iio_mem_nhds hs2
-        filter_upwards [hVnhds] with u hu
-        show (ck (N u) u : L2VF) = (ck (N 0) u : L2VF)
-        rw [hN1 u hu, hN1 0 hs2]
-      · have hVnhds : Iio (N t * s2) ∩ Ioi 0 ∈ nhds t :=
-          Filter.inter_mem (Iio_mem_nhds (hltN t)) (Ioi_mem_nhds ht0)
-        filter_upwards [hVnhds] with u hu
-        show (ck (N u) u : L2VF) = (ck (N t) u : L2VF)
-        have humem : u ∈ Icc (0 : ℝ) (min (N u * s2) (N t * s2)) :=
-          ⟨le_of_lt (mem_Ioi.mp hu.2), le_min (le_of_lt (hltN u)) (le_of_lt (mem_Iio.mp hu.1))⟩
-        rw [hagree (N u) (N t) u humem]
-    have hgoal : HasDerivAt (fun s => (ck (N t) s : L2VF))
-        (galerkinODE_vectorField F ν n (c t) : L2VF) t := by
-      have hct : (c t : velocitySpan n) = ck (N t) t := rfl
-      rw [show (galerkinODE_vectorField F ν n (c t) : L2VF)
-          = (galerkinODE_vectorField F ν n (ck (N t) t) : L2VF) from by rw [hct]]
-      exact hsol_amb
-    exact (hev.hasDerivAt_iff).mpr hgoal
+  obtain ⟨c, hc0, hd⟩ := (torusFieldForms F n).forwardGlobalSolution_exists hν
+    (⟨velocityProjection_n n (u₀ : L2VF), hx₀mem⟩ : velocitySpan n)
+  refine ⟨c, ?_, fun t ht => ?_⟩
+  · rw [hc0]
+  · rw [galerkinODE_vectorField_eq_generic]
+    exact Galerkin.coe_hasDerivAt (velocitySpan n) c _ t (hd t ht)
 
 /-! ## B.6 — D: assemble `GalerkinSolutionData`
 
