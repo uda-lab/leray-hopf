@@ -77,6 +77,17 @@ theorem DissipativeEvolution.convForm_self_zero
   have h := E.convForm_antisymm u u u
   linarith
 
+/-- The convection trilinear form vanishes when its last two arguments coincide —
+the energy-estimate workhorse.
+
+Proof: `b(u, v, v) = -b(u, v, v)` by `convForm_antisymm u v v`, so `2 * b(u, v, v) = 0`,
+hence `b(u, v, v) = 0`. -/
+theorem DissipativeEvolution.convForm_self_zero_right
+    (E : DissipativeEvolution) (u v : E.H) :
+    E.convForm u v v = 0 := by
+  have h := E.convForm_antisymm u v v
+  linarith
+
 /-! ### Weak formulation of the Navier–Stokes equations -/
 
 /-- The **weak Navier–Stokes equation** for a curve `u : Time → E.H`.
