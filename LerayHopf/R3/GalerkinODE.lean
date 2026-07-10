@@ -168,6 +168,33 @@ theorem viscousFormSq_R3_eq_smul (ν : ℝ) (u : L2VF_R3) :
   unfold viscousFormSq_R3
   simp [smul_eq_mul, mul_assoc]
 
+/-! ### N0 — symmetry -/
+
+open scoped FourierTransform in
+/-- Stokes is symmetric on `V_n` span elements: the integrand `Re[(𝓕 uⱼ)·conj(𝓕 wⱼ)]` equals
+`Re[(𝓕 wⱼ)·conj(𝓕 uⱼ)]` pointwise, so the whole pairing is symmetric (no integrability needed).
+
+Promoted from a `private` copy in `R3/GalerkinODESolve.lean` (issue #112 PR-B): both
+`GalerkinODESolve.lean` and `GalerkinODEExistence.lean` already import this file, so hosting
+the one public copy here lets `r3FieldForms` (`GalerkinODEExistence.lean`) cite it directly
+without an import cycle. Proof body unchanged from the original. -/
+theorem stokesTestPairing_R3_symm (u w : L2VF_R3) :
+    stokesTestPairing_R3 u w = stokesTestPairing_R3 w u := by
+  unfold stokesTestPairing_R3
+  refine Finset.sum_congr rfl (fun j _ => ?_)
+  refine integral_congr_ae (Filter.Eventually.of_forall (fun ξ => ?_))
+  -- It suffices to equate the `.re` factors.
+  have hre : ((𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ *
+        (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ)).re
+      = ((𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ *
+          (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ)).re := by
+    rw [← Complex.conj_re ((𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ *
+        (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ))]
+    congr 1
+    rw [map_mul, Complex.conj_conj]
+    ring
+  exact congrArg (fun r => (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * r) hre
+
 /-! ### N1 — diagonal viscous pairing -/
 
 /-- On the diagonal the viscous pairing is the dissipation:

@@ -190,24 +190,9 @@ private noncomputable def stokesInner (B : SchwartzGalerkinBasis) (ν : ℝ) (n 
     (u w : galerkinSpan B n) :
     stokesInner B ν n u w = - ν * stokesTestPairing_R3 (u : L2VF_R3) (w : L2VF_R3) := rfl
 
-/-- Stokes is symmetric on `V_n` span elements: the integrand `Re[(𝓕 uⱼ)·conj(𝓕 wⱼ)]` equals
-`Re[(𝓕 wⱼ)·conj(𝓕 uⱼ)]` pointwise, so the whole pairing is symmetric (no integrability needed). -/
-private theorem stokesTestPairing_R3_symm (u w : L2VF_R3) :
-    stokesTestPairing_R3 u w = stokesTestPairing_R3 w u := by
-  unfold stokesTestPairing_R3
-  refine Finset.sum_congr rfl (fun j _ => ?_)
-  refine integral_congr_ae (Filter.Eventually.of_forall (fun ξ => ?_))
-  -- It suffices to equate the `.re` factors.
-  have hre : ((𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ *
-        (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ)).re
-      = ((𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ *
-          (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ)).re := by
-    rw [← Complex.conj_re ((𝓕 (L2VF_projComponentC_R3 j w) : L2C_R3) ξ *
-        (starRingEnd ℂ) ((𝓕 (L2VF_projComponentC_R3 j u) : L2C_R3) ξ))]
-    congr 1
-    rw [map_mul, Complex.conj_conj]
-    ring
-  exact congrArg (fun r => (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * r) hre
+-- `stokesTestPairing_R3_symm` promoted to `R3/GalerkinODE.lean` (issue #112 PR-B): both this
+-- file and `GalerkinODEExistence.lean` import it, so `r3FieldForms` can now cite the one
+-- public copy without an import cycle.
 
 /-- Left-additivity of `−ν·stokes(·, w)` on span elements, via right-additivity + symmetry. -/
 private theorem stokesInner_add (B : SchwartzGalerkinBasis) (ν : ℝ) (n : ℕ)

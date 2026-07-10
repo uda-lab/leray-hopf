@@ -353,14 +353,10 @@ theorem galerkinSpanToSigma_smul (B : SchwartzGalerkinBasis) (n : ℕ)
 
 `r3FieldForms` packages `R3NSForms.b` and `stokesTestPairing_R3` as a
 `Galerkin.FieldForms (galerkinSpan B n)` instance, deduplicating this file's CLM tower against
-`LerayHopf/Galerkin/QuadraticField.lean`'s generic construction. 12 of the 13 obligations are
-discharged mechanically from the Schwartz-Fourier right-linearity layer above and `R3NSForms`'s
-own algebraic fields. `sV_symm` is the one exception: the file's ONLY symmetry proof for
-`stokesTestPairing_R3` is `private theorem stokesTestPairing_R3_symm` in
-`LerayHopf/R3/GalerkinODESolve.lean` — inaccessible both because it is `private` and because
-that file *imports this one* (`GalerkinODESolve.lean:1`), so importing it here would create a
-cycle. `sV_symm` is scaffolded with `sorry` per the PR-B coder-phase escalation rule (single
-non-mechanical obligation, no existing accessible lemma). -/
+`LerayHopf/Galerkin/QuadraticField.lean`'s generic construction. All 13 obligations are
+discharged mechanically from the Schwartz-Fourier right-linearity layer above, `R3NSForms`'s
+own algebraic fields, and `stokesTestPairing_R3_symm` (`R3/GalerkinODE.lean`, promoted from a
+`private` copy in `GalerkinODESolve.lean` for this witness — see that file's promotion note). -/
 
 /-- The generic `FieldForms` witness for the ℝ³ Galerkin ODE layer: `bV` is `F.b` composed with
 `galerkinSpanToSigma`, `sV` is `stokesTestPairing_R3` on the ambient `L2VF_R3` coercion. -/
@@ -396,11 +392,7 @@ noncomputable def r3FieldForms (B : SchwartzGalerkinBasis) (F : R3NSForms (schem
     rw [galerkinSpanToSigma_smul]; exact F.b_smul_3 _ _ _ _
   bV_diag_zero v := F.b_self_zero (galerkinSpanToSigma B n v)
   sV u w := stokesTestPairing_R3 (u : L2VF_R3) (w : L2VF_R3)
-  sV_symm u w :=
-    sorry -- ALLOW_SORRY: PR-B scaffold, prover fills (issue #112) — the only existing proof
-      -- (`stokesTestPairing_R3_symm`, `GalerkinODESolve.lean:196`) is `private` in a file that
-      -- imports THIS one, so it is neither visible nor importable without a cycle; needs a
-      -- fresh proof (mirror the Fourier-conjugate argument) or promotion+relocation upstream.
+  sV_symm u w := stokesTestPairing_R3_symm (u : L2VF_R3) (w : L2VF_R3)
   sV_add_right u w w' := stokesTestPairing_R3_add_right B n u w w'
   sV_smul_right a u w := stokesTestPairing_R3_smul_right B n u w a
   sV_diag_nonneg v := by
