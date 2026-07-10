@@ -190,7 +190,7 @@ theorem ofReal_tail_sq_eq_tailEnn (N : ℕ) (v : L2VF) :
   refine Finset.sum_congr rfl fun j _ => ?_
   have hsummable : Summable (fun i : {k : Fin 3 → ℤ // k ∉ fourierBox N} =>
       ‖mFourierCoeff3 (L2VF_projComponentC j v) (i : Fin 3 → ℤ)‖ ^ 2) :=
-    (Torus.summable_norm_mFourierCoeff3_sq (L2VF_projComponentC j v)).subtype _
+    (summable_norm_mFourierCoeff3_sq (L2VF_projComponentC j v)).subtype _
   rw [ENNReal.ofReal_tsum_of_nonneg (fun k => by positivity) hsummable]
 
 /-- (P0.14) Step E, Galerkin side — the n-UNIFORM tail integral bound.  Pointwise

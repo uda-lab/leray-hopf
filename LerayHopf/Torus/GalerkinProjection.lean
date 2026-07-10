@@ -218,4 +218,18 @@ theorem fourierProjection_n_tendsto (f : L2C) :
   exact Submodule.starProjection_tendsto_self fourierSpan fourierSpan_monotone f
     fourierSpan_iSup_dense
 
+/-- The squared Fourier coefficients of any `f : L2C` are summable (from `lp` membership).
+
+Hoisted here (from `GalerkinODESolve.lean`, issue #111 PR-5) so downstream files that need it
+without the ODE-solver machinery (e.g. `EnergyConvection.lean`) can reach it via this file's
+generic Galerkin-projection layer instead of each keeping its own restatement. -/
+theorem summable_norm_mFourierCoeff3_sq (f : L2C) :
+    Summable (fun k : Fin 3 → ℤ => ‖mFourierCoeff3 f k‖ ^ 2) := by
+  have hmem : Memℓp (torus3_mFourierBasis.repr f) 2 := (torus3_mFourierBasis.repr f).2
+  have hp : (0 : ℝ) < (2 : ENNReal).toReal := by norm_num
+  have := (memℓp_gen_iff hp).mp hmem
+  refine this.congr (fun k => ?_)
+  rw [show ((2 : ENNReal).toReal) = (2 : ℝ) by norm_num, Real.rpow_two]
+  rfl
+
 end LerayHopf

@@ -142,7 +142,7 @@ private lemma memH1VF_of_viscousEnn_lt_top (ν : ℝ) (hν : 0 < ν) (u : L2VF)
   unfold memH1Torus
   have hS1 : Summable (fun k : Fin 3 → ℤ =>
       ‖mFourierCoeff3 (L2VF_projComponentC j u) k‖ ^ 2) :=
-    Torus.summable_norm_mFourierCoeff3_sq (L2VF_projComponentC j u)
+    summable_norm_mFourierCoeff3_sq (L2VF_projComponentC j u)
   -- G j k = (2π)^2 * |k|^2 * ‖...‖^2, so from hGsumm_j: |k|^2 * ‖...‖^2 is summable
   have hS2 : Summable (fun k : Fin 3 → ℤ =>
       (∑ i : Fin 3, (k i : ℝ) ^ 2) * ‖mFourierCoeff3 (L2VF_projComponentC j u) k‖ ^ 2) := by

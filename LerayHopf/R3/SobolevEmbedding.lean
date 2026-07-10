@@ -902,34 +902,48 @@ private theorem memSobolev_of_eq_schwartz_toLp
   rw [hcoe]
   exact φ.memSobolev
 
-/-- **A4 helper.** Every `IsSchwartzDivFree_R3` field has `H¹` regularity (`memH1VF_R3`).
+/-- **A4 helper, component-witness form.** A field with Schwartz component representatives
+has `H¹` regularity (`memH1VF_R3`) — the same argument as `memH1VF_R3_of_isSchwartzDivFree`,
+but stated on the raw component witness (no `L2Sigma_R3`/div-free wrapper): the divergence-free
+hypothesis is never used in the proof, only the Schwartz-component data.
 
 Each real component is `(ψ j).toLp 2 volume` for a Schwartz `ψ j : 𝓢(Domain3, ℝ)`; the
 complex component projection `L2VF_projComponentC_R3 j` then equals `toLp` of the postcomposed
 Schwartz function `(ψ j).postcompCLM RCLike.ofRealCLM : 𝓢(Domain3, ℂ)`, and
 `memSobolev_of_eq_schwartz_toLp` finishes. -/
-theorem memH1VF_R3_of_isSchwartzDivFree
-    {v : L2Sigma_R3} (hv : IsSchwartzDivFree_R3 v) :
-    memH1VF_R3 (v : L2VF_R3) := by
-  obtain ⟨ψ, hψ⟩ := hv
+theorem memH1VF_R3_of_schwartz_components (u : L2VF_R3)
+    (h : ∃ φ : Fin 3 → SchwartzMap Domain3 ℝ, ∀ j : Fin 3,
+        L2VF_projComponent_R3 j u = (φ j).toLp 2 (volume : Measure Domain3)) :
+    memH1VF_R3 u := by
+  obtain ⟨ψ, hψ⟩ := h
   intro j
   -- The ℂ-valued Schwartz function for component `j`.
   set φ : SchwartzMap Domain3 ℂ := (ψ j).postcompCLM (RCLike.ofRealCLM (K := ℂ)) with hφ
   refine memSobolev_of_eq_schwartz_toLp _ φ ?_
   -- Both sides are `L²`-classes; compare a.e. representatives.
   apply MeasureTheory.Lp.ext_iff.mpr
-  -- `⇑(L2VF_projComponentC_R3 j v) =ᵐ ofReal ∘ ⇑(L2VF_projComponent_R3 j v) =ᵐ ofReal ∘ ψ j`.
-  have hLHS : (⇑(L2VF_projComponentC_R3 j (v : L2VF_R3)) : Domain3 → ℂ)
-      =ᵐ[volume] fun a => RCLike.ofRealCLM (K := ℂ) (L2VF_projComponent_R3 j (v : L2VF_R3) a) := by
+  -- `⇑(L2VF_projComponentC_R3 j u) =ᵐ ofReal ∘ ⇑(L2VF_projComponent_R3 j u) =ᵐ ofReal ∘ ψ j`.
+  have hLHS : (⇑(L2VF_projComponentC_R3 j u) : Domain3 → ℂ)
+      =ᵐ[volume] fun a => RCLike.ofRealCLM (K := ℂ) (L2VF_projComponent_R3 j u a) := by
     simpa [L2VF_projComponentC_R3] using
-      (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL (L2VF_projComponent_R3 j (v : L2VF_R3))
-  have hcomp : (⇑(L2VF_projComponent_R3 j (v : L2VF_R3)) : Domain3 → ℝ)
+      (RCLike.ofRealCLM (K := ℂ)).coeFn_compLpL (L2VF_projComponent_R3 j u)
+  have hcomp : (⇑(L2VF_projComponent_R3 j u) : Domain3 → ℝ)
       =ᵐ[volume] ⇑(ψ j) := by
     rw [hψ j]; exact (ψ j).coeFn_toLp 2 (volume : Measure Domain3)
   have hRHS : (⇑(φ.toLp 2 (volume : Measure Domain3)) : Domain3 → ℂ) =ᵐ[volume] ⇑φ :=
     φ.coeFn_toLp 2 (volume : Measure Domain3)
   filter_upwards [hLHS, hcomp, hRHS] with a hL hc hR
   rw [hL, hc, hR, hφ, SchwartzMap.postcompCLM_apply]
+
+/-- **A4 helper.** Every `IsSchwartzDivFree_R3` field has `H¹` regularity (`memH1VF_R3`).
+
+A thin corollary of `memH1VF_R3_of_schwartz_components`: `IsSchwartzDivFree_R3 v` unfolds to
+exactly the component-witness hypothesis at `u := (v : L2VF_R3)` (the divergence-free content
+of `v : L2Sigma_R3` is not used). -/
+theorem memH1VF_R3_of_isSchwartzDivFree
+    {v : L2Sigma_R3} (hv : IsSchwartzDivFree_R3 v) :
+    memH1VF_R3 (v : L2VF_R3) :=
+  memH1VF_R3_of_schwartz_components (v : L2VF_R3) hv
 
 /-- **A4 `h1Sigma_dense_in_L2Sigma` [must-prove].**
 The `H¹` divergence-free velocity fields (those satisfying `memH1VF_R3`) are **dense** in

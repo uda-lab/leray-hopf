@@ -54,6 +54,7 @@ the PR-2 prover slice, reusing the C1–C4 private helper library.
 import LerayHopf.R3.GalerkinCurveBounds     -- B6, B10, GalerkinSolutionData_R3, R3NSForms, viscousFormSq_R3, stokesTestPairing_R3
 import LerayHopf.R3.TrilinearEstimate       -- convIntegralSchwartz, lineDerivOpCLM, convIntegralSchwartz_bound_H1 (C4 template)
 import LerayHopf.Analysis.PlancherelKernels -- the shared Plancherel-kernel quartet + eLpNorm_three_le_interp (issue #111 PR-2)
+import LerayHopf.R3.GalerkinODE             -- galerkinCurve_reg_mem (issue #111 PR-5)
 
 namespace LerayHopf
 
@@ -786,36 +787,6 @@ theorem galerkin_bForm_curve_continuousOn (gs : GalerkinSolutionData_R3 𝔊 F �
   rw [zero_add] at h2
   exact h2.congr (fun σ => by ring)
 
-/-- H¹ regularity of any level-`n` state (its range is Schwartz).  Local copy of
-`galerkinCurve_reg_mem` (`GalerkinODE.lean`, DOWNSTREAM of this file's imports); proof route
-identical (B10-style Schwartz reps + `SchwartzMap.memSobolev`). -/
-private theorem memH1VF_R3_of_projFixed (𝔊 : R3GalerkinScheme) (n : ℕ) (v : L2VF_R3)
-    (hv : v = 𝔊.P n v) : memH1VF_R3 v := by
-  obtain ⟨ψ, hψ⟩ := 𝔊.range_schwartz n v
-  intro j
-  set g : SchwartzMap Domain3 ℂ := (ψ j).postcompCLM (RCLike.ofRealCLM (K := ℂ)) with hg
-  have hcomp : L2VF_projComponentC_R3 j v = g.toLp 2 (volume : Measure Domain3) := by
-    have hreal : L2VF_projComponent_R3 j v = (ψ j).toLp 2 (volume : Measure Domain3) := by
-      rw [hv]; exact hψ j
-    apply Lp.ext
-    have h1 : (L2VF_projComponentC_R3 j v : Domain3 → ℂ)
-        =ᵐ[volume] fun a => (RCLike.ofRealCLM (K := ℂ)) ((L2VF_projComponent_R3 j v) a) := by
-      rw [L2VF_projComponentC_R3]
-      exact ContinuousLinearMap.coeFn_compLpL _ _
-    rw [hreal] at h1
-    have hpsi : ((ψ j).toLp 2 (volume : Measure Domain3) : Domain3 → ℝ) =ᵐ[volume] ⇑(ψ j) :=
-      SchwartzMap.coeFn_toLp (ψ j) 2 (volume : Measure Domain3)
-    have h2 : (g.toLp 2 (volume : Measure Domain3) : Domain3 → ℂ)
-        =ᵐ[volume] fun a => (RCLike.ofRealCLM (K := ℂ)) ((ψ j) a) := by
-      refine (SchwartzMap.coeFn_toLp g 2 (volume : Measure Domain3)).trans ?_
-      filter_upwards with a
-      rw [hg, SchwartzMap.postcompCLM_apply]
-    refine h1.trans (Filter.EventuallyEq.trans ?_ h2.symm)
-    filter_upwards [hpsi] with a ha
-    rw [ha]
-  rw [hcomp, MeasureTheory.Lp.toTemperedDistribution_toLp_eq]
-  exact SchwartzMap.memSobolev (s := (1 : ℝ)) (p := 2) g
-
 /-! ### B9 — pairing FTC (deferred here from PR-1) -/
 
 /-- **B9 (Codex-gated statement; deferred from PR-1).** The weak-form pairing FTC along the
@@ -838,7 +809,7 @@ theorem galerkin_pairing_FTC (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n)
   have huIcc : Set.uIcc a b ⊆ Set.Ici (0 : ℝ) := by
     rw [Set.uIcc_of_le hab]; exact fun x hx => le_trans ha hx.1
   -- `w` is H¹ (a level-`n` state has Schwartz representatives)
-  have hwmem : memH1VF_R3 (w : L2VF_R3) := memH1VF_R3_of_projFixed 𝔊 n (w : L2VF_R3) hw
+  have hwmem : memH1VF_R3 (w : L2VF_R3) := galerkinCurve_reg_mem 𝔊 n (w : L2VF_R3) hw
   -- scalar FTC on `g σ = ⟪u σ, w⟫`; the derivative is the ODE right-hand side tested at `w`
   have hderiv : ∀ σ ∈ Set.uIcc a b,
       HasDerivAt (fun s => inner (𝕜 := ℝ) (gs.u s : L2VF_R3) (w : L2VF_R3))
