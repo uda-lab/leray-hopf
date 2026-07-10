@@ -407,6 +407,125 @@ private theorem galerkin_weakFormNS_zero_R3
   rw [intervalIntegral.integral_congr hcongr, intervalIntegral.integral_neg, hFTC, hψ0, hψT]
   ring
 
+/-! ### Shared `[0,T]`-window bridge, factored out of the three `weakFormNS`/`bForm` monoliths
+below (each of which independently `set μ := volume.restrict (Set.Icc 0 T)` and re-derived the
+same interval-integral ↔ measure-integral interchange facts). -/
+
+/-- The restricted measure `volume.restrict (Set.Icc 0 T)` used by every `[0,T]`-window
+argument in this file. -/
+private noncomputable def restrictAvgMeasure (T : ℝ) : Measure ℝ :=
+  volume.restrict (Set.Icc (0 : ℝ) T)
+
+private theorem isFiniteMeasure_restrictAvgMeasure (T : ℝ) :
+    IsFiniteMeasure (restrictAvgMeasure T) := by
+  refine isFiniteMeasure_restrict.2 ?_
+  rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top
+
+/-- The interval integral over `[0,T]` equals the `restrictAvgMeasure T`-integral. -/
+private theorem intervalIntegral_eq_restrictAvgMeasure_integral (T : ℝ) (hT : 0 ≤ T) (g : ℝ → ℝ) :
+    ∫ t in (0 : ℝ)..T, g t = ∫ t, g t ∂(restrictAvgMeasure T) := by
+  rw [intervalIntegral.integral_of_le hT, restrictAvgMeasure,
+    Measure.restrict_congr_set Ioc_ae_eq_Icc]
+
+private theorem restrictAvgMeasure_univ_toReal (T : ℝ) (hT : 0 < T) :
+    ((restrictAvgMeasure T) Set.univ).toReal = T := by
+  rw [restrictAvgMeasure, Measure.restrict_apply_univ, Real.volume_Icc,
+    ENNReal.toReal_ofReal (by linarith)]
+  ring
+
+private theorem ae_zero_le_of_restrictAvgMeasure (T : ℝ) :
+    ∀ᵐ t ∂(restrictAvgMeasure T), (0 : ℝ) ≤ t := by
+  refine ae_restrict_of_forall_mem measurableSet_Icc fun t ht => ht.1
+
+private theorem ae_mem_Icc_of_restrictAvgMeasure (T : ℝ) :
+    ∀ᵐ t ∂(restrictAvgMeasure T), t ∈ Set.Icc (0 : ℝ) T :=
+  ae_restrict_mem measurableSet_Icc
+
+/-- **Continuity + uniform dominator bound for the W1 approximant integrand.** Steps (1)+(2) of
+`weakFormNS_galerkinTest_limit`: each level-`n` approximant integrand is continuous on `[0,T]`,
+and its norm is bounded by the `n`-independent constant `M‖w‖Mψ' + Mψ(ν‖vElt‖M + Cb'M²)`
+(triangle inequality against the uniform Galerkin `H`-bound `galerkin_norm_le_u0`, the fixed
+Stokes-pairing Riesz vector `vElt`, and the convection-form bound `Cb'`). -/
+private theorem weakFormNS_galerkinTest_uniform_dominator
+    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (hν : 0 < ν) (T : ℝ)
+    (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (w : L2Sigma_R3)
+    (ψ : Time → ℝ) (hψC1 : ContDiff ℝ 1 ψ)
+    (ψw : Fin 3 → SchwartzMap Domain3 ℝ)
+    (hψw : ∀ j : Fin 3, L2VF_projComponent_R3 j (w : L2VF_R3)
+      = (ψw j).toLp 2 (volume : Measure Domain3))
+    (vElt : L2VF_R3)
+    (hstokes_inner : ∀ x : L2VF_R3,
+      stokesTestPairing_R3 x (w : L2VF_R3) = inner (𝕜 := ℝ) vElt x)
+    (Cb' : ℝ) (hCb'0 : 0 ≤ Cb')
+    (hbbound : ∀ u v : L2Sigma_R3, |F.b u v w| ≤ Cb' * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖)
+    (Mψ Mψ' : ℝ) (hMψ0 : 0 ≤ Mψ)
+    (hMψb : ∀ t ∈ Set.Icc (0 : ℝ) T, |ψ t| ≤ Mψ)
+    (hMψ'b : ∀ t ∈ Set.Icc (0 : ℝ) T, |deriv ψ t| ≤ Mψ') :
+    (∀ n, ContinuousOn (fun t : ℝ =>
+        -(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+          ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
+            F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w))
+        (Set.Icc (0 : ℝ) T)) ∧
+    (∀ n, ∀ᵐ t ∂(restrictAvgMeasure T), ‖
+        -(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+          ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
+            F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)‖
+      ≤ ‖(u₀ : L2VF_R3)‖ * ‖(w : L2VF_R3)‖ * Mψ'
+        + Mψ * (ν * ‖vElt‖ * ‖(u₀ : L2VF_R3)‖ + Cb' * ‖(u₀ : L2VF_R3)‖ * ‖(u₀ : L2VF_R3)‖)) := by
+  set M : ℝ := ‖(u₀ : L2VF_R3)‖ with hMdef
+  have hM0 : 0 ≤ M := norm_nonneg _
+  set Fseq : ℕ → ℝ → ℝ := fun n t =>
+    -(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+      ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
+        F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w) with hFseq
+  set D : ℝ := M * ‖(w : L2VF_R3)‖ * Mψ' + Mψ * (ν * ‖vElt‖ * M + Cb' * M * M) with hD
+  refine ⟨fun n => ?_, fun n => ?_⟩
+  · have hc := (weakFormNS_integrand_continuousOn_R3 (galSeq (alPkg.φ n)) w ⟨ψw, hψw⟩ ψ hψC1).mono
+      (Set.Icc_subset_Ici_self : Set.Icc (0:ℝ) T ⊆ Set.Ici 0)
+    simpa only [hFseq] using hc
+  · have hae_ge := ae_zero_le_of_restrictAvgMeasure T
+    have hae_Icc := ae_mem_Icc_of_restrictAvgMeasure T
+    filter_upwards [hae_ge, hae_Icc] with t htg htIcc
+    have hUn : ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ≤ M := by
+      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) htg
+    have hψb : |ψ t| ≤ Mψ := hMψb t htIcc
+    have hψ'b : |deriv ψ t| ≤ Mψ' := hMψ'b t htIcc
+    have hinb : |inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
+        ≤ M * ‖(w : L2VF_R3)‖ := (abs_real_inner_le_norm _ _).trans (by gcongr)
+    have hstok : |stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
+        ≤ ‖vElt‖ * M := by
+      rw [hstokes_inner]; exact (abs_real_inner_le_norm _ _).trans (by gcongr)
+    have hbb : |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| ≤ Cb' * M * M := by
+      refine (hbbound _ _).trans ?_; gcongr
+    show ‖Fseq n t‖ ≤ D
+    rw [hFseq, Real.norm_eq_abs]
+    calc |(-(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))) * deriv ψ t +
+            ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
+              F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)|
+        ≤ |(-(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))) * deriv ψ t|
+          + |ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
+              F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)| := abs_add_le _ _
+      _ ≤ M * ‖(w : L2VF_R3)‖ * Mψ' + Mψ * (ν * ‖vElt‖ * M + Cb' * M * M) := by
+          refine add_le_add ?_ ?_
+          · rw [abs_mul, abs_neg]
+            exact mul_le_mul hinb hψ'b (abs_nonneg _) (mul_nonneg hM0 (norm_nonneg _))
+          · rw [abs_mul]
+            refine mul_le_mul hψb ?_ (abs_nonneg _) hMψ0
+            calc |ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
+                    F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w|
+                ≤ |ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
+                  + |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| := abs_add_le _ _
+              _ = ν * |stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
+                  + |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| := by
+                    rw [abs_mul, abs_of_nonneg hν.le]
+              _ ≤ ν * (‖vElt‖ * M) + Cb' * M * M :=
+                    add_le_add (mul_le_mul_of_nonneg_left hstok hν.le) hbb
+              _ = ν * ‖vElt‖ * M + Cb' * M * M := by ring
+      _ = D := by rw [hD]
+
 set_option maxHeartbeats 1600000 in
 /-- **W1: weak identity for the Aubin–Lions limit against a FIXED Galerkin test** (n→∞).
 
@@ -468,13 +587,12 @@ theorem weakFormNS_galerkinTest_limit
   obtain ⟨Mψ', hMψ'⟩ := (isCompact_Icc (a := (0 : ℝ)) (b := T)).exists_bound_of_continuousOn
     hψC1.continuous_deriv_one.continuousOn
   have hMψ0 : 0 ≤ Mψ := le_trans (norm_nonneg _) (hMψ 0 ⟨le_refl 0, hT.le⟩)
-  -- Finite time measure and interval/measure bridge.
-  set μ : Measure ℝ := volume.restrict (Set.Icc (0 : ℝ) T) with hμ
-  haveI hμfin : IsFiniteMeasure μ := by
-    rw [hμ]; refine isFiniteMeasure_restrict.2 ?_
-    rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top
-  have hbridge : ∀ g : ℝ → ℝ, ∫ t in (0 : ℝ)..T, g t = ∫ t, g t ∂μ := fun g => by
-    rw [intervalIntegral.integral_of_le hT.le, hμ, Measure.restrict_congr_set Ioc_ae_eq_Icc]
+  have hMψb : ∀ t ∈ Set.Icc (0 : ℝ) T, |ψ t| ≤ Mψ := fun t htIcc => by
+    rw [← Real.norm_eq_abs]; exact hMψ t htIcc
+  have hMψ'b : ∀ t ∈ Set.Icc (0 : ℝ) T, |deriv ψ t| ≤ Mψ' := fun t htIcc => by
+    rw [← Real.norm_eq_abs]; exact hMψ' t htIcc
+  -- Finite time measure and interval/measure bridge (shared `RestrictAvgIntegralBridge`).
+  haveI hμfin : IsFiniteMeasure (restrictAvgMeasure T) := isFiniteMeasure_restrictAvgMeasure T
   -- Approximant and limit integrands.
   set Fseq : ℕ → ℝ → ℝ := fun n t =>
     -(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
@@ -486,69 +604,24 @@ theorem weakFormNS_galerkinTest_limit
         F.b (alPkg.u t) (alPkg.u t) w) with hflim
   -- Constant dominator.
   set D : ℝ := M * ‖(w : L2VF_R3)‖ * Mψ' + Mψ * (ν * ‖vElt‖ * M + Cb' * M * M) with hD
-  -- (1) Measurability of each approximant integrand.
-  have hcontFseq : ∀ n, ContinuousOn (Fseq n) (Set.Icc (0 : ℝ) T) := by
-    intro n
-    have hc := (weakFormNS_integrand_continuousOn_R3 (galSeq (alPkg.φ n)) w ⟨ψw, hψw⟩ ψ hψC1).mono
-      (Set.Icc_subset_Ici_self : Set.Icc (0:ℝ) T ⊆ Set.Ici 0)
-    simpa only [hFseq] using hc
-  have hmeasFseq : ∀ n, AEStronglyMeasurable (Fseq n) μ := fun n => by
-    rw [hμ]; exact (hcontFseq n).aestronglyMeasurable measurableSet_Icc
-  -- (2) Uniform dominator bound.
-  have hae_ge : ∀ᵐ t ∂μ, (0 : ℝ) ≤ t := by
-    rw [hμ]; exact ae_restrict_of_forall_mem measurableSet_Icc fun t ht => ht.1
-  have hae_Icc : ∀ᵐ t ∂μ, t ∈ Set.Icc (0 : ℝ) T := by
-    rw [hμ]; exact ae_restrict_mem measurableSet_Icc
-  have hbound : ∀ n, ∀ᵐ t ∂μ, ‖Fseq n t‖ ≤ D := by
-    intro n
-    filter_upwards [hae_ge, hae_Icc] with t htg htIcc
-    have hUn : ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ≤ M := by
-      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) htg
-    have hψb : |ψ t| ≤ Mψ := by rw [← Real.norm_eq_abs]; exact hMψ t htIcc
-    have hψ'b : |deriv ψ t| ≤ Mψ' := by rw [← Real.norm_eq_abs]; exact hMψ' t htIcc
-    have hinb : |inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
-        ≤ M * ‖(w : L2VF_R3)‖ := (abs_real_inner_le_norm _ _).trans (by gcongr)
-    have hstok : |stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
-        ≤ ‖vElt‖ * M := by
-      rw [hstokes_inner]; exact (abs_real_inner_le_norm _ _).trans (by gcongr)
-    have hbb : |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| ≤ Cb' * M * M := by
-      refine (hbbound _ _).trans ?_; gcongr
-    rw [hFseq, Real.norm_eq_abs]
-    calc |(-(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))) * deriv ψ t +
-            ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
-              F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)|
-        ≤ |(-(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))) * deriv ψ t|
-          + |ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
-              F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)| := abs_add_le _ _
-      _ ≤ M * ‖(w : L2VF_R3)‖ * Mψ' + Mψ * (ν * ‖vElt‖ * M + Cb' * M * M) := by
-          refine add_le_add ?_ ?_
-          · rw [abs_mul, abs_neg]
-            exact mul_le_mul hinb hψ'b (abs_nonneg _) (mul_nonneg hM0 (norm_nonneg _))
-          · rw [abs_mul]
-            refine mul_le_mul hψb ?_ (abs_nonneg _) hMψ0
-            calc |ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
-                    F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w|
-                ≤ |ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
-                  + |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| := abs_add_le _ _
-              _ = ν * |stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
-                  + |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| := by
-                    rw [abs_mul, abs_of_nonneg hν.le]
-              _ ≤ ν * (‖vElt‖ * M) + Cb' * M * M :=
-                    add_le_add (mul_le_mul_of_nonneg_left hstok hν.le) hbb
-              _ = ν * ‖vElt‖ * M + Cb' * M * M := by ring
-      _ = D := by rw [hD]
-  have hDint : Integrable (fun _ : ℝ => D) μ := integrable_const _
+  -- (1)+(2) Continuity + uniform dominator bound, via the extracted step.
+  obtain ⟨hcontFseq, hbound⟩ := weakFormNS_galerkinTest_uniform_dominator 𝔊 F ν hν T u₀
+    galSeq alPkg w ψ hψC1 ψw hψw vElt hstokes_inner Cb' hCb'0 hbbound Mψ Mψ' hMψ0 hMψb hMψ'b
+  have hmeasFseq : ∀ n, AEStronglyMeasurable (Fseq n) (restrictAvgMeasure T) := fun n =>
+    (hcontFseq n).aestronglyMeasurable measurableSet_Icc
+  have hDint : Integrable (fun _ : ℝ => D) (restrictAvgMeasure T) := integrable_const _
   -- (3) Pointwise a.e.-t convergence of the integrands.
-  have hballconv : ∀ᵐ t ∂μ, ∀ k : ℕ,
+  have hae_ge := ae_zero_le_of_restrictAvgMeasure T
+  have hballconv : ∀ᵐ t ∂(restrictAvgMeasure T), ∀ k : ℕ,
       Filter.Tendsto (fun n => restrictToBall (k : ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3))
-        Filter.atTop (nhds (restrictToBall (k : ℝ) (alPkg.u t : L2VF_R3))) := by
-    rw [hμ]; exact ae_all_iff.2 fun k => alPkg.strong_convergence_ae k
-  have hnormlim : ∀ᵐ t ∂μ, ‖(alPkg.u t : L2VF_R3)‖ ≤ M := by
-    rw [hμ]
+        Filter.atTop (nhds (restrictToBall (k : ℝ) (alPkg.u t : L2VF_R3))) :=
+    ae_all_iff.2 fun k => alPkg.strong_convergence_ae k
+  have hnormlim : ∀ᵐ t ∂(restrictAvgMeasure T), ‖(alPkg.u t : L2VF_R3)‖ ≤ M := by
     filter_upwards [kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq alPkg] with t ht
     have hsq : ‖(alPkg.u t : L2VF_R3)‖ ^ 2 ≤ M ^ 2 := by rw [hMdef]; nlinarith [ht]
     exact le_of_sq_le_sq hsq hM0
-  have hpt : ∀ᵐ t ∂μ, Filter.Tendsto (fun n => Fseq n t) Filter.atTop (nhds (flim t)) := by
+  have hpt : ∀ᵐ t ∂(restrictAvgMeasure T),
+      Filter.Tendsto (fun n => Fseq n t) Filter.atTop (nhds (flim t)) := by
     filter_upwards [hballconv, hnormlim, hae_ge] with t hball hnorm htg
     have hbd : ∀ n, ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ≤ M := fun n => by
       rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) htg
@@ -574,16 +647,16 @@ theorem weakFormNS_galerkinTest_limit
   -- (4) Dominated convergence: approximant integrals converge to the limit integral.
   have hlim := tendsto_integral_of_dominated_convergence (fun _ => D) hmeasFseq hDint hbound hpt
   -- (5) The approximant integrals are eventually `0` (per-level IBP identity).
-  have hzero_ev : ∀ᶠ n in Filter.atTop, ∫ t, Fseq n t ∂μ = 0 := by
+  have hzero_ev : ∀ᶠ n in Filter.atTop, ∫ t, Fseq n t ∂(restrictAvgMeasure T) = 0 := by
     filter_upwards [Filter.eventually_ge_atTop m] with n hn
     have hproj : (w : L2VF_R3) = 𝔊.P (alPkg.φ n) (w : L2VF_R3) :=
       (𝔊.mono_range m (alPkg.φ n) (le_trans hn alPkg.φ_mono.le_apply) (w : L2VF_R3) hm).symm
-    rw [← hbridge (Fseq n)]; simp only [hFseq]
+    rw [← intervalIntegral_eq_restrictAvgMeasure_integral T hT.le (Fseq n)]; simp only [hFseq]
     exact galerkin_weakFormNS_zero_R3 T hT (galSeq (alPkg.φ n)) w hproj ψ hψsupp hψC1
-  have hlim0 : Filter.Tendsto (fun n => ∫ t, Fseq n t ∂μ) Filter.atTop (nhds 0) :=
+  have hlim0 : Filter.Tendsto (fun n => ∫ t, Fseq n t ∂(restrictAvgMeasure T)) Filter.atTop (nhds 0) :=
     Filter.Tendsto.congr' (hzero_ev.mono fun n h => h.symm) tendsto_const_nhds
-  have hflim0 : ∫ t, flim t ∂μ = 0 := tendsto_nhds_unique hlim hlim0
-  rw [hbridge flim]; exact hflim0
+  have hflim0 : ∫ t, flim t ∂(restrictAvgMeasure T) = 0 := tendsto_nhds_unique hlim hlim0
+  rw [intervalIntegral_eq_restrictAvgMeasure_integral T hT.le flim]; exact hflim0
 
 /-! ### W2 helper lemmas (PR-4, issue #4): extend W1 from Galerkin tests to Schwartz tests -/
 
@@ -643,7 +716,113 @@ private theorem bForm_R3_sub_3 {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊) (u
     F.b u v (a - b) = F.b u v a - F.b u v b := by
   rw [sub_eq_add_neg a b, ← neg_one_smul ℝ b, F.b_add_3, F.b_smul_3]; ring
 
-set_option maxHeartbeats 1600000 in
+/-- **Uniform integrable crude dominator for `b(uₙ,uₙ,z)`.** Given the per-level pointwise
+crude Ladyzhenskaya bound `|b(uₙt,uₙt,z)| ≤ C_b√M(1+V₁(uₙt))S`, the a.e.-norm form of that
+bound, its nonnegativity and integrability, and its `n`-uniform time-integral cap by `K·S`
+(via `reg_bound`) all follow. This packages the steps consumed twice by `bForm_limit_convection_bound`'s Fatou argument (`hlint_n`: `ofReal_integral_eq_lintegral_ofReal` needs both
+the a.e. bound and the dominator's own nonnegativity/integrability/integral cap). -/
+private theorem bForm_galerkin_crude_dominator_bound
+    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
+    (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (z : L2Sigma_R3) (C_b : ℝ) (hC_b0 : 0 ≤ C_b)
+    (hFb_crude_pt : ∀ n t, 0 ≤ t →
+      |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z|
+        ≤ C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
+            * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+            * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3))) :
+    (∀ n, ∀ᵐ t ∂(restrictAvgMeasure T),
+        ‖F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z‖
+          ≤ C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
+              * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+              * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3))) ∧
+    (∀ n t, 0 ≤ C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
+        * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+        * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3))) ∧
+    (∀ n, Integrable (fun t => C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
+        * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+        * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3))) (restrictAvgMeasure T)) ∧
+    (∀ n, ∫ t, C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
+        * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+        * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3)) ∂(restrictAvgMeasure T)
+        ≤ (C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
+            * (T + ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)))
+          * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3))) := by
+  haveI : IsFiniteMeasure (restrictAvgMeasure T) := isFiniteMeasure_restrictAvgMeasure T
+  set M : ℝ := ‖(u₀ : L2VF_R3)‖ with hMdef
+  set S : ℝ := Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3)) with hS
+  have hS0 : 0 ≤ S := Real.sqrt_nonneg _
+  have hae_ge := ae_zero_le_of_restrictAvgMeasure T
+  have hFb_crude : ∀ n, ∀ᵐ t ∂(restrictAvgMeasure T),
+      ‖F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z‖
+        ≤ C_b * Real.sqrt M
+            * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S := by
+    intro n; filter_upwards [hae_ge] with t htg
+    rw [Real.norm_eq_abs]; exact hFb_crude_pt n t htg
+  have hV1_int : ∀ n,
+      Integrable (fun t => viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+        (restrictAvgMeasure T) := by
+    intro n
+    exact ((galerkin_viscous_curve_continuousOn (galSeq (alPkg.φ n))).mono
+      Set.Icc_subset_Ici_self).integrableOn_Icc
+  have hGcrude_nonneg : ∀ n t, 0 ≤ C_b * Real.sqrt M
+      * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S := by
+    intro n t
+    refine mul_nonneg (mul_nonneg (mul_nonneg hC_b0 (Real.sqrt_nonneg _)) ?_) hS0
+    have := viscousFormSq_R3_nonneg zero_le_one ((galSeq (alPkg.φ n)).u t : L2VF_R3)
+    linarith
+  have hGcrude_int : ∀ n, Integrable (fun t => C_b * Real.sqrt M
+      * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S)
+      (restrictAvgMeasure T) := by
+    intro n
+    exact (((integrable_const (1 : ℝ)).add (hV1_int n)).const_mul (C_b * Real.sqrt M)).mul_const S
+  have hV1_reg : ∀ n, ∫ t, viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)
+        ∂(restrictAvgMeasure T)
+      ≤ ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2) := by
+    intro n
+    have hrb := (galSeq (alPkg.φ n)).reg_bound T hT
+    have hscale : ∀ s, viscousFormSq_R3 ν ((galSeq (alPkg.φ n)).u s : L2VF_R3)
+        = ν * viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u s : L2VF_R3) := by
+      intro s; rw [viscousFormSq_R3_eq_smul, smul_eq_mul]
+    rw [intervalIntegral.integral_congr (g := fun s => ν * viscousFormSq_R3 1
+        ((galSeq (alPkg.φ n)).u s : L2VF_R3)) (fun s _ => hscale s),
+      intervalIntegral.integral_const_mul,
+      intervalIntegral_eq_restrictAvgMeasure_integral T hT.le] at hrb
+    rw [hMdef]; rwa [le_inv_mul_iff₀ hν]
+  have hMuUniv : ((restrictAvgMeasure T) Set.univ).toReal = T := restrictAvgMeasure_univ_toReal T hT
+  have hGcrude_int_bound : ∀ n, ∫ t, C_b * Real.sqrt M
+      * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S ∂(restrictAvgMeasure T)
+      ≤ (C_b * Real.sqrt M * (T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2))) * S := by
+    intro n
+    have heq : ∫ t, C_b * Real.sqrt M
+        * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S ∂(restrictAvgMeasure T)
+        = C_b * Real.sqrt M * S
+            * (∫ t, (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+                ∂(restrictAvgMeasure T)) := by
+      rw [← integral_const_mul]
+      refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
+      ring
+    rw [heq]
+    have hintadd : ∫ t, (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+          ∂(restrictAvgMeasure T)
+        = T + ∫ t, viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)
+            ∂(restrictAvgMeasure T) := by
+      rw [integral_add (integrable_const 1) (hV1_int n), integral_const, measureReal_def,
+        hMuUniv, smul_eq_mul, mul_one]
+    rw [hintadd]
+    have hnn : (0 : ℝ) ≤ C_b * Real.sqrt M * S :=
+      mul_nonneg (mul_nonneg hC_b0 (Real.sqrt_nonneg _)) hS0
+    have hcap := hV1_reg n
+    calc C_b * Real.sqrt M * S
+            * (T + ∫ t, viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)
+                ∂(restrictAvgMeasure T))
+        ≤ C_b * Real.sqrt M * S * (T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2)) := by
+          refine mul_le_mul_of_nonneg_left ?_ hnn
+          linarith [hcap]
+      _ = (C_b * Real.sqrt M * (T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2))) * S := by ring
+  exact ⟨hFb_crude, hGcrude_nonneg, hGcrude_int, hGcrude_int_bound⟩
+
 /-- **W2 nonlinear-limit convection bound (PR-4).** For any Schwartz divergence-free test
 `z`, the limit-curve convection functional `t ↦ F.b (u t) (u t) z` is integrable on `[0,T]`
 and its `L¹`-norm is controlled by `√(V₁ z)`, with a `z`-uniform constant `K`.
@@ -665,16 +844,13 @@ private theorem bForm_limit_convection_bound
       ∫ t, ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂(volume.restrict (Set.Icc (0 : ℝ) T))
           ≤ K * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3)) := by
   classical
-  set μ : Measure ℝ := volume.restrict (Set.Icc (0 : ℝ) T) with hμ
-  haveI hμfin : IsFiniteMeasure μ := by
-    rw [hμ]; refine isFiniteMeasure_restrict.2 ?_
-    rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top
+  set μ : Measure ℝ := restrictAvgMeasure T with hμ
+  haveI hμfin : IsFiniteMeasure μ := by rw [hμ]; exact isFiniteMeasure_restrictAvgMeasure T
   set M : ℝ := ‖(u₀ : L2VF_R3)‖ with hMdef
   have hM0 : 0 ≤ M := norm_nonneg _
   have hbridge : ∀ g : ℝ → ℝ, ∫ t in (0 : ℝ)..T, g t = ∫ t, g t ∂μ := fun g => by
-    rw [intervalIntegral.integral_of_le hT.le, hμ, Measure.restrict_congr_set Ioc_ae_eq_Icc]
-  have hae_ge : ∀ᵐ t ∂μ, (0 : ℝ) ≤ t := by
-    rw [hμ]; exact ae_restrict_of_forall_mem measurableSet_Icc fun t ht => ht.1
+    rw [hμ]; exact intervalIntegral_eq_restrictAvgMeasure_integral T hT.le g
+  have hae_ge : ∀ᵐ t ∂μ, (0 : ℝ) ≤ t := by rw [hμ]; exact ae_zero_le_of_restrictAvgMeasure T
   obtain ⟨C_b, hC_b0, hC_b⟩ := convIntegralSchwartz_bound_energy
   set K : ℝ := C_b * Real.sqrt M * (T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2)) with hKdef
   have hK0 : 0 ≤ K := by
@@ -739,71 +915,11 @@ private theorem bForm_limit_convection_bound
           exact mul_le_mul h1 h2 (mul_nonneg (Real.rpow_nonneg hV0 _) (Real.sqrt_nonneg _))
             (Real.sqrt_nonneg _)
       _ = C_b * Real.sqrt M * (1 + V) * S := by ring
-  have hFb_crude : ∀ n, ∀ᵐ t ∂μ,
-      ‖F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z‖
-        ≤ C_b * Real.sqrt M
-            * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S := by
-    intro n; filter_upwards [hae_ge] with t htg
-    rw [Real.norm_eq_abs]; exact hFb_crude_pt n t htg
-  -- Approximant viscous forms are continuous ⇒ integrable on `[0,T]`.
-  have hV1_int : ∀ n,
-      Integrable (fun t => viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) μ := by
-    intro n; rw [hμ]
-    exact ((galerkin_viscous_curve_continuousOn (galSeq (alPkg.φ n))).mono
-      Set.Icc_subset_Ici_self).integrableOn_Icc
-  -- The dominating integrand and its `n`-uniform integral cap.
-  have hGcrude_nonneg : ∀ n t, 0 ≤ C_b * Real.sqrt M
-      * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S := by
-    intro n t
-    refine mul_nonneg (mul_nonneg (mul_nonneg hC_b0 (Real.sqrt_nonneg _)) ?_) hS0
-    have := viscousFormSq_R3_nonneg zero_le_one ((galSeq (alPkg.φ n)).u t : L2VF_R3)
-    linarith
-  have hGcrude_int : ∀ n, Integrable (fun t => C_b * Real.sqrt M
-      * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S) μ := by
-    intro n
-    exact (((integrable_const (1 : ℝ)).add (hV1_int n)).const_mul (C_b * Real.sqrt M)).mul_const S
-  have hV1_reg : ∀ n, ∫ t, viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3) ∂μ
-      ≤ ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2) := by
-    intro n
-    have hrb := (galSeq (alPkg.φ n)).reg_bound T hT
-    have hscale : ∀ s, viscousFormSq_R3 ν ((galSeq (alPkg.φ n)).u s : L2VF_R3)
-        = ν * viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u s : L2VF_R3) := by
-      intro s; rw [viscousFormSq_R3_eq_smul, smul_eq_mul]
-    rw [intervalIntegral.integral_congr (g := fun s => ν * viscousFormSq_R3 1
-        ((galSeq (alPkg.φ n)).u s : L2VF_R3)) (fun s _ => hscale s),
-      intervalIntegral.integral_const_mul, hbridge] at hrb
-    rw [hMdef]; rwa [le_inv_mul_iff₀ hν]
-  have hMuUniv : (μ Set.univ).toReal = T := by
-    rw [hμ, Measure.restrict_apply_univ, Real.volume_Icc, ENNReal.toReal_ofReal (by linarith)]
-    ring
-  have hGcrude_int_bound : ∀ n, ∫ t, C_b * Real.sqrt M
-      * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S ∂μ ≤ K * S := by
-    intro n
-    have heq : ∫ t, C_b * Real.sqrt M
-        * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S ∂μ
-        = C_b * Real.sqrt M * S
-            * (∫ t, (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) ∂μ) := by
-      rw [← integral_const_mul]
-      refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
-      ring
-    rw [heq]
-    have hintadd : ∫ t, (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) ∂μ
-        = T + ∫ t, viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3) ∂μ := by
-      rw [integral_add (integrable_const 1) (hV1_int n), integral_const, measureReal_def,
-        hMuUniv, smul_eq_mul, mul_one]
-    rw [hintadd, hKdef, hMdef]
-    have hnn : (0 : ℝ) ≤ C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖ * S :=
-      mul_nonneg (mul_nonneg hC_b0 (Real.sqrt_nonneg _)) hS0
-    have hcap := hV1_reg n
-    rw [hMdef] at hcap
-    calc C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖ * S
-            * (T + ∫ t, viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3) ∂μ)
-        ≤ C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖ * S
-            * (T + ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) := by
-          refine mul_le_mul_of_nonneg_left ?_ hnn
-          linarith [hcap]
-      _ = C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
-            * (T + ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)) * S := by ring
+  -- Integrability/nonnegativity/`n`-uniform integral cap for the crude dominator, via the
+  -- shared step lemma (both are consumed twice below: once for `hlint_n`'s Fatou setup, once
+  -- for the final `K·S` cap).
+  obtain ⟨hFb_crude, hGcrude_nonneg, hGcrude_int, hGcrude_int_bound⟩ :=
+    bForm_galerkin_crude_dominator_bound 𝔊 F ν hν T hT u₀ galSeq alPkg z C_b hC_b0 hFb_crude_pt
   -- Measurability of the approximant and limit integrands.
   have hFb_meas_n : ∀ n, AEStronglyMeasurable
       (fun t => F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z) μ := by
@@ -865,7 +981,238 @@ private theorem bForm_limit_convection_bound
   have := hofeq ▸ hlim_lint
   rwa [ENNReal.ofReal_le_ofReal_iff hnnKS] at this
 
-set_option maxHeartbeats 2400000 in
+/-- **Integrability of the abstract weak-form integrand `G y` (W2 step 1).** For any Schwartz
+divergence-free test `y`, the integrand
+`t ↦ -⟪u t, y⟫·ψ'(t) + ψ(t)·(ν·stokesTestPairing_R3 (u t) y + F.b (u t) (u t) y)`
+is integrable on `[0,T]`: the kinetic term is dominated by `M‖y‖Mψ'` (via `hnorm_ulim`), and the
+viscous+convection term is a bounded (`|ψ| ≤ Mψ`) multiple of an integrable sum — the viscous half
+via the fixed Riesz vector `vElt` with `stokesTestPairing_R3 x y = ⟪vElt, x⟫`, the convection half
+via `hKb` (`bForm_limit_convection_bound`). -/
+private theorem weakFormNS_limit_G_integrable
+    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (T : ℝ)
+    (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (ψ : ℝ → ℝ) (hψC1 : ContDiff ℝ 1 ψ)
+    (M Mψ Mψ' : ℝ) (hMψ0 : 0 ≤ Mψ) (hMψ'0 : 0 ≤ Mψ')
+    (hMψ : ∀ t ∈ Set.Icc (0 : ℝ) T, ‖ψ t‖ ≤ Mψ)
+    (hMψ' : ∀ t ∈ Set.Icc (0 : ℝ) T, ‖deriv ψ t‖ ≤ Mψ')
+    (hu_meas : AEStronglyMeasurable (fun t => (alPkg.u t : L2VF_R3)) (restrictAvgMeasure T))
+    (hnorm_ulim : ∀ᵐ t ∂(restrictAvgMeasure T), ‖(alPkg.u t : L2VF_R3)‖ ≤ M)
+    (hae_Icc : ∀ᵐ t ∂(restrictAvgMeasure T), t ∈ Set.Icc (0 : ℝ) T)
+    (Kb : ℝ)
+    (hKb : ∀ z : L2Sigma_R3, IsSchwartzDivFree_R3 z →
+      Integrable (fun t => F.b (alPkg.u t) (alPkg.u t) z) (restrictAvgMeasure T) ∧
+      ∫ t, ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂(restrictAvgMeasure T)
+          ≤ Kb * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3))) :
+    ∀ y : L2Sigma_R3, IsSchwartzDivFree_R3 y →
+      Integrable (fun t => -(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (y : L2VF_R3)) * deriv ψ t
+        + ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (y : L2VF_R3)
+          + F.b (alPkg.u t) (alPkg.u t) y)) (restrictAvgMeasure T) := by
+  haveI : IsFiniteMeasure (restrictAvgMeasure T) := isFiniteMeasure_restrictAvgMeasure T
+  intro y hy
+  obtain ⟨ψy, hψy⟩ := hy
+  -- Fixed viscous Riesz vector: `stokesTestPairing_R3 x y = ⟪vElt, x⟫`.
+  obtain ⟨E, hE⟩ : ∃ E : Fin 3 → Lp ℝ 2 (volume : Measure Domain3),
+      ∀ x : L2VF_R3, stokesTestPairing_R3 x (y : L2VF_R3)
+        = ∑ j : Fin 3, inner (𝕜 := ℝ) (L2VF_projComponent_R3 j x) (E j) :=
+    ⟨_, fun x => stokesTestPairing_R3_eq_sum_inner_negLap x (y : L2VF_R3) ψy hψy⟩
+  set vElt : L2VF_R3 := ∑ j : Fin 3, (L2VF_projComponent_R3 j).adjoint (E j) with hvElt
+  have hstok_inner : ∀ x : L2VF_R3,
+      stokesTestPairing_R3 x (y : L2VF_R3) = inner (𝕜 := ℝ) vElt x := by
+    intro x
+    rw [hE x, hvElt, sum_inner]
+    exact Finset.sum_congr rfl fun j _ => by
+      rw [ContinuousLinearMap.adjoint_inner_left]; exact real_inner_comm _ _
+  have hi1 : Integrable
+      (fun t => -(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (y : L2VF_R3)) * deriv ψ t)
+        (restrictAvgMeasure T) := by
+    refine Integrable.mono' (g := fun _ => M * ‖(y : L2VF_R3)‖ * Mψ') (integrable_const _)
+      (((hu_meas.inner aestronglyMeasurable_const).neg).mul
+        hψC1.continuous_deriv_one.aestronglyMeasurable) ?_
+    filter_upwards [hnorm_ulim, hae_Icc] with t hn htI
+    rw [Real.norm_eq_abs, abs_mul, abs_neg]
+    have hψ'b : |deriv ψ t| ≤ Mψ' := by rw [← Real.norm_eq_abs]; exact hMψ' t htI
+    calc |inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (y : L2VF_R3)| * |deriv ψ t|
+        ≤ (‖(alPkg.u t : L2VF_R3)‖ * ‖(y : L2VF_R3)‖) * Mψ' :=
+          mul_le_mul (abs_real_inner_le_norm _ _) hψ'b (abs_nonneg _)
+            (mul_nonneg (norm_nonneg _) (norm_nonneg _))
+      _ ≤ M * ‖(y : L2VF_R3)‖ * Mψ' := by gcongr
+  have hinner_v_int : Integrable (fun t => inner (𝕜 := ℝ) vElt (alPkg.u t : L2VF_R3))
+      (restrictAvgMeasure T) := by
+    refine Integrable.mono' (integrable_const (‖vElt‖ * M))
+      (aestronglyMeasurable_const.inner hu_meas) ?_
+    filter_upwards [hnorm_ulim] with t hn
+    rw [Real.norm_eq_abs]
+    exact (abs_real_inner_le_norm _ _).trans (by gcongr)
+  have hrest : Integrable (fun t => ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3)
+      (y : L2VF_R3) + F.b (alPkg.u t) (alPkg.u t) y)) (restrictAvgMeasure T) := by
+    refine Integrable.bdd_mul (c := Mψ) ?_ hψC1.continuous.aestronglyMeasurable ?_
+    · simp_rw [hstok_inner]
+      exact (hinner_v_int.const_mul ν).add (hKb y ⟨ψy, hψy⟩).1
+    · filter_upwards [hae_Icc] with t htI
+      exact hMψ t htI
+  exact hi1.add hrest
+
+/-- **The `Φ`-difference bound `|Φ(z)| ≤ A‖z‖ + B√V₁(z)` (W2 step 2).** For any Schwartz
+divergence-free test `z`, the weak-form functional `Φ(z) = ∫₀ᵀ G z` is controlled by
+`A := M·Mψ'·T` on the kinetic slot (`abs_real_inner_le_norm`) and `B := Mψ·ν·(T+ν⁻¹·½M²) + Mψ·Kb`
+on the viscous+convection slot (`stokesTestPairing_abs_le` + `hKb`), via the pointwise a.e. norm
+bound on `G z t` integrated against the dominating function. This is the difference-bound step
+consumed by the vanishing-squeeze argument (`hRHS0`/`hmain`) in `weakFormNS_limit_passage`. -/
+private theorem weakFormNS_limit_diff_bound
+    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (hν : 0 < ν) (T : ℝ)
+    (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (ψ : ℝ → ℝ) (M Mψ Mψ' : ℝ) (hMψ0 : 0 ≤ Mψ) (hMψ'0 : 0 ≤ Mψ')
+    (hMψ : ∀ t ∈ Set.Icc (0 : ℝ) T, ‖ψ t‖ ≤ Mψ)
+    (hMψ' : ∀ t ∈ Set.Icc (0 : ℝ) T, ‖deriv ψ t‖ ≤ Mψ')
+    (hnorm_ulim : ∀ᵐ t ∂(restrictAvgMeasure T), ‖(alPkg.u t : L2VF_R3)‖ ≤ M)
+    (hmemH1_u : ∀ᵐ t ∂(restrictAvgMeasure T), memH1VF_R3 (alPkg.u t : L2VF_R3))
+    (hae_Icc : ∀ᵐ t ∂(restrictAvgMeasure T), t ∈ Set.Icc (0 : ℝ) T)
+    (hMuUniv : ((restrictAvgMeasure T) Set.univ).toReal = T)
+    (hsqrtV1u_int : Integrable
+      (fun t => Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3))) (restrictAvgMeasure T))
+    (hsqrtV1u_bound : ∫ t, Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3))
+        ∂(restrictAvgMeasure T) ≤ T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2))
+    (Kb : ℝ)
+    (hKb : ∀ z : L2Sigma_R3, IsSchwartzDivFree_R3 z →
+      Integrable (fun t => F.b (alPkg.u t) (alPkg.u t) z) (restrictAvgMeasure T) ∧
+      ∫ t, ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂(restrictAvgMeasure T)
+          ≤ Kb * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3)))
+    (hGint : ∀ y : L2Sigma_R3, IsSchwartzDivFree_R3 y →
+      Integrable (fun t => -(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (y : L2VF_R3)) * deriv ψ t
+        + ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (y : L2VF_R3)
+          + F.b (alPkg.u t) (alPkg.u t) y)) (restrictAvgMeasure T)) :
+    ∀ z : L2Sigma_R3, IsSchwartzDivFree_R3 z →
+      |∫ t, (-(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)) * deriv ψ t
+          + ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
+            + F.b (alPkg.u t) (alPkg.u t) z)) ∂(restrictAvgMeasure T)|
+        ≤ (M * Mψ' * T) * ‖(z : L2VF_R3)‖
+          + (Mψ * ν * (T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2)) + Mψ * Kb)
+              * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3)) := by
+  haveI : IsFiniteMeasure (restrictAvgMeasure T) := isFiniteMeasure_restrictAvgMeasure T
+  intro z hz
+  obtain ⟨ψz, hψz⟩ := hz
+  have hzH1 : memH1VF_R3 (z : L2VF_R3) := memH1VF_R3_of_isSchwartzDivFree ⟨ψz, hψz⟩
+  set S : ℝ := Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3)) with hS
+  have hS0 : 0 ≤ S := Real.sqrt_nonneg _
+  have hGz_int := hGint z ⟨ψz, hψz⟩
+  have hb_int : Integrable (fun t => F.b (alPkg.u t) (alPkg.u t) z) (restrictAvgMeasure T) :=
+    (hKb z ⟨ψz, hψz⟩).1
+  -- Pointwise a.e. bound on the integrand norm.
+  have hDbound : ∀ᵐ t ∂(restrictAvgMeasure T),
+      ‖-(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)) * deriv ψ t
+          + ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
+            + F.b (alPkg.u t) (alPkg.u t) z)‖
+        ≤ M * ‖(z : L2VF_R3)‖ * Mψ'
+          + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
+          + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ := by
+    filter_upwards [hnorm_ulim, hmemH1_u, hae_Icc] with t hn hmemu htI
+    have hψb : |ψ t| ≤ Mψ := by rw [← Real.norm_eq_abs]; exact hMψ t htI
+    have hψ'b : |deriv ψ t| ≤ Mψ' := by rw [← Real.norm_eq_abs]; exact hMψ' t htI
+    have hkin : ‖-(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)) * deriv ψ t‖
+        ≤ M * ‖(z : L2VF_R3)‖ * Mψ' := by
+      rw [Real.norm_eq_abs, abs_mul, abs_neg]
+      calc |inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)| * |deriv ψ t|
+          ≤ (‖(alPkg.u t : L2VF_R3)‖ * ‖(z : L2VF_R3)‖) * Mψ' :=
+            mul_le_mul (abs_real_inner_le_norm _ _) hψ'b (abs_nonneg _)
+              (mul_nonneg (norm_nonneg _) (norm_nonneg _))
+        _ ≤ M * ‖(z : L2VF_R3)‖ * Mψ' := by gcongr
+    have hstok_le : |stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)|
+        ≤ Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S :=
+      stokesTestPairing_abs_le (alPkg.u t : L2VF_R3) (z : L2VF_R3) hmemu hzH1
+    have hrest_le : ‖ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
+        + F.b (alPkg.u t) (alPkg.u t) z)‖
+        ≤ Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
+          + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ := by
+      rw [Real.norm_eq_abs, abs_mul]
+      calc |ψ t| * |ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
+              + F.b (alPkg.u t) (alPkg.u t) z|
+          ≤ Mψ * (ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
+              + ‖F.b (alPkg.u t) (alPkg.u t) z‖) := by
+            refine mul_le_mul hψb ?_ (abs_nonneg _) hMψ0
+            refine (abs_add_le _ _).trans ?_
+            rw [abs_mul, abs_of_nonneg hν.le, Real.norm_eq_abs]
+            exact add_le_add (mul_le_mul_of_nonneg_left hstok_le hν.le) le_rfl
+        _ = Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
+              + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ := by ring
+    calc ‖-(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)) * deriv ψ t
+            + ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
+              + F.b (alPkg.u t) (alPkg.u t) z)‖
+        ≤ ‖-(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)) * deriv ψ t‖
+          + ‖ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
+              + F.b (alPkg.u t) (alPkg.u t) z)‖ := norm_add_le _ _
+      _ ≤ M * ‖(z : L2VF_R3)‖ * Mψ'
+            + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
+            + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ := by
+          have := add_le_add hkin hrest_le; linarith
+  -- The dominating function is integrable, with a closed-form integral bound.
+  have hDom_int : Integrable (fun t => M * ‖(z : L2VF_R3)‖ * Mψ'
+      + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
+      + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖) (restrictAvgMeasure T) := by
+    refine ((integrable_const _).add ?_).add (hb_int.norm.const_mul Mψ)
+    exact (hsqrtV1u_int.mul_const S).const_mul (Mψ * ν)
+  have hmid_int : Integrable (fun t => Mψ * ν
+      * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)) (restrictAvgMeasure T) :=
+    (hsqrtV1u_int.mul_const S).const_mul (Mψ * ν)
+  have hconv_int : Integrable (fun t => Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖)
+      (restrictAvgMeasure T) := hb_int.norm.const_mul Mψ
+  have hsplit1 : ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
+        + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
+        + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖) ∂(restrictAvgMeasure T)
+      = (∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
+          + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S))
+            ∂(restrictAvgMeasure T))
+        + (∫ t, Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂(restrictAvgMeasure T)) :=
+    integral_add ((integrable_const (M * ‖(z : L2VF_R3)‖ * Mψ')).add hmid_int) hconv_int
+  have hsplit2 : ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
+        + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S))
+          ∂(restrictAvgMeasure T)
+      = (∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ' : ℝ) ∂(restrictAvgMeasure T))
+        + (∫ t, Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
+            ∂(restrictAvgMeasure T)) :=
+    integral_add (integrable_const (M * ‖(z : L2VF_R3)‖ * Mψ')) hmid_int
+  have e1 : ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ' : ℝ) ∂(restrictAvgMeasure T)
+      = M * ‖(z : L2VF_R3)‖ * Mψ' * T := by
+    rw [integral_const, measureReal_def, hMuUniv, smul_eq_mul, mul_comm]
+  have e2 : ∫ t, Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
+        ∂(restrictAvgMeasure T)
+      = Mψ * ν * ((∫ t, Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3))
+          ∂(restrictAvgMeasure T)) * S) := by
+    rw [integral_const_mul, integral_mul_const]
+  have e3 : ∫ t, Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂(restrictAvgMeasure T)
+      = Mψ * (∫ t, ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂(restrictAvgMeasure T)) :=
+    integral_const_mul _ _
+  calc |∫ t, (-(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)) * deriv ψ t
+          + ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
+            + F.b (alPkg.u t) (alPkg.u t) z)) ∂(restrictAvgMeasure T)|
+      = ‖∫ t, (-(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)) * deriv ψ t
+          + ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
+            + F.b (alPkg.u t) (alPkg.u t) z)) ∂(restrictAvgMeasure T)‖ := (Real.norm_eq_abs _).symm
+    _ ≤ ∫ t, ‖-(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)) * deriv ψ t
+          + ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
+            + F.b (alPkg.u t) (alPkg.u t) z)‖ ∂(restrictAvgMeasure T) :=
+        norm_integral_le_integral_norm _
+    _ ≤ ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
+          + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
+          + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖) ∂(restrictAvgMeasure T) :=
+        integral_mono_ae hGz_int.norm hDom_int hDbound
+    _ ≤ (M * Mψ' * T) * ‖(z : L2VF_R3)‖
+          + (Mψ * ν * (T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2)) + Mψ * Kb) * S := by
+        rw [hsplit1, hsplit2, e1, e2, e3]
+        have hb2 := (hKb z ⟨ψz, hψz⟩).2
+        have hqv : Mψ * ν * ((∫ t, Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3))
+              ∂(restrictAvgMeasure T)) * S)
+            ≤ Mψ * ν * ((T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2)) * S) := by
+          refine mul_le_mul_of_nonneg_left ?_ (mul_nonneg hMψ0 hν.le)
+          exact mul_le_mul_of_nonneg_right hsqrtV1u_bound hS0
+        have hqc : Mψ * (∫ t, ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂(restrictAvgMeasure T))
+            ≤ Mψ * (Kb * S) := mul_le_mul_of_nonneg_left hb2 hMψ0
+        nlinarith [hqv, hqc, hMψ0, hν.le, hS0]
+
+set_option maxHeartbeats 400000 in
 /-- **WeakFormNS limit passage (conjunct 2 of `galerkin_limit_passage_R3`).**
 
 The Aubin–Lions limit curve `alPkg.u` satisfies the distributional Navier–Stokes weak equation
@@ -899,15 +1246,11 @@ theorem weakFormNS_limit_passage
   -- `A‖vₖ - w‖ + B√V₁(vₖ - w)` (kinetic via `abs_real_inner_le_norm`, viscous via
   -- `stokesTestPairing_abs_le`, nonlinear via `bForm_limit_convection_bound`), so `Φ(w) = 0`.
   classical
-  set μ : Measure ℝ := volume.restrict (Set.Icc (0 : ℝ) T) with hμ
-  haveI hμfin : IsFiniteMeasure μ := by
-    rw [hμ]; refine isFiniteMeasure_restrict.2 ?_
-    rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top
+  set μ : Measure ℝ := restrictAvgMeasure T with hμ
+  haveI hμfin : IsFiniteMeasure μ := by rw [hμ]; exact isFiniteMeasure_restrictAvgMeasure T
   have hbridge : ∀ g : ℝ → ℝ, ∫ t in (0 : ℝ)..T, g t = ∫ t, g t ∂μ := fun g => by
-    rw [intervalIntegral.integral_of_le hT.le, hμ, Measure.restrict_congr_set Ioc_ae_eq_Icc]
-  have hMuUniv : (μ Set.univ).toReal = T := by
-    rw [hμ, Measure.restrict_apply_univ, Real.volume_Icc, ENNReal.toReal_ofReal (by linarith)]
-    ring
+    rw [hμ]; exact intervalIntegral_eq_restrictAvgMeasure_integral T hT.le g
+  have hMuUniv : (μ Set.univ).toReal = T := by rw [hμ]; exact restrictAvgMeasure_univ_toReal T hT
   set M : ℝ := ‖(u₀ : L2VF_R3)‖ with hMdef
   have hM0 : 0 ≤ M := norm_nonneg _
   obtain ⟨Mψ, hMψ⟩ := (isCompact_Icc (a := (0 : ℝ)) (b := T)).exists_bound_of_continuousOn
@@ -930,7 +1273,9 @@ theorem weakFormNS_limit_passage
   -- `V₁(u ·)` is integrable on `[0,T]` and its integral is `≤ ν⁻¹·½‖u₀‖²`; hence so is `√V₁(u ·)`.
   have hVν_int : Integrable (fun t => viscousFormSq_R3 ν (alPkg.u t : L2VF_R3)) μ := by
     have h := (intervalIntegrable_iff_integrableOn_Ioc_of_le hT.le).mp hVν_ii
-    rw [hμ, Measure.restrict_congr_set Ioc_ae_eq_Icc.symm]; exact h
+    show Integrable (fun t => viscousFormSq_R3 ν (alPkg.u t : L2VF_R3))
+      (volume.restrict (Set.Icc (0 : ℝ) T))
+    rw [Measure.restrict_congr_set Ioc_ae_eq_Icc.symm]; exact h
   have hV1u_int : Integrable (fun t => viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) μ := by
     have h2 : Integrable (fun t => ν⁻¹ * viscousFormSq_R3 ν (alPkg.u t : L2VF_R3)) μ :=
       hVν_int.const_mul _
@@ -972,48 +1317,9 @@ theorem weakFormNS_limit_passage
         + F.b (alPkg.u t) (alPkg.u t) y) with hG
   -- Integrability of `G y` for any Schwartz div-free test `y`.
   have hGint : ∀ y : L2Sigma_R3, IsSchwartzDivFree_R3 y → Integrable (G y) μ := by
-    intro y hy
-    obtain ⟨ψy, hψy⟩ := hy
-    -- Fixed viscous Riesz vector: `stokesTestPairing_R3 x y = ⟪vElt, x⟫`.
-    obtain ⟨E, hE⟩ : ∃ E : Fin 3 → Lp ℝ 2 (volume : Measure Domain3),
-        ∀ x : L2VF_R3, stokesTestPairing_R3 x (y : L2VF_R3)
-          = ∑ j : Fin 3, inner (𝕜 := ℝ) (L2VF_projComponent_R3 j x) (E j) :=
-      ⟨_, fun x => stokesTestPairing_R3_eq_sum_inner_negLap x (y : L2VF_R3) ψy hψy⟩
-    set vElt : L2VF_R3 := ∑ j : Fin 3, (L2VF_projComponent_R3 j).adjoint (E j) with hvElt
-    have hstok_inner : ∀ x : L2VF_R3,
-        stokesTestPairing_R3 x (y : L2VF_R3) = inner (𝕜 := ℝ) vElt x := by
-      intro x
-      rw [hE x, hvElt, sum_inner]
-      exact Finset.sum_congr rfl fun j _ => by
-        rw [ContinuousLinearMap.adjoint_inner_left]; exact real_inner_comm _ _
-    have hi1 : Integrable
-        (fun t => -(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (y : L2VF_R3)) * deriv ψ t) μ := by
-      refine Integrable.mono' (g := fun _ => M * ‖(y : L2VF_R3)‖ * Mψ') (integrable_const _)
-        (((hu_meas.inner aestronglyMeasurable_const).neg).mul
-          hψC1.continuous_deriv_one.aestronglyMeasurable) ?_
-      filter_upwards [hnorm_ulim, hae_Icc] with t hn htI
-      rw [Real.norm_eq_abs, abs_mul, abs_neg]
-      have hψ'b : |deriv ψ t| ≤ Mψ' := by rw [← Real.norm_eq_abs]; exact hMψ' t htI
-      calc |inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (y : L2VF_R3)| * |deriv ψ t|
-          ≤ (‖(alPkg.u t : L2VF_R3)‖ * ‖(y : L2VF_R3)‖) * Mψ' :=
-            mul_le_mul (abs_real_inner_le_norm _ _) hψ'b (abs_nonneg _)
-              (mul_nonneg (norm_nonneg _) (norm_nonneg _))
-        _ ≤ M * ‖(y : L2VF_R3)‖ * Mψ' := by gcongr
-    have hinner_v_int : Integrable (fun t => inner (𝕜 := ℝ) vElt (alPkg.u t : L2VF_R3)) μ := by
-      refine Integrable.mono' (integrable_const (‖vElt‖ * M))
-        (aestronglyMeasurable_const.inner hu_meas) ?_
-      filter_upwards [hnorm_ulim] with t hn
-      rw [Real.norm_eq_abs]
-      exact (abs_real_inner_le_norm _ _).trans (by gcongr)
-    have hrest : Integrable (fun t => ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3)
-        (y : L2VF_R3) + F.b (alPkg.u t) (alPkg.u t) y)) μ := by
-      refine Integrable.bdd_mul (c := Mψ) ?_ hψC1.continuous.aestronglyMeasurable ?_
-      · simp_rw [hstok_inner]
-        exact (hinner_v_int.const_mul ν).add (hKb y ⟨ψy, hψy⟩).1
-      · filter_upwards [hae_Icc] with t htI
-        exact hMψ t htI
-    have := hi1.add hrest
-    rw [hG]; exact this
+    have := weakFormNS_limit_G_integrable 𝔊 F ν T u₀ galSeq alPkg ψ hψC1 M Mψ Mψ' hMψ0 hMψ'0
+      hMψ hMψ' hu_meas hnorm_ulim hae_Icc Kb hKb
+    intro y hy; rw [hG]; exact this y hy
   -- Galerkin tests: `Φ(v) = 0` (W1, converted to the `μ`-integral).
   have hΦgal : ∀ v : L2Sigma_R3, IsGalerkinTest_R3 𝔊 v → ∫ t, G v t ∂μ = 0 := by
     intro v hv
@@ -1042,103 +1348,9 @@ theorem weakFormNS_limit_passage
     exact add_nonneg hT.le (mul_nonneg (inv_nonneg.2 hν.le) (by positivity))
   have hDiffBound : ∀ z : L2Sigma_R3, IsSchwartzDivFree_R3 z →
       |∫ t, G z t ∂μ| ≤ A * ‖(z : L2VF_R3)‖ + B * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3)) := by
-    intro z hz
-    obtain ⟨ψz, hψz⟩ := hz
-    have hzH1 : memH1VF_R3 (z : L2VF_R3) := memH1VF_R3_of_isSchwartzDivFree ⟨ψz, hψz⟩
-    set S : ℝ := Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3)) with hS
-    have hS0 : 0 ≤ S := Real.sqrt_nonneg _
-    have hGz_int := hGint z ⟨ψz, hψz⟩
-    have hb_int : Integrable (fun t => F.b (alPkg.u t) (alPkg.u t) z) μ := (hKb z ⟨ψz, hψz⟩).1
-    -- Pointwise a.e. bound on the integrand norm.
-    have hDbound : ∀ᵐ t ∂μ, ‖G z t‖
-        ≤ M * ‖(z : L2VF_R3)‖ * Mψ'
-          + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
-          + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ := by
-      filter_upwards [hnorm_ulim, hmemH1_u, hae_Icc] with t hn hmemu htI
-      have hψb : |ψ t| ≤ Mψ := by rw [← Real.norm_eq_abs]; exact hMψ t htI
-      have hψ'b : |deriv ψ t| ≤ Mψ' := by rw [← Real.norm_eq_abs]; exact hMψ' t htI
-      have hkin : ‖-(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)) * deriv ψ t‖
-          ≤ M * ‖(z : L2VF_R3)‖ * Mψ' := by
-        rw [Real.norm_eq_abs, abs_mul, abs_neg]
-        calc |inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)| * |deriv ψ t|
-            ≤ (‖(alPkg.u t : L2VF_R3)‖ * ‖(z : L2VF_R3)‖) * Mψ' :=
-              mul_le_mul (abs_real_inner_le_norm _ _) hψ'b (abs_nonneg _)
-                (mul_nonneg (norm_nonneg _) (norm_nonneg _))
-          _ ≤ M * ‖(z : L2VF_R3)‖ * Mψ' := by gcongr
-      have hstok_le : |stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)|
-          ≤ Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S :=
-        stokesTestPairing_abs_le (alPkg.u t : L2VF_R3) (z : L2VF_R3) hmemu hzH1
-      have hrest_le : ‖ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
-          + F.b (alPkg.u t) (alPkg.u t) z)‖
-          ≤ Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
-            + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ := by
-        rw [Real.norm_eq_abs, abs_mul]
-        calc |ψ t| * |ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
-                + F.b (alPkg.u t) (alPkg.u t) z|
-            ≤ Mψ * (ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
-                + ‖F.b (alPkg.u t) (alPkg.u t) z‖) := by
-              refine mul_le_mul hψb ?_ (abs_nonneg _) hMψ0
-              refine (abs_add_le _ _).trans ?_
-              rw [abs_mul, abs_of_nonneg hν.le, Real.norm_eq_abs]
-              exact add_le_add (mul_le_mul_of_nonneg_left hstok_le hν.le) le_rfl
-          _ = Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
-                + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ := by ring
-      calc ‖G z t‖
-          ≤ ‖-(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (z : L2VF_R3)) * deriv ψ t‖
-            + ‖ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (z : L2VF_R3)
-                + F.b (alPkg.u t) (alPkg.u t) z)‖ := by
-            rw [hG]; exact norm_add_le _ _
-        _ ≤ M * ‖(z : L2VF_R3)‖ * Mψ'
-              + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
-              + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ := by
-            have := add_le_add hkin hrest_le; linarith
-    -- The dominating function is integrable, with a closed-form integral bound.
-    have hDom_int : Integrable (fun t => M * ‖(z : L2VF_R3)‖ * Mψ'
-        + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
-        + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖) μ := by
-      refine ((integrable_const _).add ?_).add (hb_int.norm.const_mul Mψ)
-      exact (hsqrtV1u_int.mul_const S).const_mul (Mψ * ν)
-    have hmid_int : Integrable (fun t => Mψ * ν
-        * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)) μ :=
-      (hsqrtV1u_int.mul_const S).const_mul (Mψ * ν)
-    have hconv_int : Integrable (fun t => Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖) μ :=
-      hb_int.norm.const_mul Mψ
-    have hsplit1 : ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
-          + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
-          + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖) ∂μ
-        = (∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
-            + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)) ∂μ)
-          + (∫ t, Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂μ) :=
-      integral_add ((integrable_const (M * ‖(z : L2VF_R3)‖ * Mψ')).add hmid_int) hconv_int
-    have hsplit2 : ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
-          + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)) ∂μ
-        = (∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ' : ℝ) ∂μ)
-          + (∫ t, Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S) ∂μ) :=
-      integral_add (integrable_const (M * ‖(z : L2VF_R3)‖ * Mψ')) hmid_int
-    have e1 : ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ' : ℝ) ∂μ = M * ‖(z : L2VF_R3)‖ * Mψ' * T := by
-      rw [integral_const, measureReal_def, hMuUniv, smul_eq_mul, mul_comm]
-    have e2 : ∫ t, Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S) ∂μ
-        = Mψ * ν * ((∫ t, Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) ∂μ) * S) := by
-      rw [integral_const_mul, integral_mul_const]
-    have e3 : ∫ t, Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂μ
-        = Mψ * (∫ t, ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂μ) := integral_const_mul _ _
-    calc |∫ t, G z t ∂μ|
-        = ‖∫ t, G z t ∂μ‖ := (Real.norm_eq_abs _).symm
-      _ ≤ ∫ t, ‖G z t‖ ∂μ := norm_integral_le_integral_norm _
-      _ ≤ ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
-            + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
-            + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖) ∂μ :=
-          integral_mono_ae hGz_int.norm hDom_int hDbound
-      _ ≤ A * ‖(z : L2VF_R3)‖ + B * S := by
-          rw [hsplit1, hsplit2, e1, e2, e3]
-          have hb2 := (hKb z ⟨ψz, hψz⟩).2
-          have hqv : Mψ * ν * ((∫ t, Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) ∂μ) * S)
-              ≤ Mψ * ν * ((T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2)) * S) := by
-            refine mul_le_mul_of_nonneg_left ?_ (mul_nonneg hMψ0 hν.le)
-            exact mul_le_mul_of_nonneg_right hsqrtV1u_bound hS0
-          have hqc : Mψ * (∫ t, ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂μ) ≤ Mψ * (Kb * S) :=
-            mul_le_mul_of_nonneg_left hb2 hMψ0
-          rw [hAdef, hBdef]; nlinarith [hqv, hqc, hMψ0, hν.le, hM0, hS0]
+    have hdb := weakFormNS_limit_diff_bound 𝔊 F ν hν T u₀ galSeq alPkg ψ M Mψ Mψ' hMψ0 hMψ'0
+      hMψ hMψ' hnorm_ulim hmemH1_u hae_Icc hMuUniv hsqrtV1u_int hsqrtV1u_bound Kb hKb hGint
+    intro z hz; rw [hG]; exact hdb z hz
   -- The vanishing bound sequence.
   have hRHS0 : Filter.Tendsto (fun k : ℕ => A * (1 / (k + 1)) + B * Real.sqrt (1 / (k + 1)))
       Filter.atTop (nhds 0) := by

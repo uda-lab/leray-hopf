@@ -61,7 +61,12 @@ Analytic frontier (formerly axiomatized, now proved): `GalerkinScheme.lean`,
 `SchwartzDivFreeBasis.lean` (`r3GalerkinScheme_exists`), `GalerkinODE.lean`,
 `GalerkinODEExistence.lean`, `GalerkinODESolve.lean`, `GalerkinODECapstone.lean`
 (**capstone**: `exists_lerayHopf_r3`), `ArzelaAscoliTime.lean`,
-`AubinLionsLimitPassage.lean`, `AubinLionsAssembly.lean`, `CurlDensity.lean`,
+`AubinLionsLimitPassage.lean` (Tier N/W/C — the `[0,T]`-window `weakFormNS`/`bForm` limit-passage
+monoliths share a `RestrictAvgMeasure`-class bridge (`restrictAvgMeasure`,
+`intervalIntegral_eq_restrictAvgMeasure_integral`, etc.) and are each split into named,
+doc-stringed step lemmas — e.g. `weakFormNS_galerkinTest_uniform_dominator`,
+`bForm_galerkin_crude_dominator_bound`, `weakFormNS_limit_G_integrable`,
+`weakFormNS_limit_diff_bound` — issue #114 Tier 1 commit 3), `AubinLionsAssembly.lean`, `CurlDensity.lean`,
 `CurlDensityCapstone.lean`, `CurlDensityH1.lean`, `GalerkinBasisH1.lean`,
 `FrechetKolmogorov.lean`, `ConvectionOperator.lean`, `ConvectionForm.lean`,
 `ConvectionExtension.lean`, `SobolevEmbedding.lean`,
