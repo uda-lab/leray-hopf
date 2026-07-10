@@ -259,9 +259,10 @@ theorem galerkin_curve_continuous (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
 -- currently uses it (the docstring above mentioning it in the E1 proof route predates a
 -- later refactor of that route), so no rewiring is needed beyond the deletion.
 
--- `kineticEnergyLscTransfer` (was a local copy of `Bochner.TimeSobolev.kineticEnergy_lsc_transfer`,
--- same statement, different internal proof route) is gone; this file now imports
--- `Bochner.TimeSobolev` directly and uses the shared version (issue #111 PR-3, verified acyclic:
+-- `kineticEnergyLscTransfer` (was a private re-derivation of
+-- `Bochner.TimeSobolev.kineticEnergy_lsc_transfer`, same statement, different internal proof
+-- route) is gone; this file now imports `Bochner.TimeSobolev` directly and uses the shared
+-- version (issue #111 PR-3, verified acyclic:
 -- TimeSobolev's transitive imports are GelfandTriple → EvolutionTriple → Torus.Basic/EnergyEstimate
 -- + mathlib, none of which reach this file or its importers).
 

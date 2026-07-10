@@ -191,18 +191,9 @@ structure FrechetKolmogorovInput where
         ‖translate_L2VF h (rep f) - rep f‖ < ε) →
     ∃ K : Set (L2ballR3 R), IsCompact K ∧ S ⊆ K
 
-/-- L²-norm-squared as an integral of the pointwise squared norm, for an element of `L²(ℝ³;ℝ³)`.
-(Local copy of the private `SpatialCompactness.normSq_eq_integral_normSq`.) -/
-private theorem normSq_eq_integral_normSq_VF (f : L2VF_R3) :
-    ‖f‖ ^ 2 = ∫ ξ : Domain3, ‖(f ξ : EuclideanSpace ℝ (Fin 3))‖ ^ 2
-      ∂(volume : Measure Domain3) := by
-  have hre : ‖f‖ ^ 2 = (inner ℝ f f : ℝ) := by
-    have := norm_sq_eq_re_inner (𝕜 := ℝ) f
-    simpa using this
-  rw [hre, MeasureTheory.L2.inner_def]
-  refine integral_congr_ae ?_
-  filter_upwards with ξ
-  exact real_inner_self_eq_norm_sq _
+-- `normSq_eq_integral_normSq_VF` (was a private copy of `SpatialCompactness`'s
+-- `normSq_eq_integral_normSq`, now public, issue #111 PR-3) is gone; its one call site
+-- below uses the shared version directly.
 
 /-- The complex `j`-component of the L²-translate equals the L²-translate of the complex
 `j`-component, a.e.:
@@ -452,7 +443,7 @@ theorem normSq_translate_sub_le_viscousFormSq (h : Domain3) (w : L2VF_R3)
   -- (a) `‖translate_L2VF h w − w‖² = ∑_j ‖τc j − c j‖²`
   have hstepa : ‖translate_L2VF h w - w‖ ^ 2 = ∑ j : Fin 3, ‖τc j - c j‖ ^ 2 := by
     -- ℝ³-valued L² norm as integral of pointwise squared norm
-    rw [normSq_eq_integral_normSq_VF (translate_L2VF h w - w)]
+    rw [normSq_eq_integral_normSq (translate_L2VF h w - w)]
     -- pointwise: `‖(D ξ)‖²_{ℝ³} = ∑_j ‖(τc j − c j) ξ‖²`
     have hpt : (fun ξ : Domain3 =>
           ‖((translate_L2VF h w - w) ξ : EuclideanSpace ℝ (Fin 3))‖ ^ 2)
@@ -577,17 +568,9 @@ theorem norm_translate_sub_le_of_viscousBound (M : ℝ) (h : Domain3) (w : L2VF_
 /-- **T1b.** The restricted admissible family `S_{M,R} := {restrictToBall R w | w admissible}`
 is uniformly `‖·‖ ≤ M`: each restriction does not increase the norm and `‖w‖ ≤ M`. -/
 theorem admissible_family_uniform_bound (M R : ℝ) (w : L2VF_R3) (hbd : ‖w‖ ≤ M) :
-    ‖restrictToBall R w‖ ≤ M := by
-  refine le_trans ?_ hbd
-  -- Local copy of `norm_restrictToBall_le` (it is `private` in SpatialCompactness).
-  rw [Lp.norm_def, Lp.norm_def]
-  have hle : volume.restrict (Metric.closedBall (0 : Domain3) R) ≤ (volume : Measure Domain3) :=
-    Measure.restrict_le_self
-  have hcong : ⇑(restrictToBall R w)
-      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
-        (w : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
-  rw [eLpNorm_congr_ae hcong]
-  exact ENNReal.toReal_mono (Lp.memLp w).2.ne (eLpNorm_mono_measure _ hle)
+    ‖restrictToBall R w‖ ≤ M :=
+  -- `norm_restrictToBall_le` is public in `SpatialCompactness` (issue #111 PR-3).
+  le_trans (norm_restrictToBall_le R w) hbd
 
 /-! ### Tier 2 — DELIVERABLE -/
 
