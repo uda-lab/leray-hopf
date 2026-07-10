@@ -44,12 +44,7 @@ the pure abstract compactness *criterion*.  This file proves exactly that criter
 
 The proof is the classical mollification + Arzelà–Ascoli + total-boundedness argument:
 
-1. **Mollification (approximate identity).**  Convolve every family member with a CONCRETE
-   smooth compactly-supported scalar kernel `K : MollifierKernel`, whose explicit continuous
-   representative is `mollifyRep K f = η ⋆ f`.  `convolution_l2_tendsto_uniform`: the
-   convolutions approximate the originals in L² *uniformly over the family*, with the rate
-   controlled by the uniform translation modulus (this is where the FK hypothesis is consumed).
-2. **Equicontinuity / equiboundedness of the mollified family.**
+1. **Equicontinuity / equiboundedness of the mollified family.**
    `mollified_family_equicontinuous` + `mollified_family_uniformly_bounded`: the explicit
    representative `mollifyRep K (rep f)`, restricted to `x ∈ B_R`, is uniformly bounded and
    uniformly equicontinuous (Young's inequality `‖(η ⋆ g) x‖ ≤ ‖η‖₂‖g‖₂` + the kernel-only modulus
@@ -60,10 +55,16 @@ The proof is the classical mollification + Arzelà–Ascoli + total-boundedness 
    `FrechetKolmogorovInput`, round 4).  They are stated for the genuine smooth representative
    `mollifyRep` on `B_R`,
    NOT for an arbitrary operator `L2VF_R3 → L2VF_R3` (for which they would be false — e.g. `ρ = id`).
-3. **Arzelà–Ascoli ⇒ total boundedness of the mollified family in C(ball), hence in L²(ball).**
+2. **Arzelà–Ascoli ⇒ total boundedness of the mollified family in C(ball), hence in L²(ball).**
    `mollified_family_totallyBounded_L2`.
+3. **Mollification (approximate identity), assembled from steps 1–2.**  Convolve every family
+   member with a CONCRETE smooth compactly-supported scalar kernel `K : MollifierKernel`, whose
+   explicit continuous representative is `mollifyRep K f = η ⋆ f`.
+   `convolution_l2_tendsto_uniform`: the convolutions approximate the originals in L² *uniformly
+   over the family*, with the rate controlled by the uniform translation modulus (this is where
+   the FK hypothesis is consumed), delegating the total-boundedness conjunct to step 2.
 4. **Total-boundedness transfer.**  `totallyBounded_of_uniform_approx`: a set that is
-   uniformly ε-approximable (step 1) by a totally bounded set (step 3) is itself totally
+   uniformly ε-approximable (step 3) by a totally bounded set (step 2) is itself totally
    bounded; with completeness of `L2ballR3 R` this gives precompactness
    (`isCompact_iff_totallyBounded_isComplete`).
 
@@ -133,10 +134,10 @@ R3/SpatialCompactness.lean   (L2ballR3, restrictToBall, LocalRellichInput)
 - `kernelL1R`                              : the kernel coerced to a scalar L¹-class (`‖η‖₁` in Young)
 - `young_convolution_memLp_L2`             : analytic core SIG — global Young `‖η ⋆ g‖₂ ≤ ‖η‖₁·‖g‖₂` + `MemLp`
 - `convolution_sub_L2_le_translation_modulus` : analytic core SIG — vector Minkowski form of the approximation rate
-- `convolution_l2_tendsto_uniform`         : FK step 1 — uniform L²-mollification approximate identity (routes through the two cores)
-- `mollified_family_uniformly_bounded`     : FK step 2 — equibounded smoothed family (concrete `mollifyRep`)
-- `mollified_family_equicontinuous`        : FK step 2 — equicontinuous smoothed family (concrete `mollifyRep`)
-- `mollified_family_totallyBounded_L2`     : FK step 3 — Arzelà–Ascoli ⇒ totally bounded in L²(ball)
+- `mollified_family_uniformly_bounded`     : FK step 1 — equibounded smoothed family (concrete `mollifyRep`)
+- `mollified_family_equicontinuous`        : FK step 1 — equicontinuous smoothed family (concrete `mollifyRep`)
+- `mollified_family_totallyBounded_L2`     : FK step 2 — Arzelà–Ascoli ⇒ totally bounded in L²(ball)
+- `convolution_l2_tendsto_uniform`         : FK step 3 (assembly) — uniform L²-mollification approximate identity (routes through the two cores)
 - `totallyBounded_of_uniform_approx`       : FK step 4 — total-boundedness transfer under uniform approximation
 - `frechetKolmogorov_holds`                : DELIVERABLE — discharges `FrechetKolmogorovInput`
 
@@ -600,7 +601,7 @@ theorem mollifyRep_sub_le (K : MollifierKernel) (f : L2VF_R3) (R : ℝ)
     _ = ‖restrictToBall (R + r) f‖ * ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ := by
         rw [hna, hnb, mul_comm]
 
-/-! ### FK step 1 — analytic cores: global Young + vector Minkowski
+/-! ### FK step 0 — preliminaries: global Young + vector Minkowski analytic cores
 
 The two genuinely-missing analytic facts behind `convolution_l2_tendsto_uniform`, isolated as
 named helper SIGNATURES (bodies deferred to `lean-prover`):
@@ -1150,9 +1151,9 @@ theorem convolution_sub_L2_le_translation_modulus (K : MollifierKernel) (g : L2V
   simp only []
   rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (K.nonneg h), smul_eq_mul]
 
-/-! ### FK step 2 — equiboundedness + equicontinuity of the mollified family -/
+/-! ### FK step 1 — equiboundedness + equicontinuity of the mollified family -/
 
-/-- **FK step 2 (equiboundedness).**  The CONCRETE mollified family has a uniform sup bound on
+/-- **FK step 1 (equiboundedness).**  The CONCRETE mollified family has a uniform sup bound on
 its explicit representative.
 
 For a fixed smooth compactly supported kernel `K`, convolving an L²-bounded family with `K.η`
@@ -1186,7 +1187,7 @@ theorem mollified_family_uniformly_bounded (R C : ℝ) (S : Set (L2ballR3 R))
     _ ≤ ‖kernelL2R K‖ * C :=
         mul_le_mul_of_nonneg_left (hbdEnl f hf) (norm_nonneg _)
 
-/-- **FK step 2 (equicontinuity).**  The CONCRETE mollified family is uniformly equicontinuous on
+/-- **FK step 1 (equicontinuity).**  The CONCRETE mollified family is uniformly equicontinuous on
 its explicit representative.
 
 For a fixed smooth compactly supported kernel `K`, the modulus of continuity of `η ⋆ g` is
@@ -1309,7 +1310,7 @@ theorem dist_restrictToBall_le_of_ae_bound (R c : ℝ) (hc : 0 ≤ c) (u v : L2V
     (f := (restrictToBall R u - restrictToBall R v : L2ballR3 R)) hc haebd
   simpa [ballMassSqrt, hμ, ENNReal.toReal_ofNat] using hb
 
-/-! ### FK step 3 — Arzelà–Ascoli ⇒ total boundedness in L²(ball) -/
+/-! ### FK step 2 — Arzelà–Ascoli ⇒ total boundedness in L²(ball) -/
 
 set_option maxHeartbeats 1600000 in
 /-- **Abstract Arzelà–Ascoli + sup→L² transfer.**  Let `Φ f` be a representative function for the
@@ -1474,17 +1475,17 @@ theorem totallyBounded_image_of_equicont_bdd (R : ℝ) (S : Set (L2ballR3 R))
       ≤ V * ε' := hdist
     _ < ε := hVε'
 
-/-- **FK step 3.**  Arzelà–Ascoli: a uniformly bounded, uniformly equicontinuous family of
+/-- **FK step 2.**  Arzelà–Ascoli: a uniformly bounded, uniformly equicontinuous family of
 continuous functions on the compact ball `B_R` is totally bounded in `C(B_R)`, hence (via the
 continuous embedding `C(B_R) ↪ L²(B_R)` on a finite-measure ball) totally bounded in `L²(B_R)`.
 
-Consumes `mollified_family_uniformly_bounded` (step 2a) and `mollified_family_equicontinuous`
-(step 2b) for the CONCRETE kernel `K`; produces the total boundedness used by
+Consumes `mollified_family_uniformly_bounded` (step 1a) and `mollified_family_equicontinuous`
+(step 1b) for the CONCRETE kernel `K`; produces the total boundedness used by
 `convolution_l2_tendsto_uniform`.  The L²-classes `ρf f` whose representative is
 `mollifyRep K (rep f)` are supplied (with the a.e. agreement hypothesis `hρf`) so the result
 lands in `L²(B_R)` rather than `C(B_R)`.
 
-**Norm-correctness (Codex Gate round 3 → resolved round 4).**  Both steps 2a/2b it consumes are
+**Norm-correctness (Codex Gate round 3 → resolved round 4).**  Both steps 1a/1b it consumes are
 stated on `B_R` only and rest on the ENLARGED-BALL bound
 `‖restrictToBall (R+K.supportRadius) (rep f)‖ ≤ C`, which the call site derives from
 `FrechetKolmogorovInput`'s GLOBAL bound `hbddGlobal : ‖rep f‖ ≤ C` by ball-mass monotonicity.
@@ -1505,12 +1506,12 @@ theorem mollified_family_totallyBounded_L2 (R C : ℝ) (S : Set (L2ballR3 R))
       (mollified_family_uniformly_bounded R C S rep K hbdEnl).choose_spec f hf x hx)
     (mollified_family_equicontinuous R C S rep K hbdEnl)
 
-/-! ### FK step 1 (assembly) — uniform L²-mollification approximate identity
+/-! ### FK step 3 (assembly) — uniform L²-mollification approximate identity
 
-Placed AFTER steps 2–3 so that its derivation may delegate the total-boundedness conjunct to
+Placed AFTER steps 1–2 so that its derivation may delegate the total-boundedness conjunct to
 `mollified_family_totallyBounded_L2`. -/
 
-/-- **FK step 1.**  Uniform L²-approximation of a translation-equicontinuous family by its
+/-- **FK step 3.**  Uniform L²-approximation of a translation-equicontinuous family by its
 mollifications, for the CONCRETE mollifier.
 
 If a family `{rep f | f ∈ S}` of L²(ℝ³) fields has a uniform L²-translation modulus
@@ -1524,12 +1525,12 @@ whose chosen pointwise representative is `mollifyRep K (rep f)`, such that every
 with the rate controlled UNIFORMLY over the family by the translation modulus.  The derivation
 routes through the two named analytic helpers `young_convolution_memLp_L2` (global Young, producing
 the `L²`-class `ρf f`) and `convolution_sub_L2_le_translation_modulus` (vector Minkowski, producing
-the rate), the kernel constructor `exists_normalized_mollifierKernel`, and FK step 3
+the rate), the kernel constructor `exists_normalized_mollifierKernel`, and FK step 2
 `mollified_family_totallyBounded_L2` (total boundedness).  This is the genuinely-missing analytic
 core (mathlib has only the *pointwise* `convolution_tendsto_right`).
 
 **Norm-correctness (Codex Gate round 3 → resolved round 4).**  The total-boundedness conjunct
-delegates to `mollified_family_totallyBounded_L2` (steps 2+3), whose bounds need a ball-mass bound
+delegates to `mollified_family_totallyBounded_L2` (steps 1+2), whose bounds need a ball-mass bound
 on the kernel-support enlargement `B_{R+K.supportRadius}`.  The local hypothesis is an
 ENLARGED-BALL bound at a fixed enlargement budget `r₀ ≥ 0`:
 `hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + r₀) (rep f)‖ ≤ C`, which the caller obtains directly from
@@ -1645,7 +1646,7 @@ theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
           hbound
       _ ≤ ε / 2 := hmod_le
       _ < ε := by linarith
-  · -- TOTAL-BOUNDEDNESS conjunct delegates to FK step 3.
+  · -- TOTAL-BOUNDEDNESS conjunct delegates to FK step 2.
     exact mollified_family_totallyBounded_L2 R C S rep K ρf hρf_ae hbdEnlK
 
 /-! ### FK step 4 — total-boundedness transfer under uniform approximation -/
@@ -1653,7 +1654,7 @@ theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
 /-- **FK step 4.**  Total-boundedness transfer.  In a metric space, a set `S` that is uniformly
 ε-approximable (for every `ε > 0`) by a totally bounded set is itself totally bounded.
 
-This is the abstract glue between step 1 (uniform mollification approximation) and step 3
+This is the abstract glue between step 3 (uniform mollification approximation) and step 2
 (total boundedness of the mollified family): an ε-net of the approximant, fattened by ε, is a
 `2ε`-net of `S`. -/
 theorem totallyBounded_of_uniform_approx {α : Type*} [PseudoMetricSpace α] (S : Set α)
@@ -1683,9 +1684,9 @@ theorem totallyBounded_of_uniform_approx {α : Type*} [PseudoMetricSpace α] (S 
 discharge of `RellichBall.FrechetKolmogorovInput` (type copied verbatim, no weakening).
 
 Assembles the standard mollification route: from the uniform L²-translation modulus
-(`convolution_l2_tendsto_uniform`, step 1) each family member is uniformly ε-approximated by its
+(`convolution_l2_tendsto_uniform`, step 3) each family member is uniformly ε-approximated by its
 mollification, whose image is totally bounded by Arzelà–Ascoli
-(`mollified_family_totallyBounded_L2`, step 3); the transfer lemma
+(`mollified_family_totallyBounded_L2`, step 2); the transfer lemma
 (`totallyBounded_of_uniform_approx`, step 4) makes `S` totally bounded, and completeness of
 `L2ballR3 R` upgrades total boundedness to precompactness
 (`isCompact_iff_totallyBounded_isComplete`), giving the compact `K ⊇ S`.
@@ -1709,7 +1710,7 @@ from its admissible family's GLOBAL `‖w‖ ≤ M` bound.
 
 **Assembly (pure proof-body fill, no upstream blocker).**  Derive `hbdEnl` from `hbddGlobal` by
 ball-mass monotonicity; feed `hbdEnl`, `hbd`, `hrep`, `hmod` into `convolution_l2_tendsto_uniform`
-(step 1) to get, for each `ε`, a totally bounded mollified image approximating `S` within `ε`;
+(step 3) to get, for each `ε`, a totally bounded mollified image approximating `S` within `ε`;
 `totallyBounded_of_uniform_approx` (step 4) makes `S` totally bounded; closure of the totally
 bounded `S` is compact (`isCompact_iff_totallyBounded_isComplete`, `L2ballR3 R` complete); take
 `K := closure S`. -/
@@ -1719,7 +1720,7 @@ theorem frechetKolmogorov_holds : FrechetKolmogorovInput := by
   have hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + 1) (rep f)‖ ≤ C := fun f hf =>
     le_trans (norm_restrictToBall_le (R + 1) (rep f)) (hbddGlobal f hf)
   -- `S` is totally bounded: each `ε`-step delivers a totally bounded mollified image approximating
-  -- `S` within `ε` (FK step 1), so the transfer lemma (FK step 4) applies.
+  -- `S` within `ε` (FK step 3), so the transfer lemma (FK step 4) applies.
   have hTB : TotallyBounded S := by
     refine totallyBounded_of_uniform_approx S (fun ε hε => ?_)
     obtain ⟨K, ρf, _hKr₀, _hρf_ae, happrox, hTBimg⟩ :=
