@@ -18,7 +18,6 @@ introduces no import cycle and may be reused by both the T³ and ℝ³ capstones
 - `isWeakTimeDeriv_unique` — a.e. uniqueness (must-prove; deferred body).
 - `hasDerivAt_isWeakTimeDeriv` — a classical strong derivative is a weak time derivative
   (the entry point connecting Galerkin curves' `HasDerivAt` field to the weak API).
-- `GelfandTriple.ιCLM` — the embedding `ι : V → H` bundled as a `ContinuousLinearMap`.
 - `GelfandTriple.Vprime` — the continuous dual `V' := V →L[ℝ] ℝ` (`StrongDual ℝ V`).
 - `GelfandTriple.hToVprime` — the canonical embedding `H → V'`, `h ↦ (v ↦ ⟪ι v, h⟫_H)`,
   i.e. the transpose of `ι` composed with the Riesz identification `H ≅ H'`.
@@ -49,7 +48,7 @@ hypotheses, never axioms.
 
 ## Scaffold ledger (this cycle)
 
-Definitions (scaffold): `IsWeakTimeDeriv`, `GelfandTriple.ιCLM`, `GelfandTriple.Vprime`,
+Definitions (scaffold): `IsWeakTimeDeriv`, `GelfandTriple.Vprime`,
 `GelfandTriple.hToVprime`, `W1pTime`.
 **Proved this cycle (sorry-free):** `hasDerivAt_isWeakTimeDeriv` (strong⇒weak time derivative
 via Bochner IBP), `aeStronglyMeasurable_of_spaceTimeL2` and `kineticEnergy_lsc_transfer` (both
@@ -240,15 +239,6 @@ end WeakTimeDeriv
 
 namespace GelfandTriple
 
-/-- The embedding `ι : V →L[ℝ] H` as a `ContinuousLinearMap`. Now that `GelfandTriple.ι` is
-itself a `ContinuousLinearMap`, this is a trivial alias for `GT.ι`. Kept for backward
-compatibility with downstream call sites in this file. -/
-noncomputable def ιCLM (GT : GelfandTriple) :
-    letI := GT.instNACG_V; letI := GT.instIPS_V; letI := GT.instNACG_H; letI := GT.instIPS_H;
-    GT.V →L[ℝ] GT.H :=
-  letI := GT.instNACG_V; letI := GT.instIPS_V; letI := GT.instNACG_H; letI := GT.instIPS_H
-  GT.ι
-
 /-- The **continuous dual** `V' := V →L[ℝ] ℝ` (= `StrongDual ℝ V`) of the regularity
 space, the codomain of the Lions–Magenes time derivative `u' ∈ L^q(0,T;V')`. -/
 abbrev Vprime (GT : GelfandTriple) : Type _ :=
@@ -257,7 +247,7 @@ abbrev Vprime (GT : GelfandTriple) : Type _ :=
 
 /-- The **canonical embedding** `H ↪ V'`, sending `h ∈ H` to the functional
 `v ↦ ⟪ι v, h⟫_H` on `V`. By real-symmetry of the inner product this equals
-`(InnerProductSpace.toDual ℝ H h) ∘L ιCLM`, i.e. the transpose of `ι` composed with the
+`(InnerProductSpace.toDual ℝ H h) ∘L GT.ι`, i.e. the transpose of `ι` composed with the
 Riesz identification `H ≅ H'`. It is injective because `ι` has dense range
 (`ι_denseRange`), which is exactly the Gelfand-triple defining property — but injectivity is
 not needed to state `W1pTime`, so we keep this as the bare embedding. -/
@@ -312,11 +302,11 @@ structure W1pTime (GT : GelfandTriple) (p q : ℝ≥0∞) (T : ℝ)
     IsWeakTimeDeriv (X := GT.Vprime) T (fun t => GT.hToVprime (GT.ι (uV t))) u'
 
 /-- The canonical embedding `H ↪ V'` as a genuine `ContinuousLinearMap` (the bundled form
-of `GelfandTriple.hToVprime`). It is the precomposition `g ↦ g ∘ ιCLM` (the honest ℝ-linear
-`ContinuousLinearMap.compL … |>.flip ιCLM`) applied after the Riesz map `innerSL ℝ : H →L[ℝ]
+of `GelfandTriple.hToVprime`). It is the precomposition `g ↦ g ∘ GT.ι` (the honest ℝ-linear
+`ContinuousLinearMap.compL … |>.flip GT.ι`) applied after the Riesz map `innerSL ℝ : H →L[ℝ]
 (H →L[ℝ] ℝ)`. Over `ℝ` the inner product is genuinely bilinear, so `innerSL ℝ` is an honest
 `H →L[ℝ] _` (its conjugate-linearity is trivial), and `hToVprimeCLM h = (innerSL ℝ h).comp
-ιCLM = (toDual ℝ H h).comp ιCLM = hToVprime h` pointwise (see `hToVprimeCLM_apply`). -/
+GT.ι = (toDual ℝ H h).comp GT.ι = hToVprime h` pointwise (see `hToVprimeCLM_apply`). -/
 noncomputable def GelfandTriple.hToVprimeCLM (GT : GelfandTriple) :
     letI := GT.instNACG_V; letI := GT.instIPS_V;
     letI := GT.instNACG_H; letI := GT.instIPS_H; GT.H →L[ℝ] GT.Vprime :=
