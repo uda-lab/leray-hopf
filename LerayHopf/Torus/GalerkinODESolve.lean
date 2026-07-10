@@ -8,6 +8,7 @@ import Mathlib.Analysis.ODE.ExistUnique  -- issue #111 PR-3: the pinned mathlib 
   -- ODE_solution_unique_of_mem_Icc_{right,left,''} directly (same as R3's fix).
 import Mathlib.Analysis.Calculus.ContDiff.FiniteDimension
 import Mathlib.Analysis.Normed.Module.FiniteDimension
+import LerayHopf.Galerkin.QuadraticField  -- issue #112 PR-B: generic FieldForms witness (torusFieldForms)
 
 /-!
 # Forward-global existence of the finite-dim Galerkin ODE on 𝕋³ (issue #24)
@@ -168,6 +169,64 @@ hypothesis convenient for the stokes right-linearity helpers). -/
 private theorem velocityP_fixes_coe (n : ℕ) (w : velocitySpan n) :
     velocityProjection_n n (w : L2VF) = (w : L2VF) := velocityP_fixes_span n w
 
+/-! ## B.0a — generic `FieldForms` witness (issue #112 PR-B, plan §3.3)
+
+`torusFieldForms` packages `Torus3NSForms.b` and `stokesTestPairing` as a
+`Galerkin.FieldForms (velocitySpan n)` instance, deduplicating this file's CLM tower against
+`LerayHopf/Galerkin/QuadraticField.lean`'s generic construction. All 13 obligations are
+discharged mechanically from the lemmas already proved above (B.0) and `Torus3NSForms`'s own
+algebraic fields — no new proof content. -/
+
+/-- The generic `FieldForms` witness for the torus Galerkin ODE layer: `bV` is `F.b` composed
+with `velocitySpanToSigma`, `sV` is `stokesTestPairing` on the ambient `L2VF` coercion. -/
+noncomputable def torusFieldForms (F : Torus3NSForms) (n : ℕ) :
+    Galerkin.FieldForms (velocitySpan n) where
+  bV u u' w := F.b (velocitySpanToSigma n u) (velocitySpanToSigma n u') (velocitySpanToSigma n w)
+  bV_add_1 u u' v w := by
+    show F.b (velocitySpanToSigma n (u + u')) (velocitySpanToSigma n v) (velocitySpanToSigma n w)
+        = F.b (velocitySpanToSigma n u) (velocitySpanToSigma n v) (velocitySpanToSigma n w)
+          + F.b (velocitySpanToSigma n u') (velocitySpanToSigma n v) (velocitySpanToSigma n w)
+    rw [velocitySpanToSigma_add]; exact F.b_add_1 _ _ _ _
+  bV_add_2 u v v' w := by
+    show F.b (velocitySpanToSigma n u) (velocitySpanToSigma n (v + v')) (velocitySpanToSigma n w)
+        = F.b (velocitySpanToSigma n u) (velocitySpanToSigma n v) (velocitySpanToSigma n w)
+          + F.b (velocitySpanToSigma n u) (velocitySpanToSigma n v') (velocitySpanToSigma n w)
+    rw [velocitySpanToSigma_add]; exact F.b_add_2 _ _ _ _
+  bV_add_3 u v w w' := by
+    show F.b (velocitySpanToSigma n u) (velocitySpanToSigma n v) (velocitySpanToSigma n (w + w'))
+        = F.b (velocitySpanToSigma n u) (velocitySpanToSigma n v) (velocitySpanToSigma n w)
+          + F.b (velocitySpanToSigma n u) (velocitySpanToSigma n v) (velocitySpanToSigma n w')
+    rw [velocitySpanToSigma_add]; exact F.b_add_3 _ _ _ _
+  bV_smul_1 a u v w := by
+    show F.b (velocitySpanToSigma n (a • u)) (velocitySpanToSigma n v) (velocitySpanToSigma n w)
+        = a * F.b (velocitySpanToSigma n u) (velocitySpanToSigma n v) (velocitySpanToSigma n w)
+    rw [velocitySpanToSigma_smul]; exact F.b_smul_1 _ _ _ _
+  bV_smul_2 a u v w := by
+    show F.b (velocitySpanToSigma n u) (velocitySpanToSigma n (a • v)) (velocitySpanToSigma n w)
+        = a * F.b (velocitySpanToSigma n u) (velocitySpanToSigma n v) (velocitySpanToSigma n w)
+    rw [velocitySpanToSigma_smul]; exact F.b_smul_2 _ _ _ _
+  bV_smul_3 a u v w := by
+    show F.b (velocitySpanToSigma n u) (velocitySpanToSigma n v) (velocitySpanToSigma n (a • w))
+        = a * F.b (velocitySpanToSigma n u) (velocitySpanToSigma n v) (velocitySpanToSigma n w)
+    rw [velocitySpanToSigma_smul]; exact F.b_smul_3 _ _ _ _
+  bV_diag_zero v := F.b_self_zero (velocitySpanToSigma n v)
+  sV u w := stokesTestPairing (u : L2VF) (w : L2VF)
+  sV_symm u w := stokesTestPairing_symm (u : L2VF) (w : L2VF)
+  sV_add_right u w w' := by
+    show stokesTestPairing (u : L2VF) ((w + w' : velocitySpan n) : L2VF)
+        = stokesTestPairing (u : L2VF) (w : L2VF) + stokesTestPairing (u : L2VF) (w' : L2VF)
+    rw [show ((w + w' : velocitySpan n) : L2VF) = (w : L2VF) + (w' : L2VF) from rfl]
+    exact stokesTestPairing_add_right n (u : L2VF) (w : L2VF) (w' : L2VF) (velocityP_fixes_coe n u)
+  sV_smul_right a u w := by
+    show stokesTestPairing (u : L2VF) ((a • w : velocitySpan n) : L2VF)
+        = a * stokesTestPairing (u : L2VF) (w : L2VF)
+    rw [show ((a • w : velocitySpan n) : L2VF) = a • (w : L2VF) from rfl]
+    exact stokesTestPairing_smul_right n a (u : L2VF) (w : L2VF) (velocityP_fixes_coe n u)
+  sV_diag_nonneg v := by
+    show (0 : ℝ) ≤ stokesTestPairing (v : L2VF) (v : L2VF)
+    rw [stokesTestPairing_diag]
+    exact viscousFormSq_nonneg zero_le_one _
+
 /-- The continuous linear functional on `Vₙ := velocitySpan n` whose Riesz representative is the
 Galerkin vector field: `φ w = - ν · stokesTestPairing(u, w) - F.b(σu, σu, σw)`.
 
@@ -221,6 +280,13 @@ theorem galerkinODE_vectorField_spec (F : Torus3NSForms) (ν : ℝ) (n : ℕ)
         (Submodule.coe_inner (velocitySpan n) (galerkinODE_vectorField F ν n u) w).symm]
   rw [galerkinODE_vectorField, InnerProductSpace.toDual_symm_apply,
     galerkinODE_functional_apply]
+
+/-- **Equality bridge (issue #112 PR-B, plan §3.3).** The concrete lane vector field equals
+the generic `FieldForms` construction — proved by `ext_inner_right` + both specs, per the
+plan's equality-bridge rule (no redefinition of `galerkinODE_vectorField`). -/
+theorem galerkinODE_vectorField_eq_generic (F : Torus3NSForms) (ν : ℝ) (n : ℕ) :
+    galerkinODE_vectorField F ν n = (torusFieldForms F n).vectorField ν := by
+  sorry -- ALLOW_SORRY: PR-B scaffold, prover fills (issue #112)
 
 /-! ## B.2 — C1: the Galerkin field is `C¹`
 

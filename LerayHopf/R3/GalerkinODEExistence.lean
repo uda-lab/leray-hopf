@@ -2,6 +2,7 @@ import LerayHopf.R3.GalerkinODE
 import LerayHopf.R3.GalerkinScheme
 import Mathlib.Analysis.InnerProductSpace.Dual
 import Mathlib.Analysis.Normed.Module.FiniteDimension
+import LerayHopf.Galerkin.QuadraticField  -- issue #112 PR-B: generic FieldForms witness (r3FieldForms)
 
 /-!
 # Galerkin ODE existence on ℝ³: finite-dim Riesz field + weak↔vector-field bridge (Pillar E)
@@ -348,6 +349,65 @@ theorem galerkinSpanToSigma_smul (B : SchwartzGalerkinBasis) (n : ℕ)
     galerkinSpanToSigma B n (c • w) = c • galerkinSpanToSigma B n w := by
   apply Subtype.ext; rfl
 
+/-! ### R0a — generic `FieldForms` witness (issue #112 PR-B, plan §3.3)
+
+`r3FieldForms` packages `R3NSForms.b` and `stokesTestPairing_R3` as a
+`Galerkin.FieldForms (galerkinSpan B n)` instance, deduplicating this file's CLM tower against
+`LerayHopf/Galerkin/QuadraticField.lean`'s generic construction. 12 of the 13 obligations are
+discharged mechanically from the Schwartz-Fourier right-linearity layer above and `R3NSForms`'s
+own algebraic fields. `sV_symm` is the one exception: the file's ONLY symmetry proof for
+`stokesTestPairing_R3` is `private theorem stokesTestPairing_R3_symm` in
+`LerayHopf/R3/GalerkinODESolve.lean` — inaccessible both because it is `private` and because
+that file *imports this one* (`GalerkinODESolve.lean:1`), so importing it here would create a
+cycle. `sV_symm` is scaffolded with `sorry` per the PR-B coder-phase escalation rule (single
+non-mechanical obligation, no existing accessible lemma). -/
+
+/-- The generic `FieldForms` witness for the ℝ³ Galerkin ODE layer: `bV` is `F.b` composed with
+`galerkinSpanToSigma`, `sV` is `stokesTestPairing_R3` on the ambient `L2VF_R3` coercion. -/
+noncomputable def r3FieldForms (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBasis B))
+    (n : ℕ) : Galerkin.FieldForms (galerkinSpan B n) where
+  bV u u' w := F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n u') (galerkinSpanToSigma B n w)
+  bV_add_1 u u' v w := by
+    show F.b (galerkinSpanToSigma B n (u + u')) (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n w)
+        = F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n w)
+          + F.b (galerkinSpanToSigma B n u') (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n w)
+    rw [galerkinSpanToSigma_add]; exact F.b_add_1 _ _ _ _
+  bV_add_2 u v v' w := by
+    show F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n (v + v')) (galerkinSpanToSigma B n w)
+        = F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n w)
+          + F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n v') (galerkinSpanToSigma B n w)
+    rw [galerkinSpanToSigma_add]; exact F.b_add_2 _ _ _ _
+  bV_add_3 u v w w' := by
+    show F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n (w + w'))
+        = F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n w)
+          + F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n w')
+    rw [galerkinSpanToSigma_add]; exact F.b_add_3 _ _ _ _
+  bV_smul_1 a u v w := by
+    show F.b (galerkinSpanToSigma B n (a • u)) (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n w)
+        = a * F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n w)
+    rw [galerkinSpanToSigma_smul]; exact F.b_smul_1 _ _ _ _
+  bV_smul_2 a u v w := by
+    show F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n (a • v)) (galerkinSpanToSigma B n w)
+        = a * F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n w)
+    rw [galerkinSpanToSigma_smul]; exact F.b_smul_2 _ _ _ _
+  bV_smul_3 a u v w := by
+    show F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n (a • w))
+        = a * F.b (galerkinSpanToSigma B n u) (galerkinSpanToSigma B n v) (galerkinSpanToSigma B n w)
+    rw [galerkinSpanToSigma_smul]; exact F.b_smul_3 _ _ _ _
+  bV_diag_zero v := F.b_self_zero (galerkinSpanToSigma B n v)
+  sV u w := stokesTestPairing_R3 (u : L2VF_R3) (w : L2VF_R3)
+  sV_symm u w :=
+    sorry -- ALLOW_SORRY: PR-B scaffold, prover fills (issue #112) — the only existing proof
+      -- (`stokesTestPairing_R3_symm`, `GalerkinODESolve.lean:196`) is `private` in a file that
+      -- imports THIS one, so it is neither visible nor importable without a cycle; needs a
+      -- fresh proof (mirror the Fourier-conjugate argument) or promotion+relocation upstream.
+  sV_add_right u w w' := stokesTestPairing_R3_add_right B n u w w'
+  sV_smul_right a u w := stokesTestPairing_R3_smul_right B n u w a
+  sV_diag_nonneg v := by
+    show (0 : ℝ) ≤ stokesTestPairing_R3 (v : L2VF_R3) (v : L2VF_R3)
+    rw [stokesTestPairing_R3_diag]
+    exact viscousFormSq_R3_nonneg zero_le_one _
+
 /-- The continuous linear functional on `V_n := galerkinSpan B n` whose Riesz representative is
 the Galerkin vector field: `φ w = - ν · stokesTestPairing_R3 (u, w) - F.b (σu) (σu) (σw)`.
 
@@ -425,6 +485,14 @@ theorem galerkinODE_vectorField_spec
   -- exposes the RHS exactly.
   rw [galerkinODE_vectorField, InnerProductSpace.toDual_symm_apply,
     galerkinODE_functional_apply]
+
+/-- **Equality bridge (issue #112 PR-B, plan §3.3).** The concrete lane vector field equals
+the generic `FieldForms` construction — proved by `ext_inner_right` + both specs, per the
+plan's equality-bridge rule (no redefinition of `galerkinODE_vectorField`). -/
+theorem galerkinODE_vectorField_eq_generic
+    (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBasis B)) (ν : ℝ) (n : ℕ) :
+    galerkinODE_vectorField B F ν n = (r3FieldForms B F n).vectorField ν := by
+  sorry -- ALLOW_SORRY: PR-B scaffold, prover fills (issue #112)
 
 /-! ### S0 — the residual isolated frontier hypothesis -/
 
