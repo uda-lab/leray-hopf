@@ -184,11 +184,14 @@ noncomputable def extendBoundedBilinearOfDense (D : Submodule ℝ E)
     E →L[ℝ] E →L[ℝ] ℝ :=
   (outerCLM D hdense β hC hbound).extend (eDL D)
 
-/-- The extension agrees with `β` on `D × D`. -/
+/-- The extension agrees with `β` on `D × D`. Stated against the public `D.subtypeL` (not the
+private `eDL D`) so callers can `rw`/`exact` against it without needing to know this file's
+internal names. -/
 theorem extendBoundedBilinearOfDense_apply (D : Submodule ℝ E)
     (hdense : DenseRange (D.subtype : D → E)) (β : D →ₗ[ℝ] D →ₗ[ℝ] ℝ) {C : ℝ} (hC : 0 ≤ C)
     (hbound : ∀ u v : D, |β u v| ≤ C * ‖(u : E)‖ * ‖(v : E)‖) (u v : D) :
-    extendBoundedBilinearOfDense D hdense β hC hbound (eDL D u) (eDL D v) = β u v := by
+    extendBoundedBilinearOfDense D hdense β hC hbound (D.subtypeL u) (D.subtypeL v) = β u v := by
+  show extendBoundedBilinearOfDense D hdense β hC hbound (eDL D u) (eDL D v) = β u v
   unfold extendBoundedBilinearOfDense
   rw [ContinuousLinearMap.extend_eq _ (denseRange_eDL D hdense) (isUniformInducing_eDL D) u,
     outerCLM_apply D hdense β hC hbound u]
@@ -196,11 +199,11 @@ theorem extendBoundedBilinearOfDense_apply (D : Submodule ℝ E)
   rw [hev]
   exact innerCLM_apply_eD D hdense β hbound u v
 
-/-- Two continuous bilinear forms on `E` agreeing on the dense `D × D` square (via `D.subtypeL`)
-are equal. -/
+/-- Two continuous bilinear forms on `E` agreeing on the dense `D × D` square (via the public
+`D.subtypeL`) are equal. -/
 theorem eq_of_agree_dense (D : Submodule ℝ E) (hdense : DenseRange (D.subtype : D → E))
     {B₁ B₂ : E →L[ℝ] E →L[ℝ] ℝ}
-    (h : ∀ u v : D, B₁ (eDL D u) (eDL D v) = B₂ (eDL D u) (eDL D v)) :
+    (h : ∀ u v : D, B₁ (D.subtypeL u) (D.subtypeL v) = B₂ (D.subtypeL u) (D.subtypeL v)) :
     B₁ = B₂ := by
   have hfun : (fun a => fun b => B₁ a b) = (fun a => fun b => B₂ a b) := by
     have key : ∀ a ∈ closure (Set.range (eDL D : D → E)),
