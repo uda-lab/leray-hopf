@@ -1,4 +1,5 @@
-import LerayHopf.R3.SchwartzDivFreeBasis
+import LerayHopf.R3.CurlSchwartzConstruction  -- issue #113 PR-1: only curlSchwartz/curlSchwartzL2/
+  -- CurlSchwartzDense/curlSchwartzL2_projComponent are needed, not GalerkinScheme
 import LerayHopf.R3.FourierL2
 
 namespace LerayHopf
