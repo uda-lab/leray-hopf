@@ -1,7 +1,7 @@
 import LerayHopf.Torus.EnergyConvection
 import LerayHopf.Torus.GalerkinScheme
 import LerayHopf.Torus.ConvectionForm
-import LerayHopf.R3.TensorIntersection
+import LerayHopf.Analysis.TensorIntersection
 import LerayHopf.Analysis.TensorEdgeGluing
 import Mathlib.LinearAlgebra.TensorProduct.Map
 import Mathlib.LinearAlgebra.LinearPMap

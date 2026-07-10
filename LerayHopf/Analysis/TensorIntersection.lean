@@ -5,11 +5,18 @@ import Mathlib.LinearAlgebra.Basis.VectorSpace
 /-!
 # TensorIntersection — the `S⊗V ∩ V⊗S = S⊗S` lemma
 
-**File:** `LerayHopf/R3/TensorIntersection.lean`
+**File:** `LerayHopf/Analysis/TensorIntersection.lean`
 
 A general linear-algebra fact needed for the convection-operator construction
 (issue #56): inside `V ⊗ V`, the image of `S ⊗ V` and the image of `V ⊗ S`
 intersect in exactly the image of `S ⊗ S`.
+
+**Namespace note (issue #113 PR-2).** This file was relocated here from
+`LerayHopf/R3/TensorIntersection.lean` (it has zero project imports and is pure
+linear algebra, so it belongs in the generic `Analysis/` layer, not the R3 lane) —
+but its namespace, `LerayHopf.R3.TensorIntersection`, is kept AS-IS this round for
+name stability (its 3 callers reference the fully-qualified name). The path/namespace
+mismatch is a known, deliberate leftover of this move, not an oversight.
 
 This is the algebraic glue that lets a bilinear form which is determined on the
 sum `(S⊗V) + (V⊗S)` of the two "edge" subspaces be reconstructed consistently:

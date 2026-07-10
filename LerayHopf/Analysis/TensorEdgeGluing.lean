@@ -2,7 +2,7 @@ import Mathlib.LinearAlgebra.TensorProduct.Map
 import Mathlib.LinearAlgebra.LinearPMap
 import Mathlib.LinearAlgebra.Basis.VectorSpace
 import Mathlib.Analysis.Normed.Operator.Basic
-import LerayHopf.R3.TensorIntersection
+import LerayHopf.Analysis.TensorIntersection
 
 /-!
 # TensorEdgeGluing — shared tensor/edge-gluing layer (issue #111, PR-1)

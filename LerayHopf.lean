@@ -126,7 +126,7 @@ import LerayHopf.R3.ConvectionForm
 import LerayHopf.R3.SobolevEmbedding
 import LerayHopf.R3.EnergyClassConvection
 import LerayHopf.R3.ConvectionExtension  -- issue #56: determined-form ConvectionGapOp construction
-import LerayHopf.R3.TensorIntersection   -- issue #56: S⊗V ∩ V⊗S = S⊗S linear-algebra lemma
+import LerayHopf.Analysis.TensorIntersection   -- issue #56: S⊗V ∩ V⊗S = S⊗S linear-algebra lemma
 import LerayHopf.R3.GalerkinCurveBounds  -- issue #46 PR-1: Galerkin curve/pairing library (File B)
 import LerayHopf.R3.GalerkinTrilinearBound  -- issue #46 PR-2: Galerkin trilinear/energy-class bounds (File C)
 import LerayHopf.R3.GalerkinTimeModulus  -- issue #46 PR-3: good-sampling + master uniform sampling-error bound (File D)
