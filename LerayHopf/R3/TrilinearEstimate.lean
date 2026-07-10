@@ -62,53 +62,67 @@ Tier C — Integration by parts and `b_bound`-shape estimate (C1–C3):
 - `MeasureTheory.integral_add`, `integral_smul`, `integral_mul_left`
 -/
 
-/-! ### Local helpers -/
+/-! ### Local helpers
+
+These helpers are pure Schwartz-function analysis (Cauchy–Schwarz, Leibniz rule,
+trilinear sup-norm bound) with no dependence on `convIntegralSchwartz` itself, so
+they are stated generically over the ambient dimension `n`.  Tier A/B/C below
+still target the concrete `Domain3`-typed `convIntegralSchwartz` (unchanged), and
+their proofs instantiate these generic helpers at `n := 3` via the `Domain3 ≡
+EuclideanSpace ℝ (Fin 3)` `abbrev` unfolding. -/
+
+variable {n : ℕ}
 
 /-- The pointwise product of two scalar Schwartz functions, again a Schwartz function. -/
 private noncomputable def schwartzMul
-    (f g : SchwartzMap Domain3 ℝ) : SchwartzMap Domain3 ℝ :=
+    (f g : SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ) : SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ :=
   SchwartzMap.bilinLeftCLM (ContinuousLinearMap.mul ℝ ℝ) g.hasTemperateGrowth f
 
-@[simp] private theorem schwartzMul_apply (f g : SchwartzMap Domain3 ℝ) (x : Domain3) :
+@[simp] private theorem schwartzMul_apply
+    (f g : SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ) (x : EuclideanSpace ℝ (Fin n)) :
     schwartzMul f g x = f x * g x := by
   simp [schwartzMul, ContinuousLinearMap.mul_apply']
 
 /-- Integrability of the `(i,a)`-summand integrand. (Shared by B1 and Tier A.) -/
 private theorem integrand_integrable'
-    (ψu ψv ψw : Fin 3 → SchwartzMap Domain3 ℝ) (i a : Fin 3) :
+    (ψu ψv ψw : Fin n → SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ) (i a : Fin n) :
     MeasureTheory.Integrable
-      (fun x : Domain3 =>
+      (fun x : EuclideanSpace ℝ (Fin n) =>
         (ψu a x) *
-        ((lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
-            (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψv i)) x) *
+        ((lineDerivOpCLM ℝ (SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ)
+            (EuclideanSpace.single a (1 : ℝ) : EuclideanSpace ℝ (Fin n)) (ψv i)) x) *
         (ψw i x))
-      (volume : Measure Domain3) := by
+      (volume : Measure (EuclideanSpace ℝ (Fin n))) := by
   have h := (schwartzMul
       (schwartzMul (ψu a)
-        (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ)
-          (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψv i))) (ψw i)).integrable
-      (μ := (volume : Measure Domain3))
+        (lineDerivOpCLM ℝ (SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ)
+          (EuclideanSpace.single a (1 : ℝ) : EuclideanSpace ℝ (Fin n)) (ψv i))) (ψw i)).integrable
+      (μ := (volume : Measure (EuclideanSpace ℝ (Fin n))))
   refine h.congr ?_
   filter_upwards with x
   simp
 
 /-- Leibniz rule for the directional derivative `∂_{v}` on a Schwartz product. -/
-private theorem lineDerivOp_schwartzMul (f g : SchwartzMap Domain3 ℝ) (v : Domain3) (x : Domain3) :
-    (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) v (schwartzMul f g)) x =
-      (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) v f) x * g x
-      + f x * (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℝ) v g) x := by
+private theorem lineDerivOp_schwartzMul
+    (f g : SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ) (v x : EuclideanSpace ℝ (Fin n)) :
+    (lineDerivOpCLM ℝ (SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ) v (schwartzMul f g)) x =
+      (lineDerivOpCLM ℝ (SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ) v f) x * g x
+      + f x * (lineDerivOpCLM ℝ (SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ) v g) x := by
   rw [lineDerivOpCLM_apply, lineDerivOpCLM_apply, lineDerivOpCLM_apply,
     SchwartzMap.lineDerivOp_apply_eq_fderiv, SchwartzMap.lineDerivOp_apply_eq_fderiv,
     SchwartzMap.lineDerivOp_apply_eq_fderiv]
-  have hf : HasFDerivAt (f : Domain3 → ℝ) (fderiv ℝ (f : Domain3 → ℝ) x) x :=
+  have hf : HasFDerivAt (f : EuclideanSpace ℝ (Fin n) → ℝ)
+      (fderiv ℝ (f : EuclideanSpace ℝ (Fin n) → ℝ) x) x :=
     (f.differentiableAt).hasFDerivAt
-  have hg : HasFDerivAt (g : Domain3 → ℝ) (fderiv ℝ (g : Domain3 → ℝ) x) x :=
+  have hg : HasFDerivAt (g : EuclideanSpace ℝ (Fin n) → ℝ)
+      (fderiv ℝ (g : EuclideanSpace ℝ (Fin n) → ℝ) x) x :=
     (g.differentiableAt).hasFDerivAt
-  have hprod : HasFDerivAt (schwartzMul f g : Domain3 → ℝ)
-      ((f x) • fderiv ℝ (g : Domain3 → ℝ) x
-        + (g x) • fderiv ℝ (f : Domain3 → ℝ) x) x := by
+  have hprod : HasFDerivAt (schwartzMul f g : EuclideanSpace ℝ (Fin n) → ℝ)
+      ((f x) • fderiv ℝ (g : EuclideanSpace ℝ (Fin n) → ℝ) x
+        + (g x) • fderiv ℝ (f : EuclideanSpace ℝ (Fin n) → ℝ) x) x := by
     have hmul := hf.mul hg
-    have heq : ((f : Domain3 → ℝ) * (g : Domain3 → ℝ)) = (schwartzMul f g : Domain3 → ℝ) := by
+    have heq : ((f : EuclideanSpace ℝ (Fin n) → ℝ) * (g : EuclideanSpace ℝ (Fin n) → ℝ))
+        = (schwartzMul f g : EuclideanSpace ℝ (Fin n) → ℝ) := by
       funext y; simp [Pi.mul_apply]
     rw [heq] at hmul
     exact hmul
@@ -118,83 +132,106 @@ private theorem lineDerivOp_schwartzMul (f g : SchwartzMap Domain3 ℝ) (v : Dom
 
 /-- Cauchy–Schwarz on the L² pair of two scalar Schwartz functions:
 `|∫ f·g| ≤ ‖f.toLp 2‖ · ‖g.toLp 2‖`. -/
-private theorem schwartz_cauchy_schwarz (f g : SchwartzMap Domain3 ℝ) :
-    |∫ x : Domain3, (f x) * (g x) ∂(volume : Measure Domain3)|
-      ≤ ‖f.toLp 2 (volume : Measure Domain3)‖ * ‖g.toLp 2 (volume : Measure Domain3)‖ := by
-  have hinner : (inner ℝ (f.toLp 2 (volume : Measure Domain3))
-      (g.toLp 2 (volume : Measure Domain3)) : ℝ)
-      = ∫ x : Domain3, (f x) * (g x) ∂(volume : Measure Domain3) := by
+private theorem schwartz_cauchy_schwarz (f g : SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ) :
+    |∫ x : EuclideanSpace ℝ (Fin n), (f x) * (g x)
+        ∂(volume : Measure (EuclideanSpace ℝ (Fin n)))|
+      ≤ ‖f.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))‖
+        * ‖g.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))‖ := by
+  have hinner : (inner ℝ (f.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n))))
+      (g.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))) : ℝ)
+      = ∫ x : EuclideanSpace ℝ (Fin n), (f x) * (g x)
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin n))) := by
     rw [MeasureTheory.L2.inner_def]
     refine MeasureTheory.integral_congr_ae ?_
-    filter_upwards [SchwartzMap.coeFn_toLp f 2 (volume : Measure Domain3),
-      SchwartzMap.coeFn_toLp g 2 (volume : Measure Domain3)] with x hfx hgx
+    filter_upwards [SchwartzMap.coeFn_toLp f 2 (volume : Measure (EuclideanSpace ℝ (Fin n))),
+      SchwartzMap.coeFn_toLp g 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))] with x hfx hgx
     rw [Real.inner_apply, hfx, hgx]
   rw [← hinner]
   exact abs_real_inner_le_norm _ _
 
 /-- L¹ Cauchy–Schwarz: `∫ |f|·|g| ≤ ‖f.toLp 2‖ · ‖g.toLp 2‖`. -/
-private theorem schwartz_integral_abs_mul_le (f g : SchwartzMap Domain3 ℝ) :
-    (∫ x : Domain3, |f x| * |g x| ∂(volume : Measure Domain3))
-      ≤ ‖f.toLp 2 (volume : Measure Domain3)‖ * ‖g.toLp 2 (volume : Measure Domain3)‖ := by
-  have hf : MemLp (f : Domain3 → ℝ) (ENNReal.ofReal 2) (volume : Measure Domain3) := by
-    have := f.memLp 2 (volume : Measure Domain3)
+private theorem schwartz_integral_abs_mul_le (f g : SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ) :
+    (∫ x : EuclideanSpace ℝ (Fin n), |f x| * |g x|
+        ∂(volume : Measure (EuclideanSpace ℝ (Fin n))))
+      ≤ ‖f.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))‖
+        * ‖g.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))‖ := by
+  have hf : MemLp (f : EuclideanSpace ℝ (Fin n) → ℝ) (ENNReal.ofReal 2)
+      (volume : Measure (EuclideanSpace ℝ (Fin n))) := by
+    have := f.memLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))
     simpa using this
-  have hg : MemLp (g : Domain3 → ℝ) (ENNReal.ofReal 2) (volume : Measure Domain3) := by
-    have := g.memLp 2 (volume : Measure Domain3)
+  have hg : MemLp (g : EuclideanSpace ℝ (Fin n) → ℝ) (ENNReal.ofReal 2)
+      (volume : Measure (EuclideanSpace ℝ (Fin n))) := by
+    have := g.memLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))
     simpa using this
   have hmain := MeasureTheory.integral_mul_norm_le_Lp_mul_Lq
-    (μ := (volume : Measure Domain3)) (f := (f : Domain3 → ℝ)) (g := (g : Domain3 → ℝ))
+    (μ := (volume : Measure (EuclideanSpace ℝ (Fin n))))
+    (f := (f : EuclideanSpace ℝ (Fin n) → ℝ)) (g := (g : EuclideanSpace ℝ (Fin n) → ℝ))
     (Real.HolderConjugate.two_two) hf hg
-  have hnf : ‖f.toLp 2 (volume : Measure Domain3)‖
-      = (∫ x : Domain3, ‖f x‖ ^ (2 : ℝ) ∂(volume : Measure Domain3)) ^ (1 / (2 : ℝ)) := by
+  have hnf : ‖f.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))‖
+      = (∫ x : EuclideanSpace ℝ (Fin n), ‖f x‖ ^ (2 : ℝ)
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin n)))) ^ (1 / (2 : ℝ)) := by
     rw [SchwartzMap.norm_toLp' (by simp) (by simp)]
     norm_num
-  have hng : ‖g.toLp 2 (volume : Measure Domain3)‖
-      = (∫ x : Domain3, ‖g x‖ ^ (2 : ℝ) ∂(volume : Measure Domain3)) ^ (1 / (2 : ℝ)) := by
+  have hng : ‖g.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))‖
+      = (∫ x : EuclideanSpace ℝ (Fin n), ‖g x‖ ^ (2 : ℝ)
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin n)))) ^ (1 / (2 : ℝ)) := by
     rw [SchwartzMap.norm_toLp' (by simp) (by simp)]
     norm_num
   rw [hnf, hng]
-  calc (∫ x : Domain3, |f x| * |g x| ∂(volume : Measure Domain3))
-      = ∫ x : Domain3, ‖f x‖ * ‖g x‖ ∂(volume : Measure Domain3) := by
+  calc (∫ x : EuclideanSpace ℝ (Fin n), |f x| * |g x|
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin n))))
+      = ∫ x : EuclideanSpace ℝ (Fin n), ‖f x‖ * ‖g x‖
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin n))) := by
         simp only [Real.norm_eq_abs]
     _ ≤ _ := hmain
 
 /-- Trilinear per-term bound: `|∫ f·g·h| ≤ ‖f.toLp 2‖ · ‖g.toLp 2‖ · (seminorm 0 0 h)`. -/
-private theorem schwartz_trilinear_bound (f g h : SchwartzMap Domain3 ℝ) :
-    |∫ x : Domain3, (f x) * (g x) * (h x) ∂(volume : Measure Domain3)|
-      ≤ ‖f.toLp 2 (volume : Measure Domain3)‖ * ‖g.toLp 2 (volume : Measure Domain3)‖
+private theorem schwartz_trilinear_bound (f g h : SchwartzMap (EuclideanSpace ℝ (Fin n)) ℝ) :
+    |∫ x : EuclideanSpace ℝ (Fin n), (f x) * (g x) * (h x)
+        ∂(volume : Measure (EuclideanSpace ℝ (Fin n)))|
+      ≤ ‖f.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))‖
+        * ‖g.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))‖
         * SchwartzMap.seminorm ℝ 0 0 h := by
   have hint : MeasureTheory.Integrable
-      (fun x : Domain3 => (f x) * (g x) * (h x)) (volume : Measure Domain3) := by
-    have hi := (schwartzMul (schwartzMul f g) h).integrable (μ := (volume : Measure Domain3))
+      (fun x : EuclideanSpace ℝ (Fin n) => (f x) * (g x) * (h x))
+      (volume : Measure (EuclideanSpace ℝ (Fin n))) := by
+    have hi := (schwartzMul (schwartzMul f g) h).integrable
+      (μ := (volume : Measure (EuclideanSpace ℝ (Fin n))))
     refine hi.congr ?_; filter_upwards with x; simp
-  have hsemi : ∀ x : Domain3, |h x| ≤ SchwartzMap.seminorm ℝ 0 0 h := by
+  have hsemi : ∀ x : EuclideanSpace ℝ (Fin n), |h x| ≤ SchwartzMap.seminorm ℝ 0 0 h := by
     intro x
     have := SchwartzMap.norm_le_seminorm ℝ h x
     simpa [Real.norm_eq_abs] using this
   have hsemi_nonneg : (0 : ℝ) ≤ SchwartzMap.seminorm ℝ 0 0 h :=
     le_trans (abs_nonneg _) (hsemi 0)
-  calc |∫ x : Domain3, (f x) * (g x) * (h x) ∂(volume : Measure Domain3)|
-      = ‖∫ x : Domain3, (f x) * (g x) * (h x) ∂(volume : Measure Domain3)‖ := by
+  calc |∫ x : EuclideanSpace ℝ (Fin n), (f x) * (g x) * (h x)
+        ∂(volume : Measure (EuclideanSpace ℝ (Fin n)))|
+      = ‖∫ x : EuclideanSpace ℝ (Fin n), (f x) * (g x) * (h x)
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin n)))‖ := by
         rw [Real.norm_eq_abs]
-    _ ≤ ∫ x : Domain3, ‖(f x) * (g x) * (h x)‖ ∂(volume : Measure Domain3) :=
+    _ ≤ ∫ x : EuclideanSpace ℝ (Fin n), ‖(f x) * (g x) * (h x)‖
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin n))) :=
         MeasureTheory.norm_integral_le_integral_norm _
-    _ = ∫ x : Domain3, (|f x| * |g x|) * |h x| ∂(volume : Measure Domain3) := by
+    _ = ∫ x : EuclideanSpace ℝ (Fin n), (|f x| * |g x|) * |h x|
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin n))) := by
         refine MeasureTheory.integral_congr_ae ?_
         filter_upwards with x
         simp [abs_mul, Real.norm_eq_abs]
-    _ ≤ ∫ x : Domain3, (|f x| * |g x|) * SchwartzMap.seminorm ℝ 0 0 h
-          ∂(volume : Measure Domain3) := by
+    _ ≤ ∫ x : EuclideanSpace ℝ (Fin n), (|f x| * |g x|) * SchwartzMap.seminorm ℝ 0 0 h
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin n))) := by
         refine MeasureTheory.integral_mono_ae ?_ ?_ ?_
         · refine hint.norm.congr ?_
           filter_upwards with x; simp [abs_mul, Real.norm_eq_abs]
-        · have hi := (schwartzMul (schwartzMul f g) h).integrable (μ := (volume : Measure Domain3))
+        · have hi := (schwartzMul (schwartzMul f g) h).integrable
+            (μ := (volume : Measure (EuclideanSpace ℝ (Fin n))))
           have : MeasureTheory.Integrable
-              (fun x : Domain3 => (|f x| * |g x|) * SchwartzMap.seminorm ℝ 0 0 h)
-              (volume : Measure Domain3) := by
-            have h2 := (schwartzMul f g).integrable (μ := (volume : Measure Domain3))
+              (fun x : EuclideanSpace ℝ (Fin n) => (|f x| * |g x|) * SchwartzMap.seminorm ℝ 0 0 h)
+              (volume : Measure (EuclideanSpace ℝ (Fin n))) := by
+            have h2 := (schwartzMul f g).integrable
+              (μ := (volume : Measure (EuclideanSpace ℝ (Fin n))))
             have h3 : MeasureTheory.Integrable
-                (fun x : Domain3 => |f x| * |g x|) (volume : Measure Domain3) := by
+                (fun x : EuclideanSpace ℝ (Fin n) => |f x| * |g x|)
+                (volume : Measure (EuclideanSpace ℝ (Fin n))) := by
               refine h2.norm.congr ?_
               filter_upwards with x; simp [abs_mul, Real.norm_eq_abs]
             exact h3.mul_const _
@@ -202,10 +239,12 @@ private theorem schwartz_trilinear_bound (f g h : SchwartzMap Domain3 ℝ) :
         · filter_upwards with x
           have hfg : (0 : ℝ) ≤ |f x| * |g x| := by positivity
           exact mul_le_mul_of_nonneg_left (hsemi x) hfg
-    _ = (∫ x : Domain3, |f x| * |g x| ∂(volume : Measure Domain3))
+    _ = (∫ x : EuclideanSpace ℝ (Fin n), |f x| * |g x|
+          ∂(volume : Measure (EuclideanSpace ℝ (Fin n))))
           * SchwartzMap.seminorm ℝ 0 0 h := by
         rw [MeasureTheory.integral_mul_const]
-    _ ≤ (‖f.toLp 2 (volume : Measure Domain3)‖ * ‖g.toLp 2 (volume : Measure Domain3)‖)
+    _ ≤ (‖f.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))‖
+          * ‖g.toLp 2 (volume : Measure (EuclideanSpace ℝ (Fin n)))‖)
           * SchwartzMap.seminorm ℝ 0 0 h := by
         exact mul_le_mul_of_nonneg_right (schwartz_integral_abs_mul_le f g) hsemi_nonneg
     _ = _ := by ring
