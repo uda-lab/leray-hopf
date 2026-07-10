@@ -28,7 +28,7 @@ Aubin–Lions and limit-passage arguments; carries the project's remaining marke
 `ScalarEquicontinuity.lean`, `WeakLimitToolkit.lean`.
 
 Imported by: `LerayHopf/R3/GoodRepresentative.lean`, `R3/SpacetimePrecompact.lean`,
-`Torus/ModeCompactness.lean`.
+`R3/AubinLionsLimitPassage.lean`, `Torus/ModeCompactness.lean`.
 
 ## Torus (𝕋³) lane — `LerayHopf/Torus/`
 
