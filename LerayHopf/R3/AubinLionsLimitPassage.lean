@@ -28,8 +28,8 @@ theory would supply). The deliverables are otherwise proved axiom-free.
   `steklovAvg_approx` (time-modulus average↔curve estimate), and `galerkin_norm_le_u0`.
 
 * `kineticEnergy_lsc_bound` (E1) — #14-P discharge, now `sorry`-FREE (issue #31). The full
-  norm-lsc-transfer + ball-exhaustion proof (`kineticEnergyLscTransfer`, `continuous_restrictToBall`,
-  `norm_restrictToBall_le'`, `normSq_restrictToBall_eq_setIntegral`,
+  norm-lsc-transfer + ball-exhaustion proof (`Bochner.kineticEnergy_lsc_transfer`, `continuous_restrictToBall`,
+  `norm_restrictToBall_le`, `normSq_restrictToBall_eq_setIntegral`,
   `tendsto_normSq_restrictToBall`), wired through the #14-C
   `u_aestronglyMeasurable` field and `galerkin_norm_le_u0`. The former residual `MemLp`-gap `sorry`
   (time-integrability of a Bochner-form integrand) is DISCHARGED by the issue #31 strengthening of
@@ -86,6 +86,7 @@ import LerayHopf.R3.FourierL2            -- 𝓕, L2C_R3, viscousFormSq_R3_eq_in
 import LerayHopf.R3.WeightedFourierCommute -- mulBdd bounded-multiplier commute + truncated weight (closes the viscous/H¹ Steklov Jensen gate)
 import LerayHopf.R3.GalerkinODE          -- galerkinCurve_reg_mem (H¹ regularity of any curve in the Galerkin subspace)
 import LerayHopf.R3.SobolevEmbedding     -- memSobolev_of_finite_weightedFourier_R3 (H¹ from finite weighted-Fourier integral; the memH1 conjunct of viscous_pointwise_lsc)
+import LerayHopf.Bochner.TimeSobolev     -- Bochner.kineticEnergy_lsc_transfer (issue #111 PR-3; verified acyclic)
 import Mathlib.MeasureTheory.Integral.Bochner.Set   -- set/interval integrals over balls
 import Mathlib.MeasureTheory.Function.UnifTight      -- UnifTight + tendsto_Lp_of_tendsto_ae (Vitali) for the C2 dominated-Lp passage
 import Mathlib.MeasureTheory.Function.UniformIntegrable -- UnifIntegrable + unifIntegrable_of for the C2 dominated-Lp passage
@@ -258,171 +259,22 @@ theorem galerkin_curve_continuous (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
 -- currently uses it (the docstring above mentioning it in the E1 proof route predates a
 -- later refactor of that route), so no rewiring is needed beyond the deletion.
 
-/-- **Abstract a.e.-`t` norm-lsc transfer (local copy of `Bochner.TimeSobolev`'s
-`kineticEnergy_lsc_transfer`).** Inlined here because `AubinLionsLimitPassage` does not import
-`Bochner.TimeSobolev` (and adding an import is a `lean-coder`-owned change). Same statement and
-proof: from `L²(μ)`-convergence of an a.e.-strongly-measurable sequence `f` to an
-a.e.-strongly-measurable limit `g`, with a uniform a.e. pointwise bound `‖f n t‖ ≤ M`, the limit
-inherits the bound at `μ`-a.e. `t`.
-
-The isolated measurability pillar `hg : AEStronglyMeasurable g μ` is mandatory (Lane-D
-statement-gate fix; without it the statement is FALSE via a Vitali-set counterexample — see the
-`Bochner.TimeSobolev` docstring). Route: L²-convergence ⇒ convergence in measure
-(`tendstoInMeasure_of_tendsto_eLpNorm`, which itself requires `hg`) ⇒ a.e.-convergent subsequence
-(`TendstoInMeasure.exists_seq_tendsto_ae`) ⇒ pass the bound through the a.e. limit. -/
-private theorem kineticEnergyLscTransfer {β : Type*} [NormedAddCommGroup β]
-    {μ : Measure ℝ} {f : ℕ → ℝ → β} {g : ℝ → β} {M : ℝ}
-    (hf : ∀ n, AEStronglyMeasurable (f n) μ)
-    (hg : AEStronglyMeasurable g μ)
-    (hconv : Tendsto (fun n => eLpNorm (fun t => f n t - g t) 2 μ) atTop (𝓝 0))
-    (hbound : ∀ n, ∀ᵐ t ∂μ, ‖f n t‖ ≤ M) :
-    ∀ᵐ t ∂μ, ‖g t‖ ≤ M := by
-  -- L²-convergence ⇒ convergence in measure (uses `hg`), then extract an a.e. subsequence.
-  have hconv' : Tendsto (fun n => eLpNorm (f n - g) 2 μ) atTop (𝓝 0) := hconv
-  have htim : TendstoInMeasure μ f atTop g :=
-    tendstoInMeasure_of_tendsto_eLpNorm (by norm_num) hf hg hconv'
-  obtain ⟨φ, _hφ, hae⟩ := htim.exists_seq_tendsto_ae
-  -- The uniform bound holds for all `n` simultaneously at a.e. `t`.
-  have hbound_all : ∀ᵐ t ∂μ, ∀ k, ‖f (φ k) t‖ ≤ M :=
-    (ae_all_iff.2 fun k => hbound (φ k))
-  -- At a.e. `t`: `‖f (φ k) t‖ → ‖g t‖` and `‖f (φ k) t‖ ≤ M`, so `‖g t‖ ≤ M`.
-  filter_upwards [hae, hbound_all] with t htlim htbd
-  exact le_of_tendsto' htlim.norm htbd
+-- `kineticEnergyLscTransfer` (was a private re-derivation of
+-- `Bochner.TimeSobolev.kineticEnergy_lsc_transfer`, same statement, different internal proof
+-- route) is gone; this file now imports `Bochner.TimeSobolev` directly and uses the shared
+-- version (issue #111 PR-3, verified acyclic:
+-- TimeSobolev's transitive imports are GelfandTriple → EvolutionTriple → Torus.Basic/EnergyEstimate
+-- + mathlib, none of which reach this file or its importers).
 
 /-! ### Tier E-prep — ball-restriction plumbing for the a.e.-`t` norm-lsc transfer
 
-These `private` helpers carry the ball-restriction analysis that the E1 transfer needs:
-`restrictToBall R` is `1`-Lipschitz (hence continuous, so it transports time-measurability),
-its squared norm is the ball set-integral of `‖·‖²`, and that ball set-integral increases to
-the full L²(ℝ³) norm-squared as the radius exhausts `ℝ³`. They reuse P3's `restrictToBall`
-(`R3.SpatialCompactness`) and the bridge `setIntegral_normSq_eq_dist_sq_restrictToBall`. -/
-
-/-- `restrictToBall R` is `1`-Lipschitz on `L2VF_R3` (local copy: the P3 norm bound is
-`private`). Used to obtain continuity, hence time-measurability transport. -/
-private theorem restrictToBall_dist_le (R : ℝ) (u v : L2VF_R3) :
-    dist (restrictToBall R u) (restrictToBall R v) ≤ dist u v := by
-  rw [dist_eq_norm, dist_eq_norm, Lp.norm_def, Lp.norm_def]
-  have hle : volume.restrict (Metric.closedBall (0 : Domain3) R) ≤ (volume : Measure Domain3) :=
-    Measure.restrict_le_self
-  -- The underlying function of `restrictToBall R u - restrictToBall R v` agrees a.e. (on `B_R`)
-  -- with `u - v`'s underlying function.
-  have hcongR : ⇑(restrictToBall R u - restrictToBall R v)
-      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
-        (fun x => (u x : EuclideanSpace ℝ (Fin 3)) - (v x : EuclideanSpace ℝ (Fin 3))) := by
-    have hsub := Lp.coeFn_sub (restrictToBall R u) (restrictToBall R v)
-    have hu : ⇑(restrictToBall R u)
-        =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
-          (u : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
-    have hv : ⇑(restrictToBall R v)
-        =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
-          (v : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
-    filter_upwards [hsub, hu, hv] with x hx hxu hxv
-    simp only [hx, Pi.sub_apply, hxu, hxv]
-  have hcongG : ⇑(u - v)
-      =ᵐ[(volume : Measure Domain3)]
-        (fun x => (u x : EuclideanSpace ℝ (Fin 3)) - (v x : EuclideanSpace ℝ (Fin 3))) :=
-    Lp.coeFn_sub u v
-  rw [eLpNorm_congr_ae hcongR, eLpNorm_congr_ae hcongG]
-  refine ENNReal.toReal_mono ?_ (eLpNorm_mono_measure _ hle)
-  rw [← eLpNorm_congr_ae hcongG]
-  exact (Lp.memLp (u - v)).2.ne
-
-/-- L²-norm-squared as an integral of the pointwise squared norm (local copy; P3's is
-`private`). -/
-private theorem normSq_eq_integral_normSq' {μ : Measure Domain3}
-    (h : Lp (EuclideanSpace ℝ (Fin 3)) 2 μ) :
-    ‖h‖ ^ 2 = ∫ x, ‖(h x : EuclideanSpace ℝ (Fin 3))‖ ^ 2 ∂μ := by
-  have hre : ‖h‖ ^ 2 = (inner ℝ h h : ℝ) := by
-    have := norm_sq_eq_re_inner (𝕜 := ℝ) h
-    simpa using this
-  rw [hre, MeasureTheory.L2.inner_def]
-  refine integral_congr_ae ?_
-  filter_upwards with x
-  exact real_inner_self_eq_norm_sq _
-
-/-- `restrictToBall R` sends `0` to `0`. -/
-private theorem restrictToBall_zero (R : ℝ) : restrictToBall R (0 : L2VF_R3) = 0 := by
-  apply Lp.ext
-  have h1 : ⇑(restrictToBall R (0 : L2VF_R3))
-      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
-        ((0 : L2VF_R3) : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
-  have h0 : ((0 : L2VF_R3) : Domain3 → EuclideanSpace ℝ (Fin 3))
-      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)] (0 : Domain3 → _) :=
-    (Lp.coeFn_zero (E := EuclideanSpace ℝ (Fin 3)) (p := 2) (μ := volume)).restrict
-  have hz0 : ⇑(0 : L2ballR3 R)
-      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)] (0 : Domain3 → _) :=
-    Lp.coeFn_zero (E := EuclideanSpace ℝ (Fin 3)) (p := 2)
-      (μ := volume.restrict (Metric.closedBall (0 : Domain3) R))
-  filter_upwards [h1, h0, hz0] with x hx hx0 hxz
-  simp only [hx, hx0, hxz, Pi.zero_apply]
-
-/-- Restriction to a ball does not increase the L²-norm (local copy; P3's is `private`). -/
-private theorem norm_restrictToBall_le' (R : ℝ) (w : L2VF_R3) :
-    ‖restrictToBall R w‖ ≤ ‖w‖ := by
-  have := restrictToBall_dist_le R w 0
-  rwa [restrictToBall_zero, dist_zero_right, dist_zero_right] at this
-
-/-- Continuity of `restrictToBall R : L2VF_R3 → L2ballR3 R` (it is `1`-Lipschitz). -/
-private theorem continuous_restrictToBall (R : ℝ) :
-    Continuous (fun w : L2VF_R3 => restrictToBall R w) := by
-  refine Metric.continuous_iff.2 fun w ε hε => ⟨ε, hε, fun w' hw' => ?_⟩
-  calc dist (restrictToBall R w') (restrictToBall R w)
-      ≤ dist w' w := restrictToBall_dist_le R w' w
-    _ < ε := hw'
-
-/-- The squared L²(B_R)-norm of `restrictToBall R w` equals the ball set-integral of `‖w·‖²`. -/
-private theorem normSq_restrictToBall_eq_setIntegral (R : ℝ) (w : L2VF_R3) :
-    ‖restrictToBall R w‖ ^ 2
-      = ∫ x in Metric.closedBall (0 : Domain3) R,
-          ‖(w x : EuclideanSpace ℝ (Fin 3))‖ ^ 2 ∂(volume : Measure Domain3) := by
-  -- Use the bridge with `v = 0`: `restrictToBall R 0 = 0`, so the ball integral of `‖w - 0‖²`
-  -- equals `dist (restrictToBall R w) 0 ^ 2 = ‖restrictToBall R w‖²`.
-  have hbridge := setIntegral_normSq_eq_dist_sq_restrictToBall R w 0
-  rw [restrictToBall_zero, dist_zero_right] at hbridge
-  -- Rewrite the integrand: `w x - (0 : L2VF_R3) x = w x` a.e.
-  rw [← hbridge]
-  refine setIntegral_congr_ae measurableSet_closedBall ?_
-  have h0 : ((0 : L2VF_R3) : Domain3 → EuclideanSpace ℝ (Fin 3)) =ᵐ[volume] (0 : Domain3 → _) :=
-    Lp.coeFn_zero (E := EuclideanSpace ℝ (Fin 3)) (p := 2) (μ := volume)
-  filter_upwards [h0] with x hx _
-  rw [hx]; simp
-
-/-- **Ball exhaustion of the L²(ℝ³) norm.** The squared L²(B_k)-norm of `restrictToBall k w`
-increases to `‖w‖²` as the integer radius `k → ∞` (the balls exhaust `ℝ³`). -/
-private theorem tendsto_normSq_restrictToBall (w : L2VF_R3) :
-    Tendsto (fun k : ℕ => ‖restrictToBall (k : ℝ) w‖ ^ 2) atTop (𝓝 (‖w‖ ^ 2)) := by
-  -- The integrand `x ↦ ‖w x‖²`.
-  set F : Domain3 → ℝ := fun x => ‖(w x : EuclideanSpace ℝ (Fin 3))‖ ^ 2 with hF
-  -- Integrability of `F` over `ℝ³`: `‖w‖² = ∫ F`, and `F` is the pointwise square norm of an L²
-  -- function, hence integrable (`MemLp.integrable_norm_rpow`-style; here directly via `L2`).
-  have hInt : Integrable F (volume : Measure Domain3) := by
-    have hmem : MemLp (w : Domain3 → EuclideanSpace ℝ (Fin 3)) 2 volume := Lp.memLp w
-    have hr := hmem.integrable_norm_rpow (by norm_num) (by norm_num)
-    refine hr.congr ?_
-    filter_upwards with x
-    simp only [hF, show (2 : ENNReal).toReal = (2 : ℝ) by norm_num, Real.rpow_two]
-  -- Each ball term is the set-integral of `F`.
-  have hterm : ∀ k : ℕ, ‖restrictToBall (k : ℝ) w‖ ^ 2
-      = ∫ x in Metric.closedBall (0 : Domain3) (k : ℝ), F x ∂volume :=
-    fun k => normSq_restrictToBall_eq_setIntegral (k : ℝ) w
-  -- The full norm is `∫ F`.
-  have hfull : ‖w‖ ^ 2 = ∫ x, F x ∂volume := by
-    have := normSq_eq_integral_normSq' (μ := (volume : Measure Domain3)) w
-    simpa [hF] using this
-  -- Monotone ball exhaustion of the set-integral.
-  have hcov : (⋃ k : ℕ, Metric.closedBall (0 : Domain3) (k : ℝ)) = Set.univ :=
-    Metric.iUnion_closedBall_nat 0
-  have hmono : Monotone (fun k : ℕ => Metric.closedBall (0 : Domain3) (k : ℝ)) :=
-    fun a b hab => Metric.closedBall_subset_closedBall (by exact_mod_cast hab)
-  have hIntOn : IntegrableOn F (⋃ k : ℕ, Metric.closedBall (0 : Domain3) (k : ℝ)) volume := by
-    rw [hcov, integrableOn_univ]; exact hInt
-  have htends :=
-    tendsto_setIntegral_of_monotone
-      (fun k => measurableSet_closedBall) hmono hIntOn
-  rw [hcov] at htends
-  simp only [Measure.restrict_univ] at htends
-  rw [hfull]
-  simpa only [hterm] using htends
+The ball-restriction analysis the E1 transfer needs — `restrictToBall R` is `1`-Lipschitz
+(hence continuous, so it transports time-measurability), its squared norm is the ball
+set-integral of `‖·‖²`, and that ball set-integral increases to the full L²(ℝ³) norm-squared
+as the radius exhausts `ℝ³` — now lives in `R3.SpatialCompactness` as public lemmas
+(`restrictToBall_zero`, `restrictToBall_sub`, `restrictToBall_dist_le`,
+`continuous_restrictToBall`, `normSq_restrictToBall_eq_setIntegral`,
+`tendsto_normSq_restrictToBall`; issue #111 PR-3), imported here rather than re-derived. -/
 
 /-- Lower-semicontinuity of the kinetic energy under the (local strong) L² limit, combined
 with the uniform Galerkin energy bound, gives `½‖u t‖² ≤ ½‖u₀‖²` at the limit, A.E. IN TIME.
@@ -458,7 +310,7 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     have hμ_ge : ∀ᵐ t ∂μ, 0 ≤ t := by
       rw [hμ]; refine ae_restrict_of_forall_mem measurableSet_Icc ?_; intro t ht; exact ht.1
     -- ════ For each integer radius `k`: the limit's ball restriction is L²-bounded by ‖u₀‖. ════
-    -- This is the `kineticEnergyLscTransfer` (norm-lsc) step, applied in `β = L2ballR3 k`, with
+    -- This is the `Bochner.kineticEnergy_lsc_transfer` (norm-lsc) step, applied in `β = L2ballR3 k`, with
     --   f n := t ↦ restrictToBall k ((galSeq (alPkg.φ n)).u t),   g := t ↦ restrictToBall k (u t).
     have hperBall : ∀ k : ℕ,
         ∀ᵐ t ∂μ, ‖restrictToBall (k : ℝ) (alPkg.u t)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
@@ -491,7 +343,7 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
         simp only [hf]
         calc ‖restrictToBall R ((galSeq (alPkg.φ n)).u t)‖
             ≤ ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ :=
-              norm_restrictToBall_le' R ((galSeq (alPkg.φ n)).u t)
+              norm_restrictToBall_le R ((galSeq (alPkg.φ n)).u t)
           _ ≤ ‖(u₀ : L2VF_R3)‖ := hgal (alPkg.φ n) ht
       -- (4) the L²-in-time convergence `eLpNorm (f n - g) 2 μ → 0`. With `strong_convergence` now
       -- in its faithful `eLpNorm`-form (issue #31), this is EXACTLY the package field at radius
@@ -502,8 +354,8 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
       -- no time-integrability of a junk-`0`-collapsible integrand is needed.
       have hconv : Tendsto (fun n => eLpNorm (fun t => f n t - g t) 2 μ) atTop (𝓝 0) := by
         simpa only [hf, hg, hμ, hR] using alPkg.strong_convergence R
-      -- (5) assemble: `kineticEnergyLscTransfer` gives the a.e. ball-restricted bound.
-      exact kineticEnergyLscTransfer hf_meas hg_meas hconv hf_bound
+      -- (5) assemble: `kineticEnergy_lsc_transfer` gives the a.e. ball-restricted bound.
+      exact Bochner.kineticEnergy_lsc_transfer hf_meas hg_meas hconv hf_bound
     -- ════ Combine over all radii `k`, then exhaust `R → ∞` to recover the full L²(ℝ³) bound. ════
     have hallBall : ∀ᵐ t ∂μ, ∀ k : ℕ,
         ‖restrictToBall (k : ℝ) (alPkg.u t)‖ ≤ ‖(u₀ : L2VF_R3)‖ :=
@@ -679,82 +531,14 @@ private theorem mulBddCLM_apply (m : Domain3 → ℝ)
     {C : ℝ} (hC : 0 ≤ C) (hmle : ∀ ξ, |m ξ| ≤ C) (g : L2C_R3) :
     mulBddCLM m hmem hC hmle g = mulBdd m hmem g := rfl
 
-/-! #### Ball-tail decomposition of the L²VF inner product (local copies; P3's are `private`) -/
+-- The `tailVF`/`norm_tailVF_le`/`inner_eq_ball_add_tail`/`tendsto_norm_tailVF_zero` quartet
+-- this lemma builds on now lives in `R3.SpatialCompactness` (issue #111 PR-3); imported here.
 
-/-- Restriction of an L²(ℝ³) field to the tail `B_Rᶜ`, as an `L²` element (local copy). -/
-private noncomputable def tailVF' (R : ℝ) (w : L2VF_R3) :
-    Lp (EuclideanSpace ℝ (Fin 3)) 2 (volume.restrict (Metric.closedBall (0 : Domain3) R)ᶜ) :=
-  MemLp.toLp (w : Domain3 → EuclideanSpace ℝ (Fin 3))
-    ((Lp.memLp w).restrict (Metric.closedBall (0 : Domain3) R)ᶜ)
-
-private theorem norm_tailVF'_le (R : ℝ) (w : L2VF_R3) : ‖tailVF' R w‖ ≤ ‖w‖ := by
-  rw [Lp.norm_def, Lp.norm_def]
-  have hcong : ⇑(tailVF' R w)
-      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)ᶜ]
-        (w : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
-  rw [eLpNorm_congr_ae hcong]
-  exact ENNReal.toReal_mono (Lp.memLp w).2.ne (eLpNorm_mono_measure _ Measure.restrict_le_self)
-
-/-- Ball/tail split of the real inner product: `⟪v,w⟫ = ⟪ball v, ball w⟫ + ⟪tail v, tail w⟫`. -/
-private theorem inner_eq_ball_add_tail' (R : ℝ) (v w : L2VF_R3) :
-    (inner ℝ v w : ℝ)
-      = (inner ℝ (restrictToBall R v) (restrictToBall R w) : ℝ)
-        + (inner ℝ (tailVF' R v) (tailVF' R w) : ℝ) := by
-  rw [MeasureTheory.L2.inner_def, MeasureTheory.L2.inner_def, MeasureTheory.L2.inner_def]
-  have hball : (∫ x, (inner ℝ ((restrictToBall R v) x) ((restrictToBall R w) x) : ℝ)
-        ∂(volume.restrict (Metric.closedBall (0 : Domain3) R)))
-      = ∫ x in Metric.closedBall (0 : Domain3) R,
-          (inner ℝ (v x : EuclideanSpace ℝ (Fin 3)) (w x : EuclideanSpace ℝ (Fin 3)) : ℝ)
-          ∂volume := by
-    refine integral_congr_ae ?_
-    filter_upwards [MemLp.coeFn_toLp (μ := volume.restrict (Metric.closedBall (0 : Domain3) R))
-        ((Lp.memLp v).restrict (Metric.closedBall (0 : Domain3) R)),
-      MemLp.coeFn_toLp (μ := volume.restrict (Metric.closedBall (0 : Domain3) R))
-        ((Lp.memLp w).restrict (Metric.closedBall (0 : Domain3) R))] with x hxv hxw
-    show (inner ℝ ((restrictToBall R v) x) ((restrictToBall R w) x) : ℝ) = _
-    rw [show ((restrictToBall R v) x) = (v x : EuclideanSpace ℝ (Fin 3)) from hxv,
-      show ((restrictToBall R w) x) = (w x : EuclideanSpace ℝ (Fin 3)) from hxw]
-  have htail : (∫ x, (inner ℝ ((tailVF' R v) x) ((tailVF' R w) x) : ℝ)
-        ∂(volume.restrict (Metric.closedBall (0 : Domain3) R)ᶜ))
-      = ∫ x in (Metric.closedBall (0 : Domain3) R)ᶜ,
-          (inner ℝ (v x : EuclideanSpace ℝ (Fin 3)) (w x : EuclideanSpace ℝ (Fin 3)) : ℝ)
-          ∂volume := by
-    refine integral_congr_ae ?_
-    filter_upwards [MemLp.coeFn_toLp (μ := volume.restrict (Metric.closedBall (0 : Domain3) R)ᶜ)
-        ((Lp.memLp v).restrict (Metric.closedBall (0 : Domain3) R)ᶜ),
-      MemLp.coeFn_toLp (μ := volume.restrict (Metric.closedBall (0 : Domain3) R)ᶜ)
-        ((Lp.memLp w).restrict (Metric.closedBall (0 : Domain3) R)ᶜ)] with x hxv hxw
-    show (inner ℝ ((tailVF' R v) x) ((tailVF' R w) x) : ℝ) = _
-    rw [show ((tailVF' R v) x) = (v x : EuclideanSpace ℝ (Fin 3)) from hxv,
-      show ((tailVF' R w) x) = (w x : EuclideanSpace ℝ (Fin 3)) from hxw]
-  rw [hball, htail]
-  exact (integral_add_compl measurableSet_closedBall
-    (MeasureTheory.L2.integrable_inner (𝕜 := ℝ) v w)).symm
-
+/-- **Cauchy–Schwarz tail bound** (uniform in the second argument's global norm). -/
 private theorem abs_tail_inner_le' (R : ℝ) (v w : L2VF_R3) :
-    |(inner ℝ (tailVF' R v) (tailVF' R w) : ℝ)| ≤ ‖tailVF' R v‖ * ‖w‖ :=
+    |(inner ℝ (tailVF R v) (tailVF R w) : ℝ)| ≤ ‖tailVF R v‖ * ‖w‖ :=
   le_trans (abs_real_inner_le_norm _ _)
-    (mul_le_mul_of_nonneg_left (norm_tailVF'_le R w) (norm_nonneg _))
-
-/-- **Tail-vanishing** of a fixed L²VF field: `‖tailVF' k v‖ → 0` as `k → ∞` (ball exhaustion). -/
-private theorem tendsto_norm_tailVF'_zero (v : L2VF_R3) :
-    Tendsto (fun k : ℕ => ‖tailVF' (k : ℝ) v‖) atTop (nhds 0) := by
-  -- `‖tailVF' k v‖² = ‖v‖² − ‖restrictToBall k v‖²` (Pythagoras), and the ball term → `‖v‖²`.
-  have hsq : ∀ k : ℕ, ‖tailVF' (k : ℝ) v‖ ^ 2 = ‖v‖ ^ 2 - ‖restrictToBall (k : ℝ) v‖ ^ 2 := by
-    intro k
-    have hsplit := inner_eq_ball_add_tail' (k : ℝ) v v
-    rw [real_inner_self_eq_norm_sq, real_inner_self_eq_norm_sq,
-      real_inner_self_eq_norm_sq] at hsplit
-    linarith [hsplit]
-  have hball := tendsto_normSq_restrictToBall v
-  have htsq : Tendsto (fun k : ℕ => ‖tailVF' (k : ℝ) v‖ ^ 2) atTop (nhds 0) := by
-    have h0 : Tendsto (fun k : ℕ => ‖v‖ ^ 2 - ‖restrictToBall (k : ℝ) v‖ ^ 2) atTop
-        (nhds (‖v‖ ^ 2 - ‖v‖ ^ 2)) := tendsto_const_nhds.sub hball
-    rw [sub_self] at h0
-    exact h0.congr (fun k => (hsq k).symm)
-  have := htsq.sqrt
-  simp only [Real.sqrt_sq (norm_nonneg _), Real.sqrt_zero] at this
-  exact this
+    (mul_le_mul_of_nonneg_left (norm_tailVF_le R w) (norm_nonneg _))
 
 /-- **Fixed-test-vector weak convergence at a.e. `t`.** From per-ball a.e.-`t` convergence
 `restrictToBall R (uₙ t) → restrictToBall R (u t)` (all `R`) plus the uniform `L²` bounds
@@ -770,20 +554,20 @@ theorem inner_tendsto_of_perball
   refine Metric.tendsto_atTop.2 (fun ε hε => ?_)
   set C : ℝ := M + ‖e‖ + 1 with hC
   have hCpos : 0 < C := by positivity
-  obtain ⟨k0, hk0⟩ := (Metric.tendsto_atTop.1 (tendsto_norm_tailVF'_zero e)) (ε / (3 * C))
+  obtain ⟨k0, hk0⟩ := (Metric.tendsto_atTop.1 (tendsto_norm_tailVF_zero e)) (ε / (3 * C))
     (by positivity)
-  have htk : ‖tailVF' (k0 : ℝ) e‖ < ε / (3 * C) := by
+  have htk : ‖tailVF (k0 : ℝ) e‖ < ε / (3 * C) := by
     have := hk0 k0 le_rfl; rwa [Real.dist_eq, sub_zero, abs_of_nonneg (norm_nonneg _)] at this
-  have htk_nonneg : 0 ≤ ‖tailVF' (k0 : ℝ) e‖ := norm_nonneg _
+  have htk_nonneg : 0 ≤ ‖tailVF (k0 : ℝ) e‖ := norm_nonneg _
   have hballconv : Tendsto
       (fun n => (inner ℝ (restrictToBall (k0:ℝ) e) (restrictToBall (k0:ℝ) (un n)) : ℝ))
       atTop (nhds (inner ℝ (restrictToBall (k0:ℝ) e) (restrictToBall (k0:ℝ) u) : ℝ)) :=
     (tendsto_const_nhds).inner (hperball k0)
   obtain ⟨N, hN⟩ := (Metric.tendsto_atTop.1 hballconv) (ε / 3) (by positivity)
   refine ⟨N, fun n hn => ?_⟩
-  rw [Real.dist_eq, inner_eq_ball_add_tail' (k0:ℝ) e (un n), inner_eq_ball_add_tail' (k0:ℝ) e u]
-  have hbM : ‖tailVF' (k0:ℝ) e‖ * M < ε / 3 := by
-    calc ‖tailVF' (k0:ℝ) e‖ * M ≤ ‖tailVF' (k0:ℝ) e‖ * C := by
+  rw [Real.dist_eq, inner_eq_ball_add_tail (k0:ℝ) e (un n), inner_eq_ball_add_tail (k0:ℝ) e u]
+  have hbM : ‖tailVF (k0:ℝ) e‖ * M < ε / 3 := by
+    calc ‖tailVF (k0:ℝ) e‖ * M ≤ ‖tailVF (k0:ℝ) e‖ * C := by
             apply mul_le_mul_of_nonneg_left _ htk_nonneg; rw [hC]; linarith [norm_nonneg e]
       _ < (ε / (3 * C)) * C := mul_lt_mul_of_pos_right htk hCpos
       _ = ε / 3 := by field_simp
@@ -793,9 +577,9 @@ theorem inner_tendsto_of_perball
     (mul_le_mul_of_nonneg_left hbu htk_nonneg)) hbM
   have hballn := hN n hn; rw [Real.dist_eq] at hballn
   set B1 := (inner ℝ (restrictToBall (k0:ℝ) e) (restrictToBall (k0:ℝ) (un n)) : ℝ)
-  set T1 := (inner ℝ (tailVF' (k0:ℝ) e) (tailVF' (k0:ℝ) (un n)) : ℝ)
+  set T1 := (inner ℝ (tailVF (k0:ℝ) e) (tailVF (k0:ℝ) (un n)) : ℝ)
   set B2 := (inner ℝ (restrictToBall (k0:ℝ) e) (restrictToBall (k0:ℝ) u) : ℝ)
-  set T2 := (inner ℝ (tailVF' (k0:ℝ) e) (tailVF' (k0:ℝ) u) : ℝ)
+  set T2 := (inner ℝ (tailVF (k0:ℝ) e) (tailVF (k0:ℝ) u) : ℝ)
   rw [abs_lt] at hballn ⊢
   rw [abs_lt] at htn htu
   constructor <;> linarith [hballn.1, hballn.2, htn.1, htn.2, htu.1, htu.2]
@@ -3385,7 +3169,7 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
     intro n
     rw [hμ]
     refine (ae_restrict_iff' measurableSet_Icc).mpr (ae_of_all _ (fun t ht => ?_))
-    refine le_trans (norm_restrictToBall_le' R _) ?_
+    refine le_trans (norm_restrictToBall_le R _) ?_
     exact galerkin_norm_le_u0 𝔊 F ν u₀ (φ n) (galSeq (φ n)) ht.1
   -- `g ∈ MemLp 2 μ`: a.e.-bounded by the constant `‖u₀‖` on the finite measure.
   have hMemLp_g : MemLp g 2 μ := by

@@ -425,36 +425,10 @@ private theorem norm_restrictToBall_mono {a b : ℝ} (hab : a ≤ b) (w : L2VF_R
   rw [← eLpNorm_congr_ae hcb]
   exact (Lp.memLp (restrictToBall b w)).2.ne
 
-/-- Restriction to a ball does not increase the global `L²`-norm (`restrict_le_self`). -/
-private theorem norm_restrictToBall_le_global (R : ℝ) (w : L2VF_R3) :
-    ‖restrictToBall R w‖ ≤ ‖w‖ := by
-  rw [Lp.norm_def, Lp.norm_def]
-  have hle : volume.restrict (Metric.closedBall (0 : Domain3) R) ≤ (volume : Measure Domain3) :=
-    Measure.restrict_le_self
-  have hcong : ⇑(restrictToBall R w)
-      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
-        (w : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
-  rw [eLpNorm_congr_ae hcong]
-  exact ENNReal.toReal_mono (Lp.memLp w).2.ne (eLpNorm_mono_measure _ hle)
-
-/-- Restriction to a ball is additive on differences. -/
-private theorem restrictToBall_sub (R : ℝ) (u v : L2VF_R3) :
-    restrictToBall R (u - v) = restrictToBall R u - restrictToBall R v := by
-  apply Lp.ext
-  have h0 : ⇑(restrictToBall R (u - v))
-      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
-        ((u : Domain3 → EuclideanSpace ℝ (Fin 3)) - v) := by
-    refine (MemLp.coeFn_toLp _).trans ?_
-    exact (ae_restrict_of_ae (Lp.coeFn_sub u v))
-  have hu : ⇑(restrictToBall R u)
-      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
-        (u : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
-  have hv : ⇑(restrictToBall R v)
-      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) R)]
-        (v : Domain3 → EuclideanSpace ℝ (Fin 3)) := MemLp.coeFn_toLp _
-  have hsub := Lp.coeFn_sub (restrictToBall R u) (restrictToBall R v)
-  filter_upwards [h0, hu, hv, hsub] with x hx0 hxu hxv hxsub
-  rw [hx0, Pi.sub_apply, hxsub, Pi.sub_apply, hxu, hxv]
+-- `norm_restrictToBall_le_global` (byte-identical to `SpatialCompactness.norm_restrictToBall_le`)
+-- and `restrictToBall_sub` (byte-identical to the newly-public `SpatialCompactness.restrictToBall_sub`,
+-- issue #111 PR-3) were private duplicates here; deleted, callers below use the imported public
+-- versions directly (`RellichBall` already imports `R3.SpatialCompactness`).
 
 /-- **Helper 1 — the kernel's L²-translation modulus vanishes.**
 
@@ -1783,7 +1757,7 @@ theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
         nth_rewrite 1 [hf_eq]
         rw [← restrictToBall_sub]
       rw [hsub_eq]
-      exact norm_restrictToBall_le_global R (rep f - ρf f)
+      exact norm_restrictToBall_le R (rep f - ρf f)
     have hρf_eq : ρf f = hmem.toLp := rfl
     calc ‖f - restrictToBall R (ρf f)‖
         ≤ ‖rep f - ρf f‖ := hstep
@@ -1864,7 +1838,7 @@ theorem frechetKolmogorov_holds : FrechetKolmogorovInput := by
   refine ⟨fun R C S rep hrep hbd hbddGlobal hmod => ?_⟩
   -- Enlarged-ball bound at budget `r₀ = 1`, from the GLOBAL bound by ball-mass monotonicity.
   have hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + 1) (rep f)‖ ≤ C := fun f hf =>
-    le_trans (norm_restrictToBall_le_global (R + 1) (rep f)) (hbddGlobal f hf)
+    le_trans (norm_restrictToBall_le (R + 1) (rep f)) (hbddGlobal f hf)
   -- `S` is totally bounded: each `ε`-step delivers a totally bounded mollified image approximating
   -- `S` within `ε` (FK step 1), so the transfer lemma (FK step 4) applies.
   have hTB : TotallyBounded S := by
