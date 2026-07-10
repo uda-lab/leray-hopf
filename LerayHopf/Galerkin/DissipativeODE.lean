@@ -61,8 +61,8 @@ theorem energy_hasDerivAt_of_solution (g : V → V) (c : ℝ → V) (t : ℝ)
 theorem norm_le_of_forwardSolution_of_dissipative (g : V → V)
     (hdiss : ∀ v : V, inner (𝕜 := ℝ) v (g v) ≤ (0 : ℝ))
     (c : ℝ → V) {T : ℝ} (hT : 0 ≤ T)
-    (hsol : ∀ t ∈ Icc (0 : ℝ) T, HasDerivAt c (g (c t)) t) :
-    ∀ t ∈ Icc (0 : ℝ) T, ‖c t‖ ≤ ‖c 0‖ := by
+    (hsol : ∀ t ∈ Set.Icc (0 : ℝ) T, HasDerivAt c (g (c t)) t) :
+    ∀ t ∈ Set.Icc (0 : ℝ) T, ‖c t‖ ≤ ‖c 0‖ := by
   set E : ℝ → ℝ := fun s => (1 / 2 : ℝ) * ‖c s‖ ^ 2 with hE
   have hderiv : ∀ s ∈ Icc (0 : ℝ) T,
       HasDerivAt E (inner (𝕜 := ℝ) (c s) (g (c s))) s := fun s hs =>
@@ -84,9 +84,9 @@ theorem norm_le_of_forwardSolution_of_dissipative (g : V → V)
 /-- Uniform local-existence time on a ball: a single `δ` works for every start point in
 `closedBall 0 R` and every start time `t₀`. -/
 theorem uniform_local_time (g : V → V) (hg : ContDiff ℝ 1 g) (R : ℝ) :
-    ∃ δ : ℝ, 0 < δ ∧ ∀ x₀ ∈ closedBall (0 : V) R, ∀ t₀ : ℝ,
+    ∃ δ : ℝ, 0 < δ ∧ ∀ x₀ ∈ Metric.closedBall (0 : V) R, ∀ t₀ : ℝ,
       ∃ α : ℝ → V, α t₀ = x₀ ∧
-        ∀ t ∈ Ioo (t₀ - δ) (t₀ + δ), HasDerivAt α (g (α t)) t := by
+        ∀ t ∈ Set.Ioo (t₀ - δ) (t₀ + δ), HasDerivAt α (g (α t)) t := by
   have hcd : ∀ x : V, ContDiffAt ℝ 1 g x := fun x => hg.contDiffAt
   have hloc : ∀ y : V, ∃ r > (0 : ℝ), ∃ ε > (0 : ℝ),
       ∀ x ∈ closedBall y r, ∃ α : ℝ → V, α 0 = x ∧
@@ -212,11 +212,11 @@ set_option maxHeartbeats 1000000 in
 /-- Splice uniqueness: two local solutions agreeing at one point agree on the whole
 overlap interval. -/
 theorem solution_agree (g : V → V) (hg : ContDiff ℝ 1 g)
-    (α β : ℝ → V) {a b t₀ : ℝ} (hab : a ≤ b) (ht₀ : t₀ ∈ Icc a b)
+    (α β : ℝ → V) {a b t₀ : ℝ} (hab : a ≤ b) (ht₀ : t₀ ∈ Set.Icc a b)
     (hαβ : α t₀ = β t₀)
-    (hα : ∀ t ∈ Icc a b, HasDerivAt α (g (α t)) t)
-    (hβ : ∀ t ∈ Icc a b, HasDerivAt β (g (β t)) t) :
-    ∀ t ∈ Icc a b, α t = β t := by
+    (hα : ∀ t ∈ Set.Icc a b, HasDerivAt α (g (α t)) t)
+    (hβ : ∀ t ∈ Set.Icc a b, HasDerivAt β (g (β t)) t) :
+    ∀ t ∈ Set.Icc a b, α t = β t := by
   have hαc : ContinuousOn α (Icc a b) := fun t ht => (hα t ht).continuousAt.continuousWithinAt
   have hβc : ContinuousOn β (Icc a b) := fun t ht => (hβ t ht).continuousAt.continuousWithinAt
   obtain ⟨Mα, hMα⟩ := (((isCompact_Icc).image_of_continuousOn hαc).image continuous_norm).bddAbove
