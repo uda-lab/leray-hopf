@@ -30,7 +30,7 @@ theory would supply). The deliverables are otherwise proved axiom-free.
 * `kineticEnergy_lsc_bound` (E1) — #14-P discharge, now `sorry`-FREE (issue #31). The full
   norm-lsc-transfer + ball-exhaustion proof (`kineticEnergyLscTransfer`, `continuous_restrictToBall`,
   `norm_restrictToBall_le'`, `normSq_restrictToBall_eq_setIntegral`,
-  `tendsto_normSq_restrictToBall`, `eLpNorm_two_eq_ofReal_sqrt`), wired through the #14-C
+  `tendsto_normSq_restrictToBall`), wired through the #14-C
   `u_aestronglyMeasurable` field and `galerkin_norm_le_u0`. The former residual `MemLp`-gap `sorry`
   (time-integrability of a Bochner-form integrand) is DISCHARGED by the issue #31 strengthening of
   `AubinLionsPackage_R3.strong_convergence` to its faithful `eLpNorm`-form: the field now supplies
@@ -253,31 +253,10 @@ theorem galerkin_curve_continuous (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     ContinuousOn (fun s => (gs.u s : L2VF_R3)) (Set.Ici 0) :=
   fun t ht => (gs.u_hasDeriv t ht).continuousAt.continuousWithinAt
 
-/-- For an a.e.-strongly-measurable `β`-valued time curve `h` whose pointwise squared norm is
-integrable, the time-`L²` seminorm is `ENNReal.ofReal (√(∫ ‖h t‖² dμ))`. (Standard `eLpNorm`
-unfolding for `p = 2`; used to feed the integral-to-`eLpNorm` step of E1.) -/
-private theorem eLpNorm_two_eq_ofReal_sqrt {β : Type*} [NormedAddCommGroup β]
-    {μ : Measure ℝ} (h : ℝ → β)
-    (hint : Integrable (fun t => ‖h t‖ ^ 2) μ) :
-    eLpNorm h 2 μ = ENNReal.ofReal (Real.sqrt (∫ t, ‖h t‖ ^ 2 ∂μ)) := by
-  rw [eLpNorm_eq_eLpNorm' (by norm_num) (by norm_num), eLpNorm'_eq_lintegral_enorm]
-  -- The exponent: `(2 : ENNReal).toReal = 2`.
-  have htwo : (2 : ENNReal).toReal = (2 : ℝ) := by norm_num
-  rw [htwo]
-  -- Pointwise: `‖h t‖ₑ ^ (2:ℝ) = ENNReal.ofReal (‖h t‖²)`.
-  have hpt : (fun t => ‖h t‖ₑ ^ (2 : ℝ)) = fun t => ENNReal.ofReal (‖h t‖ ^ 2) := by
-    funext t
-    rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, ENNReal.rpow_natCast,
-      ← ofReal_norm (h t), ← ENNReal.ofReal_pow (norm_nonneg _)]
-  rw [hpt]
-  -- `∫⁻ ofReal (‖h t‖²) = ofReal (∫ ‖h t‖²)`.
-  have hnn : 0 ≤ᵐ[μ] fun t => ‖h t‖ ^ 2 :=
-    Filter.Eventually.of_forall fun t => sq_nonneg _
-  rw [← ofReal_integral_eq_lintegral_ofReal hint hnn]
-  -- `(ofReal I)^(1/2) = ofReal (I^(1/2)) = ofReal (√I)`.
-  rw [ENNReal.ofReal_rpow_of_nonneg (integral_nonneg fun t => sq_nonneg _)
-      (by norm_num : (0:ℝ) ≤ 1 / 2),
-    ← Real.sqrt_eq_rpow]
+-- `eLpNorm_two_eq_ofReal_sqrt` (was private here) moved to
+-- `LerayHopf.Analysis.PlancherelKernels` (issue #111 PR-2); no call site in this file
+-- currently uses it (the docstring above mentioning it in the E1 proof route predates a
+-- later refactor of that route), so no rewiring is needed beyond the deletion.
 
 /-- **Abstract a.e.-`t` norm-lsc transfer (local copy of `Bochner.TimeSobolev`'s
 `kineticEnergy_lsc_transfer`).** Inlined here because `AubinLionsLimitPassage` does not import

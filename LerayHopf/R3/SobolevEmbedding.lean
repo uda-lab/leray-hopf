@@ -1,5 +1,10 @@
 import LerayHopf.R3.Regularity
 import LerayHopf.R3.ConvectionForm
+import LerayHopf.Analysis.PlancherelKernels
+-- PlancherelKernels import justification: the four gradient–Fourier Plancherel kernels
+-- (`opNorm_le_sqrt_sum_sq`, `normSq_toLp_two`, `normSq_lineDeriv_toLp`,
+-- `integral_normSq_fderiv_le`) used by A3 below moved there (issue #111 PR-2) so they can
+-- be shared with `EnergyClassConvection.lean`/`GalerkinTrilinearBound.lean`.
 -- ConvectionForm import justification (A4): provides the proved density theorem
 -- `schwartzDivFree_dense_of_curlDense` and (transitively, via `CurlDensityCapstone`)
 -- `curlSchwartzDense_holds`, both required by `h1Sigma_dense_in_L2Sigma`.
@@ -76,9 +81,11 @@ None — this file introduces no `axiom`/`opaque`.
 **Status (prover pass):** A2 (`gns_L6_cc1_R3`), A3 (`gns_L6_of_memH1_R3`) and A4
 (`h1Sigma_dense_in_L2Sigma`) are all PROVED sorry-free (A3 depends only on
 `propext`/`Classical.choice`/`Quot.sound` — no `sorryAx`, no project axiom). A3 is assembled from:
-- the four Plancherel kernels (`opNorm_le_sqrt_sum_sq`, `normSq_toLp_two`,
-  `normSq_lineDeriv_toLp`, `integral_normSq_fderiv_le`), giving the gradient↔Fourier control
-  `∫ ‖fderiv φ x‖² ≤ (2π)² ∫ ‖ξ‖² ‖𝓕 φ ξ‖²` for Schwartz `φ`;
+- the four Plancherel kernels (`PlancherelKernels.opNorm_le_sqrt_sum_sq`,
+  `PlancherelKernels.normSq_toLp_two`, `PlancherelKernels.normSq_lineDeriv_toLp`,
+  `PlancherelKernels.integral_normSq_fderiv_le` — moved to `LerayHopf/Analysis/PlancherelKernels.lean`,
+  issue #111 PR-2, so `EnergyClassConvection.lean`/`GalerkinTrilinearBound.lean` can share them),
+  giving the gradient↔Fourier control `∫ ‖fderiv φ x‖² ≤ (2π)² ∫ ‖ξ‖² ‖𝓕 φ ξ‖²` for Schwartz `φ`;
 - a smooth radial cutoff `cutoff R x = χ((1/R)•x)` (`ContDiffBump`, `rIn=1`, `rOut=2`) with the
   hand-proved `O(1/R)` gradient bound `‖∇(cutoff R)‖_∞ ≤ K/R` (mathlib's `ContDiffBump` exposes
   no such bound, so it is built here);
@@ -172,175 +179,12 @@ theorem gns_L6_cc1_R3 {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
   -- Reconcile `((6 : NNReal) : ℝ≥0∞) = (6 : ℝ≥0∞)` and `((2 : NNReal) : ℝ≥0∞) = (2 : ℝ≥0∞)`.
   simpa using h
 
-/-! ### A3 infrastructure — Schwartz gradient↔Fourier Plancherel kernels
-
-These four `private` lemmas establish the **gradient–Fourier Plancherel control** for a
-complex-valued Schwartz function `φ : 𝓢(ℝ³, ℂ)`, the analytic heart of the GNS embedding:
-
-  `∫ ‖fderiv ℝ φ x‖² dx ≤ (2π)² ∫ ‖ξ‖² ‖𝓕 φ ξ‖² dξ`.
-
-The chain is:
-- `opNorm_le_sqrt_sum_sq`  — the operator norm of a real-linear functional `L : ℝ³ →L[ℝ] ℂ`
-  is bounded by the Euclidean (Hilbert–Schmidt) norm `√(∑ⱼ ‖L eⱼ‖²)` of its gradient covector
-  (Cauchy–Schwarz; **the `≤` direction — the reverse equality is FALSE for ℂ-codomain**).
-- `normSq_toLp_two`        — `‖g.toLp 2‖² = ∫ ‖g ξ‖²` for Schwartz `g` (via `inner_toL2_toL2_eq`).
-- `normSq_lineDeriv_toLp`  — per-direction Schwartz Plancherel:
-  `‖(∂_{m}φ).toLp 2‖² = ∫ (2π)² ⟨ξ,m⟩² ‖𝓕 φ ξ‖²` (via `fourier_lineDerivOp_eq` + Plancherel).
-- `integral_normSq_fderiv_le` — integrate the HS bound and sum over the standard basis
-  (`∑ⱼ ⟨ξ,eⱼ⟩² = ‖ξ‖²`) to get the displayed inequality. -/
-
+-- The gradient–Fourier Plancherel kernels moved to `LerayHopf.Analysis.PlancherelKernels`
+-- (issue #111 PR-2) used to open the Fourier/LineDeriv notation this file's remaining A3/A4
+-- content (below) also relies on (`𝓕`, `∂_{m}`) — re-opened here so the rest of the file is
+-- unaffected by the move.
 open FourierTransform
 open scoped Real LineDeriv RealInnerProductSpace FourierTransform
-
-/-- **A3 kernel.** Operator norm of a real-linear functional `L : Domain3 →L[ℝ] ℂ` is bounded
-by the Euclidean norm `√(∑ᵢ ‖L (b i)‖²)` of its gradient covector, for any orthonormal basis `b`.
-This is the Hilbert–Schmidt bound `‖L‖_op ≤ ‖L‖_HS`; the reverse inequality is false for a
-ℂ-valued (rank-2) codomain, so only `≤` holds — which is the direction the GNS upper bound needs. -/
-private theorem opNorm_le_sqrt_sum_sq {ι : Type*} [Fintype ι]
-    (b : OrthonormalBasis ι ℝ Domain3) (L : Domain3 →L[ℝ] ℂ) :
-    ‖L‖ ≤ Real.sqrt (∑ i, ‖L (b i)‖ ^ 2) := by
-  apply ContinuousLinearMap.opNorm_le_bound _ (Real.sqrt_nonneg _)
-  intro v
-  have hn1 : (0:ℝ) ≤ ∑ i, ⟪b i, v⟫ ^ 2 := Finset.sum_nonneg (fun i _ => sq_nonneg _)
-  have hv : L v = ∑ i, ⟪b i, v⟫ • L (b i) := by
-    conv_lhs => rw [← b.sum_repr' v]
-    rw [map_sum]; simp [map_smul]
-  rw [hv, mul_comm]
-  calc ‖∑ i, ⟪b i, v⟫ • L (b i)‖
-      ≤ ∑ i, ‖⟪b i, v⟫ • L (b i)‖ := norm_sum_le _ _
-    _ = ∑ i, |⟪b i, v⟫| * ‖L (b i)‖ := by simp [norm_smul, Real.norm_eq_abs]
-    _ ≤ Real.sqrt ((∑ i, ⟪b i, v⟫ ^ 2) * (∑ i, ‖L (b i)‖ ^ 2)) := by
-        apply Real.le_sqrt_of_sq_le
-        calc (∑ i, |⟪b i, v⟫| * ‖L (b i)‖) ^ 2
-            ≤ (∑ i, |⟪b i, v⟫| ^ 2) * (∑ i, ‖L (b i)‖ ^ 2) := Finset.sum_mul_sq_le_sq_mul_sq _ _ _
-          _ = (∑ i, ⟪b i, v⟫ ^ 2) * (∑ i, ‖L (b i)‖ ^ 2) := by simp [sq_abs]
-    _ = ‖v‖ * Real.sqrt (∑ i, ‖L (b i)‖ ^ 2) := by
-        rw [Real.sqrt_mul hn1]
-        congr 1
-        have hvn : ∑ i, ⟪b i, v⟫ ^ 2 = ‖v‖ ^ 2 := by
-          have := b.sum_sq_norm_inner_right v
-          simpa [Real.norm_eq_abs, sq_abs] using this
-        rw [hvn, Real.sqrt_sq (norm_nonneg _)]
-
-/-- **A3 kernel.** For a Schwartz `g : 𝓢(ℝ³, ℂ)`, the squared `L²`-class norm is the integral of
-the pointwise squared norm: `‖g.toLp 2‖² = ∫ ‖g ξ‖²`. (Via `SchwartzMap.inner_toL2_toL2_eq`.) -/
-private theorem normSq_toLp_two (g : SchwartzMap Domain3 ℂ) :
-    ‖g.toLp 2 (volume : Measure Domain3)‖ ^ 2
-      = ∫ ξ : Domain3, ‖g ξ‖ ^ 2 ∂(volume : Measure Domain3) := by
-  have hII : inner ℂ (g.toLp 2 (volume : Measure Domain3)) (g.toLp 2 (volume : Measure Domain3))
-      = ∫ x, inner ℂ (g x) (g x) ∂(volume : Measure Domain3) := SchwartzMap.inner_toL2_toL2_eq g g _
-  rw [norm_sq_eq_re_inner (𝕜 := ℂ), hII, ← integral_re]
-  · refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
-    show RCLike.re (inner ℂ (g ξ) (g ξ)) = ‖g ξ‖ ^ 2
-    rw [inner_self_eq_norm_sq_to_K]; norm_cast
-  · refine (L2.integrable_inner (g.toLp 2 (volume:Measure Domain3))
-      (g.toLp 2 (volume:Measure Domain3))).congr ?_
-    filter_upwards [g.coeFn_toLp 2 (volume:Measure Domain3)] with x hx; rw [hx]
-
-/-- **A3 kernel.** Per-direction Schwartz Plancherel: for `φ : 𝓢(ℝ³, ℂ)` and a direction `m`,
-`‖(∂_{m}φ).toLp 2‖² = ∫ (2π)² ⟨ξ,m⟩² ‖𝓕 φ ξ‖²`. Uses `fourier_lineDerivOp_eq`
-(`𝓕(∂_{m}φ) = 2πi⟨·,m⟩ 𝓕 φ`) + Plancherel (`norm_fourier_toL2_eq`) + `normSq_toLp_two`. -/
-private theorem normSq_lineDeriv_toLp (φ : SchwartzMap Domain3 ℂ) (m : Domain3) :
-    ‖(∂_{m} φ).toLp 2 (volume : Measure Domain3)‖ ^ 2
-      = ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * (inner ℝ ξ m) ^ 2 * ‖(𝓕 φ) ξ‖ ^ 2
-        ∂(volume : Measure Domain3) := by
-  rw [← norm_fourier_toL2_eq, normSq_toLp_two]
-  refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
-  show ‖(𝓕 (∂_{m} φ)) ξ‖ ^ 2 = (2 * Real.pi) ^ 2 * (inner ℝ ξ m) ^ 2 * ‖(𝓕 φ) ξ‖ ^ 2
-  have hg : (inner ℝ · m : Domain3 → ℝ).HasTemperateGrowth :=
-    ((innerSL ℝ).flip m).hasTemperateGrowth
-  have hpt : (𝓕 (∂_{m} φ)) ξ = (2 * Real.pi * Complex.I) * (inner ℝ ξ m : ℝ) * (𝓕 φ) ξ := by
-    rw [fourier_lineDerivOp_eq φ m, SchwartzMap.smul_apply, SchwartzMap.smulLeftCLM_apply_apply hg]
-    simp only [smul_eq_mul, Complex.real_smul]; ring
-  rw [hpt, norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real, Real.norm_eq_abs, sq_abs]
-  have hI : ‖(2 * Real.pi * Complex.I)‖ = 2 * Real.pi := by
-    rw [show (2 * Real.pi * Complex.I) = ((2 * Real.pi : ℝ) : ℂ) * Complex.I by push_cast; ring]
-    rw [norm_mul, Complex.norm_I, mul_one, Complex.norm_real, Real.norm_eq_abs,
-      abs_of_nonneg (by positivity)]
-  rw [hI]
-
-/-- **A3 kernel.** Integrated gradient–Fourier bound for Schwartz `φ`:
-`∫ ‖fderiv ℝ φ x‖² ≤ (2π)² ∫ ‖ξ‖² ‖𝓕 φ ξ‖²`.  Combine the pointwise HS bound
-(`opNorm_le_sqrt_sum_sq`, squared) with the summed per-direction Plancherel
-(`normSq_lineDeriv_toLp`) over the standard basis (`∑ᵢ ⟨ξ,eᵢ⟩² = ‖ξ‖²`). -/
-private theorem integral_normSq_fderiv_le (φ : SchwartzMap Domain3 ℂ) :
-    ∫ x : Domain3, ‖fderiv ℝ φ x‖ ^ 2 ∂(volume : Measure Domain3)
-      ≤ ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 φ) ξ‖ ^ 2 ∂(volume : Measure Domain3) := by
-  set b := stdOrthonormalBasis ℝ Domain3 with hb
-  have hptwise : ∀ x : Domain3,
-      ‖fderiv ℝ φ x‖ ^ 2 ≤ ∑ i, ‖(∂_{b i} φ) x‖ ^ 2 := by
-    intro x
-    have h := opNorm_le_sqrt_sum_sq b (fderiv ℝ (φ : Domain3 → ℂ) x)
-    have hsum_nonneg : (0:ℝ) ≤ ∑ i, ‖(fderiv ℝ (φ:Domain3→ℂ) x) (b i)‖ ^ 2 :=
-      Finset.sum_nonneg (fun i _ => sq_nonneg _)
-    have heq : (∑ i, ‖(fderiv ℝ (φ:Domain3→ℂ) x) (b i)‖ ^ 2) = ∑ i, ‖(∂_{b i} φ) x‖ ^ 2 := by
-      refine Finset.sum_congr rfl (fun i _ => ?_)
-      simp only [SchwartzMap.lineDerivOp_apply_eq_fderiv]
-    have hle : ‖fderiv ℝ (φ:Domain3→ℂ) x‖ ^ 2 ≤ ∑ i, ‖(fderiv ℝ (φ:Domain3→ℂ) x) (b i)‖ ^ 2 := by
-      calc ‖fderiv ℝ (φ:Domain3→ℂ) x‖ ^ 2
-          ≤ (Real.sqrt (∑ i, ‖(fderiv ℝ (φ:Domain3→ℂ) x) (b i)‖ ^ 2)) ^ 2 :=
-            pow_le_pow_left₀ (norm_nonneg _) h 2
-        _ = ∑ i, ‖(fderiv ℝ (φ:Domain3→ℂ) x) (b i)‖ ^ 2 := Real.sq_sqrt hsum_nonneg
-    rw [heq] at hle
-    exact hle
-  have hintL : Integrable (fun x : Domain3 => ‖fderiv ℝ (φ:Domain3→ℂ) x‖ ^ 2)
-      (volume : Measure Domain3) :=
-    (memLp_two_iff_integrable_sq_norm
-      ((SchwartzMap.fderivCLM ℝ Domain3 ℂ φ).continuous.aestronglyMeasurable)).mp
-      ((SchwartzMap.fderivCLM ℝ Domain3 ℂ φ).memLp 2 (volume:Measure Domain3))
-  have hintR : ∀ i, Integrable (fun x : Domain3 => ‖(∂_{b i} φ) x‖ ^ 2)
-      (volume : Measure Domain3) := fun i =>
-    (memLp_two_iff_integrable_sq_norm ((∂_{b i} φ).continuous.aestronglyMeasurable)).mp
-      ((∂_{b i} φ).memLp 2 (volume:Measure Domain3))
-  have hsumint : Integrable (fun x : Domain3 => ∑ i, ‖(∂_{b i} φ) x‖ ^ 2)
-      (volume : Measure Domain3) := integrable_finset_sum _ (fun i _ => hintR i)
-  have hstep1 : ∫ x : Domain3, ‖fderiv ℝ (φ:Domain3→ℂ) x‖ ^ 2 ∂(volume : Measure Domain3)
-      ≤ ∫ x : Domain3, ∑ i, ‖(∂_{b i} φ) x‖ ^ 2 ∂(volume : Measure Domain3) :=
-    integral_mono hintL hsumint hptwise
-  have hstep2 : ∫ x : Domain3, ∑ i, ‖(∂_{b i} φ) x‖ ^ 2 ∂(volume : Measure Domain3)
-      = ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 φ) ξ‖ ^ 2 ∂(volume : Measure Domain3) := by
-    rw [integral_finset_sum _ (fun i _ => hintR i)]
-    have hperdir : ∀ i, ∫ x : Domain3, ‖(∂_{b i} φ) x‖ ^ 2 ∂(volume : Measure Domain3)
-        = ∫ ξ : Domain3, (2 * Real.pi)^2 * (inner ℝ ξ (b i))^2 * ‖(𝓕 φ) ξ‖^2
-          ∂(volume:Measure Domain3) := by
-      intro i
-      rw [← normSq_toLp_two (∂_{b i} φ), normSq_lineDeriv_toLp]
-    simp_rw [hperdir]
-    have hintP : ∀ i, Integrable
-        (fun ξ : Domain3 => (2 * Real.pi)^2 * (inner ℝ ξ (b i))^2 * ‖(𝓕 φ) ξ‖^2)
-        (volume : Measure Domain3) := by
-      intro i
-      have hFR : Integrable (fun ξ : Domain3 => ‖(𝓕 (∂_{b i} φ)) ξ‖^2)
-          (volume : Measure Domain3) :=
-        (memLp_two_iff_integrable_sq_norm
-          ((𝓕 (∂_{b i} φ)).continuous.aestronglyMeasurable)).mp
-          ((𝓕 (∂_{b i} φ)).memLp 2 (volume:Measure Domain3))
-      refine hFR.congr ?_
-      filter_upwards with ξ
-      have hg : (inner ℝ · (b i) : Domain3 → ℝ).HasTemperateGrowth :=
-        ((innerSL ℝ).flip (b i)).hasTemperateGrowth
-      have hpt : (𝓕 (∂_{b i} φ)) ξ
-          = (2 * Real.pi * Complex.I) * (inner ℝ ξ (b i) : ℝ) * (𝓕 φ) ξ := by
-        rw [fourier_lineDerivOp_eq φ (b i), SchwartzMap.smul_apply, SchwartzMap.smulLeftCLM_apply_apply hg]
-        simp only [smul_eq_mul, Complex.real_smul]; ring
-      rw [hpt, norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real, Real.norm_eq_abs, sq_abs]
-      have hI : ‖(2 * Real.pi * Complex.I)‖ = 2 * Real.pi := by
-        rw [show (2 * Real.pi * Complex.I) = ((2 * Real.pi : ℝ) : ℂ) * Complex.I by push_cast; ring]
-        rw [norm_mul, Complex.norm_I, mul_one, Complex.norm_real, Real.norm_eq_abs,
-          abs_of_nonneg (by positivity)]
-      rw [hI]
-    rw [← integral_finset_sum _ (fun i _ => hintP i)]
-    refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
-    have hinner : ∑ i, (inner ℝ ξ (b i))^2 = ‖ξ‖^2 := by
-      have := b.sum_sq_norm_inner_right ξ
-      simp_rw [real_inner_comm] at this ⊢
-      simpa [Real.norm_eq_abs, sq_abs] using this
-    calc ∑ i, (2 * Real.pi)^2 * (inner ℝ ξ (b i))^2 * ‖(𝓕 φ) ξ‖^2
-        = ((2 * Real.pi)^2 * ‖(𝓕 φ) ξ‖^2) * ∑ i, (inner ℝ ξ (b i))^2 := by
-          rw [Finset.mul_sum]; exact Finset.sum_congr rfl (fun i _ => by ring)
-      _ = (2 * Real.pi)^2 * ‖ξ‖^2 * ‖(𝓕 φ) ξ‖^2 := by rw [hinner]; ring
-  rw [hstep2] at hstep1
-  exact hstep1
 
 /-! ### A3 infrastructure — smooth radial cutoff with `O(1/R)` gradient
 
@@ -747,7 +591,7 @@ private theorem eLpNorm_fderiv_le_weighted (φ : SchwartzMap Domain3 ℂ) :
       (volume : Measure Domain3) := integrable_one_add_normSq_schwartz (𝓕 φ)
   have hbound : ∫ x : Domain3, ‖fderiv ℝ (φ : Domain3 → ℂ) x‖ ^ 2 ∂(volume : Measure Domain3)
       ≤ (2 * Real.pi) ^ 2 * W := by
-    refine (integral_normSq_fderiv_le φ).trans ?_
+    refine (PlancherelKernels.integral_normSq_fderiv_le φ).trans ?_
     rw [hW, ← integral_const_mul]
     refine integral_mono ?_ (hWint.const_mul _) (fun ξ => ?_)
     · -- ∫ (2π)²‖ξ‖²‖𝓕φ‖² integrable
@@ -923,7 +767,7 @@ theorem gns_L6_of_memH1_R3
       ∫ ξ : Domain3, (1 + ‖ξ‖ ^ 2) * ‖(𝓕 (φ n)) ξ‖ ^ 2 ∂(volume : Measure Domain3)
         = ‖(η n).toLp 2 (volume : Measure Domain3)‖ ^ 2 := by
     intro n
-    rw [normSq_toLp_two (η n)]
+    rw [PlancherelKernels.normSq_toLp_two (η n)]
     refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
     simp only []
     rw [hFφ_pt n ξ, norm_smul, mul_pow, Complex.norm_real, Real.norm_eq_abs]

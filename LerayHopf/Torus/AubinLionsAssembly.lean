@@ -18,6 +18,7 @@ import LerayHopf.Torus.ModeTail
 -- TorusModeTail transitive chain does NOT reach (codex HIGH finding, T-AL-6 gate).
 -- Both imports are acyclic (TorusProjectionAdjoint imports TorusGalerkinODESolve only).
 import LerayHopf.Torus.ProjectionAdjoint
+import LerayHopf.Analysis.PlancherelKernels -- eLpNorm_two_eq_ofReal_sqrt (issue #111 PR-2)
 
 open MeasureTheory Filter Topology Set
 
@@ -30,28 +31,10 @@ Proof route: the #44/#47 `eLpNorm`↔`lintegral` bridge patterns (`MemLp` from t
 `M`-bound + AESM on the finite measure; `eLpNorm`² = lintegral of `ofReal ‖·‖²`;
 interval integral → set integral over `Ioc ⊆ Icc`, endpoint null). -/
 
-/-- Local copy of `AubinLionsLimitPassage`'s `private eLpNorm_two_eq_ofReal_sqrt`
-(that one is `private`, hence not importable): for an a.e.-strongly-measurable curve
-`h` with integrable pointwise squared norm, the time-`L²` seminorm is
-`ENNReal.ofReal (√(∫ ‖h t‖² dμ))`. -/
-private theorem eLpNorm_two_eq_ofReal_sqrt' {β : Type*} [NormedAddCommGroup β]
-    {μ : Measure ℝ} (h : ℝ → β)
-    (hint : Integrable (fun t => ‖h t‖ ^ 2) μ) :
-    eLpNorm h 2 μ = ENNReal.ofReal (Real.sqrt (∫ t, ‖h t‖ ^ 2 ∂μ)) := by
-  rw [eLpNorm_eq_eLpNorm' (by norm_num) (by norm_num), eLpNorm'_eq_lintegral_enorm]
-  have htwo : (2 : ENNReal).toReal = (2 : ℝ) := by norm_num
-  rw [htwo]
-  have hpt : (fun t => ‖h t‖ₑ ^ (2 : ℝ)) = fun t => ENNReal.ofReal (‖h t‖ ^ 2) := by
-    funext t
-    rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, ENNReal.rpow_natCast,
-      ← ofReal_norm (h t), ← ENNReal.ofReal_pow (norm_nonneg _)]
-  rw [hpt]
-  have hnn : 0 ≤ᵐ[μ] fun t => ‖h t‖ ^ 2 :=
-    Filter.Eventually.of_forall fun t => sq_nonneg _
-  rw [← ofReal_integral_eq_lintegral_ofReal hint hnn]
-  rw [ENNReal.ofReal_rpow_of_nonneg (integral_nonneg fun t => sq_nonneg _)
-      (by norm_num : (0 : ℝ) ≤ 1 / 2),
-    ← Real.sqrt_eq_rpow]
+-- `eLpNorm_two_eq_ofReal_sqrt'` (was private here, byte-identical to `AubinLionsLimitPassage`'s
+-- private `eLpNorm_two_eq_ofReal_sqrt`) moved to
+-- `LerayHopf.Analysis.PlancherelKernels.eLpNorm_two_eq_ofReal_sqrt` (issue #111 PR-2);
+-- its one call site below now uses the shared version directly.
 
 private theorem eLpNorm_tendsto_of_integral_sq_tendsto
     (T : ℝ) (hT : 0 < T) (M : ℝ) (f : ℕ → ℝ → L2VF)
@@ -76,7 +59,7 @@ private theorem eLpNorm_tendsto_of_integral_sq_tendsto
   have hkey : ∀ n, eLpNorm (f n) 2 (volume.restrict (Icc (0 : ℝ) T))
       = ENNReal.ofReal (Real.sqrt (∫ t in (0 : ℝ)..T, ‖f n t‖ ^ 2)) := by
     intro n
-    rw [eLpNorm_two_eq_ofReal_sqrt' (f n) (hInt n)]
+    rw [PlancherelKernels.eLpNorm_two_eq_ofReal_sqrt (f n) (hInt n)]
     congr 2
     rw [intervalIntegral.integral_of_le hT.le,
       MeasureTheory.integral_Icc_eq_integral_Ioc]
