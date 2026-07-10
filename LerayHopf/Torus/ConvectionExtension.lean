@@ -36,8 +36,9 @@ The construction uses the **determined-form** approach:
 - `convBLTgalerkin` — the jointly continuous bilinear for a fixed Galerkin test `w`
 - `convBLTgalerkinLin` — linearity of `convBLTgalerkin` in the test slot
 - `antisymmetrizer` — `(id − swap)/2` on `L²_σ ⊗ L²_σ`
-- `gInv` — left-inverse of `detDomain.subtype`
-- `detExtend` — the determined extension `L²_σ →ₗ (L²_σ ⊗ L²_σ) →ₗ ℝ`
+- `detExtend` — the determined extension `L²_σ →ₗ (L²_σ ⊗ L²_σ) →ₗ ℝ` (`gInv`, the left-inverse
+  of `detDomain.subtype` it is built from, is now private to `LerayHopf.TensorEdgeGluing`,
+  issue #111 PR-1)
 - `convFormL2_def` — the trilinear `b u v w := detExtend u (v ⊗ₜ w)`
 - `torusConvectionGap_holds` — assembly theorem for all seven fields
 

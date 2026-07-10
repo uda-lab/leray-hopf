@@ -1018,6 +1018,15 @@ noncomputable def edgeSlot3 : Submodule ℝ (TensorProduct ℝ L2Sigma_R3 L2Sigm
 noncomputable def detDomain : Submodule ℝ (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :=
   LerayHopf.TensorEdgeGluing.detDomain schwartzSpan
 
+/-- **The overlap identity (consumes the proved tensor-intersection lemma).**
+`(𝒮 ⊗ L²_σ) ⊓ (L²_σ ⊗ 𝒮) = 𝒮 ⊗ 𝒮`, on whose image the two edge prescriptions agree.
+This is `TensorIntersection.range_map_subtype_inf_range_map_subtype` specialized to
+`S = schwartzSpan`, exactly as Torus's `edge_inf_eq_galerkin_tensor`. -/
+theorem edge_inf_eq_schwartz_tensor :
+    edgeSlot2 ⊓ edgeSlot3
+      = LinearMap.range (TensorProduct.mapIncl schwartzSpan schwartzSpan) :=
+  LerayHopf.R3.TensorIntersection.range_map_subtype_inf_range_map_subtype schwartzSpan
+
 /-- The antisymmetrizer `A := (id − swap)/2` on `L²_σ ⊗ L²_σ`. -/
 noncomputable def antisymmetrizer :
     TensorProduct ℝ L2Sigma_R3 L2Sigma_R3 →ₗ[ℝ] TensorProduct ℝ L2Sigma_R3 L2Sigma_R3 :=
