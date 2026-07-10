@@ -91,10 +91,8 @@ import LerayHopf.R3.SteklovAverages      -- Tier H/S/C-prep: TimeCompactnessInpu
                                           -- spatialInput_R3_of_localRellich, steklovAvg and the
                                           -- Steklov interval-average building blocks,
                                           -- galerkinSpaceTimeExtraction_R3 (issue #114 Tier 1 commit 2)
-import LerayHopf.R3.FourierL2            -- 𝓕, L2C_R3, viscousFormSq_R3_eq_integral_normSq_fourier (F7 spectral exposure for the viscous/H¹ Steklov Jensen bound)
-import LerayHopf.R3.WeightedFourierCommute -- mulBdd bounded-multiplier commute + truncated weight (closes the viscous/H¹ Steklov Jensen gate)
-import LerayHopf.R3.GalerkinODE          -- galerkinCurve_reg_mem (H¹ regularity of any curve in the Galerkin subspace)
-import LerayHopf.R3.SobolevEmbedding     -- memSobolev_of_finite_weightedFourier_R3 (H¹ from finite weighted-Fourier integral; the memH1 conjunct of viscous_pointwise_lsc)
+import LerayHopf.R3.GalerkinODE          -- viscousFormSq_R3_eq_smul (rescale the viscous form by ν, used to convert reg_bound's ν-scaled integral cap into a 1-scaled one)
+import LerayHopf.R3.SobolevEmbedding     -- memH1VF_R3_of_isSchwartzDivFree (any Schwartz div-free test lies in the H¹ energy class)
 import LerayHopf.R3.ConvectionForm       -- fb_tendsto_of_perball, isSchwartzDivFree_add, and
   -- (transitively via CurlDensityCapstone) stokesTestPairing_R3_eq_sum_inner_negLap (issue #113
   -- PR-1: explicit — was reached only via SobolevEmbedding's now-dropped ConvectionForm import)
