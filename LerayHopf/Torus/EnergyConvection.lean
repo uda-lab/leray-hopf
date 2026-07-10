@@ -245,7 +245,7 @@ theorem convSummand_norm_summable (u : L2VF) (v : L2VF) (hv : memH1VF v)
   have hWsumm : Summable (fun m : Fin 3 → ℤ => ‖Wc m‖) :=
     summable_of_ne_finset_zero (s := fourierBox n)
       (fun m hm => by rw [hWsupp m hm, norm_zero])
-  have hUsq : Summable (fun k : Fin 3 → ℤ => ‖U k‖ ^ 2) := summable_norm_mFourierCoeff3_sq _
+  have hUsq : Summable (fun k : Fin 3 → ℤ => ‖U k‖ ^ 2) := Torus.summable_norm_mFourierCoeff3_sq _
   have hVw : Summable (fun l : Fin 3 → ℤ => (∑ j : Fin 3, (l j : ℝ) ^ 2) * ‖V l‖ ^ 2) :=
     summable_grad_weight_sq (hv i)
   -- The dominating sum `G kl := π · ‖Wc m‖ · (‖U k‖² + (lₐ)² ‖V l‖²)`, `m = -(k+l)`, is summable.
