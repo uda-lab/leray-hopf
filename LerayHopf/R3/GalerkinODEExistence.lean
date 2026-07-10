@@ -131,7 +131,7 @@ open scoped FourierTransform SchwartzMap
 complex component `L2VF_projComponentC_R3 j w` is the `L²`-class of a (complex-valued)
 Schwartz map.  This is the complexification of `galerkinP_range_schwartz` (real components ⇒
 real Schwartz), post-composed with the real-to-complex embedding `RCLike.ofRealCLM`. -/
-private theorem galerkinSpan_exists_schwartzC
+theorem galerkinSpan_exists_schwartzC
     (B : SchwartzGalerkinBasis) (n : ℕ) (w : galerkinSpan B n) :
     ∃ φ : Fin 3 → SchwartzMap Domain3 ℂ,
       ∀ j : Fin 3,
@@ -173,7 +173,7 @@ private theorem galerkinSpan_exists_schwartzC
 Schwartz Fourier transform of the component's Schwartz representative).  This is the bridge
 from the a.e.-only `Lp.fourierTransformₗᵢ` coercion to the classical Schwartz `fourierIntegral`,
 via `SchwartzMap.toLp_fourier_eq`. -/
-private theorem galerkinSpan_fourier_ae
+theorem galerkinSpan_fourier_ae
     (B : SchwartzGalerkinBasis) (n : ℕ) (w : galerkinSpan B n) (j : Fin 3) :
     ∃ S : SchwartzMap Domain3 ℂ,
       ((𝓕 (L2VF_projComponentC_R3 j (w : L2VF_R3)) : L2C_R3) : Domain3 → ℂ)
@@ -192,7 +192,7 @@ are span elements: their Fourier components are a.e. Schwartz, so the integrand 
 `C · (‖ξ‖² · ‖S_w ξ‖)` (`S_u` bounded, `S_w` rapidly decaying), which is integrable by
 `SchwartzMap.integrable_pow_mul`.  This is the crux that licenses `integral_add`/
 `integral_const_mul` and hence the right-linearity of `stokesTestPairing_R3` on `V_n`. -/
-private theorem stokesTestPairing_R3_integrand_integrable
+theorem stokesTestPairing_R3_integrand_integrable
     (B : SchwartzGalerkinBasis) (n : ℕ) (u w : galerkinSpan B n) (j : Fin 3) :
     Integrable (fun ξ : Domain3 =>
       (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 *
@@ -253,7 +253,7 @@ pairing is additive in its second argument when both arguments lie in `V_n`.  Th
 additivity of the component CLM and of the `L²`-Fourier transform (`map_add`), `Lp.coeFn_add`
 to push it through the a.e. coercion, and the integrability of each component integrand
 (`stokesTestPairing_R3_integrand_integrable`) to split the Bochner integral via `integral_add`. -/
-private theorem stokesTestPairing_R3_add_right
+theorem stokesTestPairing_R3_add_right
     (B : SchwartzGalerkinBasis) (n : ℕ) (u w w' : galerkinSpan B n) :
     stokesTestPairing_R3 (u : L2VF_R3) ((w + w' : galerkinSpan B n) : L2VF_R3)
       = stokesTestPairing_R3 (u : L2VF_R3) (w : L2VF_R3)
@@ -301,7 +301,7 @@ private theorem stokesTestPairing_R3_add_right
     rw [map_add, mul_add, Complex.add_re, mul_add]
 
 /-- Right-homogeneity of `stokesTestPairing_R3` on span elements. -/
-private theorem stokesTestPairing_R3_smul_right
+theorem stokesTestPairing_R3_smul_right
     (B : SchwartzGalerkinBasis) (n : ℕ) (u w : galerkinSpan B n) (c : ℝ) :
     stokesTestPairing_R3 (u : L2VF_R3) ((c • w : galerkinSpan B n) : L2VF_R3)
       = c * stokesTestPairing_R3 (u : L2VF_R3) (w : L2VF_R3) := by
@@ -337,13 +337,13 @@ private theorem stokesTestPairing_R3_smul_right
 
 /-- `galerkinSpanToSigma` is additive in its argument (both sides agree as `L2Sigma_R3`
 elements, i.e. as the underlying `L2VF_R3` vectors via `Submodule.coe_add`). -/
-private theorem galerkinSpanToSigma_add (B : SchwartzGalerkinBasis) (n : ℕ)
+theorem galerkinSpanToSigma_add (B : SchwartzGalerkinBasis) (n : ℕ)
     (w w' : galerkinSpan B n) :
     galerkinSpanToSigma B n (w + w') = galerkinSpanToSigma B n w + galerkinSpanToSigma B n w' := by
   apply Subtype.ext; rfl
 
 /-- `galerkinSpanToSigma` is ℝ-homogeneous in its argument. -/
-private theorem galerkinSpanToSigma_smul (B : SchwartzGalerkinBasis) (n : ℕ)
+theorem galerkinSpanToSigma_smul (B : SchwartzGalerkinBasis) (n : ℕ)
     (c : ℝ) (w : galerkinSpan B n) :
     galerkinSpanToSigma B n (c • w) = c • galerkinSpanToSigma B n w := by
   apply Subtype.ext; rfl

@@ -372,7 +372,7 @@ instance instSeparableSpace_L2VF_R3 : SeparableSpace L2VF_R3 :=
 
 /-- Helper: the supremum of finite prefix spans of an enumeration `e` equals the span of
 its entire range. -/
-private theorem iSup_prefixSpan_eq_span_range (e : ℕ → L2VF_R3) :
+theorem iSup_prefixSpan_eq_span_range (e : ℕ → L2VF_R3) :
     (⨆ n : ℕ, Submodule.span ℝ (Set.range (fun k : Fin n => e (k : ℕ))))
       = Submodule.span ℝ (Set.range e) := by
   apply le_antisymm

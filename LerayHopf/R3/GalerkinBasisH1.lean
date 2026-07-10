@@ -109,20 +109,6 @@ private theorem memH1VF_R3_curl (θ : Fin 3 → SchwartzMap Domain3 ℝ) :
     memH1VF_R3 (curlSchwartzL2 θ) :=
   memH1VF_R3_of_components _ (curlSchwartz_isSchwartz θ)
 
-/-- Helper: the supremum of finite prefix spans of an enumeration `e` equals the span of its
-entire range (local copy of the private `iSup_prefixSpan_eq_span_range`). -/
-private theorem iSup_prefixSpan_eq_span_range' (e : ℕ → L2VF_R3) :
-    (⨆ n : ℕ, Submodule.span ℝ (Set.range (fun k : Fin n => e (k : ℕ))))
-      = Submodule.span ℝ (Set.range e) := by
-  apply le_antisymm
-  · refine iSup_le fun n => Submodule.span_mono ?_
-    rintro x ⟨k, rfl⟩
-    exact ⟨(k : ℕ), rfl⟩
-  · rw [Submodule.span_le]
-    rintro x ⟨k, rfl⟩
-    refine Submodule.mem_iSup_of_mem (k+1) ?_
-    exact Submodule.subset_span ⟨⟨k, Nat.lt_succ_self k⟩, rfl⟩
-
 /-! ### The H¹-graph-dense countable curl family -/
 
 /-- The graph embedding of a Schwartz potential: its curl field together with the vector of
@@ -171,7 +157,7 @@ private theorem exists_graphDenseSeq :
     have hsup : (⨆ n : ℕ, Submodule.span ℝ
           (Set.range (fun k : Fin n => curlSchwartzL2 (ψ (k : ℕ)))))
         = Submodule.span ℝ (Set.range (fun k => curlSchwartzL2 (ψ k))) :=
-      iSup_prefixSpan_eq_span_range' (fun k => curlSchwartzL2 (ψ k))
+      iSup_prefixSpan_eq_span_range (fun k => curlSchwartzL2 (ψ k))
     rw [hsup]
     refine le_trans curlSchwartzDense_holds ?_
     refine Submodule.topologicalClosure_minimal _ ?_

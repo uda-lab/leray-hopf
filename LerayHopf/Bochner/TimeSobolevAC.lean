@@ -29,34 +29,6 @@ open scoped ENNReal InnerProductSpace
 section R1
 variable {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X] [CompleteSpace X]
 
-/-- (local copy of the `TimeSobolev` private helper) A Bochner curve integrable on `Icc 0 T`,
-scalar-multiplied by a continuous compactly-supported test factor supported in `Ioo 0 T`, is
-interval-integrable on `0..T`. -/
-private theorem intervalIntegrable_smul_of_integrableOn_Icc'
-    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {T : ℝ} {g : ℝ → E} {φ : ℝ → ℝ}
-    (hg : Integrable g (volume.restrict (Set.Icc 0 T)))
-    (hφc : Continuous φ) (hφcs : HasCompactSupport φ)
-    (hφsupp : tsupport φ ⊆ Set.Ioo 0 T) :
-    IntervalIntegrable (fun t => φ t • g t) volume 0 T := by
-  rcases le_or_gt 0 T with hT | hT
-  · obtain ⟨C, hC⟩ := hφc.bounded_above_of_compact_support hφcs
-    have hint : Integrable (fun t => φ t • g t) (volume.restrict (Set.Icc 0 T)) :=
-      hg.bdd_smul C hφc.aestronglyMeasurable (Filter.Eventually.of_forall hC)
-    rw [intervalIntegrable_iff]
-    have hsub : Set.uIoc 0 T ⊆ Set.Icc 0 T := by
-      rw [Set.uIoc_of_le hT]; exact Set.Ioc_subset_Icc_self
-    have hint' : IntegrableOn (fun t => φ t • g t) (Set.Icc 0 T) volume := hint
-    exact hint'.mono_set hsub
-  · have hIoo : Set.Ioo 0 T = (∅ : Set ℝ) := Set.Ioo_eq_empty (by exact not_lt.2 hT.le)
-    have hφ0 : φ = 0 := by
-      funext t
-      exact image_eq_zero_of_notMem_tsupport (fun ht => by
-        have := hφsupp ht; rw [hIoo] at this; exact this.elim)
-    subst hφ0
-    simp only [Pi.zero_apply, zero_smul]
-    exact IntervalIntegrable.zero (μ := volume) (a := (0:ℝ)) (b := T) (E := E)
-
-
 /-- The Bochner primitive of an interval-integrable curve is continuous on `[0,T]`. -/
 theorem continuousOn_primitive_of_integrableOn {T : ℝ} {v : ℝ → X}
     (hv : IntegrableOn v (Set.Icc 0 T) volume) :
@@ -255,7 +227,7 @@ theorem isWeakTimeDeriv_zero_ae_const {T : ℝ} (hT : 0 < T) {u : ℝ → X}
     -- hweak : ∫0..T (g - Ig•ρ) • u = 0  ⟹ ∫0..T g•u = Ig • ∫0..T ρ•u = Ig • c
     -- integrability of the two pieces on [0,T] (continuous scalar × Icc-integrable u).
     have hgu_ii : IntervalIntegrable (fun s => g s • u s) volume 0 T :=
-      intervalIntegrable_smul_of_integrableOn_Icc' huint hgcont hgcs hgsupp
+      intervalIntegrable_smul_of_integrableOn_Icc huint hgcont hgcs hgsupp
     have hρu_ii : IntervalIntegrable (fun s => (Ig * ρ s) • u s) volume 0 T := by
       have hρcs' : HasCompactSupport (fun s => Ig * ρ s) := hρcs.mul_left
       have hρsupp' : tsupport (fun s => Ig * ρ s) ⊆ Set.Ioo 0 T := by
@@ -267,7 +239,7 @@ theorem isWeakTimeDeriv_zero_ae_const {T : ℝ} (hT : 0 < T) {u : ℝ → X}
         refine hsub.trans (fun x hx => ?_)
         rw [Set.mem_Icc] at hx
         exact ⟨lt_of_lt_of_le haρ hx.1, lt_of_le_of_lt hx.2 hbρ⟩
-      exact intervalIntegrable_smul_of_integrableOn_Icc' huint
+      exact intervalIntegrable_smul_of_integrableOn_Icc huint
         (continuous_const.mul hρc) hρcs' hρsupp'
     -- hweak: ∫0..T hfun•u = 0 ; hfun s • u s = g s • u s - (Ig*ρ s)•u s.
     have hsplit : (∫ s in (0:ℝ)..T, hfun s • u s)
@@ -392,9 +364,9 @@ theorem w1pTime_continuous_in_Vprime (GT : GelfandTriple) {T : ℝ} (hT : 0 < T)
     have hψ'cs : HasCompactSupport (deriv ψ) := HasCompactSupport.deriv hψcs
     have hψ'supp : tsupport (deriv ψ) ⊆ Set.Ioo 0 T := tsupport_deriv_subset.trans hψsupp
     have hEii : IntervalIntegrable (fun t => deriv ψ t • E t) volume 0 T :=
-      intervalIntegrable_smul_of_integrableOn_Icc' hElocint hψ'cont hψ'cs hψ'supp
+      intervalIntegrable_smul_of_integrableOn_Icc hElocint hψ'cont hψ'cs hψ'supp
     have hwii : IntervalIntegrable (fun t => deriv ψ t • w t) volume 0 T :=
-      intervalIntegrable_smul_of_integrableOn_Icc' hwlocint hψ'cont hψ'cs hψ'supp
+      intervalIntegrable_smul_of_integrableOn_Icc hwlocint hψ'cont hψ'cs hψ'supp
     have hsub : (∫ t in (0:ℝ)..T, deriv ψ t • (E t - w t))
         = (∫ t in (0:ℝ)..T, deriv ψ t • E t) - ∫ t in (0:ℝ)..T, deriv ψ t • w t := by
       rw [← intervalIntegral.integral_sub hEii hwii]

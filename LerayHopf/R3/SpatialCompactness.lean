@@ -159,7 +159,7 @@ theorem exists_subseq_tendsto_on_ball (B : LocalRellichInput) (M R : ℝ)
 /-- Factorization of a nested family of extractions: if `Φ (k+1) = Φ k ∘ ρ k` with each
 `ρ k` strictly monotone, then for `k ≤ n` the extraction `Φ n` is `Φ k` post-composed with a
 strictly monotone map. -/
-private theorem nested_extraction_factor (Φ ρ : ℕ → ℕ → ℕ)
+theorem nested_extraction_factor (Φ ρ : ℕ → ℕ → ℕ)
     (hρ : ∀ k, StrictMono (ρ k)) (hstep : ∀ k, Φ (k + 1) = Φ k ∘ ρ k) :
     ∀ k n, k ≤ n → ∃ R : ℕ → ℕ, StrictMono R ∧ Φ n = Φ k ∘ R := by
   intro k n hkn
