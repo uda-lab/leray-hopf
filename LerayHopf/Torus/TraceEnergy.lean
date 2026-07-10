@@ -655,6 +655,94 @@ private theorem exists_ae_strong_subseq (F : Torus3NSForms) (ν : ℝ) (T : ℝ)
 
 /-! ### Steps 3–4: the weakly-continuous good representative -/
 
+/-- **Step: per-Galerkin-test Cauchy at every `t`.**  The equi-Lipschitz bound
+(`perTest_lipschitz`) plus Cauchy-ness on the a.e.-good set `S` (density argument via
+`cauchySeq_of_equiLipschitz_of_dense`) gives Cauchy-ness of the scalar test curve
+`⟪cₖ(t), w⟫` at EVERY `t ∈ [0, T]`, not just a.e. -/
+private theorem galerkinTest_cauchySeq_of_aeStrong
+    (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq) (ρ : ℕ → ℕ)
+    (hlevel : ∀ k, k ≤ alPkg.φ (ρ k))
+    (S : Set ℝ) (hS : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), t ∈ S)
+    (hSmem : ∀ s ∈ S, Tendsto (fun k => ((galSeq (alPkg.φ (ρ k))).u s : L2VF)) atTop
+      (𝓝 (alPkg.u s : L2VF))) :
+    ∀ (w : L2Sigma), IsGalerkinTest w → ∀ t, t ∈ Set.Icc (0 : ℝ) T →
+      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) (w : L2VF)) := by
+  set c : ℕ → ℝ → L2VF := fun k t => ((galSeq (alPkg.φ (ρ k))).u t : L2VF) with hcdef
+  intro w hw t ht
+  obtain ⟨n₀, hn₀⟩ := hw
+  obtain ⟨L, hL0, hLip⟩ := perTest_lipschitz F ν hν u₀ galSeq w n₀ hn₀
+  refine cauchySeq_of_equiLipschitz_of_dense (T := T)
+    (fun k s => inner (𝕜 := ℝ) (c k s) (w : L2VF)) L hL0 n₀ ?_ S ?_ ?_ ht
+  · intro k hk s hsI t' htI'
+    exact hLip (alPkg.φ (ρ k)) (le_trans hk (hlevel k))
+      s (Set.Icc_subset_Ici_self hsI) t' (Set.Icc_subset_Ici_self htI')
+  · intro u hu ε hε
+    exact exists_mem_of_ae_full hT S hS hu hε
+  · intro s hs'
+    have hstrong : Tendsto (fun k => c k s) atTop (𝓝 (alPkg.u s : L2VF)) := hSmem s hs'.1
+    exact (hstrong.inner tendsto_const_nhds).cauchySeq
+
+/-- **Step: Cauchy in every direction.**  Orthogonal split `z = zσ + (z − zσ)` (with
+`z − zσ ∈ L2Sigmaᗮ` killing the non-`L2Sigma` part against the sequence, which lives in
+`L2Sigma`) plus density of the Galerkin tests in `L2Sigma` (`velocityProjection_n_tendsto`)
+extends the per-test Cauchy-ness (previous step) to `CauchySeq` against every `z : L2VF`. -/
+private theorem allDirections_cauchySeq_of_galerkinTest
+    (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) {T : ℝ}
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq) (ρ : ℕ → ℕ)
+    (hbd : ∀ k, ∀ t ∈ Set.Icc (0 : ℝ) T,
+      ‖((galSeq (alPkg.φ (ρ k))).u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖)
+    (hCauchy_test : ∀ (w : L2Sigma), IsGalerkinTest w → ∀ t, t ∈ Set.Icc (0 : ℝ) T →
+      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) (w : L2VF))) :
+    ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
+      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z) := by
+  set c : ℕ → ℝ → L2VF := fun k t => ((galSeq (alPkg.φ (ρ k))).u t : L2VF) with hcdef
+  intro t ht z
+  -- kill the `L2Sigmaᗮ` part: `⟪cₖ(t), z⟫ = ⟪cₖ(t), Pσ z⟫`
+  set zσ : L2VF := L2Sigma.starProjection z with hzσ
+  have hzσmem : zσ ∈ L2Sigma := L2Sigma.starProjection_apply_mem z
+  have hsplit : ∀ k, inner (𝕜 := ℝ) (c k t) z = inner (𝕜 := ℝ) (c k t) zσ := by
+    intro k
+    have horth : z - zσ ∈ L2Sigmaᗮ := L2Sigma.sub_starProjection_mem_orthogonal z
+    have h0 : inner (𝕜 := ℝ) (c k t) (z - zσ) = 0 :=
+      (Submodule.mem_orthogonal L2Sigma _).mp horth _ (SetLike.coe_mem _)
+    rw [inner_sub_right] at h0
+    linarith
+  rw [show (fun k => inner (𝕜 := ℝ) (c k t) z)
+      = fun k => inner (𝕜 := ℝ) (c k t) zσ from funext hsplit]
+  -- approximate `zσ ∈ L2Sigma` by band-limited tests `Pₘ zσ`
+  refine cauchySeq_inner_extend (fun k => c k t) ‖(u₀ : L2VF)‖ (fun k => hbd k t ht) zσ ?_
+  intro ε hε
+  obtain ⟨m, hm⟩ := Metric.tendsto_atTop.mp (velocityProjection_n_tendsto zσ) ε hε
+  have hdist := hm m (le_refl m)
+  rw [dist_eq_norm] at hdist
+  refine ⟨velocityProjection_n m zσ, by rwa [norm_sub_rev] at hdist, ?_⟩
+  have hmem : velocityProjection_n m zσ ∈ L2Sigma :=
+    velocityProjection_n_preserves_L2Sigma m zσ hzσmem
+  have hfix : velocityProjection_n m (velocityProjection_n m zσ)
+      = velocityProjection_n m zσ := velocityProjection_n_idem m zσ
+  exact hCauchy_test ⟨velocityProjection_n m zσ, hmem⟩ ⟨m, hfix⟩ t ht
+
+/-- **Step: Riesz assembly of the weak limit.**  A thin wrapper around the generic
+`exists_weak_limit_in_submodule` (Cauchy in every direction ⇒ a weak limit inside the closed
+submodule `L2Sigma`), specialized to the Galerkin approximant sequence at a fixed `t`. -/
+private theorem weakLimit_of_allDirections_cauchySeq
+    (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) {T : ℝ}
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq) (ρ : ℕ → ℕ)
+    (hbd : ∀ k, ∀ t ∈ Set.Icc (0 : ℝ) T,
+      ‖((galSeq (alPkg.φ (ρ k))).u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖)
+    (hCauchy_all : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
+      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z)) :
+    ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∃ y : L2VF, y ∈ L2Sigma ∧
+      ‖y‖ ≤ ‖(u₀ : L2VF)‖ ∧
+      ∀ z : L2VF, Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z)
+        atTop (𝓝 (inner (𝕜 := ℝ) y z)) := fun t ht =>
+  exists_weak_limit_in_submodule L2Sigma (fun k => ((galSeq (alPkg.φ (ρ k))).u t : L2VF))
+    (fun k => SetLike.coe_mem _) ‖(u₀ : L2VF)‖ (fun k => hbd k t ht) (hCauchy_all t ht)
+
 /-- **Master construction: the weakly-continuous representative** of the Aubin–Lions limit.
 
 Produces a curve `v : Time → L2Sigma` and a sub-subsequence `ρ` (of the Aubin–Lions
@@ -669,7 +757,9 @@ subsequence `φ`) such that, writing `cₖ := galSeq (φ (ρ k))`:
 
 Construction: a.e.-strong subsequence (step 2) → per-test everywhere-Cauchy via
 equi-Lipschitz + density (steps 1, 3) → extension to all `z` by `L2Sigmaᗮ`-orthogonality
-and Galerkin-test density → Riesz assembly inside the closed submodule `L2Sigma` (step 4). -/
+and Galerkin-test density → Riesz assembly inside the closed submodule `L2Sigma` (step 4),
+via the three named steps `galerkinTest_cauchySeq_of_aeStrong`,
+`allDirections_cauchySeq_of_galerkinTest`, `weakLimit_of_allDirections_cauchySeq`. -/
 private theorem exists_weak_representative (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
@@ -700,57 +790,12 @@ private theorem exists_weak_representative (F : Torus3NSForms) (ν : ℝ) (hν :
   -- the a.e.-good (strong convergence) set
   set S : Set ℝ := {t | Tendsto (fun k => c k t) atTop (𝓝 (alPkg.u t : L2VF))} with hSdef
   have hS : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), t ∈ S := hae_strong
-  -- per-Galerkin-test Cauchy at EVERY t ∈ [0, T]
-  have hCauchy_test : ∀ (w : L2Sigma), IsGalerkinTest w → ∀ t, t ∈ Set.Icc (0 : ℝ) T →
-      CauchySeq (fun k => inner (𝕜 := ℝ) (c k t) (w : L2VF)) := by
-    intro w hw t ht
-    obtain ⟨n₀, hn₀⟩ := hw
-    obtain ⟨L, hL0, hLip⟩ := perTest_lipschitz F ν hν u₀ galSeq w n₀ hn₀
-    refine cauchySeq_of_equiLipschitz_of_dense (T := T)
-      (fun k s => inner (𝕜 := ℝ) (c k s) (w : L2VF)) L hL0 n₀ ?_ S ?_ ?_ ht
-    · intro k hk s hsI t' htI'
-      exact hLip (alPkg.φ (ρ k)) (le_trans hk (hlevel k))
-        s (Set.Icc_subset_Ici_self hsI) t' (Set.Icc_subset_Ici_self htI')
-    · intro u hu ε hε
-      exact exists_mem_of_ae_full hT S hS hu hε
-    · intro s hs'
-      have hstrong : Tendsto (fun k => c k s) atTop (𝓝 (alPkg.u s : L2VF)) := hs'.1
-      exact (hstrong.inner tendsto_const_nhds).cauchySeq
-  -- Cauchy for EVERY direction z : L2VF (orthogonal split + Galerkin density)
-  have hCauchy_all : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
-      CauchySeq (fun k => inner (𝕜 := ℝ) (c k t) z) := by
-    intro t ht z
-    -- kill the `L2Sigmaᗮ` part: `⟪cₖ(t), z⟫ = ⟪cₖ(t), Pσ z⟫`
-    set zσ : L2VF := L2Sigma.starProjection z with hzσ
-    have hzσmem : zσ ∈ L2Sigma := L2Sigma.starProjection_apply_mem z
-    have hsplit : ∀ k, inner (𝕜 := ℝ) (c k t) z = inner (𝕜 := ℝ) (c k t) zσ := by
-      intro k
-      have horth : z - zσ ∈ L2Sigmaᗮ := L2Sigma.sub_starProjection_mem_orthogonal z
-      have h0 : inner (𝕜 := ℝ) (c k t) (z - zσ) = 0 :=
-        (Submodule.mem_orthogonal L2Sigma _).mp horth _ (SetLike.coe_mem _)
-      rw [inner_sub_right] at h0
-      linarith
-    rw [show (fun k => inner (𝕜 := ℝ) (c k t) z)
-        = fun k => inner (𝕜 := ℝ) (c k t) zσ from funext hsplit]
-    -- approximate `zσ ∈ L2Sigma` by band-limited tests `Pₘ zσ`
-    refine cauchySeq_inner_extend (fun k => c k t) ‖(u₀ : L2VF)‖ (fun k => hbd k t ht) zσ ?_
-    intro ε hε
-    obtain ⟨m, hm⟩ := Metric.tendsto_atTop.mp (velocityProjection_n_tendsto zσ) ε hε
-    have hdist := hm m (le_refl m)
-    rw [dist_eq_norm] at hdist
-    refine ⟨velocityProjection_n m zσ, by rwa [norm_sub_rev] at hdist, ?_⟩
-    have hmem : velocityProjection_n m zσ ∈ L2Sigma :=
-      velocityProjection_n_preserves_L2Sigma m zσ hzσmem
-    have hfix : velocityProjection_n m (velocityProjection_n m zσ)
-        = velocityProjection_n m zσ := velocityProjection_n_idem m zσ
-    exact hCauchy_test ⟨velocityProjection_n m zσ, hmem⟩ ⟨m, hfix⟩ t ht
-  -- Riesz assembly of the weak limit at every t ∈ [0, T], inside L2Sigma
-  have hex : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∃ y : L2VF, y ∈ L2Sigma ∧
-      ‖y‖ ≤ ‖(u₀ : L2VF)‖ ∧
-      ∀ z : L2VF, Tendsto (fun k => inner (𝕜 := ℝ) (c k t) z) atTop
-        (𝓝 (inner (𝕜 := ℝ) y z)) := fun t ht =>
-    exists_weak_limit_in_submodule L2Sigma (fun k => c k t)
-      (fun k => SetLike.coe_mem _) ‖(u₀ : L2VF)‖ (fun k => hbd k t ht) (hCauchy_all t ht)
+  -- three named steps: per-test Cauchy → all-directions Cauchy → Riesz limit
+  have hCauchy_test := galerkinTest_cauchySeq_of_aeStrong F ν hν T hT u₀ galSeq alPkg ρ
+    hlevel S hS (fun s hs => hs)
+  have hCauchy_all :=
+    allDirections_cauchySeq_of_galerkinTest F ν u₀ galSeq alPkg ρ hbd hCauchy_test
+  have hex := weakLimit_of_allDirections_cauchySeq F ν u₀ galSeq alPkg ρ hbd hCauchy_all
   choose! y hyK hybd hyconv using hex
   set v : Time → L2Sigma := fun t =>
     if ht : t ∈ Set.Icc (0 : ℝ) T then ⟨y t, hyK t ht⟩ else alPkg.u t with hvdef
@@ -1097,6 +1142,222 @@ theorem viscousEnn_lsc (ν : ℝ) (v : L2VF) (vk : ℕ → L2VF)
 
 /-! ### Conjunct (1): the pointwise-in-time energy inequality -/
 
+/-- **Kinetic-energy step.**  Squared-norm weak-lower-semicontinuity of the Galerkin
+approximants at a fixed time `t`: the weak limit's kinetic energy at `t` is bounded by the
+`liminf` of the approximants' kinetic energies, via `normSq_le_liminf_of_inner_tendsto`
+against the uniform Galerkin `H`-bound `torus_galerkin_norm_le_u0`. -/
+private theorem kineticEnergy_liminf_le_of_weakTendsto
+    (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    {T : ℝ} (alPkg : AubinLionsPackage F ν T u₀ galSeq)
+    (ρ : ℕ → ℕ) (v : Time → L2Sigma) (t : ℝ) (ht0 : 0 ≤ t) (htIcc : t ∈ Set.Icc (0 : ℝ) T)
+    (hweak : ∀ s, s ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
+      Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u s : L2VF)) z) atTop
+        (𝓝 (inner (𝕜 := ℝ) ((v s : L2VF)) z))) :
+    (1 / 2 : ℝ) * ‖(v t : L2VF)‖ ^ 2 ≤
+      Filter.liminf (fun k => (1 / 2 : ℝ) * ‖((galSeq (alPkg.φ (ρ k))).u t : L2VF)‖ ^ 2)
+        atTop := by
+  set c : ℕ → ℝ → L2VF := fun k s => ((galSeq (alPkg.φ (ρ k))).u s : L2VF) with hcdef
+  set a : ℕ → ℝ := fun k => (1 / 2 : ℝ) * ‖c k t‖ ^ 2 with hadef
+  have hkin_normSq : ‖(v t : L2VF)‖ ^ 2
+      ≤ Filter.liminf (fun k => ‖c k t‖ ^ 2) atTop := by
+    refine normSq_le_liminf_of_inner_tendsto ((v t : L2VF)) (fun k => c k t)
+      ‖(u₀ : L2VF)‖ (fun k => torus_galerkin_norm_le_u0 F ν u₀ _ _ t ht0) ?_
+    have h := hweak t htIcc ((v t : L2VF))
+    rwa [real_inner_self_eq_norm_sq] at h
+  have hbdd_above_n : Filter.IsBoundedUnder (· ≤ ·) atTop (fun k => ‖c k t‖ ^ 2) :=
+    Filter.isBoundedUnder_of_eventually_le (a := ‖(u₀ : L2VF)‖ ^ 2)
+      (Filter.Eventually.of_forall fun k =>
+        pow_le_pow_left₀ (norm_nonneg _) (torus_galerkin_norm_le_u0 F ν u₀ _ _ t ht0) 2)
+  have hbdd_below_n : Filter.IsBoundedUnder (· ≥ ·) atTop (fun k => ‖c k t‖ ^ 2) :=
+    Filter.isBoundedUnder_of_eventually_ge (a := 0)
+      (Filter.Eventually.of_forall fun k => by positivity)
+  have hmono : Monotone (fun r : ℝ => (1 / 2 : ℝ) * r) := fun x y hxy => by linarith
+  have hmap := hmono.map_liminf_of_continuousAt (fun k => ‖c k t‖ ^ 2)
+    (continuous_const.mul continuous_id).continuousAt
+    hbdd_above_n.isCoboundedUnder_ge hbdd_below_n
+  have hmap' : (1 / 2 : ℝ) * Filter.liminf (fun k => ‖c k t‖ ^ 2) atTop
+      = Filter.liminf a atTop := hmap
+  calc (1 / 2 : ℝ) * ‖(v t : L2VF)‖ ^ 2
+      ≤ (1 / 2 : ℝ) * Filter.liminf (fun k => ‖c k t‖ ^ 2) atTop := by
+        linarith [hkin_normSq]
+    _ = Filter.liminf a atTop := hmap'
+
+/-- **Dissipation step.**  A.e. spatial lower-semicontinuity of the viscous form
+(`viscousEnn_lsc`) plus Fatou's lemma bounds the weak limit's dissipation integral on
+`[0, t]` by the `liminf` of the Galerkin approximants' dissipation integrals. -/
+private theorem dissipation_liminf_le_of_aeTendsto
+    (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    {T : ℝ} (alPkg : AubinLionsPackage F ν T u₀ galSeq)
+    (ρ : ℕ → ℕ) (v : Time → L2Sigma) (t : ℝ) (ht0 : 0 ≤ t) (htT : t ≤ T)
+    (hae : ∀ᵐ s ∂(volume.restrict (Set.Icc (0 : ℝ) T)), v s = alPkg.u s)
+    (hae_strong : ∀ᵐ s ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
+      Tendsto (fun k => ((galSeq (alPkg.φ (ρ k))).u s : L2VF)) atTop
+        (𝓝 (alPkg.u s : L2VF)))
+    (hInt : IntervalIntegrable (fun s => viscousFormSq ν (v s : L2VF)) volume 0 T) :
+    ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
+      ≤ Filter.liminf
+          (fun k => ∫ s in (0 : ℝ)..t, viscousFormSq ν (((galSeq (alPkg.φ (ρ k))).u s : L2VF)))
+          atTop := by
+  set c : ℕ → ℝ → L2VF := fun k s => ((galSeq (alPkg.φ (ρ k))).u s : L2VF) with hcdef
+  set b : ℕ → ℝ := fun k => ∫ s in (0 : ℝ)..t, viscousFormSq ν (c k s) with hbdef
+  have hb0 : ∀ k, 0 ≤ b k := fun k =>
+    intervalIntegral.integral_nonneg ht0 fun s _ => viscousFormSq_nonneg hν.le _
+  have hbdd_below_b : Filter.IsBoundedUnder (· ≥ ·) atTop b :=
+    Filter.isBoundedUnder_of_eventually_ge (a := 0)
+      (Filter.Eventually.of_forall hb0)
+  have hcobdd_b : Filter.IsCoboundedUnder (· ≥ ·) atTop b := by
+    have hbE : ∀ k, b k ≤ (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2 := fun k => by
+      have h := torus_galerkin_energy_le F ν u₀ _ (galSeq (alPkg.φ (ρ k))) t ht0
+      have h0 : (0 : ℝ) ≤ (1 / 2 : ℝ) * ‖((galSeq (alPkg.φ (ρ k))).u t : L2VF)‖ ^ 2 := by
+        positivity
+      linarith [h, h0]
+    exact (Filter.isBoundedUnder_of_eventually_le (a := (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2)
+      (Filter.Eventually.of_forall hbE)).isCoboundedUnder_ge
+  have hliminfb0 : 0 ≤ Filter.liminf b atTop :=
+    Filter.le_liminf_of_le hcobdd_b (Filter.Eventually.of_forall hb0)
+  -- restrict the [0, T] integrability hypothesis to [0, t]
+  have hIntt : IntervalIntegrable (fun s => viscousFormSq ν (v s : L2VF)) volume 0 t :=
+    hInt.mono_set (Set.uIcc_subset_uIcc Set.left_mem_uIcc
+      (by rw [Set.uIcc_of_le (ht0.trans htT)]; exact Set.mem_Icc.mpr ⟨ht0, htT⟩))
+  have hfIntOn : MeasureTheory.IntegrableOn
+      (fun s => viscousFormSq ν (v s : L2VF)) (Set.Ioc 0 t) volume := hIntt.1
+  -- real integral of the limit as a lintegral
+  have hreal : ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
+      = (∫⁻ s in Set.Ioc (0 : ℝ) t,
+          ENNReal.ofReal (viscousFormSq ν (v s : L2VF))).toReal := by
+    rw [intervalIntegral.integral_of_le ht0]
+    exact integral_eq_lintegral_of_nonneg_ae
+      (Filter.Eventually.of_forall fun s => viscousFormSq_nonneg hν.le _)
+      hfIntOn.aestronglyMeasurable
+  -- transfer the a.e. facts to [0, t]
+  have hsub : Set.Ioc (0 : ℝ) t ⊆ Set.Icc (0 : ℝ) T := fun s hs =>
+    ⟨hs.1.le, hs.2.trans htT⟩
+  have hae' : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)), v s = alPkg.u s :=
+    ae_restrict_of_ae_restrict_of_subset hsub hae
+  have hstr' : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)),
+      Tendsto (fun k => c k s) atTop (𝓝 (alPkg.u s : L2VF)) :=
+    ae_restrict_of_ae_restrict_of_subset hsub hae_strong
+  -- a.e. pointwise lsc chain
+  have hae_lsc : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)),
+      ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+        ≤ Filter.liminf (fun k => ENNReal.ofReal (viscousFormSq ν (c k s))) atTop := by
+    filter_upwards [hae', hstr'] with s hveq hconv
+    have hpt : ∀ k, viscousEnn ν (c k s)
+        = ENNReal.ofReal (viscousFormSq ν (c k s)) := fun k =>
+      viscousEnn_eq_ofReal_of_bandlimited ν hν.le (alPkg.φ (ρ k)) (c k s)
+        ((galSeq (alPkg.φ (ρ k))).u_inVn s).symm
+    calc ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+        = ENNReal.ofReal (viscousFormSq ν (alPkg.u s : L2VF)) := by rw [hveq]
+      _ ≤ viscousEnn ν (alPkg.u s : L2VF) := ofReal_viscousFormSq_le ν hν.le _
+      _ ≤ Filter.liminf (fun k => viscousEnn ν (c k s)) atTop :=
+          viscousEnn_lsc ν _ _ hconv
+      _ = Filter.liminf (fun k => ENNReal.ofReal (viscousFormSq ν (c k s))) atTop := by
+          congr 1
+          funext k
+          exact hpt k
+  -- measurability of the approximant integrands
+  have hmeas_k : ∀ k, AEMeasurable
+      (fun s => ENNReal.ofReal (viscousFormSq ν (c k s)))
+      (volume.restrict (Set.Ioc (0 : ℝ) t)) := by
+    intro k
+    have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Ioc 0 t) :=
+      (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
+        fun s hs => hs.1.le
+    exact ENNReal.measurable_ofReal.comp_aemeasurable
+      (hcont.aemeasurable measurableSet_Ioc)
+  -- Fatou
+  have hFatou : ∫⁻ s in Set.Ioc (0 : ℝ) t,
+      ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+      ≤ Filter.liminf (fun k => ∫⁻ s in Set.Ioc (0 : ℝ) t,
+          ENNReal.ofReal (viscousFormSq ν (c k s))) atTop :=
+    le_trans (MeasureTheory.lintegral_mono_ae hae_lsc)
+      (MeasureTheory.lintegral_liminf_le' hmeas_k)
+  -- approximant lintegrals are ofReal of the real integrals
+  have hbk_eq : ∀ k, ∫⁻ s in Set.Ioc (0 : ℝ) t,
+      ENNReal.ofReal (viscousFormSq ν (c k s)) = ENNReal.ofReal (b k) := by
+    intro k
+    have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Icc 0 t) :=
+      (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
+        fun s hs => hs.1
+    have hint : MeasureTheory.IntegrableOn (fun s => viscousFormSq ν (c k s))
+        (Set.Ioc 0 t) volume := (hcont.intervalIntegrable_of_Icc ht0).1
+    have h1 : b k = (∫⁻ s in Set.Ioc (0 : ℝ) t,
+        ENNReal.ofReal (viscousFormSq ν (c k s))).toReal := by
+      rw [hbdef]
+      simp only
+      rw [intervalIntegral.integral_of_le ht0]
+      exact integral_eq_lintegral_of_nonneg_ae
+        (Filter.Eventually.of_forall fun s => viscousFormSq_nonneg hν.le _)
+        hint.aestronglyMeasurable
+    have h2 : ∫⁻ s in Set.Ioc (0 : ℝ) t,
+        ENNReal.ofReal (viscousFormSq ν (c k s)) < ⊤ := hint.lintegral_lt_top
+    rw [h1, ENNReal.ofReal_toReal h2.ne]
+  -- ofReal commutes with the (bounded) real liminf
+  have hcomm : Filter.liminf (fun k => ENNReal.ofReal (b k)) atTop
+      = ENNReal.ofReal (Filter.liminf b atTop) := by
+    have hmono : Monotone ENNReal.ofReal := fun x y h => ENNReal.ofReal_le_ofReal h
+    exact (hmono.map_liminf_of_continuousAt b
+      ENNReal.continuous_ofReal.continuousAt hcobdd_b hbdd_below_b).symm
+  have hchain : ∫⁻ s in Set.Ioc (0 : ℝ) t,
+      ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
+      ≤ ENNReal.ofReal (Filter.liminf b atTop) := by
+    rw [← hcomm]
+    refine hFatou.trans (le_of_eq ?_)
+    congr 1
+    funext k
+    exact hbk_eq k
+  calc ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
+      = (∫⁻ s in Set.Ioc (0 : ℝ) t,
+          ENNReal.ofReal (viscousFormSq ν (v s : L2VF))).toReal := hreal
+    _ ≤ (ENNReal.ofReal (Filter.liminf b atTop)).toReal :=
+        ENNReal.toReal_mono ENNReal.ofReal_ne_top hchain
+    _ = Filter.liminf b atTop := ENNReal.toReal_ofReal hliminfb0
+
+/-- **Energy-budget assembly step.**  Fully generic real-sequence lemma: liminf
+superadditivity (`le_liminf_add`) combined with the per-index energy budget `a k + b k ≤ E`
+turns a `liminf`-bound on each of two terms into a bound on their sum.  Consumes only
+`hab`/`ha0`/`hb0`/`haE`/`hbE` (the per-approximant energy inequality and its consequences)
+and `hkin`/`hdiss` (the two `liminf` bounds from the kinetic and dissipation steps) — no
+Galerkin/Torus-specific data. -/
+private theorem energyBudget_liminf_assembly (a b : ℕ → ℝ) (E X Y : ℝ)
+    (hab : ∀ k, a k + b k ≤ E) (ha0 : ∀ k, 0 ≤ a k) (hb0 : ∀ k, 0 ≤ b k)
+    (haE : ∀ k, a k ≤ E) (hbE : ∀ k, b k ≤ E)
+    (hkin : X ≤ Filter.liminf a atTop) (hdiss : Y ≤ Filter.liminf b atTop) :
+    X + Y ≤ E := by
+  have hbdd_above_a : Filter.IsBoundedUnder (· ≤ ·) atTop a :=
+    Filter.isBoundedUnder_of_eventually_le (a := E) (Filter.Eventually.of_forall haE)
+  have hbdd_below_a : Filter.IsBoundedUnder (· ≥ ·) atTop a :=
+    Filter.isBoundedUnder_of_eventually_ge (a := 0) (Filter.Eventually.of_forall ha0)
+  have hbdd_below_b : Filter.IsBoundedUnder (· ≥ ·) atTop b :=
+    Filter.isBoundedUnder_of_eventually_ge (a := 0) (Filter.Eventually.of_forall hb0)
+  have hcobdd_b : Filter.IsCoboundedUnder (· ≥ ·) atTop b :=
+    (Filter.isBoundedUnder_of_eventually_le (a := E)
+      (Filter.Eventually.of_forall hbE)).isCoboundedUnder_ge
+  have hsuper : Filter.liminf a atTop + Filter.liminf b atTop
+      ≤ Filter.liminf (a + b) atTop :=
+    le_liminf_add hbdd_below_a hbdd_above_a hbdd_below_b hcobdd_b
+  have habE : Filter.liminf (a + b) atTop ≤ E := by
+    have hboundedbelow : Filter.IsBoundedUnder (· ≥ ·) atTop (a + b) :=
+      Filter.isBoundedUnder_of_eventually_ge (a := 0)
+        (Filter.Eventually.of_forall fun k => by
+          have := ha0 k
+          have := hb0 k
+          simp only [Pi.add_apply]
+          linarith)
+    have h1 : Filter.liminf (a + b) atTop ≤ Filter.liminf (fun _ => E) atTop :=
+      Filter.liminf_le_liminf
+        (Filter.Eventually.of_forall fun k => by
+          have := hab k
+          simp only [Pi.add_apply]
+          linarith)
+        hboundedbelow
+        ((Filter.isBoundedUnder_of_eventually_le (a := E)
+          (Filter.Eventually.of_forall fun _ => le_refl E)).isCoboundedUnder_ge)
+    rwa [Filter.liminf_const] at h1
+  linarith [hkin, hdiss, hsuper, habE]
+
 /-- **Conjunct (1): `∀t` energy inequality for the good representative.**
 Kinetic term by squared-norm weak-lsc at every `t`; dissipation term by the a.e.
 spatial lsc of `viscousEnn` + Fatou in time; combined against the Galerkin energy
@@ -1105,7 +1366,10 @@ identity via liminf superadditivity.
 The hypothesis `hInt` (integrable dissipation of `v` on `[0, T]`) keeps this statement
 honest — without it the real interval integral would junk-collapse to `0` in the
 non-integrable regime and the inequality would hold vacuously there (Codex P2 finding).
-The capstone discharges `hInt` from the energy-class conjunct (4) via a.e.-invariance. -/
+The capstone discharges `hInt` from the energy-class conjunct (4) via a.e.-invariance.
+
+Setup + three named steps (`kineticEnergy_liminf_le_of_weakTendsto`,
+`dissipation_liminf_le_of_aeTendsto`, `energyBudget_liminf_assembly`) + assembly. -/
 private theorem energy_ineq_of_representative (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
@@ -1138,171 +1402,11 @@ private theorem energy_ineq_of_representative (F : Torus3NSForms) (ν : ℝ) (h�
     intervalIntegral.integral_nonneg ht0 fun s _ => viscousFormSq_nonneg hν.le _
   have haE : ∀ k, a k ≤ E := fun k => by linarith [hab k, hb0 k]
   have hbE : ∀ k, b k ≤ E := fun k => by linarith [hab k, ha0 k]
-  -- ═══ kinetic term: squared-norm weak-lsc at t ═══
-  have hkin_normSq : ‖(v t : L2VF)‖ ^ 2
-      ≤ Filter.liminf (fun k => ‖c k t‖ ^ 2) atTop := by
-    refine normSq_le_liminf_of_inner_tendsto ((v t : L2VF)) (fun k => c k t)
-      ‖(u₀ : L2VF)‖ (fun k => torus_galerkin_norm_le_u0 F ν u₀ _ _ t ht0) ?_
-    have h := hweak t htIcc ((v t : L2VF))
-    rwa [real_inner_self_eq_norm_sq] at h
-  have hbdd_above_n : Filter.IsBoundedUnder (· ≤ ·) atTop (fun k => ‖c k t‖ ^ 2) :=
-    Filter.isBoundedUnder_of_eventually_le (a := ‖(u₀ : L2VF)‖ ^ 2)
-      (Filter.Eventually.of_forall fun k =>
-        pow_le_pow_left₀ (norm_nonneg _) (torus_galerkin_norm_le_u0 F ν u₀ _ _ t ht0) 2)
-  have hbdd_below_n : Filter.IsBoundedUnder (· ≥ ·) atTop (fun k => ‖c k t‖ ^ 2) :=
-    Filter.isBoundedUnder_of_eventually_ge (a := 0)
-      (Filter.Eventually.of_forall fun k => by positivity)
-  have hkin : (1 / 2 : ℝ) * ‖(v t : L2VF)‖ ^ 2 ≤ Filter.liminf a atTop := by
-    have hmono : Monotone (fun r : ℝ => (1 / 2 : ℝ) * r) := fun x y hxy => by linarith
-    have hmap := hmono.map_liminf_of_continuousAt (fun k => ‖c k t‖ ^ 2)
-      (continuous_const.mul continuous_id).continuousAt
-      hbdd_above_n.isCoboundedUnder_ge hbdd_below_n
-    have hmap' : (1 / 2 : ℝ) * Filter.liminf (fun k => ‖c k t‖ ^ 2) atTop
-        = Filter.liminf a atTop := hmap
-    calc (1 / 2 : ℝ) * ‖(v t : L2VF)‖ ^ 2
-        ≤ (1 / 2 : ℝ) * Filter.liminf (fun k => ‖c k t‖ ^ 2) atTop := by
-          linarith [hkin_normSq]
-      _ = Filter.liminf a atTop := hmap'
-  -- ═══ dissipation term: a.e. spatial lsc + Fatou ═══
-  have hdiss : ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
-      ≤ Filter.liminf b atTop := by
-    have hbdd_below_b : Filter.IsBoundedUnder (· ≥ ·) atTop b :=
-      Filter.isBoundedUnder_of_eventually_ge (a := 0)
-        (Filter.Eventually.of_forall hb0)
-    have hcobdd_b : Filter.IsCoboundedUnder (· ≥ ·) atTop b :=
-      (Filter.isBoundedUnder_of_eventually_le (a := E)
-        (Filter.Eventually.of_forall hbE)).isCoboundedUnder_ge
-    have hliminfb0 : 0 ≤ Filter.liminf b atTop :=
-      Filter.le_liminf_of_le hcobdd_b (Filter.Eventually.of_forall hb0)
-    -- restrict the [0, T] integrability hypothesis to [0, t]
-    have hIntt : IntervalIntegrable (fun s => viscousFormSq ν (v s : L2VF)) volume 0 t :=
-      hInt.mono_set (Set.uIcc_subset_uIcc Set.left_mem_uIcc
-        (by rw [Set.uIcc_of_le hT.le]; exact Set.mem_Icc.mpr ⟨ht0, htT⟩))
-    have hfIntOn : MeasureTheory.IntegrableOn
-        (fun s => viscousFormSq ν (v s : L2VF)) (Set.Ioc 0 t) volume := hIntt.1
-    -- real integral of the limit as a lintegral
-    have hreal : ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
-        = (∫⁻ s in Set.Ioc (0 : ℝ) t,
-            ENNReal.ofReal (viscousFormSq ν (v s : L2VF))).toReal := by
-      rw [intervalIntegral.integral_of_le ht0]
-      exact integral_eq_lintegral_of_nonneg_ae
-        (Filter.Eventually.of_forall fun s => viscousFormSq_nonneg hν.le _)
-        hfIntOn.aestronglyMeasurable
-    -- transfer the a.e. facts to [0, t]
-    have hsub : Set.Ioc (0 : ℝ) t ⊆ Set.Icc (0 : ℝ) T := fun s hs =>
-      ⟨hs.1.le, hs.2.trans htT⟩
-    have hae' : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)), v s = alPkg.u s :=
-      ae_restrict_of_ae_restrict_of_subset hsub hae
-    have hstr' : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)),
-        Tendsto (fun k => c k s) atTop (𝓝 (alPkg.u s : L2VF)) :=
-      ae_restrict_of_ae_restrict_of_subset hsub hae_strong
-    -- a.e. pointwise lsc chain
-    have hae_lsc : ∀ᵐ s ∂(volume.restrict (Set.Ioc (0 : ℝ) t)),
-        ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
-          ≤ Filter.liminf (fun k => ENNReal.ofReal (viscousFormSq ν (c k s))) atTop := by
-      filter_upwards [hae', hstr'] with s hveq hconv
-      have hpt : ∀ k, viscousEnn ν (c k s)
-          = ENNReal.ofReal (viscousFormSq ν (c k s)) := fun k =>
-        viscousEnn_eq_ofReal_of_bandlimited ν hν.le (alPkg.φ (ρ k)) (c k s)
-          ((galSeq (alPkg.φ (ρ k))).u_inVn s).symm
-      calc ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
-          = ENNReal.ofReal (viscousFormSq ν (alPkg.u s : L2VF)) := by rw [hveq]
-        _ ≤ viscousEnn ν (alPkg.u s : L2VF) := ofReal_viscousFormSq_le ν hν.le _
-        _ ≤ Filter.liminf (fun k => viscousEnn ν (c k s)) atTop :=
-            viscousEnn_lsc ν _ _ hconv
-        _ = Filter.liminf (fun k => ENNReal.ofReal (viscousFormSq ν (c k s))) atTop := by
-            congr 1
-            funext k
-            exact hpt k
-    -- measurability of the approximant integrands
-    have hmeas_k : ∀ k, AEMeasurable
-        (fun s => ENNReal.ofReal (viscousFormSq ν (c k s)))
-        (volume.restrict (Set.Ioc (0 : ℝ) t)) := by
-      intro k
-      have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Ioc 0 t) :=
-        (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
-          fun s hs => hs.1.le
-      exact ENNReal.measurable_ofReal.comp_aemeasurable
-        (hcont.aemeasurable measurableSet_Ioc)
-    -- Fatou
-    have hFatou : ∫⁻ s in Set.Ioc (0 : ℝ) t,
-        ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
-        ≤ Filter.liminf (fun k => ∫⁻ s in Set.Ioc (0 : ℝ) t,
-            ENNReal.ofReal (viscousFormSq ν (c k s))) atTop :=
-      le_trans (MeasureTheory.lintegral_mono_ae hae_lsc)
-        (MeasureTheory.lintegral_liminf_le' hmeas_k)
-    -- approximant lintegrals are ofReal of the real integrals
-    have hbk_eq : ∀ k, ∫⁻ s in Set.Ioc (0 : ℝ) t,
-        ENNReal.ofReal (viscousFormSq ν (c k s)) = ENNReal.ofReal (b k) := by
-      intro k
-      have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Icc 0 t) :=
-        (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
-          fun s hs => hs.1
-      have hint : MeasureTheory.IntegrableOn (fun s => viscousFormSq ν (c k s))
-          (Set.Ioc 0 t) volume := (hcont.intervalIntegrable_of_Icc ht0).1
-      have h1 : b k = (∫⁻ s in Set.Ioc (0 : ℝ) t,
-          ENNReal.ofReal (viscousFormSq ν (c k s))).toReal := by
-        rw [hbdef]
-        simp only
-        rw [intervalIntegral.integral_of_le ht0]
-        exact integral_eq_lintegral_of_nonneg_ae
-          (Filter.Eventually.of_forall fun s => viscousFormSq_nonneg hν.le _)
-          hint.aestronglyMeasurable
-      have h2 : ∫⁻ s in Set.Ioc (0 : ℝ) t,
-          ENNReal.ofReal (viscousFormSq ν (c k s)) < ⊤ := hint.lintegral_lt_top
-      rw [h1, ENNReal.ofReal_toReal h2.ne]
-    -- ofReal commutes with the (bounded) real liminf
-    have hcomm : Filter.liminf (fun k => ENNReal.ofReal (b k)) atTop
-        = ENNReal.ofReal (Filter.liminf b atTop) := by
-      have hmono : Monotone ENNReal.ofReal := fun x y h => ENNReal.ofReal_le_ofReal h
-      exact (hmono.map_liminf_of_continuousAt b
-        ENNReal.continuous_ofReal.continuousAt hcobdd_b hbdd_below_b).symm
-    have hchain : ∫⁻ s in Set.Ioc (0 : ℝ) t,
-        ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
-        ≤ ENNReal.ofReal (Filter.liminf b atTop) := by
-      rw [← hcomm]
-      refine hFatou.trans (le_of_eq ?_)
-      congr 1
-      funext k
-      exact hbk_eq k
-    calc ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
-        = (∫⁻ s in Set.Ioc (0 : ℝ) t,
-            ENNReal.ofReal (viscousFormSq ν (v s : L2VF))).toReal := hreal
-      _ ≤ (ENNReal.ofReal (Filter.liminf b atTop)).toReal :=
-          ENNReal.toReal_mono ENNReal.ofReal_ne_top hchain
-      _ = Filter.liminf b atTop := ENNReal.toReal_ofReal hliminfb0
-  -- ═══ combine: liminf superadditivity against the energy identity ═══
-  have hbdd_above_a : Filter.IsBoundedUnder (· ≤ ·) atTop a :=
-    Filter.isBoundedUnder_of_eventually_le (a := E) (Filter.Eventually.of_forall haE)
-  have hbdd_below_a : Filter.IsBoundedUnder (· ≥ ·) atTop a :=
-    Filter.isBoundedUnder_of_eventually_ge (a := 0) (Filter.Eventually.of_forall ha0)
-  have hbdd_below_b : Filter.IsBoundedUnder (· ≥ ·) atTop b :=
-    Filter.isBoundedUnder_of_eventually_ge (a := 0) (Filter.Eventually.of_forall hb0)
-  have hcobdd_b : Filter.IsCoboundedUnder (· ≥ ·) atTop b :=
-    (Filter.isBoundedUnder_of_eventually_le (a := E)
-      (Filter.Eventually.of_forall hbE)).isCoboundedUnder_ge
-  have hsuper : Filter.liminf a atTop + Filter.liminf b atTop
-      ≤ Filter.liminf (a + b) atTop :=
-    le_liminf_add hbdd_below_a hbdd_above_a hbdd_below_b hcobdd_b
-  have habE : Filter.liminf (a + b) atTop ≤ E := by
-    have hboundedbelow : Filter.IsBoundedUnder (· ≥ ·) atTop (a + b) :=
-      Filter.isBoundedUnder_of_eventually_ge (a := 0)
-        (Filter.Eventually.of_forall fun k => by
-          have := ha0 k
-          have := hb0 k
-          simp only [Pi.add_apply]
-          linarith)
-    have h1 : Filter.liminf (a + b) atTop ≤ Filter.liminf (fun _ => E) atTop :=
-      Filter.liminf_le_liminf
-        (Filter.Eventually.of_forall fun k => by
-          have := hab k
-          simp only [Pi.add_apply]
-          linarith)
-        hboundedbelow
-        ((Filter.isBoundedUnder_of_eventually_le (a := E)
-          (Filter.Eventually.of_forall fun _ => le_refl E)).isCoboundedUnder_ge)
-    rwa [Filter.liminf_const] at h1
-  linarith [hkin, hdiss, hsuper, habE]
+  have hkin : (1 / 2 : ℝ) * ‖(v t : L2VF)‖ ^ 2 ≤ Filter.liminf a atTop :=
+    kineticEnergy_liminf_le_of_weakTendsto F ν u₀ galSeq alPkg ρ v t ht0 htIcc hweak
+  have hdiss : ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF) ≤ Filter.liminf b atTop :=
+    dissipation_liminf_le_of_aeTendsto F ν hν u₀ galSeq alPkg ρ v t ht0 htT hae hae_strong hInt
+  exact energyBudget_liminf_assembly a b E _ _ hab ha0 hb0 haE hbE hkin hdiss
 
 
 /-! ### Assembly: the good-representative existential -/
