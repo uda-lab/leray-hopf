@@ -1,6 +1,7 @@
 import LerayHopf.R3.EnergyClassConvection
 import LerayHopf.R3.ConvectionForm
 import LerayHopf.R3.TensorIntersection
+import LerayHopf.Analysis.TensorEdgeGluing
 import Mathlib.LinearAlgebra.TensorProduct.Map
 import Mathlib.LinearAlgebra.LinearPMap
 import Mathlib.LinearAlgebra.Basis.VectorSpace
@@ -940,262 +941,10 @@ theorem convBLTspanLin_apply (s : schwartzSpan) : convBLTspanLin s = convBLTspan
 
 attribute [irreducible] convBLTspanLin
 
--- Past this point `convBLTspan` is treated opaquely: all downstream reasoning goes
--- through the lemma interface (`convBLTspan_eH1`, the `_tmul` lemmas, `_add`, `_smul`,
--- `_u_add`, `_u_smul`, `_overlap`).  Marking it irreducible avoids ruinous `isDefEq`
--- unfolding of the large extension tower during tensor/edge manipulations.
-attribute [irreducible] convBLTspan
+/-! #### C5-c — the overlap agreement on `𝒮 ⊗ 𝒮`
 
-/-- `convBLTspan s` is additive in its first slot `u` (CLM linearity, isolated). -/
-private theorem convBLTspan_u_add (s : schwartzSpan) (u u' : L2Sigma_R3) :
-    convBLTspan s (u + u') = convBLTspan s u + convBLTspan s u' :=
-  (convBLTspan s).map_add u u'
-
-/-- `convBLTspan s` is homogeneous in its first slot `u`. -/
-private theorem convBLTspan_u_smul (s : schwartzSpan) (c : ℝ) (u : L2Sigma_R3) :
-    convBLTspan s (c • u) = c • convBLTspan s u :=
-  (convBLTspan s).map_smul c u
-
-/-! ### C4 — the two edge bilinears on the tensor product
-
-`D := (𝒮 ⊗ L²_σ) + (L²_σ ⊗ 𝒮)`, realized as the supremum of the two tensor-map ranges
-inside `L²_σ ⊗[ℝ] L²_σ`.  We name the two range-submodules and `D` itself here. -/
-
-/-- The "slot-2 Schwartz" edge submodule `𝒮 ⊗ L²_σ ≤ L²_σ ⊗ L²_σ`. -/
-noncomputable def edgeSlot2 : Submodule ℝ (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :=
-  LinearMap.range (TensorProduct.map schwartzSpan.subtype (LinearMap.id : L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3))
-
-/-- The "slot-3 Schwartz" edge submodule `L²_σ ⊗ 𝒮 ≤ L²_σ ⊗ L²_σ`. -/
-noncomputable def edgeSlot3 : Submodule ℝ (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :=
-  LinearMap.range (TensorProduct.map (LinearMap.id : L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3) schwartzSpan.subtype)
-
-/-- **`D` (the determined domain).** `D := (𝒮 ⊗ L²_σ) + (L²_σ ⊗ 𝒮)`. -/
-noncomputable def detDomain : Submodule ℝ (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :=
-  edgeSlot2 ⊔ edgeSlot3
-
-/-- **The overlap identity (consumes the proved tensor-intersection lemma).**
-`(𝒮 ⊗ L²_σ) ⊓ (L²_σ ⊗ 𝒮) = 𝒮 ⊗ 𝒮`, on whose image the two edge prescriptions agree.
-This is `TensorIntersection.range_map_subtype_inf_range_map_subtype` specialized to
-`S = schwartzSpan`. -/
-theorem edge_inf_eq_schwartz_tensor :
-    edgeSlot2 ⊓ edgeSlot3
-      = LinearMap.range (TensorProduct.mapIncl schwartzSpan schwartzSpan) :=
-  LerayHopf.R3.TensorIntersection.range_map_subtype_inf_range_map_subtype schwartzSpan
-
-/-! ### C5 — the determined antisymmetric bilinear `β_u` on `D`, Hamel-extended
-
-For fixed `u`, the two edge prescriptions are:
-
-- on `𝒮 ⊗ L²_σ`: the BLT-extended bilinear `(s, l) ↦ -convBLTspan s u l` (`edge2Lift`, the
-  continuous extension of `convFormH1 u s ·` from the H¹ slice to all of `L²_σ` via the B7/C2
-  bound), lifted by `TensorProduct.lift` to a `LinearMap` on `edgeSlot2`;
-- on `L²_σ ⊗ 𝒮`: `(l, s) ↦ convBLTspan s u l` (i.e. `−(edge2Lift u s l)`, by B6), lifted to a
-  `LinearMap` on `edgeSlot3`.
-
-They agree on `edgeSlot2 ⊓ edgeSlot3 = 𝒮 ⊗ 𝒮` (B6/div-free identity), so `LinearPMap.sup`
-glues them to a single partial linear map on `detDomain = D`.  A fixed left inverse of
-`detDomain.subtype` Hamel-extends to all of `L²_σ ⊗ L²_σ`; the whole tower is built
-linearly in `u`. -/
-
-/-! #### C5-a — evaluation functionals and the two edge bilinears -/
-
-/-- The `ℝ`-linear evaluation `B ↦ B u v` on continuous bilinear forms. -/
-private noncomputable def evalBil (u v : L2Sigma_R3) :
-    (L2Sigma_R3 →L[ℝ] L2Sigma_R3 →L[ℝ] ℝ) →ₗ[ℝ] ℝ where
-  toFun B := B u v
-  map_add' B B' := by simp
-  map_smul' c B := by simp
-
-/-- The slot-3 determined value as a linear functional in the Schwartz factor:
-`s ↦ convBLTspan s u v`. -/
-private noncomputable def edge3Sval (u v : L2Sigma_R3) : schwartzSpan →ₗ[ℝ] ℝ :=
-  (evalBil u v).comp convBLTspanLin
-
-@[simp]
-private theorem edge3Sval_apply (u v : L2Sigma_R3) (s : schwartzSpan) :
-    edge3Sval u v s = convBLTspan s u v := by
-  unfold edge3Sval
-  rw [LinearMap.comp_apply, convBLTspanLin_apply]; rfl
-
-/-- The slot-3 edge bilinear `b3 u : L²_σ →ₗ 𝒮 →ₗ ℝ`, `b3 u v s = convBLTspan s u v`. -/
-private noncomputable def edge3Bil (u : L2Sigma_R3) :
-    L2Sigma_R3 →ₗ[ℝ] schwartzSpan →ₗ[ℝ] ℝ where
-  toFun v := edge3Sval u v
-  map_add' v v' := by
-    refine LinearMap.ext (fun s => ?_)
-    simp [edge3Sval_apply, LinearMap.add_apply, map_add]
-  map_smul' c v := by
-    refine LinearMap.ext (fun s => ?_)
-    simp [edge3Sval_apply, LinearMap.smul_apply, map_smul]
-
-@[simp]
-private theorem edge3Bil_apply (u v : L2Sigma_R3) (s : schwartzSpan) :
-    edge3Bil u v s = convBLTspan s u v := by
-  show edge3Sval u v s = convBLTspan s u v
-  exact edge3Sval_apply u v s
-
-/-- The slot-2 determined value as a linear functional in the rough factor:
-`l ↦ -convBLTspan s u l` (i.e. `convFormH1 u s l`). -/
-private noncomputable def edge2Lval (u : L2Sigma_R3) (s : schwartzSpan) :
-    L2Sigma_R3 →ₗ[ℝ] ℝ :=
-  -(convBLTspan s u).toLinearMap
-
-@[simp]
-private theorem edge2Lval_apply (u : L2Sigma_R3) (s : schwartzSpan) (l : L2Sigma_R3) :
-    edge2Lval u s l = -(convBLTspan s u l) := rfl
-
-/-- The slot-2 edge bilinear `b2 u : 𝒮 →ₗ L²_σ →ₗ ℝ`, `b2 u s l = -convBLTspan s u l`. -/
-private noncomputable def edge2Bil (u : L2Sigma_R3) :
-    schwartzSpan →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] ℝ where
-  toFun s := edge2Lval u s
-  map_add' s s' := by
-    refine LinearMap.ext (fun l => ?_)
-    simp only [edge2Lval_apply, LinearMap.add_apply, convBLTspan_add,
-      ContinuousLinearMap.add_apply, neg_add]
-  map_smul' c s := by
-    refine LinearMap.ext (fun l => ?_)
-    simp only [edge2Lval_apply, LinearMap.smul_apply, convBLTspan_smul,
-      ContinuousLinearMap.smul_apply, smul_eq_mul, RingHom.id_apply, mul_neg]
-
-@[simp]
-private theorem edge2Bil_apply (u : L2Sigma_R3) (s : schwartzSpan) (l : L2Sigma_R3) :
-    edge2Bil u s l = -(convBLTspan s u l) := by
-  show edge2Lval u s l = -(convBLTspan s u l)
-  exact edge2Lval_apply u s l
-
-/-- The slot-3 edge bilinear bundled **linearly in `u`**. -/
-private noncomputable def edge3BilL :
-    L2Sigma_R3 →ₗ[ℝ] (L2Sigma_R3 →ₗ[ℝ] schwartzSpan →ₗ[ℝ] ℝ) where
-  toFun := edge3Bil
-  map_add' u u' := by
-    refine LinearMap.ext (fun v => LinearMap.ext (fun s => ?_))
-    simp only [edge3Bil_apply, LinearMap.add_apply, convBLTspan_u_add, ContinuousLinearMap.add_apply]
-  map_smul' c u := by
-    refine LinearMap.ext (fun v => LinearMap.ext (fun s => ?_))
-    simp only [edge3Bil_apply, LinearMap.smul_apply, RingHom.id_apply, convBLTspan_u_smul,
-      ContinuousLinearMap.smul_apply, smul_eq_mul]
-
-/-- The slot-2 edge bilinear bundled **linearly in `u`**. -/
-private noncomputable def edge2BilL :
-    L2Sigma_R3 →ₗ[ℝ] (schwartzSpan →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] ℝ) where
-  toFun := edge2Bil
-  map_add' u u' := by
-    refine LinearMap.ext (fun s => LinearMap.ext (fun l => ?_))
-    simp only [edge2Bil_apply, LinearMap.add_apply, convBLTspan_u_add,
-      ContinuousLinearMap.add_apply, neg_add]
-  map_smul' c u := by
-    refine LinearMap.ext (fun s => LinearMap.ext (fun l => ?_))
-    simp only [edge2Bil_apply, LinearMap.smul_apply, RingHom.id_apply, convBLTspan_u_smul,
-      ContinuousLinearMap.smul_apply, smul_eq_mul, mul_neg]
-
-/-- The slot-3 lift `lift3 : L²_σ →ₗ ((L²_σ ⊗ 𝒮) →ₗ ℝ)` (linear in `u`). -/
-private noncomputable def edge3LiftL :
-    L2Sigma_R3 →ₗ[ℝ] (TensorProduct ℝ L2Sigma_R3 schwartzSpan →ₗ[ℝ] ℝ) :=
-  (TensorProduct.uncurry (RingHom.id ℝ) L2Sigma_R3 schwartzSpan ℝ).comp edge3BilL
-
-/-- The slot-2 lift `lift2 : L²_σ →ₗ ((𝒮 ⊗ L²_σ) →ₗ ℝ)` (linear in `u`). -/
-private noncomputable def edge2LiftL :
-    L2Sigma_R3 →ₗ[ℝ] (TensorProduct ℝ schwartzSpan L2Sigma_R3 →ₗ[ℝ] ℝ) :=
-  (TensorProduct.uncurry (RingHom.id ℝ) schwartzSpan L2Sigma_R3 ℝ).comp edge2BilL
-
-/-- The slot-3 lift `lift3 u : (L²_σ ⊗ 𝒮) →ₗ ℝ`. -/
-private noncomputable def edge3Lift (u : L2Sigma_R3) :
-    TensorProduct ℝ L2Sigma_R3 schwartzSpan →ₗ[ℝ] ℝ :=
-  edge3LiftL u
-
-/-- The slot-2 lift `lift2 u : (𝒮 ⊗ L²_σ) →ₗ ℝ`. -/
-private noncomputable def edge2Lift (u : L2Sigma_R3) :
-    TensorProduct ℝ schwartzSpan L2Sigma_R3 →ₗ[ℝ] ℝ :=
-  edge2LiftL u
-
-@[simp]
-private theorem edge3Lift_tmul (u v : L2Sigma_R3) (s : schwartzSpan) :
-    edge3Lift u (v ⊗ₜ[ℝ] s) = convBLTspan s u v := by
-  show edge3LiftL u (v ⊗ₜ[ℝ] s) = convBLTspan s u v
-  unfold edge3LiftL
-  rw [LinearMap.comp_apply, TensorProduct.uncurry_apply]
-  show edge3Bil u v s = convBLTspan s u v
-  exact edge3Bil_apply u v s
-
-@[simp]
-private theorem edge2Lift_tmul (u : L2Sigma_R3) (s : schwartzSpan) (l : L2Sigma_R3) :
-    edge2Lift u (s ⊗ₜ[ℝ] l) = -(convBLTspan s u l) := by
-  show edge2LiftL u (s ⊗ₜ[ℝ] l) = -(convBLTspan s u l)
-  unfold edge2LiftL
-  rw [LinearMap.comp_apply, TensorProduct.uncurry_apply]
-  show edge2Bil u s l = -(convBLTspan s u l)
-  exact edge2Bil_apply u s l
-
-private theorem edge3Lift_add (u u' : L2Sigma_R3) (z : TensorProduct ℝ L2Sigma_R3 schwartzSpan) :
-    edge3Lift (u + u') z = edge3Lift u z + edge3Lift u' z := by
-  show edge3LiftL (u + u') z = edge3LiftL u z + edge3LiftL u' z
-  rw [map_add]; rfl
-
-private theorem edge3Lift_smul (c : ℝ) (u : L2Sigma_R3)
-    (z : TensorProduct ℝ L2Sigma_R3 schwartzSpan) :
-    edge3Lift (c • u) z = c • edge3Lift u z := by
-  show edge3LiftL (c • u) z = c • edge3LiftL u z
-  rw [map_smul]; rfl
-
-private theorem edge2Lift_add (u u' : L2Sigma_R3) (z : TensorProduct ℝ schwartzSpan L2Sigma_R3) :
-    edge2Lift (u + u') z = edge2Lift u z + edge2Lift u' z := by
-  show edge2LiftL (u + u') z = edge2LiftL u z + edge2LiftL u' z
-  rw [map_add]; rfl
-
-private theorem edge2Lift_smul (c : ℝ) (u : L2Sigma_R3)
-    (z : TensorProduct ℝ schwartzSpan L2Sigma_R3) :
-    edge2Lift (c • u) z = c • edge2Lift u z := by
-  show edge2LiftL (c • u) z = c • edge2LiftL u z
-  rw [map_smul]; rfl
-
-attribute [irreducible] edge3Lift edge2Lift
-
-/-! #### C5-b — `projS`, the left inverse of `schwartzSpan.subtype`, and the retractions -/
-
-/-- A complement of `schwartzSpan` and its data. -/
-private noncomputable def schwartzCompl : Submodule ℝ L2Sigma_R3 :=
-  (schwartzSpan.exists_isCompl).choose
-
-private theorem schwartzCompl_isCompl : IsCompl schwartzSpan schwartzCompl :=
-  (schwartzSpan.exists_isCompl).choose_spec
-
-/-- The projection `L²_σ →ₗ 𝒮` (left inverse of `schwartzSpan.subtype`). -/
-private noncomputable def projS : L2Sigma_R3 →ₗ[ℝ] schwartzSpan :=
-  schwartzSpan.projectionOnto schwartzCompl schwartzCompl_isCompl
-
-@[simp]
-private theorem projS_subtype (s : schwartzSpan) : projS (s : L2Sigma_R3) = s :=
-  Submodule.projectionOnto_apply_left schwartzCompl_isCompl s
-
-/-- `projS ∘ subtype = id` on `𝒮`. -/
-private theorem projS_comp_subtype :
-    projS.comp schwartzSpan.subtype = LinearMap.id := by
-  refine LinearMap.ext (fun s => ?_)
-  simp [projS_subtype]
-
-/-- Slot-3 retraction `retr3 : (L²_σ ⊗ L²_σ) →ₗ (L²_σ ⊗ 𝒮)`. -/
-private noncomputable def retr3 :
-    TensorProduct ℝ L2Sigma_R3 L2Sigma_R3 →ₗ[ℝ] TensorProduct ℝ L2Sigma_R3 schwartzSpan :=
-  TensorProduct.map LinearMap.id projS
-
-/-- Slot-2 retraction `retr2 : (L²_σ ⊗ L²_σ) →ₗ (𝒮 ⊗ L²_σ)`. -/
-private noncomputable def retr2 :
-    TensorProduct ℝ L2Sigma_R3 L2Sigma_R3 →ₗ[ℝ] TensorProduct ℝ schwartzSpan L2Sigma_R3 :=
-  TensorProduct.map projS LinearMap.id
-
-/-- `retr3` inverts `map id subtype` on `L²_σ ⊗ 𝒮`. -/
-private theorem retr3_map_id_subtype :
-    retr3.comp (TensorProduct.map LinearMap.id schwartzSpan.subtype) = LinearMap.id := by
-  unfold retr3
-  rw [← TensorProduct.map_comp, LinearMap.id_comp, projS_comp_subtype, TensorProduct.map_id]
-
-/-- `retr2` inverts `map subtype id` on `𝒮 ⊗ L²_σ`. -/
-private theorem retr2_map_subtype_id :
-    retr2.comp (TensorProduct.map schwartzSpan.subtype LinearMap.id) = LinearMap.id := by
-  unfold retr2
-  rw [← TensorProduct.map_comp, LinearMap.id_comp, projS_comp_subtype, TensorProduct.map_id]
-
-/-! #### C5-c — the overlap agreement on `𝒮 ⊗ 𝒮` -/
+`convBLTspan_overlap` below supplies the `BLT_overlap` hypothesis for the shared
+`LerayHopf.TensorEdgeGluing` instantiation (C4–C8, below). -/
 
 /-- A `schwartzSpan` element re-typed in `H1Sigma'`. -/
 private noncomputable def spanToH1 (s : schwartzSpan) : H1Sigma' :=
@@ -1241,389 +990,95 @@ private theorem convBLTspan_overlap (u : L2Sigma_R3) (s s' : schwartzSpan) :
       (a : L2Sigma_R3).2 (s : L2Sigma_R3).2 (s' : L2Sigma_R3).2]
   exact congrFun (Continuous.ext_on denseRange_eH1L hcont1 hcont2 hagree) u
 
-/-! #### C5-d — the edge functionals on the submodules and the glued map `Ψ u` -/
+/-- `convBLTspan_overlap` restated against the (irreducible) `convBLTspanLin` head symbol,
+so it matches the `BLT_overlap` hypothesis shape `TensorEdgeGluing` expects verbatim. -/
+private theorem convBLTspanLin_overlap (u : L2Sigma_R3) (s s' : schwartzSpan) :
+    convBLTspanLin s' u (s : L2Sigma_R3) = -(convBLTspanLin s u (s' : L2Sigma_R3)) := by
+  simp only [convBLTspanLin_apply]
+  exact convBLTspan_overlap u s s'
 
-/-- The slot-3 edge functional on `edgeSlot3`: `Ψ3 u (T₃ y) = edge3Lift u y`. -/
-private noncomputable def psi3 (u : L2Sigma_R3) : edgeSlot3 →ₗ[ℝ] ℝ :=
-  (edge3Lift u).comp (retr3.comp edgeSlot3.subtype)
+/-! ### C4–C8 — the shared tensor/edge-gluing instantiation (issue #111 PR-1)
 
-/-- The slot-2 edge functional on `edgeSlot2`: `Ψ2 u (T₂ y) = edge2Lift u y`. -/
-private noncomputable def psi2 (u : L2Sigma_R3) : edgeSlot2 →ₗ[ℝ] ℝ :=
-  (edge2Lift u).comp (retr2.comp edgeSlot2.subtype)
+`edgeSlot2`/`edgeSlot3`/`detDomain`/`antisymmetrizer`/`detExtend` and the
+`convFormL2_def`/`_def_eq`/`_multilinear`/`_antisymm` tower are the generic
+`LerayHopf.TensorEdgeGluing` construction instantiated at
+`(L2Sigma_R3, schwartzSpan, convBLTspanLin, convBLTspanLin_overlap)`. Public names/statements
+are unchanged (Hard Rule #2); the previously ~650-line C4–C8 block now lives once in
+`LerayHopf/Analysis/TensorEdgeGluing.lean`. -/
 
-private theorem psi3_apply (u : L2Sigma_R3) (x : edgeSlot3) :
-    psi3 u x = edge3Lift u (retr3 (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3)) := rfl
+/-- The "slot-2 Schwartz" edge submodule `𝒮 ⊗ L²_σ ≤ L²_σ ⊗ L²_σ`. -/
+noncomputable def edgeSlot2 : Submodule ℝ (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :=
+  LerayHopf.TensorEdgeGluing.edgeSlot2 schwartzSpan
 
-private theorem psi2_apply (u : L2Sigma_R3) (x : edgeSlot2) :
-    psi2 u x = edge2Lift u (retr2 (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3)) := rfl
+/-- The "slot-3 Schwartz" edge submodule `L²_σ ⊗ 𝒮 ≤ L²_σ ⊗ L²_σ`. -/
+noncomputable def edgeSlot3 : Submodule ℝ (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :=
+  LerayHopf.TensorEdgeGluing.edgeSlot3 schwartzSpan
 
-/-- `psi3` is additive in `u`. -/
-private theorem psi3_add (u u' : L2Sigma_R3) (x : edgeSlot3) :
-    psi3 (u + u') x = psi3 u x + psi3 u' x := by
-  rw [psi3_apply, psi3_apply, psi3_apply]
-  exact edge3Lift_add u u' (retr3 (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3))
+/-- **`D` (the determined domain).** `D := (𝒮 ⊗ L²_σ) + (L²_σ ⊗ 𝒮)`. -/
+noncomputable def detDomain : Submodule ℝ (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :=
+  LerayHopf.TensorEdgeGluing.detDomain schwartzSpan
 
-/-- `psi3` is homogeneous in `u`. -/
-private theorem psi3_smul (c : ℝ) (u : L2Sigma_R3) (x : edgeSlot3) :
-    psi3 (c • u) x = c • psi3 u x := by
-  rw [psi3_apply, psi3_apply]
-  exact edge3Lift_smul c u (retr3 (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3))
-
-/-- `psi2` is additive in `u`. -/
-private theorem psi2_add (u u' : L2Sigma_R3) (x : edgeSlot2) :
-    psi2 (u + u') x = psi2 u x + psi2 u' x := by
-  rw [psi2_apply, psi2_apply, psi2_apply]
-  exact edge2Lift_add u u' (retr2 (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3))
-
-/-- `psi2` is homogeneous in `u`. -/
-private theorem psi2_smul (c : ℝ) (u : L2Sigma_R3) (x : edgeSlot2) :
-    psi2 (c • u) x = c • psi2 u x := by
-  rw [psi2_apply, psi2_apply]
-  exact edge2Lift_smul c u (retr2 (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3))
-
-/-- The two edge functionals as `LinearPMap`s on `L²_σ ⊗ L²_σ`. -/
-private noncomputable def pmap3 (u : L2Sigma_R3) :
-    (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) →ₗ.[ℝ] ℝ :=
-  ⟨edgeSlot3, psi3 u⟩
-
-private noncomputable def pmap2 (u : L2Sigma_R3) :
-    (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) →ₗ.[ℝ] ℝ :=
-  ⟨edgeSlot2, psi2 u⟩
-
-/-- The two edge prescriptions, composed with the retractions and `mapIncl`, are **equal
-as linear maps** on `𝒮 ⊗ 𝒮` (`TensorProduct.ext'`, tmul case = overlap agreement). -/
-private theorem edge_lift_agree_map (u : L2Sigma_R3) :
-    (edge2Lift u).comp (retr2.comp (TensorProduct.mapIncl schwartzSpan schwartzSpan))
-      = (edge3Lift u).comp (retr3.comp (TensorProduct.mapIncl schwartzSpan schwartzSpan)) := by
-  refine TensorProduct.ext' (fun a b => ?_)
-  simp only [LinearMap.comp_apply]
-  rw [TensorProduct.mapIncl, TensorProduct.map_tmul]
-  show edge2Lift u (retr2 ((a : L2Sigma_R3) ⊗ₜ[ℝ] (b : L2Sigma_R3)))
-    = edge3Lift u (retr3 ((a : L2Sigma_R3) ⊗ₜ[ℝ] (b : L2Sigma_R3)))
-  unfold retr2 retr3
-  rw [TensorProduct.map_tmul, TensorProduct.map_tmul, LinearMap.id_apply,
-    LinearMap.id_apply, projS_subtype, projS_subtype, edge2Lift_tmul, edge3Lift_tmul,
-    convBLTspan_overlap u a b]
-
-/-- The two edge prescriptions agree on the image of `𝒮 ⊗ 𝒮` under `mapIncl`. -/
-private theorem edge_lift_agree (u : L2Sigma_R3)
-    (z : TensorProduct ℝ schwartzSpan schwartzSpan) :
-    edge2Lift u (retr2 (TensorProduct.mapIncl schwartzSpan schwartzSpan z))
-      = edge3Lift u (retr3 (TensorProduct.mapIncl schwartzSpan schwartzSpan z)) := by
-  have := LinearMap.congr_fun (edge_lift_agree_map u) z
-  simpa only [LinearMap.comp_apply] using this
-
-/-- **The sup-glue agreement.** `Ψ2 u` and `Ψ3 u` agree where their underlying tensors
-coincide (necessarily in `𝒮 ⊗ 𝒮`). -/
-private theorem psi_agree (u : L2Sigma_R3)
-    (x : (pmap2 u).domain) (y : (pmap3 u).domain)
-    (hxy : (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) = y) :
-    (pmap2 u) x = (pmap3 u) y := by
-  have hx2 : (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) ∈ edgeSlot2 := x.2
-  have hy3 : (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) ∈ edgeSlot3 := hxy ▸ y.2
-  have hmem : (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) ∈ edgeSlot2 ⊓ edgeSlot3 := ⟨hx2, hy3⟩
-  rw [edge_inf_eq_schwartz_tensor] at hmem
-  obtain ⟨z, hz⟩ := hmem
-  show psi2 u x = psi3 u y
-  rw [psi2_apply, psi3_apply]
-  rw [show (y : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3)
-        = (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) from hxy.symm, ← hz]
-  exact edge_lift_agree u z
-
-/-- The glued determined functional on `D = detDomain` (via `LinearPMap.sup`). -/
-private noncomputable def psiSup (u : L2Sigma_R3) :
-    (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) →ₗ.[ℝ] ℝ :=
-  (pmap2 u).sup (pmap3 u) (psi_agree u)
-
-private theorem psiSup_domain (u : L2Sigma_R3) : (psiSup u).domain = detDomain := by
-  unfold psiSup pmap2 pmap3 detDomain
-  rw [LinearPMap.domain_sup]
-
-/-! #### C5-e — `gInv`, a fixed left inverse of `detDomain.subtype` -/
-
-/-- The left-inverse existence statement, with the `ℝ`-semiring instance pinned to
-`Real.semiring` (avoids the `DivisionRing.toSemiring` mismatch from `Classical.choose`). -/
-private theorem detDomain_exists_leftInverse :
-    ∃ g : (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) →ₗ[ℝ] detDomain,
-      g.comp detDomain.subtype = LinearMap.id := by
-  letI : Semiring ℝ := inferInstance
-  have h := LinearMap.exists_leftInverse_of_injective
-    (K := ℝ) (V := detDomain) (V' := TensorProduct ℝ L2Sigma_R3 L2Sigma_R3)
-    detDomain.subtype (Submodule.ker_subtype detDomain)
-  exact h
-
-private noncomputable def gInv :
-    (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) →ₗ[ℝ] detDomain :=
-  detDomain_exists_leftInverse.choose
-
-private theorem gInv_subtype :
-    gInv.comp detDomain.subtype = LinearMap.id :=
-  detDomain_exists_leftInverse.choose_spec
-
-private theorem gInv_eq_of_mem (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3)
-    (hx : x ∈ detDomain) : gInv x = (⟨x, hx⟩ : detDomain) :=
-  LinearMap.congr_fun gInv_subtype ⟨x, hx⟩
-
-private theorem gInv_apply_mem (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3)
-    (hx : x ∈ detDomain) : (gInv x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) = x := by
-  rw [gInv_eq_of_mem x hx]
-
-/-! #### C5-f — `detExtend` and its `u`-linearity -/
-
-/-- The glued functional re-typed on `detDomain` (value-preserving). -/
-private noncomputable def psiD (u : L2Sigma_R3) : detDomain →ₗ[ℝ] ℝ :=
-  (psiSup u).toFun.comp
-    (LinearEquiv.ofEq _ _ (psiSup_domain u).symm).toLinearMap
-
-/-- The membership `x ∈ (psiSup u).domain` coming from `x ∈ detDomain`. -/
-private theorem mem_psiSup_domain (u : L2Sigma_R3)
-    {x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3} (hxD : x ∈ detDomain) :
-    x ∈ (psiSup u).domain := by
-  rw [psiSup_domain]; exact hxD
-
-/-- `psiD u ⟨x, hxD⟩` is the value of the glued partial map at `x`. -/
-private theorem psiD_eq_psiSup (u : L2Sigma_R3)
-    (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) (hxD : x ∈ detDomain) :
-    psiD u ⟨x, hxD⟩ = (psiSup u) ⟨x, mem_psiSup_domain u hxD⟩ := by
-  unfold psiD
-  rfl
-
-private theorem psiD_apply_mem (u : L2Sigma_R3)
-    (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) (hx2 : x ∈ edgeSlot2) (hxD : x ∈ detDomain) :
-    psiD u ⟨x, hxD⟩ = psi2 u ⟨x, hx2⟩ := by
-  rw [psiD_eq_psiSup u x hxD]
-  obtain ⟨hdom, hval⟩ := LinearPMap.left_le_sup (pmap2 u) (pmap3 u) (psi_agree u)
-  have h2 := hval (x := ⟨x, hx2⟩) (y := ⟨x, mem_psiSup_domain u hxD⟩) rfl
-  exact h2.symm
-
-private theorem psiD_apply_mem3 (u : L2Sigma_R3)
-    (x : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) (hx3 : x ∈ edgeSlot3) (hxD : x ∈ detDomain) :
-    psiD u ⟨x, hxD⟩ = psi3 u ⟨x, hx3⟩ := by
-  rw [psiD_eq_psiSup u x hxD]
-  obtain ⟨hdom, hval⟩ := LinearPMap.right_le_sup (pmap2 u) (pmap3 u) (psi_agree u)
-  have h3 := hval (x := ⟨x, hx3⟩) (y := ⟨x, mem_psiSup_domain u hxD⟩) rfl
-  exact h3.symm
+/-- **The overlap identity (consumes the proved tensor-intersection lemma).**
+`(𝒮 ⊗ L²_σ) ⊓ (L²_σ ⊗ 𝒮) = 𝒮 ⊗ 𝒮`, on whose image the two edge prescriptions agree.
+This is `TensorIntersection.range_map_subtype_inf_range_map_subtype` specialized to
+`S = schwartzSpan`, exactly as Torus's `edge_inf_eq_galerkin_tensor`. -/
+theorem edge_inf_eq_schwartz_tensor :
+    edgeSlot2 ⊓ edgeSlot3
+      = LinearMap.range (TensorProduct.mapIncl schwartzSpan schwartzSpan) :=
+  LerayHopf.R3.TensorIntersection.range_map_subtype_inf_range_map_subtype schwartzSpan
 
 /-- The antisymmetrizer `A := (id − swap)/2` on `L²_σ ⊗ L²_σ`. -/
 noncomputable def antisymmetrizer :
     TensorProduct ℝ L2Sigma_R3 L2Sigma_R3 →ₗ[ℝ] TensorProduct ℝ L2Sigma_R3 L2Sigma_R3 :=
-  (2⁻¹ : ℝ) • (LinearMap.id - (TensorProduct.comm ℝ L2Sigma_R3 L2Sigma_R3).toLinearMap)
+  LerayHopf.TensorEdgeGluing.antisymmetrizer (X := L2Sigma_R3)
 
-private theorem antisymmetrizer_tmul (v w : L2Sigma_R3) :
-    antisymmetrizer (v ⊗ₜ[ℝ] w) = (2⁻¹ : ℝ) • (v ⊗ₜ[ℝ] w - w ⊗ₜ[ℝ] v) := by
-  unfold antisymmetrizer
-  simp [TensorProduct.comm_tmul]
-
-/-- The antisymmetrizer is antisymmetric on simple tensors: `A (w ⊗ v) = − A (v ⊗ w)`. -/
-private theorem antisymmetrizer_tmul_swap (v w : L2Sigma_R3) :
-    antisymmetrizer (w ⊗ₜ[ℝ] v) = -antisymmetrizer (v ⊗ₜ[ℝ] w) := by
-  rw [antisymmetrizer_tmul, antisymmetrizer_tmul,
-    ← neg_sub ((v : L2Sigma_R3) ⊗ₜ[ℝ] w) (w ⊗ₜ[ℝ] v), smul_neg]
-
-/-- `psiD` is additive in `u`. -/
-private theorem psiD_add (u u' : L2Sigma_R3) :
-    psiD (u + u') = psiD u + psiD u' := by
-  refine LinearMap.ext (fun z => ?_)
-  -- decompose z ∈ detDomain = edge2 ⊔ edge3 via span/sup; use additivity of psi2/psi3 in u.
-  obtain ⟨x, hx2, y, hy3, hxy⟩ := Submodule.mem_sup.mp (by rw [← detDomain]; exact z.2)
-  have hzval : (z : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) = x + y := hxy.symm
-  -- evaluate each psiD at the decomposition using linearity of psiD and edge values.
-  have hxD : x ∈ detDomain := Submodule.mem_sup_left hx2
-  have hyD : y ∈ detDomain := Submodule.mem_sup_right hy3
-  have hsplit : z = (⟨x, hxD⟩ : detDomain) + (⟨y, hyD⟩ : detDomain) := by
-    apply Subtype.ext; simpa using hzval
-  rw [hsplit]
-  simp only [map_add, LinearMap.add_apply,
-    psiD_apply_mem u x hx2 hxD, psiD_apply_mem u' x hx2 hxD, psiD_apply_mem (u + u') x hx2 hxD,
-    psiD_apply_mem3 u y hy3 hyD, psiD_apply_mem3 u' y hy3 hyD, psiD_apply_mem3 (u + u') y hy3 hyD,
-    psi2_add u u' ⟨x, hx2⟩, psi3_add u u' ⟨y, hy3⟩]
-
-/-- `psiD` is homogeneous in `u`. -/
-private theorem psiD_smul (c : ℝ) (u : L2Sigma_R3) :
-    psiD (c • u) = c • psiD u := by
-  refine LinearMap.ext (fun z => ?_)
-  obtain ⟨x, hx2, y, hy3, hxy⟩ := Submodule.mem_sup.mp (by rw [← detDomain]; exact z.2)
-  have hxD : x ∈ detDomain := Submodule.mem_sup_left hx2
-  have hyD : y ∈ detDomain := Submodule.mem_sup_right hy3
-  have hsplit : z = (⟨x, hxD⟩ : detDomain) + (⟨y, hyD⟩ : detDomain) := by
-    apply Subtype.ext; simpa using hxy.symm
-  rw [hsplit]
-  simp only [map_add, LinearMap.add_apply, LinearMap.smul_apply, smul_eq_mul,
-    psiD_apply_mem u x hx2 hxD, psiD_apply_mem (c • u) x hx2 hxD,
-    psiD_apply_mem3 u y hy3 hyD, psiD_apply_mem3 (c • u) y hy3 hyD,
-    psi2_smul c u ⟨x, hx2⟩, psi3_smul c u ⟨y, hy3⟩, mul_add]
-
-/-- **C5 `detExtend` (`Bext`).** The determined form `b u v w := detExtend u (v ⊗ₜ w)`.
-Built as `(psiD u) ∘ₗ gInv ∘ₗ A` where `A` is the antisymmetrizer
-`(id − swap) / 2`; this makes `detExtend u` antisymmetric for **all** `(v, w)`, while on
-the determined edge `D` it reads the glued value `psiD u` (`gInv` fixes `D`). -/
+/-- **`detExtend` (`Bext`).** The determined form `b u v w := detExtend u (v ⊗ₜ w)`; see
+`LerayHopf.TensorEdgeGluing.detExtend` for the construction. -/
 noncomputable def detExtend :
-    L2Sigma_R3 →ₗ[ℝ] (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) →ₗ[ℝ] ℝ where
-  toFun u := ((psiD u).comp gInv).comp antisymmetrizer
-  map_add' u u' := by
-    refine LinearMap.ext (fun z => ?_)
-    simp only [LinearMap.comp_apply, LinearMap.add_apply]
-    rw [psiD_add u u', LinearMap.add_apply]
-  map_smul' c u := by
-    refine LinearMap.ext (fun z => ?_)
-    simp only [LinearMap.comp_apply, LinearMap.smul_apply, RingHom.id_apply]
-    rw [psiD_smul c u, LinearMap.smul_apply]
+    L2Sigma_R3 →ₗ[ℝ] (TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) →ₗ[ℝ] ℝ :=
+  LerayHopf.TensorEdgeGluing.detExtend schwartzSpan convBLTspanLin convBLTspanLin_overlap
 
-/-- `detExtend` is additive in `u` (isolated, applied at a tensor `z`). -/
-private theorem detExtend_add (u u' : L2Sigma_R3)
-    (z : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :
-    detExtend (u + u') z = detExtend u z + detExtend u' z := by
-  rw [detExtend.map_add u u', LinearMap.add_apply]
+/-- **`convFormL2_def` (`b`).** The determined trilinear convection form
+`b u v w := detExtend u (v ⊗ₜ w)`. -/
+noncomputable def convFormL2_def (u v w : L2Sigma_R3) : ℝ :=
+  LerayHopf.TensorEdgeGluing.convFormL2_def schwartzSpan convBLTspanLin convBLTspanLin_overlap u v w
 
-/-- `detExtend` is homogeneous in `u` (isolated, applied at a tensor `z`). -/
-private theorem detExtend_smul (c : ℝ) (u : L2Sigma_R3)
-    (z : TensorProduct ℝ L2Sigma_R3 L2Sigma_R3) :
-    detExtend (c • u) z = c • detExtend u z := by
-  rw [detExtend.map_smul c u, LinearMap.smul_apply]
+@[simp]
+theorem convFormL2_def_eq (u v w : L2Sigma_R3) :
+    convFormL2_def u v w = detExtend u (v ⊗ₜ[ℝ] w) :=
+  LerayHopf.TensorEdgeGluing.convFormL2_def_eq schwartzSpan convBLTspanLin convBLTspanLin_overlap u v w
 
-/-- For `s ∈ 𝒮`, `v ⊗ₜ (s:L²) ∈ edgeSlot3`. -/
-private theorem tmul_mem_edgeSlot3 (v : L2Sigma_R3) (s : schwartzSpan) :
-    (v : L2Sigma_R3) ⊗ₜ[ℝ] (s : L2Sigma_R3) ∈ edgeSlot3 :=
-  ⟨v ⊗ₜ[ℝ] s, by rw [TensorProduct.map_tmul, LinearMap.id_apply, Submodule.coe_subtype]⟩
+/-- `∃ B trilinear, ∀ u v w, b u v w = B u v w`. -/
+theorem convFormL2_multilinear :
+    ∃ B : L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] ℝ,
+      ∀ (u v w : L2Sigma_R3), convFormL2_def u v w = B u v w :=
+  LerayHopf.TensorEdgeGluing.convFormL2_multilinear schwartzSpan convBLTspanLin convBLTspanLin_overlap
 
-/-- For `s ∈ 𝒮`, `(s:L²) ⊗ₜ v ∈ edgeSlot2`. -/
-private theorem tmul_mem_edgeSlot2 (s : schwartzSpan) (v : L2Sigma_R3) :
-    (s : L2Sigma_R3) ⊗ₜ[ℝ] (v : L2Sigma_R3) ∈ edgeSlot2 :=
-  ⟨s ⊗ₜ[ℝ] v, by rw [TensorProduct.map_tmul, LinearMap.id_apply, Submodule.coe_subtype]⟩
+/-- `b u v w = − b u w v` for all `u v w`. -/
+theorem convFormL2_antisymm (u v w : L2Sigma_R3) :
+    convFormL2_def u v w = -convFormL2_def u w v :=
+  LerayHopf.TensorEdgeGluing.convFormL2_antisymm schwartzSpan convBLTspanLin convBLTspanLin_overlap u v w
 
-/-- `retr3 (v ⊗ (s:L²)) = v ⊗ s` for `s ∈ 𝒮`. -/
-private theorem retr3_tmul_span (v : L2Sigma_R3) (s : schwartzSpan) :
-    retr3 ((v : L2Sigma_R3) ⊗ₜ[ℝ] (s : L2Sigma_R3)) = v ⊗ₜ[ℝ] s := by
-  unfold retr3
-  rw [TensorProduct.map_tmul, LinearMap.id_apply, projS_subtype]
-
-/-- `retr2 ((s:L²) ⊗ v) = s ⊗ v` for `s ∈ 𝒮`. -/
-private theorem retr2_tmul_span (s : schwartzSpan) (v : L2Sigma_R3) :
-    retr2 ((s : L2Sigma_R3) ⊗ₜ[ℝ] (v : L2Sigma_R3)) = s ⊗ₜ[ℝ] v := by
-  unfold retr2
-  rw [TensorProduct.map_tmul, LinearMap.id_apply, projS_subtype]
-
-/-- The determined value of `psiD u` on the slot-3 edge `v ⊗ (s:L²)`. -/
-private theorem psiD_edge3_value (u v : L2Sigma_R3) (s : schwartzSpan) :
-    psiD u ⟨(v : L2Sigma_R3) ⊗ₜ[ℝ] (s : L2Sigma_R3),
-        Submodule.mem_sup_right (tmul_mem_edgeSlot3 v s)⟩
-      = convBLTspan s u v := by
-  rw [psiD_apply_mem3 u _ (tmul_mem_edgeSlot3 v s) (Submodule.mem_sup_right (tmul_mem_edgeSlot3 v s)),
-    psi3_apply]
-  show edge3Lift u (retr3 ((v : L2Sigma_R3) ⊗ₜ[ℝ] (s : L2Sigma_R3))) = convBLTspan s u v
-  rw [retr3_tmul_span v s, edge3Lift_tmul]
-
-/-- The determined value of `psiD u` on the slot-2 edge `(s:L²) ⊗ v`. -/
-private theorem psiD_edge2_value (u v : L2Sigma_R3) (s : schwartzSpan) :
-    psiD u ⟨(s : L2Sigma_R3) ⊗ₜ[ℝ] (v : L2Sigma_R3),
-        Submodule.mem_sup_left (tmul_mem_edgeSlot2 s v)⟩
-      = -(convBLTspan s u v) := by
-  rw [psiD_apply_mem u _ (tmul_mem_edgeSlot2 s v) (Submodule.mem_sup_left (tmul_mem_edgeSlot2 s v)),
-    psi2_apply]
-  show edge2Lift u (retr2 ((s : L2Sigma_R3) ⊗ₜ[ℝ] (v : L2Sigma_R3))) = -(convBLTspan s u v)
-  rw [retr2_tmul_span s v, edge2Lift_tmul]
-
-/-- **C5b `detExtend_on_edgeSlot3` [PR-4 — the determined identity].**
+/-- **C5b `detExtend_on_edgeSlot3` [the determined identity].**
 On the slot-3-Schwartz edge `L²_σ ⊗ 𝒮`, `detExtend u` is the genuine determined value:
-for ALL `u, v` and any Schwartz `w`,
-`detExtend u (v ⊗ₜ w) = convBLT_fixedTest w … u v`,
-i.e. the value is the evaluation of the jointly continuous B7-bounded extension `Bw`
-(C3), NOT a Hamel value.
-
-This is the load-bearing identity for `b_cont_fixedTest`.  Both `v ⊗ₜ w ∈ edgeSlot3` and
-`w ⊗ₜ v ∈ edgeSlot2` are in the determined domain `D`; `gInv` fixes `D` and the
-antisymmetrizer combines the two determined edge values into the genuine
-`convBLT_fixedTest w u v`. -/
+for ALL `u, v` and any Schwartz `w`, `detExtend u (v ⊗ₜ w) = convBLT_fixedTest w … u v`,
+i.e. the value is the evaluation of the jointly continuous B7-bounded extension `Bw` (C3),
+NOT a Hamel value. Derived from the generic `TensorEdgeGluing.detExtend_edge3_eq` (the
+algebraic core) composed with `convBLTspan_eq_fixedTest` (the lane-specific bridge to `Bw`).
+This is the load-bearing identity for `b_cont_fixedTest`. -/
 theorem detExtend_on_edgeSlot3
     (u v : L2Sigma_R3) (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
     (hw_sigma : w ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
     (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) :
     detExtend u ((v : L2Sigma_R3) ⊗ₜ[ℝ] (⟨w, hw_sigma⟩ : L2Sigma_R3))
       = convBLT_fixedTest w hw_H1 hw_sigma hw_sch u v := by
-  -- `sw : schwartzSpan` is the Schwartz test as a span element.
-  set sw : schwartzSpan := ⟨⟨w, hw_sigma⟩, subset_schwartzSpan hw_sch⟩ with hsw
-  have hmem3 : (v : L2Sigma_R3) ⊗ₜ[ℝ] (⟨w, hw_sigma⟩ : L2Sigma_R3) ∈ detDomain :=
-    Submodule.mem_sup_right (tmul_mem_edgeSlot3 v sw)
-  have hmem2 : (⟨w, hw_sigma⟩ : L2Sigma_R3) ⊗ₜ[ℝ] (v : L2Sigma_R3) ∈ detDomain :=
-    Submodule.mem_sup_left (tmul_mem_edgeSlot2 sw v)
-  -- Expand detExtend via the antisymmetrizer and gInv on the two determined edges.
-  show ((psiD u).comp gInv).comp antisymmetrizer
+  have hmem : (⟨w, hw_sigma⟩ : L2Sigma_R3) ∈ schwartzSpan := subset_schwartzSpan hw_sch
+  show LerayHopf.TensorEdgeGluing.detExtend schwartzSpan convBLTspanLin convBLTspanLin_overlap u
       ((v : L2Sigma_R3) ⊗ₜ[ℝ] (⟨w, hw_sigma⟩ : L2Sigma_R3))
     = convBLT_fixedTest w hw_H1 hw_sigma hw_sch u v
-  rw [LinearMap.comp_apply, LinearMap.comp_apply, antisymmetrizer_tmul]
-  -- Distribute `gInv` then `psiD u` over the antisymmetrized combination.
-  rw [map_smul, map_sub, gInv_eq_of_mem _ hmem3, gInv_eq_of_mem _ hmem2,
-    map_smul, map_sub, psiD_edge3_value u v sw, psiD_edge2_value u v sw]
-  -- `2⁻¹ • (convBLTspan sw u v - (-convBLTspan sw u v)) = convBLTspan sw u v`.
-  rw [sub_neg_eq_add, ← two_mul, smul_eq_mul, ← mul_assoc]
-  norm_num
-  -- Finally identify `convBLTspan sw` with `convBLT_fixedTest w`.
-  rw [hsw, convBLTspan_eq_fixedTest w hw_H1 hw_sigma hw_sch (subset_schwartzSpan hw_sch)]
-
-/-! ### C6 — `convFormL2_def` : the determined trilinear `b` -/
-
-/-- **C6 `convFormL2_def` (`b`) [proved sorry-free given `detExtend`].** The determined
-trilinear convection form:
-
-`b u v w := detExtend u (v ⊗ₜ w)`.
-
-- Linear in `w` (slot 3): `detExtend u` is a `LinearMap` and `(v ⊗ₜ ·)` is linear.
-- Linear in `v` (slot 2): `(· ⊗ₜ w)` is linear.
-- Linear in `u` (slot 1): `detExtend` is a `LinearMap` in `u`.
-- Antisymmetric in `(v, w)`: `β_u` is antisymmetric on `D` (B6), preserved by the
-  Hamel extension (C7).
-- Extends `convFormSchwartz` on Schwartz triples (C8). -/
-noncomputable def convFormL2_def (u v w : L2Sigma_R3) : ℝ :=
-  detExtend u (v ⊗ₜ[ℝ] w)
-
-@[simp]
-theorem convFormL2_def_eq (u v w : L2Sigma_R3) :
-    convFormL2_def u v w = detExtend u (v ⊗ₜ[ℝ] w) :=
-  rfl
-
-/-! ### C7 — `convFormL2_multilinear` -/
-
-/-- **C7 `convFormL2_multilinear` [PR-4].** `∃ B trilinear, ∀ u v w, b u v w = B u v w`.
-
-**Proof route:** the trilinear `B` is `detExtend` precomposed with `TensorProduct.mk`:
-`B u := (detExtend u).compl₂ (TensorProduct.mk ℝ L2Sigma_R3 L2Sigma_R3)` — curry the
-`v ⊗ₜ w` argument.  `b u v w = detExtend u (v ⊗ₜ w) = B u v w` by `rfl`. -/
-theorem convFormL2_multilinear :
-    ∃ B : L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] L2Sigma_R3 →ₗ[ℝ] ℝ,
-      ∀ (u v w : L2Sigma_R3), convFormL2_def u v w = B u v w := by
-  refine ⟨{
-    toFun := fun u =>
-      LinearMap.compr₂ (TensorProduct.mk ℝ L2Sigma_R3 L2Sigma_R3) (detExtend u)
-    map_add' := fun u u' => by
-      refine LinearMap.ext (fun v => LinearMap.ext (fun w => ?_))
-      simp only [LinearMap.add_apply, LinearMap.compr₂_apply, TensorProduct.mk_apply]
-      exact detExtend_add u u' (v ⊗ₜ[ℝ] w)
-    map_smul' := fun c u => by
-      refine LinearMap.ext (fun v => LinearMap.ext (fun w => ?_))
-      simp only [RingHom.id_apply, LinearMap.smul_apply, LinearMap.compr₂_apply,
-        TensorProduct.mk_apply]
-      exact detExtend_smul c u (v ⊗ₜ[ℝ] w) }, ?_⟩
-  intro u v w
-  rw [convFormL2_def_eq]
-  rfl
-
-/-! ### C8 — `convFormL2_antisymm` -/
-
-/-- **C8 `convFormL2_antisymm` [PR-4].** `b u v w = − b u w v` for all `u v w`.
-
-`β_u` is antisymmetric on `D` (`convFormH1 u v w = − convFormH1 u w v`, B6, on the dense
-Schwartz edges; extended antisymmetrically by the Hamel extension).  The antisymmetry is
-a property of the *determined* `β_u` on `D` and is carried to all `v, w` because both
-`v ⊗ₜ w` and `w ⊗ₜ v` land in `D` whenever one of `v, w` is Schwartz — and the algebraic
-antisymmetry of the Hamel extension is fixed by the antisymmetric construction of `β_u`. -/
-theorem convFormL2_antisymm (u v w : L2Sigma_R3) :
-    convFormL2_def u v w = -convFormL2_def u w v := by
-  rw [convFormL2_def_eq, convFormL2_def_eq]
-  -- `detExtend u = (psiD u ∘ gInv) ∘ antisymmetrizer`; `A (w⊗v) = -A (v⊗w)`.
-  show ((psiD u).comp gInv).comp antisymmetrizer (v ⊗ₜ[ℝ] w)
-    = -(((psiD u).comp gInv).comp antisymmetrizer (w ⊗ₜ[ℝ] v))
-  rw [LinearMap.comp_apply, LinearMap.comp_apply (g := antisymmetrizer),
-    antisymmetrizer_tmul_swap v w, map_neg, neg_neg]
+  rw [LerayHopf.TensorEdgeGluing.detExtend_edge3_eq schwartzSpan convBLTspanLin
+      convBLTspanLin_overlap u v (⟨⟨w, hw_sigma⟩, hmem⟩ : schwartzSpan),
+    convBLTspanLin_apply, convBLTspan_eq_fixedTest w hw_H1 hw_sigma hw_sch hmem]
 
 /-! ### C9 — `convFormL2_extends` -/
 
