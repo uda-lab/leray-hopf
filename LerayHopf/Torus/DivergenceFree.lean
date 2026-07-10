@@ -55,6 +55,26 @@ embedding `RCLike.ofRealCLM : ℝ →L[ℝ] ℂ`, both lifted to `Lp` via `compL
 noncomputable def L2VF_projComponentC (j : Fin 3) : L2VF →L[ℝ] L2C :=
   (RCLike.ofRealCLM (K := ℂ)).compLpL 2 haarTorus3 ∘L L2VF_projComponent j
 
+/-- Inject a scalar field `f ∈ Lp ℝ 2 haarTorus3` as the `j`-th component of a velocity field
+in `L2VF = Lp (EuclideanSpace ℝ (Fin 3)) 2 haarTorus3`.
+
+Concretely, `L2VF_injectComponent j f` is the a.e.-class of `x ↦ f(x) • eⱼ`,
+where `eⱼ = EuclideanSpace.single j (1 : ℝ)` is the `j`-th standard basis vector.
+
+**Construction:**
+- `(ContinuousLinearMap.id ℝ ℝ).smulRight (EuclideanSpace.single j (1 : ℝ)) : ℝ →L[ℝ] VelocityValue`
+  maps `r ↦ r • eⱼ`.
+- `.compLpL 2 haarTorus3` lifts this CLM pointwise to `Lp ℝ 2 haarTorus3 →L[ℝ] L2VF`.
+
+This is the pointwise-adjoint of `L2VF_projComponent j` in the sense that
+`⟪L2VF_injectComponent j f, u⟫ = ⟪f, L2VF_projComponent j u⟫` for `f ∈ Lp ℝ 2` and `u ∈ L2VF`
+(as a real inner product).
+
+(Moved here from `VelocityGalerkin.lean`, issue #113 PR-1, next to its adjoint
+`L2VF_projComponent`; same namespace, same statement.) -/
+noncomputable def L2VF_injectComponent (j : Fin 3) : Lp ℝ 2 haarTorus3 →L[ℝ] L2VF :=
+  ((ContinuousLinearMap.id ℝ ℝ).smulRight (EuclideanSpace.single j (1 : ℝ))).compLpL 2 haarTorus3
+
 /-! ### D-08: Divergence-free predicate -/
 
 /-- A velocity field `u ∈ L²(𝕋³; ℝ³)` is **divergence-free** (in the L² / Fourier sense) if
