@@ -360,6 +360,15 @@ theorem R3NSForms.b_self_zero {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊) (u 
   have h := F.b_antisymm u u u
   linarith
 
+/-- The convection trilinear form vanishes when its last two arguments coincide —
+the energy-estimate workhorse.
+
+Proof: `b(u, v, v) = -b(u, v, v)` by `b_antisymm u v v`, so `b(u, v, v) = 0`. -/
+theorem R3NSForms.b_self_zero_right {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊) (u v : L2Sigma_R3) :
+    F.b u v v = 0 := by
+  have h := F.b_antisymm u v v
+  linarith
+
 /-! ### Dissipative evolution from ℝ³ NS forms (sorry-free) -/
 
 /-- Build a `DissipativeEvolution` from an `R3GalerkinScheme` and an `R3NSForms`.

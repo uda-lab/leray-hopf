@@ -204,6 +204,15 @@ theorem Torus3NSForms.b_self_zero (F : Torus3NSForms) (u : L2Sigma) :
   have h := F.b_antisymm u u u
   linarith
 
+/-- The convection trilinear form vanishes when its last two arguments coincide —
+the energy-estimate workhorse.
+
+Proof: `b(u, v, v) = -b(u, v, v)` by `b_antisymm u v v`, so `b(u, v, v) = 0`. -/
+theorem Torus3NSForms.b_self_zero_right (F : Torus3NSForms) (u v : L2Sigma) :
+    F.b u v v = 0 := by
+  have h := F.b_antisymm u v v
+  linarith
+
 /-! ### Dissipative evolution from T³ NS forms (sorry-free) -/
 
 /-- Build a `DissipativeEvolution` from a `Torus3NSForms`.
