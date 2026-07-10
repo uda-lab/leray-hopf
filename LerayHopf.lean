@@ -64,6 +64,12 @@ Core work that does not require the capstone re-exports should use
 -- Axiom-free core layer (no project axioms, no sorryAx)
 import LerayHopf.Core
 
+-- Generic Galerkin layer (issue #112: domain-neutral dissipative-ODE + quadratic-field
+-- construction, deduplicating the R3/Torus GalerkinODESolve CLM towers). Mathlib-only,
+-- no consumers yet (PR-A scaffold; wiring lands in PR-B).
+import LerayHopf.Galerkin.DissipativeODE
+import LerayHopf.Galerkin.QuadraticField
+
 -- Torus-layer files not covered by Core (sorry-carrying, axiom-free)
 import LerayHopf.Torus.RellichEmbedding
 import LerayHopf.Torus.H1Sigma
