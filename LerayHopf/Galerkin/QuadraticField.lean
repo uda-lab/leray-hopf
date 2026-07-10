@@ -38,9 +38,12 @@ consumers by design; wiring happens in PR-B).
 transcription of the lane `galerkinODE_functional`/`galerkinODE_vectorField` pair (via the
 private helper `vectorFieldFunctional`, mirroring `rieszSymmCLM ∘ galerkinODE_functional`),
 substituting the abstract `D.bV`/`D.sV` for each lane's concrete `F.b`/`stokesTestPairing`.
-Every THEOREM body below is `sorry`-scaffolded; statements are FROZEN by the architect
-(plan §3.2) and must not be altered. The CLM-tower proof route for `vectorField_contDiff` is
-recorded in the plan's proof-route note and left for `lean-prover` (opus tier, PR-A).
+Every THEOREM body below is filled (PR-A, prover pass): direct ports of the lane proof
+route (plan §3.2), with `vectorField_contDiff` supplied by the local CLM tower
+`rieszSymm`/`bInner`/`bMid`/`bOut`/`bilinearPart` + `stokesInner`/`stokesOut`/`linearPart`
+(finite-dim auto-continuity at each level, `vectorField_eq_parts` splitting the field into a
+continuous-bilinear-plus-linear map of `u`). Statements are FROZEN by the architect
+(plan §3.2) and were not altered.
 -/
 
 namespace LerayHopf.Galerkin
@@ -91,28 +94,170 @@ noncomputable def FieldForms.vectorField (D : FieldForms V) (ν : ℝ) : V → V
 
 theorem FieldForms.vectorField_spec (D : FieldForms V) (ν : ℝ) (u w : V) :
     inner (𝕜 := ℝ) (D.vectorField ν u) w = -ν * D.sV u w - D.bV u u w := by
-  sorry -- ALLOW_SORRY: PR-A scaffold, prover fills (issue #112)
+  show inner (𝕜 := ℝ) ((InnerProductSpace.toDual ℝ V).symm (vectorFieldFunctional D ν u)) w
+      = -ν * D.sV u w - D.bV u u w
+  rw [InnerProductSpace.toDual_symm_apply, vectorFieldFunctional_apply]
+
+/-! ### CLM tower for `vectorField_contDiff`
+
+Mirrors `LerayHopf/R3/GalerkinODESolve.lean`'s `rieszSymmCLM`/`bInner`/`bMid`/`bOut`/
+`stokesInner`/`stokesOut` tower, specialized to the abstract `FieldForms` data (no submodule
+coercions): the field splits as `u ↦ Bil(u,u) + Lin u`, a continuous-bilinear-plus-linear map
+of `u`, hence `C¹` on the finite-dimensional `V` by finite-dim auto-continuity at each level. -/
+
+/-- Riesz inverse `(V →L[ℝ] ℝ) →L[ℝ] V` as a `ContinuousLinearMap`. -/
+private noncomputable def rieszSymm : (V →L[ℝ] ℝ) →L[ℝ] V :=
+  (InnerProductSpace.toDual ℝ V).symm.toContinuousLinearMap
+
+@[simp] private theorem rieszSymm_apply (φ : V →L[ℝ] ℝ) :
+    rieszSymm φ = (InnerProductSpace.toDual ℝ V).symm φ := rfl
+
+/-- Inner functional (slot 3): `w ↦ -D.bV u u' w`, linear in `w` by `bV_add_3`/`bV_smul_3`. -/
+private noncomputable def bInner (D : FieldForms V) (u u' : V) : V →L[ℝ] ℝ :=
+  LinearMap.toContinuousLinearMap
+    { toFun := fun w => - D.bV u u' w
+      map_add' := by intro w w'; rw [D.bV_add_3]; ring
+      map_smul' := by
+        intro c w
+        rw [D.bV_smul_3]; simp only [RingHom.id_apply, smul_eq_mul]; ring }
+
+@[simp] private theorem bInner_apply (D : FieldForms V) (u u' w : V) :
+    bInner D u u' w = - D.bV u u' w := rfl
+
+/-- Middle map (slot 2): `u' ↦ bInner D u u'`, linear in `u'` by `bV_add_2`/`bV_smul_2`. -/
+private noncomputable def bMid (D : FieldForms V) (u : V) : V →L[ℝ] V →L[ℝ] ℝ :=
+  LinearMap.toContinuousLinearMap
+    { toFun := fun u' => bInner D u u'
+      map_add' := by
+        intro u' u''
+        ext w
+        simp only [ContinuousLinearMap.add_apply, bInner_apply, D.bV_add_2]; ring
+      map_smul' := by
+        intro c u'
+        ext w
+        simp only [RingHom.id_apply, ContinuousLinearMap.smul_apply, bInner_apply,
+          D.bV_smul_2, smul_eq_mul]; ring }
+
+@[simp] private theorem bMid_apply (D : FieldForms V) (u u' : V) :
+    bMid D u u' = bInner D u u' := rfl
+
+/-- Outer map (slot 1): `u ↦ bMid D u`, linear in `u` by `bV_add_1`/`bV_smul_1`. -/
+private noncomputable def bOut (D : FieldForms V) : V →L[ℝ] V →L[ℝ] V →L[ℝ] ℝ :=
+  LinearMap.toContinuousLinearMap
+    { toFun := fun u => bMid D u
+      map_add' := by
+        intro u u''
+        ext u' w
+        simp only [ContinuousLinearMap.add_apply, bMid_apply, bInner_apply, D.bV_add_1]; ring
+      map_smul' := by
+        intro c u
+        ext u' w
+        simp only [RingHom.id_apply, ContinuousLinearMap.smul_apply, bMid_apply, bInner_apply,
+          D.bV_smul_1, smul_eq_mul]; ring }
+
+@[simp] private theorem bOut_apply (D : FieldForms V) (u : V) :
+    bOut D u = bMid D u := rfl
+
+/-- Bilinear `bV`-part `V × V → V`: `(u, u') ↦ rieszSymm (w ↦ -bV u u' w)`, the Riesz inverse
+of the `bOut`-functional, post-composed with `rieszSymm`. -/
+private noncomputable def bilinearPart (D : FieldForms V) : V →L[ℝ] V →L[ℝ] V :=
+  (ContinuousLinearMap.compL ℝ V (V →L[ℝ] ℝ) V rieszSymm).comp (bOut D)
+
+@[simp] private theorem bilinearPart_apply (D : FieldForms V) (u u' : V) :
+    bilinearPart D u u' = rieszSymm (bInner D u u') := rfl
+
+omit [FiniteDimensional ℝ V] in
+/-- Left-additivity of `sV`, via right-additivity + symmetry (`sV_symm`). -/
+private theorem sV_add_left (D : FieldForms V) (u u' w : V) :
+    D.sV (u + u') w = D.sV u w + D.sV u' w := by
+  rw [D.sV_symm (u + u') w, D.sV_add_right, D.sV_symm w u, D.sV_symm w u']
+
+omit [FiniteDimensional ℝ V] in
+/-- Left-homogeneity of `sV`, via right-homogeneity + symmetry (`sV_symm`). -/
+private theorem sV_smul_left (D : FieldForms V) (a : ℝ) (u w : V) :
+    D.sV (a • u) w = a * D.sV u w := by
+  rw [D.sV_symm (a • u) w, D.sV_smul_right, D.sV_symm w u]
+
+/-- Inner functional: `w ↦ -ν * D.sV u w`, linear in `w` by `sV_add_right`/`sV_smul_right`. -/
+private noncomputable def stokesInner (D : FieldForms V) (ν : ℝ) (u : V) : V →L[ℝ] ℝ :=
+  LinearMap.toContinuousLinearMap
+    { toFun := fun w => - ν * D.sV u w
+      map_add' := by intro w w'; rw [D.sV_add_right]; ring
+      map_smul' := by
+        intro c w
+        rw [D.sV_smul_right]; simp only [RingHom.id_apply, smul_eq_mul]; ring }
+
+@[simp] private theorem stokesInner_apply (D : FieldForms V) (ν : ℝ) (u w : V) :
+    stokesInner D ν u w = - ν * D.sV u w := rfl
+
+/-- Outer map: `u ↦ stokesInner D ν u`, linear in `u` by `sV_add_left`/`sV_smul_left`. -/
+private noncomputable def stokesOut (D : FieldForms V) (ν : ℝ) : V →L[ℝ] V →L[ℝ] ℝ :=
+  LinearMap.toContinuousLinearMap
+    { toFun := fun u => stokesInner D ν u
+      map_add' := by
+        intro u u'
+        ext w
+        simp only [ContinuousLinearMap.add_apply, stokesInner_apply]
+        rw [sV_add_left D u u' w]; ring
+      map_smul' := by
+        intro c u
+        ext w
+        simp only [RingHom.id_apply, ContinuousLinearMap.smul_apply, stokesInner_apply,
+          smul_eq_mul]
+        rw [sV_smul_left D c u w]; ring }
+
+@[simp] private theorem stokesOut_apply (D : FieldForms V) (ν : ℝ) (u : V) :
+    stokesOut D ν u = stokesInner D ν u := rfl
+
+/-- Linear `-ν·sV`-part `V → V`: `u ↦ rieszSymm (w ↦ -ν * sV u w)`, the Riesz inverse of the
+`stokesOut`-functional. -/
+private noncomputable def linearPart (D : FieldForms V) (ν : ℝ) : V →L[ℝ] V :=
+  rieszSymm.comp (stokesOut D ν)
+
+@[simp] private theorem linearPart_apply (D : FieldForms V) (ν : ℝ) (u : V) :
+    linearPart D ν u = rieszSymm (stokesInner D ν u) := rfl
+
+/-- The field equals `Bil(u,u) + Lin u`, by Riesz injectivity (test against every `w`). -/
+private theorem vectorField_eq_parts (D : FieldForms V) (ν : ℝ) (u : V) :
+    D.vectorField ν u = bilinearPart D u u + linearPart D ν u := by
+  refine ext_inner_right ℝ (fun w => ?_)
+  have hbil : inner (𝕜 := ℝ) (bilinearPart D u u) w = - D.bV u u w := by
+    rw [bilinearPart_apply, rieszSymm_apply, InnerProductSpace.toDual_symm_apply, bInner_apply]
+  have hlin : inner (𝕜 := ℝ) (linearPart D ν u) w = - ν * D.sV u w := by
+    rw [linearPart_apply, rieszSymm_apply, InnerProductSpace.toDual_symm_apply, stokesInner_apply]
+  rw [D.vectorField_spec, inner_add_left, hbil, hlin]; ring
 
 theorem FieldForms.vectorField_contDiff (D : FieldForms V) (ν : ℝ) :
     ContDiff ℝ 1 (D.vectorField ν) := by
-  sorry -- ALLOW_SORRY: PR-A scaffold, prover fills (issue #112)
+  have hfun : D.vectorField ν
+      = fun u => bilinearPart D u u + linearPart D ν u := by
+    funext u; exact vectorField_eq_parts D ν u
+  rw [hfun]
+  have hbil : ContDiff ℝ 1 (fun u => bilinearPart D u u) :=
+    (bilinearPart D).contDiff.clm_apply contDiff_id
+  have hlin : ContDiff ℝ 1 (fun u => linearPart D ν u) :=
+    (linearPart D ν).contDiff
+  exact hbil.add hlin
 
 theorem FieldForms.inner_self_vectorField (D : FieldForms V) (ν : ℝ) (v : V) :
     inner (𝕜 := ℝ) v (D.vectorField ν v) = -(ν * D.sV v v) := by
-  sorry -- ALLOW_SORRY: PR-A scaffold, prover fills (issue #112)
+  rw [real_inner_comm, D.vectorField_spec, D.bV_diag_zero, sub_zero, neg_mul]
 
 theorem FieldForms.inner_self_vectorField_nonpos (D : FieldForms V) {ν : ℝ}
     (hν : 0 < ν) (v : V) : inner (𝕜 := ℝ) v (D.vectorField ν v) ≤ 0 := by
-  sorry -- ALLOW_SORRY: PR-A scaffold, prover fills (issue #112)
+  rw [D.inner_self_vectorField ν v]
+  exact neg_nonpos.mpr (mul_nonneg hν.le (D.sV_diag_nonneg v))
 
 theorem FieldForms.energy_hasDerivAt (D : FieldForms V) (ν : ℝ) (c : ℝ → V) (t : ℝ)
     (hc : HasDerivAt c (D.vectorField ν (c t)) t) :
     HasDerivAt (fun s => (1 / 2 : ℝ) * ‖c s‖ ^ 2) (-(ν * D.sV (c t) (c t))) t := by
-  sorry -- ALLOW_SORRY: PR-A scaffold, prover fills (issue #112)
+  have h := energy_hasDerivAt_of_solution (D.vectorField ν) c t hc
+  rwa [D.inner_self_vectorField ν (c t)] at h
 
 theorem FieldForms.forwardGlobalSolution_exists (D : FieldForms V) {ν : ℝ}
     (hν : 0 < ν) (x₀ : V) :
-    ∃ c : ℝ → V, c 0 = x₀ ∧ ∀ t, 0 ≤ t → HasDerivAt c (D.vectorField ν (c t)) t := by
-  sorry -- ALLOW_SORRY: PR-A scaffold, prover fills (issue #112)
+    ∃ c : ℝ → V, c 0 = x₀ ∧ ∀ t, 0 ≤ t → HasDerivAt c (D.vectorField ν (c t)) t :=
+  _root_.LerayHopf.Galerkin.forwardGlobalSolution_exists (D.vectorField ν)
+    (D.vectorField_contDiff ν) (fun v => D.inner_self_vectorField_nonpos hν v) x₀
 
 end LerayHopf.Galerkin
