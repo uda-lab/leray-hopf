@@ -30,7 +30,7 @@ theory would supply). The deliverables are otherwise proved axiom-free.
 * `kineticEnergy_lsc_bound` (E1) — #14-P discharge, now `sorry`-FREE (issue #31). The full
   norm-lsc-transfer + ball-exhaustion proof (`kineticEnergyLscTransfer`, `continuous_restrictToBall`,
   `norm_restrictToBall_le'`, `normSq_restrictToBall_eq_setIntegral`,
-  `tendsto_normSq_restrictToBall`, `eLpNorm_two_eq_ofReal_sqrt`), wired through the #14-C
+  `tendsto_normSq_restrictToBall`), wired through the #14-C
   `u_aestronglyMeasurable` field and `galerkin_norm_le_u0`. The former residual `MemLp`-gap `sorry`
   (time-integrability of a Bochner-form integrand) is DISCHARGED by the issue #31 strengthening of
   `AubinLionsPackage_R3.strong_convergence` to its faithful `eLpNorm`-form: the field now supplies
