@@ -638,6 +638,41 @@ private theorem gradRe_smul_ae (c : ℝ) (v : L2VF_R3) (hv : memH1VF_R3 v) (a i 
   filter_upwards [h] with x hx
   rw [heq, hx]; simp [Complex.re_ofReal_mul]
 
+/-- **Scaffold.** The `∑ i, ∑ a, ∫ Φ` structure common to `convFormH1_add_1/2/3`: if the
+`(i,a)`-integrand `Φ i a` splits a.e. as a sum `Φ₁ i a + Φ₂ i a` of two integrable pieces, the
+double-sum-of-integrals splits the same way. Each of the three `convFormH1_add_k` proofs differs
+only in which factor of the triple product `Φ` is the one that splits (supplied via `hsplit`);
+this lemma carries the shared `Finset.sum_add_distrib` (×2) / `integral_congr_ae` /
+`integral_add` bookkeeping. -/
+private theorem sum_sum_integral_add_of_ae
+    (Φ Φ₁ Φ₂ : Fin 3 → Fin 3 → Domain3 → ℝ)
+    (hint₁ : ∀ i a, MeasureTheory.Integrable (Φ₁ i a) (volume : Measure Domain3))
+    (hint₂ : ∀ i a, MeasureTheory.Integrable (Φ₂ i a) (volume : Measure Domain3))
+    (hsplit : ∀ i a, Φ i a =ᵐ[volume] fun x => Φ₁ i a x + Φ₂ i a x) :
+    (∑ i : Fin 3, ∑ a : Fin 3, ∫ x, Φ i a x ∂(volume : Measure Domain3))
+      = (∑ i : Fin 3, ∑ a : Fin 3, ∫ x, Φ₁ i a x ∂(volume : Measure Domain3))
+        + ∑ i : Fin 3, ∑ a : Fin 3, ∫ x, Φ₂ i a x ∂(volume : Measure Domain3) := by
+  rw [← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun a _ => ?_
+  rw [MeasureTheory.integral_congr_ae (hsplit i a),
+    MeasureTheory.integral_add (hint₁ i a) (hint₂ i a)]
+
+/-- **Scaffold.** The `∑ i, ∑ a, ∫ Φ` structure common to `convFormH1_smul_1/2/3`: if the
+`(i,a)`-integrand `Φ i a` is a.e. `c` times a base integrand `Φ₀ i a`, the double-sum-of-integrals
+pulls out the constant `c` the same way. Mirrors `sum_sum_integral_add_of_ae`. -/
+private theorem sum_sum_integral_const_mul_of_ae (c : ℝ)
+    (Φ Φ₀ : Fin 3 → Fin 3 → Domain3 → ℝ)
+    (hsplit : ∀ i a, Φ i a =ᵐ[volume] fun x => c * Φ₀ i a x) :
+    (∑ i : Fin 3, ∑ a : Fin 3, ∫ x, Φ i a x ∂(volume : Measure Domain3))
+      = c * ∑ i : Fin 3, ∑ a : Fin 3, ∫ x, Φ₀ i a x ∂(volume : Measure Domain3) := by
+  rw [Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Finset.mul_sum]
+  refine Finset.sum_congr rfl fun a _ => ?_
+  rw [MeasureTheory.integral_congr_ae (hsplit i a), MeasureTheory.integral_const_mul]
+
 /-- **B4a `convFormH1_add_1` [must-prove].** `convFormH1` is additive in slot 1:
 `convFormH1 (u + u') v w (add hu hu') hv hw = convFormH1 u v w hu hv hw + convFormH1 u' v w hu' hv hw`. -/
 theorem convFormH1_add_1 (u u' v w : L2VF_R3)
@@ -646,22 +681,10 @@ theorem convFormH1_add_1 (u u' v w : L2VF_R3)
     convFormH1 (u + u') v w (memH1VF_R3_add hu hu') hv hw =
     convFormH1 u v w hu hv hw + convFormH1 u' v w hu' hv hw := by
   unfold convFormH1
-  rw [← Finset.sum_add_distrib]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [← Finset.sum_add_distrib]
-  refine Finset.sum_congr rfl fun a _ => ?_
-  -- The (i,a) integrand for (u+u') splits as the sum of the integrands for u and u'.
-  have hsplit : (fun x => (L2VF_projComponentC_R3 a (u + u') x).re *
-        (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i w x).re)
-      =ᵐ[volume] fun x => ((L2VF_projComponentC_R3 a u x).re *
-          (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i w x).re)
-        + ((L2VF_projComponentC_R3 a u' x).re *
-          (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i w x).re) := by
-    filter_upwards [componentRe_add_ae u u' a] with x hx
-    rw [hx]; ring
-  rw [MeasureTheory.integral_congr_ae hsplit,
-    MeasureTheory.integral_add (convFormH1_integrable u v w hu hv hw i a)
-      (convFormH1_integrable u' v w hu' hv hw i a)]
+  refine sum_sum_integral_add_of_ae _ _ _
+    (convFormH1_integrable u v w hu hv hw) (convFormH1_integrable u' v w hu' hv hw) fun i a => ?_
+  filter_upwards [componentRe_add_ae u u' a] with x hx
+  rw [hx]; ring
 
 /-- **B4b `convFormH1_add_2` [must-prove].** `convFormH1` is additive in slot 2:
 `convFormH1 u (v + v') w hu (add hv hv') hw = convFormH1 u v w hu hv hw + convFormH1 u v' w hu hv' hw`. -/
@@ -671,22 +694,10 @@ theorem convFormH1_add_2 (u v v' w : L2VF_R3)
     convFormH1 u (v + v') w hu (memH1VF_R3_add hv hv') hw =
     convFormH1 u v w hu hv hw + convFormH1 u v' w hu hv' hw := by
   unfold convFormH1
-  rw [← Finset.sum_add_distrib]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [← Finset.sum_add_distrib]
-  refine Finset.sum_congr rfl fun a _ => ?_
-  have hsplit : (fun x => (L2VF_projComponentC_R3 a u x).re *
-        (gradComp_of_memH1 (v + v') (memH1VF_R3_add hv hv') a i x).re *
-        (L2VF_projComponentC_R3 i w x).re)
-      =ᵐ[volume] fun x => ((L2VF_projComponentC_R3 a u x).re *
-          (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i w x).re)
-        + ((L2VF_projComponentC_R3 a u x).re *
-          (gradComp_of_memH1 v' hv' a i x).re * (L2VF_projComponentC_R3 i w x).re) := by
-    filter_upwards [gradRe_add_ae v v' hv hv' a i] with x hx
-    rw [hx]; ring
-  rw [MeasureTheory.integral_congr_ae hsplit,
-    MeasureTheory.integral_add (convFormH1_integrable u v w hu hv hw i a)
-      (convFormH1_integrable u v' w hu hv' hw i a)]
+  refine sum_sum_integral_add_of_ae _ _ _
+    (convFormH1_integrable u v w hu hv hw) (convFormH1_integrable u v' w hu hv' hw) fun i a => ?_
+  filter_upwards [gradRe_add_ae v v' hv hv' a i] with x hx
+  rw [hx]; ring
 
 /-- **B4c `convFormH1_add_3` [must-prove].** `convFormH1` is additive in slot 3. -/
 theorem convFormH1_add_3 (u v w w' : L2VF_R3)
@@ -695,21 +706,10 @@ theorem convFormH1_add_3 (u v w w' : L2VF_R3)
     convFormH1 u v (w + w') hu hv (memH1VF_R3_add hw hw') =
     convFormH1 u v w hu hv hw + convFormH1 u v w' hu hv hw' := by
   unfold convFormH1
-  rw [← Finset.sum_add_distrib]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [← Finset.sum_add_distrib]
-  refine Finset.sum_congr rfl fun a _ => ?_
-  have hsplit : (fun x => (L2VF_projComponentC_R3 a u x).re *
-        (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i (w + w') x).re)
-      =ᵐ[volume] fun x => ((L2VF_projComponentC_R3 a u x).re *
-          (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i w x).re)
-        + ((L2VF_projComponentC_R3 a u x).re *
-          (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i w' x).re) := by
-    filter_upwards [componentRe_add_ae w w' i] with x hx
-    rw [hx]; ring
-  rw [MeasureTheory.integral_congr_ae hsplit,
-    MeasureTheory.integral_add (convFormH1_integrable u v w hu hv hw i a)
-      (convFormH1_integrable u v w' hu hv hw' i a)]
+  refine sum_sum_integral_add_of_ae _ _ _
+    (convFormH1_integrable u v w hu hv hw) (convFormH1_integrable u v w' hu hv hw') fun i a => ?_
+  filter_upwards [componentRe_add_ae w w' i] with x hx
+  rw [hx]; ring
 
 /-- **B4d-1 `convFormH1_smul_1` [must-prove].** `convFormH1` is ℝ-homogeneous in slot 1. -/
 theorem convFormH1_smul_1 (c : ℝ) (u v w : L2VF_R3)
@@ -717,17 +717,9 @@ theorem convFormH1_smul_1 (c : ℝ) (u v w : L2VF_R3)
     convFormH1 (c • u) v w (memH1VF_R3_smul c hu) hv hw =
     c * convFormH1 u v w hu hv hw := by
   unfold convFormH1
-  rw [Finset.mul_sum]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [Finset.mul_sum]
-  refine Finset.sum_congr rfl fun a _ => ?_
-  have hsplit : (fun x => (L2VF_projComponentC_R3 a (c • u) x).re *
-        (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i w x).re)
-      =ᵐ[volume] fun x => c * ((L2VF_projComponentC_R3 a u x).re *
-          (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i w x).re) := by
-    filter_upwards [componentRe_smul_ae c u a] with x hx
-    rw [hx]; ring
-  rw [MeasureTheory.integral_congr_ae hsplit, MeasureTheory.integral_const_mul _ _]
+  refine sum_sum_integral_const_mul_of_ae c _ _ fun i a => ?_
+  filter_upwards [componentRe_smul_ae c u a] with x hx
+  rw [hx]; ring
 
 /-- **B4d-2 `convFormH1_smul_2` [must-prove].** `convFormH1` is ℝ-homogeneous in slot 2. -/
 theorem convFormH1_smul_2 (c : ℝ) (u v w : L2VF_R3)
@@ -735,18 +727,9 @@ theorem convFormH1_smul_2 (c : ℝ) (u v w : L2VF_R3)
     convFormH1 u (c • v) w hu (memH1VF_R3_smul c hv) hw =
     c * convFormH1 u v w hu hv hw := by
   unfold convFormH1
-  rw [Finset.mul_sum]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [Finset.mul_sum]
-  refine Finset.sum_congr rfl fun a _ => ?_
-  have hsplit : (fun x => (L2VF_projComponentC_R3 a u x).re *
-        (gradComp_of_memH1 (c • v) (memH1VF_R3_smul c hv) a i x).re *
-        (L2VF_projComponentC_R3 i w x).re)
-      =ᵐ[volume] fun x => c * ((L2VF_projComponentC_R3 a u x).re *
-          (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i w x).re) := by
-    filter_upwards [gradRe_smul_ae c v hv a i] with x hx
-    rw [hx]; ring
-  rw [MeasureTheory.integral_congr_ae hsplit, MeasureTheory.integral_const_mul _ _]
+  refine sum_sum_integral_const_mul_of_ae c _ _ fun i a => ?_
+  filter_upwards [gradRe_smul_ae c v hv a i] with x hx
+  rw [hx]; ring
 
 /-- **B4d-3 `convFormH1_smul_3` [must-prove].** `convFormH1` is ℝ-homogeneous in slot 3. -/
 theorem convFormH1_smul_3 (c : ℝ) (u v w : L2VF_R3)
@@ -754,17 +737,9 @@ theorem convFormH1_smul_3 (c : ℝ) (u v w : L2VF_R3)
     convFormH1 u v (c • w) hu hv (memH1VF_R3_smul c hw) =
     c * convFormH1 u v w hu hv hw := by
   unfold convFormH1
-  rw [Finset.mul_sum]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [Finset.mul_sum]
-  refine Finset.sum_congr rfl fun a _ => ?_
-  have hsplit : (fun x => (L2VF_projComponentC_R3 a u x).re *
-        (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i (c • w) x).re)
-      =ᵐ[volume] fun x => c * ((L2VF_projComponentC_R3 a u x).re *
-          (gradComp_of_memH1 v hv a i x).re * (L2VF_projComponentC_R3 i w x).re) := by
-    filter_upwards [componentRe_smul_ae c w i] with x hx
-    rw [hx]; ring
-  rw [MeasureTheory.integral_congr_ae hsplit, MeasureTheory.integral_const_mul _ _]
+  refine sum_sum_integral_const_mul_of_ae c _ _ fun i a => ?_
+  filter_upwards [componentRe_smul_ae c w i] with x hx
+  rw [hx]; ring
 
 /-! ### B5 — Agreement with `convFormSchwartz` on Schwartz triples -/
 
