@@ -99,6 +99,7 @@ package without pulling the NS-specific solution machinery along.
 | `LpInterpolation.lean` | `L²∩L⁶ ↪ L³` Hölder interpolation plus component `MemLp` facts, extracted from `R3/EnergyClassConvection.lean` (issue #113 PR-2) |
 | `WeakLeibniz.lean` | H¹·H¹ weak Leibniz product rule via Schwartz approximation, extracted from `R3/EnergyClassConvection.lean` (issue #113 PR-2) |
 | `FourierParseval.lean` | `schwartzC` complexification, the vector Parseval bridge, Hermitian-reality facts, and the du Bois-Reymond Hermitian/anti-Hermitian preimage machinery, extracted from `R3/CurlDensity.lean` (issue #113 PR-2) |
+| `BoundedMultiplier.lean` | Bounded real-multiplier operator on `Lp ℂ 2 μ` (self-adjoint, `C`-Lipschitz, commutes with Bochner interval integration) over an arbitrary measure space, extracted from `R3/WeightedFourierCommute.lean` (issue #113 PR-4) |
 
 ## Shared spatial core — `LerayHopf/Core.lean`
 
