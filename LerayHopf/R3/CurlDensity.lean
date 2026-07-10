@@ -482,10 +482,11 @@ This is `mem_sigma_iff_fourier_integral_zero` upgraded by `(P2)`: the available 
 (`schwartz_antiHermitian_has_testSymbol_preimage`), so the vanishing of every `testSymbol`
 pairing extends to every anti-Hermitian Schwartz pairing.
 
-(Kept here, not moved to `Analysis/FourierParseval.lean` with the rest of the du Bois-Reymond
-block, issue #113 PR-2: its statement mentions the curl/divergence-specific `transverseDefect`,
-so it is not itself generic Fourier-analysis infrastructure — caught by the build.) -/
-theorem antiHermitianTest_integral_zero (u : L2VF_R3) (hmem : u ∈ L2Sigma_R3)
+(Kept `private` here, not moved to `Analysis/FourierParseval.lean` with the rest of the du
+Bois-Reymond block, issue #113 PR-2: its statement mentions the curl/divergence-specific
+`transverseDefect`, so it is not itself generic Fourier-analysis infrastructure — caught by
+the build. No cross-file callers need it public.) -/
+private theorem antiHermitianTest_integral_zero (u : L2VF_R3) (hmem : u ∈ L2Sigma_R3)
     (h : SchwartzMap Domain3 ℂ) (hH : ∀ ξ : Domain3, h (-ξ) = -(starRingEnd ℂ) (h ξ)) :
     ∫ ξ : Domain3, (h : Domain3 → ℂ) ξ * transverseDefect u ξ
         ∂(volume : Measure Domain3) = 0 := by
