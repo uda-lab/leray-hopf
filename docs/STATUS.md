@@ -215,14 +215,18 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
   discharged via a junk package. _Discharge:_ M2+ refines the `Prop` fields into real
   predicates (`WeakEquation`, `EnergyClass`, …) tied to the candidate field, `u₀`, `Ω`,
   after which the implication carries genuine analytical content.
-  **Superseded (2026-07-11, issue #112 PR-D):** this paragraph describes the original M1
-  scaffold only. `exists_lerayHopf_from_galerkin_package` and its host file
-  `GalerkinPackage.lean` were **deleted**; the generic layer now lives in
-  `LerayHopf/Galerkin/Domain.lean` + `LerayHopf/Galerkin/SolutionBundles.lean` as
-  `Galerkin.CompactnessPackage` / `Galerkin.exists_lerayHopf_from_package`. The "low-content"
-  caveat no longer applies to the current declarations — both capstones
-  (`exists_lerayHopf_torus3`, `exists_lerayHopf_r3`) are kernel-only and consume this layer
-  with full analytical content via the lanes' `…Full` abbrevs.
+  **Partially superseded (2026-07-11, issue #112 PR-D):** `exists_lerayHopf_from_galerkin_package`
+  and its host file `GalerkinPackage.lean` were **deleted**; the generic package/existence
+  layer now lives in `LerayHopf/Galerkin/Domain.lean` + `LerayHopf/Galerkin/SolutionBundles.lean`
+  as `Galerkin.CompactnessPackage` / `Galerkin.exists_lerayHopf_from_package`, and both
+  capstones (`exists_lerayHopf_torus3`, `exists_lerayHopf_r3`) consume this layer with full
+  analytical content via the lanes' `…Full` abbrevs — that half of the caveat is resolved.
+  The `ExistsLerayHopf`/`LerayHopfSolution` vacuity itself is **unaffected and still stands**:
+  `LerayHopf/Torus/Basic.lean`'s `LerayHopfSolution` still has free `Prop` fields and
+  `LerayHopf/Statement.lean`'s `ExistsLerayHopf` is still vacuous at that scaffold target — PR-D
+  did not touch either file. Do not read this deletion as discharging the M1 vacuity warning
+  for `ExistsLerayHopf`; it only retires the one theorem that used to consume the vacuous
+  package.
 - **`Torus3` is a fresh placeholder with the zero measure**, not the real torus. The zero
   measure is intentionally wrong-but-honest (signals "unrealized"). _Discharge:_ M2 realizes
   `Torus3 := UnitAddTorus 3` with Haar/volume measure.
