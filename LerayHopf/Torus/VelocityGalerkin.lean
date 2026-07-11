@@ -334,47 +334,13 @@ Key lemmas used: `velocityProjection_n_component_comm`, `fourierProjection_n_ten
 theorem velocityProjection_n_tendsto (u : L2VF) :
     Filter.Tendsto (fun n => velocityProjection_n n u) Filter.atTop (nhds u) := by
   classical
-  -- Taking the real part undoes the complex embedding of a component.
+  -- Taking the real part undoes the complex embedding of a component; the componentwise
+  -- reassembly recovers `u` (both centralised in `DivergenceFree.lean`, issue #1 finding-6).
   have hre : ∀ j : Fin 3,
       (RCLike.reCLM (K := ℂ)).compLpL 2 haarTorus3 (L2VF_projComponentC j u)
-        = L2VF_projComponent j u := by
-    intro j
-    refine MeasureTheory.Lp.ext ?_
-    filter_upwards [ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
-        (RCLike.reCLM (K := ℂ)) (L2VF_projComponentC j u),
-      ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
-        (RCLike.ofRealCLM (K := ℂ)) (L2VF_projComponent j u)] with x hx1 hx2
-    rw [hx1, show L2VF_projComponentC j u
-        = (RCLike.ofRealCLM (K := ℂ)).compLpL 2 haarTorus3 (L2VF_projComponent j u) from rfl,
-      hx2]
-    simp
-  -- Pointwise (a.e.) description of the reassembled `j`-th component.
-  have hcomp : ∀ j : Fin 3, L2VF_injectComponent j (L2VF_projComponent j u)
-      =ᵐ[haarTorus3] fun x => u x j • EuclideanSpace.single j (1 : ℝ) := by
-    intro j
-    simp only [L2VF_injectComponent, L2VF_projComponent]
-    filter_upwards [ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
-        ((ContinuousLinearMap.id ℝ ℝ).smulRight (EuclideanSpace.single j (1 : ℝ)))
-        ((EuclideanSpace.proj j (𝕜 := ℝ)).compLpL 2 haarTorus3 u),
-      ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
-        (EuclideanSpace.proj j (𝕜 := ℝ)) u] with x hx1 hx2
-    rw [hx1, hx2]
-    simp
-  -- The componentwise reassembly recovers `u`.
-  have hdecomp : ∑ j : Fin 3, L2VF_injectComponent j (L2VF_projComponent j u) = u := by
-    refine MeasureTheory.Lp.ext ?_
-    rw [Fin.sum_univ_three]
-    filter_upwards [MeasureTheory.Lp.coeFn_add
-        (L2VF_injectComponent 0 (L2VF_projComponent 0 u)
-          + L2VF_injectComponent 1 (L2VF_projComponent 1 u))
-        (L2VF_injectComponent 2 (L2VF_projComponent 2 u)),
-      MeasureTheory.Lp.coeFn_add (L2VF_injectComponent 0 (L2VF_projComponent 0 u))
-        (L2VF_injectComponent 1 (L2VF_projComponent 1 u)),
-      hcomp 0, hcomp 1, hcomp 2] with x hx1 hx2 hc0 hc1 hc2
-    rw [hx1, Pi.add_apply, hx2, Pi.add_apply, hc0, hc1, hc2]
-    have hsum := (EuclideanSpace.basisFun (Fin 3) ℝ).sum_repr (u x)
-    simpa [Fin.sum_univ_three, EuclideanSpace.basisFun_apply,
-      EuclideanSpace.basisFun_repr] using hsum
+        = L2VF_projComponent j u := fun j => re_compLpL_projComponentC j u
+  have hdecomp : ∑ j : Fin 3, L2VF_injectComponent j (L2VF_projComponent j u) = u :=
+    sum_inject_projComponent u
   -- Each summand converges, by D-30 and continuity of the reassembly.
   have hterm : ∀ j ∈ (Finset.univ : Finset (Fin 3)),
       Filter.Tendsto (fun n : ℕ => L2VF_injectComponent j

@@ -92,37 +92,13 @@ lemma L2VF_ext_componentC_mFourierCoeff {u v : L2VF}
     have : ((L2VF_projComponent j u x : ℝ) : ℂ) = ((L2VF_projComponent j v x : ℝ) : ℂ) := by
       simpa using hcc
     exact_mod_cast this
-  -- A velocity field is determined by its three real components: reassemble.
-  have hreassemble : ∀ w : L2VF,
-      ∑ j : Fin 3, L2VF_injectComponent j (L2VF_projComponent j w) = w := by
-    intro w
-    refine MeasureTheory.Lp.ext ?_
-    have hcompae : ∀ j : Fin 3, L2VF_injectComponent j (L2VF_projComponent j w)
-        =ᵐ[haarTorus3] fun x => w x j • EuclideanSpace.single j (1 : ℝ) := by
-      intro j
-      simp only [L2VF_injectComponent, L2VF_projComponent]
-      filter_upwards [ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
-          ((ContinuousLinearMap.id ℝ ℝ).smulRight (EuclideanSpace.single j (1 : ℝ)))
-          ((EuclideanSpace.proj j (𝕜 := ℝ)).compLpL 2 haarTorus3 w),
-        ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
-          (EuclideanSpace.proj j (𝕜 := ℝ)) w] with x hx1 hx2
-      rw [hx1, hx2]; simp
-    rw [Fin.sum_univ_three]
-    filter_upwards [MeasureTheory.Lp.coeFn_add
-        (L2VF_injectComponent 0 (L2VF_projComponent 0 w)
-          + L2VF_injectComponent 1 (L2VF_projComponent 1 w))
-        (L2VF_injectComponent 2 (L2VF_projComponent 2 w)),
-      MeasureTheory.Lp.coeFn_add (L2VF_injectComponent 0 (L2VF_projComponent 0 w))
-        (L2VF_injectComponent 1 (L2VF_projComponent 1 w)),
-      hcompae 0, hcompae 1, hcompae 2] with x hx1 hx2 hc0 hc1 hc2
-    rw [hx1, Pi.add_apply, hx2, Pi.add_apply, hc0, hc1, hc2]
-    have hsum := (EuclideanSpace.basisFun (Fin 3) ℝ).sum_repr (w x)
-    simpa [Fin.sum_univ_three, EuclideanSpace.basisFun_apply,
-      EuclideanSpace.basisFun_repr] using hsum
-  calc u = ∑ j : Fin 3, L2VF_injectComponent j (L2VF_projComponent j u) := (hreassemble u).symm
+  -- A velocity field is determined by its three real components: reassemble
+  -- (`sum_inject_projComponent`, centralised in `DivergenceFree.lean`, issue #1 finding-6).
+  calc u = ∑ j : Fin 3, L2VF_injectComponent j (L2VF_projComponent j u) :=
+        (sum_inject_projComponent u).symm
     _ = ∑ j : Fin 3, L2VF_injectComponent j (L2VF_projComponent j v) := by
         refine Finset.sum_congr rfl ?_; intro j _; rw [hcomp j]
-    _ = v := hreassemble v
+    _ = v := sum_inject_projComponent v
 
 /-- **Idempotence of the velocity Galerkin projection.**  `Pₙ (Pₙ u) = Pₙ u`.
 

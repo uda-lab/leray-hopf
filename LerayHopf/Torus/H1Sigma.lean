@@ -105,51 +105,6 @@ private theorem h1EnergySq_component_le (j : Fin 3) (w : L2VF) :
       ‖mFourierCoeff3 (L2VF_projComponentC j' w) k‖ ^ 2)
     (fun j' _ => tsum_nonneg fun k => by positivity) (Finset.mem_univ j)
 
-/-- Taking the real part undoes the complex embedding of a component
-(cf. `velocityProjection_n_tendsto`). -/
-private theorem re_compLpL_projComponentC (j : Fin 3) (w : L2VF) :
-    (RCLike.reCLM (K := ℂ)).compLpL 2 haarTorus3 (L2VF_projComponentC j w)
-      = L2VF_projComponent j w := by
-  refine MeasureTheory.Lp.ext ?_
-  filter_upwards [ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
-      (RCLike.reCLM (K := ℂ)) (L2VF_projComponentC j w),
-    ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
-      (RCLike.ofRealCLM (K := ℂ)) (L2VF_projComponent j w)] with x hx1 hx2
-  rw [hx1, show L2VF_projComponentC j w
-      = (RCLike.ofRealCLM (K := ℂ)).compLpL 2 haarTorus3 (L2VF_projComponent j w) from rfl,
-    hx2]
-  simp
-
-/-- The componentwise reassembly recovers a vector field
-(cf. `velocityProjection_n_tendsto`). -/
-private theorem sum_inject_projComponent (w : L2VF) :
-    ∑ j : Fin 3, L2VF_injectComponent j (L2VF_projComponent j w) = w := by
-  -- Pointwise (a.e.) description of the reassembled `j`-th component.
-  have hcomp : ∀ j : Fin 3, L2VF_injectComponent j (L2VF_projComponent j w)
-      =ᵐ[haarTorus3] fun x => w x j • EuclideanSpace.single j (1 : ℝ) := by
-    intro j
-    simp only [L2VF_injectComponent, L2VF_projComponent]
-    filter_upwards [ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
-        ((ContinuousLinearMap.id ℝ ℝ).smulRight (EuclideanSpace.single j (1 : ℝ)))
-        ((EuclideanSpace.proj j (𝕜 := ℝ)).compLpL 2 haarTorus3 w),
-      ContinuousLinearMap.coeFn_compLpL (p := 2) (μ := haarTorus3)
-        (EuclideanSpace.proj j (𝕜 := ℝ)) w] with x hx1 hx2
-    rw [hx1, hx2]
-    simp
-  refine MeasureTheory.Lp.ext ?_
-  rw [Fin.sum_univ_three]
-  filter_upwards [MeasureTheory.Lp.coeFn_add
-      (L2VF_injectComponent 0 (L2VF_projComponent 0 w)
-        + L2VF_injectComponent 1 (L2VF_projComponent 1 w))
-      (L2VF_injectComponent 2 (L2VF_projComponent 2 w)),
-    MeasureTheory.Lp.coeFn_add (L2VF_injectComponent 0 (L2VF_projComponent 0 w))
-      (L2VF_injectComponent 1 (L2VF_projComponent 1 w)),
-    hcomp 0, hcomp 1, hcomp 2] with x hx1 hx2 hc0 hc1 hc2
-  rw [hx1, Pi.add_apply, hx2, Pi.add_apply, hc0, hc1, hc2]
-  have hsum := (EuclideanSpace.basisFun (Fin 3) ℝ).sum_repr (w x)
-  simpa [Fin.sum_univ_three, EuclideanSpace.basisFun_apply,
-    EuclideanSpace.basisFun_repr] using hsum
-
 /-- **Rellich compactness for L²_σ.**
 
 Any sequence `u : ℕ → L2VF` of divergence-free velocity fields bounded in H¹
