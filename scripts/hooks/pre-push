@@ -7,6 +7,29 @@ set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)" || exit 1
 cd "$ROOT" || exit 1
 
+# Serialized incremental build. flock(1) is util-linux and absent on macOS (#118),
+# so fall back to the same kernel flock(2) via perl there (macOS ships /usr/bin/perl;
+# the exec'd build inherits the locked fd, so the lock lives exactly as long as the
+# build — no lock files to reclaim, no stale/PID-reuse states, no cleanup traps).
+# The Linux flock path is unchanged.
+run_build_locked() {
+  if command -v flock >/dev/null 2>&1; then
+    flock /tmp/lean-build.lock lake build
+  elif command -v perl >/dev/null 2>&1; then
+    perl -e '
+      use Fcntl qw(:flock F_SETFD);
+      open(my $fh, ">>", "/tmp/lean-build.lock") or die "pre-push lock open: $!\n";
+      flock($fh, LOCK_EX)                        or die "pre-push flock: $!\n";
+      fcntl($fh, F_SETFD, 0)                     or die "pre-push fcntl: $!\n";
+      exec @ARGV or die "pre-push exec: $!\n";
+    ' lake build
+  else
+    # mirrors scripts/agent-preflight.sh: better an unserialized build than no gate
+    # (warning is emitted at the call site — this function's stderr goes to $LOG)
+    lake build
+  fi
+}
+
 echo "[pre-push] grep guards…"
 bash scripts/check-no-sorry.sh      || { echo "[pre-push] BLOCK: check-no-sorry failed";      exit 1; }
 bash scripts/check-no-axiom.sh      || { echo "[pre-push] BLOCK: check-no-axiom failed";      exit 1; }
@@ -38,9 +61,12 @@ if [ "$had_input" = "0" ]; then
   changed="$(git diff --name-only "${base:-HEAD}" HEAD 2>/dev/null || true)"
 fi
 if printf '%s\n' "$changed" | grep -qE '\.lean$|lakefile|lean-toolchain|lake-manifest'; then
-  echo "[pre-push] Lean sources changed — incremental build (flock)…"
+  echo "[pre-push] Lean sources changed — incremental build (serialized)…"
+  if ! command -v flock >/dev/null 2>&1 && ! command -v perl >/dev/null 2>&1; then
+    echo "[pre-push] WARNING: neither flock nor perl found; running lake build without serialization lock." >&2
+  fi
   LOG="$(mktemp)"
-  if ! flock /tmp/lean-build.lock lake build >"$LOG" 2>&1; then
+  if ! run_build_locked >"$LOG" 2>&1; then
     echo "[pre-push] BLOCK: lake build FAILED. Tail:"; tail -n 30 "$LOG"; rm -f "$LOG"; exit 1
   fi
   rm -f "$LOG"
