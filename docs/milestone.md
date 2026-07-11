@@ -9,6 +9,16 @@
 > 場合、インターフェースは MVP plan に従う。各マイルストーンの done 基準(どの定理を sorry-free に
 > するか)は、着手時に `lean-planner` が `docs/scratch/` で確定する。
 
+> **過去のロードマップ（2026-07-10 時点で全マイルストーン達成済み、supersede 済み）**：
+> 以下の Milestone 1–10 は最初期の設計時点でのファイル名・構造体名の見取り図であり、現在の
+> リポジトリ構造とは一致しない（例：Milestone 1/3 の成果物 `LerayHopf/Basic.lean` /
+> `LerayHopf/GalerkinPackage.lean` / `ExistenceFromPackage.lean` は issue #112 PR-D で
+> 削除済み、`GalerkinCompactnessPackage` / `exists_lerayHopf_from_galerkin_package` という
+> 公開名も同時に廃止）。両カプストーン定理 `exists_lerayHopf_torus3` / `exists_lerayHopf_r3`
+> は既に kernel-only（プロジェクト axiom ゼロ）で完成している。現在のモジュール構成は
+> [`docs/architecture.md`](./architecture.md)、達成状況は [`docs/STATUS.md`](./STATUS.md) を
+> 参照。以下は設計プロセスの歴史的記録として残す。
+
 ## Phase 0：スコープ
 
 対象を三段階に分け、$\mathbb R^3$ 版は最初から狙わない。

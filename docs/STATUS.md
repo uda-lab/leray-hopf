@@ -50,7 +50,7 @@ maintains this ledger as the final report.
 
 | # | Milestone | State |
 |---|---|---|
-| M1 | Structural spine (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton) | in progress |
+| M1 | Structural spine (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton) | in progress — **superseded (2026-07-11, issue #112 PR-D):** `LerayHopf/GalerkinPackage.lean` and `LerayHopf/ExistenceFromPackage.lean` — and their public names `GalerkinCompactnessPackage` / `exists_lerayHopf_from_galerkin_package` — were **deleted**. Both capstones are long past this M1 stage; the generic package/existence plumbing this row describes now lives in `LerayHopf/Galerkin/Domain.lean` + `LerayHopf/Galerkin/SolutionBundles.lean` as `Galerkin.CompactnessPackage` / `Galerkin.exists_lerayHopf_from_package`, consumed by the R3/Torus lanes via the `…Full` abbrevs (`GalerkinCompactnessPackageFull_R3`, `GalerkinCompactnessPackageFull`, etc.). See `docs/architecture.md` for the current module layout. |
 | Side A/B | Blow-up lower bound · nonuniqueness statement | done (pending commit) |
 | M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | **done** (axiom-free) |
 | M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | **done** (axiom-free) |
@@ -215,6 +215,18 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
   discharged via a junk package. _Discharge:_ M2+ refines the `Prop` fields into real
   predicates (`WeakEquation`, `EnergyClass`, …) tied to the candidate field, `u₀`, `Ω`,
   after which the implication carries genuine analytical content.
+  **Partially superseded (2026-07-11, issue #112 PR-D):** `exists_lerayHopf_from_galerkin_package`
+  and its host file `GalerkinPackage.lean` were **deleted**; the generic package/existence
+  layer now lives in `LerayHopf/Galerkin/Domain.lean` + `LerayHopf/Galerkin/SolutionBundles.lean`
+  as `Galerkin.CompactnessPackage` / `Galerkin.exists_lerayHopf_from_package`, and both
+  capstones (`exists_lerayHopf_torus3`, `exists_lerayHopf_r3`) consume this layer with full
+  analytical content via the lanes' `…Full` abbrevs — that half of the caveat is resolved.
+  The `ExistsLerayHopf`/`LerayHopfSolution` vacuity itself is **unaffected and still stands**:
+  `LerayHopf/Torus/Basic.lean`'s `LerayHopfSolution` still has free `Prop` fields and
+  `LerayHopf/Statement.lean`'s `ExistsLerayHopf` is still vacuous at that scaffold target — PR-D
+  did not touch either file. Do not read this deletion as discharging the M1 vacuity warning
+  for `ExistsLerayHopf`; it only retires the one theorem that used to consume the vacuous
+  package.
 - **`Torus3` is a fresh placeholder with the zero measure**, not the real torus. The zero
   measure is intentionally wrong-but-honest (signals "unrealized"). _Discharge:_ M2 realizes
   `Torus3 := UnitAddTorus 3` with Haar/volume measure.

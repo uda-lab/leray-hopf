@@ -16,6 +16,20 @@ This MVP deliberately avoids proving the PDE estimates, compactness theorem, and
 > signatures (e.g. its `GalerkinCompactnessPackage` with an `approx` field instead of a
 > `limit` field), this file wins; those sketches describe the post-MVP refinement direction.
 
+> **Superseded (2026-07-10, issue #112 PR-D).** This plan describes the original M1
+> scaffold spine (`Basic.lean`, `Statement.lean`, `GalerkinPackage.lean`,
+> `ExistenceFromPackage.lean`, `EnergySkeleton.lean`) as a design target, not the current
+> state of the repository. Both `GalerkinPackage.lean` and `ExistenceFromPackage.lean`
+> — along with the public names `GalerkinCompactnessPackage` and
+> `exists_lerayHopf_from_galerkin_package` — have been **deleted**: the two capstones
+> (`exists_lerayHopf_torus3`, `exists_lerayHopf_r3`) are long past this MVP stage and are
+> now kernel-only, and the generic package/existence plumbing they describe now lives in
+> `LerayHopf/Galerkin/Domain.lean` + `SolutionBundles.lean` instead. `Basic.lean` was never
+> realized as such. See `docs/architecture.md` for the current module layout and
+> `docs/scratch/galerkin-domain-plan.md` for the campaign that replaced this layer. The
+> milestone-by-milestone content below is kept as a historical record of the MVP design
+> process; do not treat it as an instruction to (re)create the listed files.
+
 ## Scope
 
 Target domain:
