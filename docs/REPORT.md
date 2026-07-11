@@ -8,6 +8,12 @@
 > ℝ³ — `galerkin_limit_passage_R3` PROVED as a theorem (issue #4 PR-6, `LimitPassage.lean`);
 > 𝕋³ — `aubin_lions` proved (issue #23, PR #89, `TorusAubinLionsAssembly.lean`).
 > `#print axioms` for both = `[propext, Classical.choice, Quot.sound]`.
+>
+> **Also (2026-07-11, issue #112 PR-D):** the M1 scaffold files this report describes below
+> (`GalerkinPackage.lean`, `ExistenceFromPackage.lean`, and their public names
+> `GalerkinCompactnessPackage` / `exists_lerayHopf_from_galerkin_package`) have since been
+> **deleted**, replaced by the generic `LerayHopf/Galerkin/` layer — see
+> [`architecture.md`](architecture.md) for the current module layout.
 
 Leray–Hopf weak existence on the real 3-torus, built bottom-up on mathlib.
 Branch `autorun/leray-hopf-torus3`, 10 milestone commits on top of `9232c05`.
