@@ -14,8 +14,36 @@ Reused unmodified by both 𝕋³ and ℝ³ — the key structural payoff of the 
 | `LerayHopf/EnergyEstimate.lean` | `AbstractEnergyLaw`, the Galerkin energy identity, energy non-increase |
 | `LerayHopf/EnergySkeleton.lean` | Abstract energy-inequality skeleton (scaffold-era, sorry-free) |
 | `LerayHopf/Statement.lean` | The original scaffold target statement (`Scaffold.exists_lerayHopf_torus3_statement`) — kept as a marked-`sorry` historical placeholder, distinct from the real capstones |
-| `LerayHopf/GalerkinPackage.lean`, `ExistenceFromPackage.lean` | Generic package ⟹ existence plumbing |
 | `LerayHopf/BlowupLowerBound.lean`, `NonuniquenessStatement.lean` | Independent side branches (Branch A / B) |
+
+## Generic Galerkin layer — `LerayHopf/Galerkin/`
+
+Domain-neutral Galerkin-construction machinery factored out of code that used to be
+duplicated (byte-for-byte in places) across the 𝕋³ and ℝ³ lanes (issue #112). Two
+sub-tiers, in DAG order:
+
+| File | Content |
+|---|---|
+| `DissipativeODE.lean` | Abstract dissipative-`C¹`-field forward-global ODE existence over any finite-dimensional real inner-product space `V`: the Picard–Lindelöf tiling/gluing argument, energy non-increase, solution uniqueness, and ambient-submodule transport (`coe_hasDerivAt`). Mathlib-only imports. |
+| `QuadraticField.lean` | `FieldForms` — raw trilinear-convection + viscous form data on `V`, and the Riesz-representative Galerkin vector field it determines (`vectorField`, `vectorField_spec`, `forwardGlobalSolution_exists` via `DissipativeODE`). Imports only `DissipativeODE.lean` + mathlib. |
+| `Domain.lean` | `Galerkin.Domain` — the ambient L² Hilbert space, closed divergence-free subspace, projector family, and the domain functionals (regularity predicate, Stokes pairing, dissipation, energy-bound integrand/RHS, test predicate) that parameterize the solution bundles; `NSFormCore` (the domain-neutral projection of the NS convection form) and `Domain.evolution : Domain → NSFormCore D → DissipativeEvolution`. Imports `EvolutionTriple.lean`. |
+| `SolutionBundles.lean` | `Galerkin.SolutionData`, `Galerkin.LerayHopfSolution`, `Galerkin.CompactnessPackage`, and `Galerkin.exists_lerayHopf_from_package` — the generic proof-carrying solution structures both lanes' bundles specialize. Imports `Domain.lean`. |
+
+`DissipativeODE.lean` and `QuadraticField.lean` have no `LerayHopf` consumers of their
+own — they are pdelib-grade (see `docs/pdelib-staging.md`) and are reached only through
+the per-lane `FieldForms` witnesses (`torusFieldForms` in `Torus/GalerkinODESolve.lean`,
+`r3FieldForms` in `R3/GalerkinODEExistence.lean`) that replaced the two lanes' duplicated
+CLM towers. `Domain.lean`/`SolutionBundles.lean` sit directly above `EvolutionTriple.lean`
+and directly below both lanes' `SolutionInterfaces.lean`, which instantiate
+`Galerkin.Domain` as `torusDomain` / `r3Domain 𝔊` and recover their existing bundle names
+(`GalerkinSolutionData[_R3]`, `LerayHopfSolutionFull[_R3]`,
+`GalerkinCompactnessPackageFull[_R3]`, `exists_lerayHopf_from_package_full[_R3]`) as
+abbreviations of — for R3, an `extends`-extension of, carrying the R3-only finite-dim
+enrichment field `viscous_curve_continuous` — the generic structures above. Every field
+specializes definitionally to the current per-lane field, so constructor and projection
+call sites are unchanged. `AubinLionsPackage` stays per-lane by design: the 𝕋³ and ℝ³
+compactness statements genuinely differ (global vs. per-ball convergence), not just in
+proof but in content (`docs/scratch/galerkin-domain-plan.md` §4 ruling (b)).
 
 ## Bochner abstract time layer — `LerayHopf/Bochner/`
 
@@ -40,12 +68,14 @@ Spatial linear layer (axiom-free, sorry-free): `Basic.lean`, `Domain.lean`,
 
 Analytic frontier (formerly axiomatized, now proved): `ConvectionForm.lean`,
 `ConvectionExtension.lean`, `EnergyConvection.lean`, `GalerkinScheme.lean`,
-`GalerkinODESolve.lean`, `GalerkinODECapstone.lean` (**capstone**:
-`exists_lerayHopf_torus3`), `TestFamily.lean`, `LimitPassage.lean`,
-`TraceEnergy.lean`, `ViscousLimit.lean`, `ProjectionAdjoint.lean`,
+`GalerkinODESolve.lean` (hosts `torusFieldForms`, the `Galerkin.FieldForms` witness that
+routes this lane's ODE vector field through `LerayHopf/Galerkin/QuadraticField.lean`),
+`GalerkinODECapstone.lean` (**capstone**: `exists_lerayHopf_torus3`), `TestFamily.lean`,
+`LimitPassage.lean`, `TraceEnergy.lean`, `ViscousLimit.lean`, `ProjectionAdjoint.lean`,
 `ModeCompactness.lean`, `ModeTail.lean`, `AubinLionsAssembly.lean`.
 
 Interface + re-export: `SolutionInterfaces.lean` (support layer: `Torus3NSForms`,
+`torusDomain` and `Torus3NSForms.core` instantiating `LerayHopf/Galerkin/Domain.lean`,
 `LerayHopfSolutionFull`, assembly helpers — the capstone itself now lives in
 `GalerkinODECapstone.lean`), `Capstone.lean` (re-exports the full chain).
 
@@ -59,7 +89,9 @@ construction, `CurlSchwartzDense` — split out of `SchwartzDivFreeBasis.lean`, 
 
 Analytic frontier (formerly axiomatized, now proved): `GalerkinScheme.lean`,
 `SchwartzDivFreeBasis.lean` (`r3GalerkinScheme_exists`), `GalerkinODE.lean`,
-`GalerkinODEExistence.lean`, `GalerkinODESolve.lean`, `GalerkinODECapstone.lean`
+`GalerkinODEExistence.lean` (hosts `r3FieldForms`, the `Galerkin.FieldForms` witness that
+routes this lane's ODE vector field through `LerayHopf/Galerkin/QuadraticField.lean`),
+`GalerkinODESolve.lean`, `GalerkinODECapstone.lean`
 (**capstone**: `exists_lerayHopf_r3`), `ArzelaAscoliTime.lean`,
 `AubinLionsLimitPassage.lean` (Tier N/W/C — the `[0,T]`-window `weakFormNS`/`bForm` limit-passage
 monoliths share a `RestrictAvgMeasure`-class bridge (`restrictAvgMeasure`,
@@ -85,6 +117,9 @@ and the Steklov interval-average building blocks, `galerkinSpaceTimeExtraction_R
 of `AubinLionsLimitPassage.lean`, issue #114 Tier 1 commit 2).
 
 Interface + re-export: `SolutionInterfaces.lean` (support layer: `R3NSForms`,
+`r3Domain`/`R3NSForms.core` instantiating `LerayHopf/Galerkin/Domain.lean`,
+`GalerkinSolutionData_R3` extending `LerayHopf/Galerkin/SolutionBundles.lean`'s
+`Galerkin.SolutionData` with the R3-only `viscous_curve_continuous` field,
 `LerayHopfSolutionFull_R3`, assembly helpers — capstone itself in
 `GalerkinODECapstone.lean`); root-level `LerayHopf/R3Capstone.lean` (re-exports the
 full chain).
@@ -114,17 +149,20 @@ package without pulling the NS-specific solution machinery along.
 
 ## Shared spatial core — `LerayHopf/Core.lean`
 
-Collects everything above that is **project-axiom-free and `sorryAx`-free**:
+Collects everything above that is **project-axiom-free** and `sorryAx`-free:
 `Torus.Basic/Domain/FunctionSpaces/DivergenceFree/SobolevTorus/Leray/
-GalerkinProjection/VelocityGalerkin`, `EnergySkeleton`, `GalerkinPackage`,
+GalerkinProjection/VelocityGalerkin`, `EnergySkeleton`,
 `NonuniquenessStatement`, `BlowupLowerBound`, and the ℝ³ spatial/Fourier sublayer
 (`R3.Domain/DivergenceFree/Regularity/FourierL2/RellichBall/SpatialCompactness/
 TrilinearEstimate`). `import LerayHopf.Core` gives this layer without pulling in
-either capstone's support modules.
+either capstone's support modules. (`LerayHopf/Galerkin/` is axiom-free and
+sorry-free too, but is imported directly by the root `LerayHopf.lean`, not by `Core` —
+see the next section.)
 
 ## Top-level assembly — `LerayHopf.lean`
 
-Re-exports `LerayHopf.Core` + `Torus.Capstone` + `R3Capstone`, plus the remaining
-sorry-carrying files needed to build both capstones end to end (Bochner layer, the
+Re-exports `LerayHopf.Core` + the generic `LerayHopf.Galerkin` layer (`DissipativeODE`,
+`QuadraticField`, `Domain`, `SolutionBundles`) + `Torus.Capstone` + `R3Capstone`, plus the
+remaining sorry-carrying files needed to build both capstones end to end (Bochner layer, the
 Torus/R3 analytic-frontier files listed above). See the module docstring in
 `LerayHopf.lean` for the full import list and layering rationale.
