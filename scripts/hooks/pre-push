@@ -7,6 +7,40 @@ set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)" || exit 1
 cd "$ROOT" || exit 1
 
+# Serialized incremental build. flock(1) is util-linux and absent on macOS (#118),
+# so fall back to a mkdir-based lock there; the Linux flock path is unchanged.
+run_build_locked() {
+  if command -v flock >/dev/null 2>&1; then
+    flock /tmp/lean-build.lock lake build
+    return $?
+  fi
+  local lockdir=/tmp/lean-build.lock.d
+  local waited_nopid=0
+  while ! mkdir "$lockdir" 2>/dev/null; do
+    if [ -f "$lockdir/pid" ]; then
+      waited_nopid=0
+      local holder
+      holder="$(cat "$lockdir/pid" 2>/dev/null || true)"
+      if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
+        rm -rf "$lockdir"   # holder is dead (e.g. SIGKILL) — reclaim the stale lock
+        continue
+      fi
+    else
+      # lockdir without a pid file: either the holder is between mkdir and its pid
+      # write, or it died in that window — reclaim after a short grace period.
+      waited_nopid=$((waited_nopid + 2))
+      if [ "$waited_nopid" -ge 10 ]; then
+        rm -rf "$lockdir"
+        continue
+      fi
+    fi
+    sleep 2
+  done
+  echo "$$" > "$lockdir/pid"
+  trap 'rm -rf /tmp/lean-build.lock.d' EXIT INT TERM
+  lake build
+}
+
 echo "[pre-push] grep guards…"
 bash scripts/check-no-sorry.sh      || { echo "[pre-push] BLOCK: check-no-sorry failed";      exit 1; }
 bash scripts/check-no-axiom.sh      || { echo "[pre-push] BLOCK: check-no-axiom failed";      exit 1; }
@@ -38,9 +72,9 @@ if [ "$had_input" = "0" ]; then
   changed="$(git diff --name-only "${base:-HEAD}" HEAD 2>/dev/null || true)"
 fi
 if printf '%s\n' "$changed" | grep -qE '\.lean$|lakefile|lean-toolchain|lake-manifest'; then
-  echo "[pre-push] Lean sources changed — incremental build (flock)…"
+  echo "[pre-push] Lean sources changed — incremental build (serialized)…"
   LOG="$(mktemp)"
-  if ! flock /tmp/lean-build.lock lake build >"$LOG" 2>&1; then
+  if ! run_build_locked >"$LOG" 2>&1; then
     echo "[pre-push] BLOCK: lake build FAILED. Tail:"; tail -n 30 "$LOG"; rm -f "$LOG"; exit 1
   fi
   rm -f "$LOG"
