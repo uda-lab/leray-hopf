@@ -79,7 +79,6 @@ import LerayHopf.Torus.RellichEmbedding
 import LerayHopf.Torus.H1Sigma
 import LerayHopf.EvolutionTriple
 import LerayHopf.Statement
-import LerayHopf.ExistenceFromPackage
 import LerayHopf.EnergyEstimate
 
 -- Capstone re-export layers
