@@ -17,27 +17,39 @@ run_build_locked() {
   local lockdir=/tmp/lean-build.lock.d
   local waited_nopid=0
   while ! mkdir "$lockdir" 2>/dev/null; do
+    local stale=""
     if [ -f "$lockdir/pid" ]; then
       waited_nopid=0
       local holder
       holder="$(cat "$lockdir/pid" 2>/dev/null || true)"
-      if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
-        rm -rf "$lockdir"   # holder is dead (e.g. SIGKILL) — reclaim the stale lock
-        continue
+      # ps -p, not kill -0: kill -0 reports EPERM-dead for another user's live pid.
+      if [ -n "$holder" ] && ! ps -p "$holder" >/dev/null 2>&1; then
+        stale=yes   # holder is dead (e.g. SIGKILL)
       fi
     else
       # lockdir without a pid file: either the holder is between mkdir and its pid
-      # write, or it died in that window — reclaim after a short grace period.
+      # write, or it died in that window — treat as stale after a grace period.
       waited_nopid=$((waited_nopid + 2))
-      if [ "$waited_nopid" -ge 10 ]; then
-        rm -rf "$lockdir"
-        continue
+      [ "$waited_nopid" -ge 10 ] && stale=yes
+    fi
+    if [ -n "$stale" ]; then
+      # Claim-by-rename: only the waiter whose atomic mv succeeds may delete, so
+      # a concurrent reclaimer can never rm a fresh lock re-created in between.
+      if mv "$lockdir" "$lockdir.stale.$$" 2>/dev/null; then
+        rm -rf "$lockdir.stale.$$"
       fi
+      waited_nopid=0
+      continue
     fi
     sleep 2
   done
-  echo "$$" > "$lockdir/pid"
-  trap 'rm -rf /tmp/lean-build.lock.d' EXIT INT TERM
+  if ! echo "$$" > "$lockdir/pid" 2>/dev/null; then
+    rm -rf "$lockdir"
+    echo "[pre-push] ERROR: could not write $lockdir/pid" >&2
+    return 1
+  fi
+  # Release only while we still own the lock (a reclaimer may have quarantined it).
+  trap '[ "$(cat /tmp/lean-build.lock.d/pid 2>/dev/null)" = "$$" ] && rm -rf /tmp/lean-build.lock.d' EXIT INT TERM
   lake build
 }
 
