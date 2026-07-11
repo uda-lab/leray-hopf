@@ -1,4 +1,6 @@
 import LerayHopf.EvolutionTriple
+import LerayHopf.Galerkin.Domain          -- issue #112 PR-C: generic Galerkin.Domain
+import LerayHopf.Galerkin.SolutionBundles -- issue #112 PR-C: generic solution bundles
 import LerayHopf.Torus.H1Sigma
 import LerayHopf.EnergyEstimate
 import LerayHopf.Torus.GalerkinProjection
@@ -213,9 +215,66 @@ theorem Torus3NSForms.b_self_zero_right (F : Torus3NSForms) (u v : L2Sigma) :
   have h := F.b_antisymm u v v
   linarith
 
+/-! ### Generic Galerkin domain instance (issue #112 PR-C) -/
+
+/-- The 𝕋³ Galerkin domain: ambient `L2VF`, divergence-free subspace `L2Sigma`, projector
+family `velocityProjection_n`, and the concrete T³ domain functionals (`memH1VF`,
+`stokesTestPairing`, `viscousFormSq`, `h1EnergySq`, `IsGalerkinTest`).  The reg-bound
+integrand is the full `h1EnergySq` (ν-independent) with RHS `T‖u₀‖² + ‖u₀‖²/(2ν)`. -/
+@[reducible] noncomputable def torusDomain : Galerkin.Domain where
+  X := L2VF
+  σ := L2Sigma
+  σ_complete := inferInstance
+  P := velocityProjection_n
+  P_preserves_σ := velocityProjection_n_preserves_L2Sigma
+  regMem := memH1VF
+  stokes := stokesTestPairing
+  dissip := viscousFormSq
+  evoReg := h1EnergySq
+  evoReg_nonneg := h1EnergySq_nonneg
+  regIntegrand := fun _ => h1EnergySq
+  regBoundRHS := fun ν T r => T * r ^ 2 + r ^ 2 / (2 * ν)
+  isTest := IsGalerkinTest
+
+/-- The domain-neutral convection core of a `Torus3NSForms` (the `b_galerkin` non-vacuity
+pin stays on `Torus3NSForms`; this is a projection onto the `NSFormCore` fields). -/
+def Torus3NSForms.core (F : Torus3NSForms) : Galerkin.NSFormCore torusDomain where
+  b := F.b
+  b_antisymm := F.b_antisymm
+  b_add_1 := F.b_add_1
+  b_add_2 := F.b_add_2
+  b_add_3 := F.b_add_3
+  b_smul_1 := F.b_smul_1
+  b_smul_2 := F.b_smul_2
+  b_smul_3 := F.b_smul_3
+  b_bound := F.b_bound
+
+/-! ### Domain-projection reduction lemmas (issue #112 PR-C, §6.2)
+
+`rfl`-lemmas normalizing `torusDomain` / `Torus3NSForms.core` projections back to the
+concrete T³ functionals.  After the abbrev rewiring, field accesses like `gs.u_ode`
+present `torusDomain.stokes`/`F.core.b` rather than `stokesTestPairing`/`F.b`; these
+lemmas let downstream `rw`/`linarith` sites that pattern-match the concrete forms normalize
+via `simp only [...]`.  (Not `@[simp]`-tagged to avoid perturbing green proofs.) -/
+
+theorem torusDomain_stokes (u w : L2VF) :
+    torusDomain.stokes u w = stokesTestPairing u w := rfl
+
+theorem torusDomain_dissip (μ : ℝ) (u : L2VF) :
+    torusDomain.dissip μ u = viscousFormSq μ u := rfl
+
+theorem torusDomain_regMem (u : L2VF) :
+    torusDomain.regMem u = memH1VF u := rfl
+
+theorem torusDomain_regIntegrand (μ : ℝ) (u : L2VF) :
+    torusDomain.regIntegrand μ u = h1EnergySq u := rfl
+
+theorem Torus3NSForms.core_b (F : Torus3NSForms) (u v w : L2Sigma) :
+    (F.core).b u v w = F.b u v w := rfl
+
 /-! ### Dissipative evolution from T³ NS forms (sorry-free) -/
 
-/-- Build a `DissipativeEvolution` from a `Torus3NSForms`.
+/-- Build a `DissipativeEvolution` from a `Torus3NSForms`, as `torusDomain.evolution F.core`.
 
 `H := L2Sigma`, with the `L2Sigma`-subspace instances.  The regularity functional is
 `h1EnergySq ∘ (↑)`, viscous form is the concrete `stokesTestPairing`, convection form is `F.b`.
@@ -224,17 +283,8 @@ This construction is **sorry-free**.  The weak formulation tests against the Fou
 class `IsGalerkinTest`; density and fixed-test continuity support extension arguments, but the
 current theorem statement itself is Galerkin-test based rather than quantified over all smooth
 divergence-free tests. -/
-noncomputable def torus3Evolution (F : Torus3NSForms) : DissipativeEvolution where
-  H := L2Sigma
-  instNACG := inferInstance
-  instIPS := inferInstance
-  instCS := inferInstance
-  reg := fun u => h1EnergySq (u : L2VF)
-  reg_nonneg := fun _ => h1EnergySq_nonneg _
-  viscousForm := fun u w => stokesTestPairing (u : L2VF) (w : L2VF)
-  convForm := F.b
-  convForm_antisymm := F.b_antisymm
-  isTest := fun w => IsGalerkinTest w
+noncomputable abbrev torus3Evolution (F : Torus3NSForms) : DissipativeEvolution :=
+  torusDomain.evolution F.core
 
 /-! ### Galerkin ODE solution data -/
 
@@ -245,54 +295,8 @@ the projected ODE, H¹ regularity, and uniform (n-independent) energy and regula
 Every field is used in the Aubin–Lions assembly (`torusAubinLionsPackage_of_galSeq`, proved;
 formerly the `aubin_lions` axiom, removed issue #23) or the proved limit passage
 (`torus_galerkin_limit_passage_of_energyClass`). -/
-structure GalerkinSolutionData (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma) (n : ℕ) where
-  /-- The Galerkin solution curve. -/
-  u : Time → L2Sigma
-  /-- Initial condition: `u(0) = Pₙ u₀`. -/
-  u_initial : u 0 = ⟨velocityProjection_n n (u₀ : L2VF),
-    velocityProjection_n_preserves_L2Sigma n (u₀ : L2VF) u₀.2⟩
-  /-- Range in `Vₙ`: the solution stays in the Galerkin subspace. -/
-  u_inVn : ∀ t, (u t : L2VF) = velocityProjection_n n (u t : L2VF)
-  /-- The curve `t ↦ (u t : L2VF)` is differentiable at every **forward** time `t ≥ 0`.
-
-  SOUNDNESS (forward-only, issue #24): physical Galerkin solutions are confined by the forward
-  energy bound `½‖u(t)‖² ≤ ½‖Pₙu₀‖²`, which controls the solution only for `t ≥ 0`.  This
-  quadratic-in-`u` ODE field can blow up in finite *backward* time, so asserting the derivative
-  for all `t : ℝ` was a latent over-strength claim (an un-physical guarantee that the global
-  solver cannot honor — it would assert inhabitation of a generically-empty type).  Restricted to
-  `0 ≤ t`, matching the merged ℝ³ sibling `GalerkinSolutionData_R3.u_hasDeriv`
-  (`LerayHopf/R3/SolutionInterfaces.lean`). -/
-  u_hasDeriv : ∀ t, 0 ≤ t → HasDerivAt (fun s => (u s : L2VF))
-    (deriv (fun s => (u s : L2VF)) t) t
-  /-- The projected Galerkin ODE at **forward** times `t ≥ 0`: for all `w ∈ Vₙ`,
-  `⟪u'(t), w⟫ + ν · stokesTestPairing(u(t), w) + b(u(t), u(t), w) = 0`.
-
-  SOUNDNESS (forward-only, issue #24): same rationale as `u_hasDeriv` — the ODE identity is only
-  guaranteed on the forward time interval where the energy estimate confines the solution; the
-  quadratic field blows up in finite backward time, so the all-`t` form was a latent over-strength
-  claim.  Restricted to `0 ≤ t`, matching the merged ℝ³ sibling `GalerkinSolutionData_R3.u_ode`
-  (`LerayHopf/R3/SolutionInterfaces.lean`). -/
-  u_ode : ∀ t, 0 ≤ t → ∀ w : L2Sigma, (w : L2VF) = velocityProjection_n n (w : L2VF) →
-    inner (𝕜 := ℝ) (deriv (fun s => (u s : L2VF)) t) (w : L2VF) +
-    ν * stokesTestPairing (u t : L2VF) (w : L2VF) + F.b (u t) (u t) w = 0
-  /-- H¹ regularity: the solution stays in H¹ (required for `rellich_L2Sigma` summability). -/
-  reg_mem : ∀ t, memH1VF (u t : L2VF)
-  /-- Uniform energy bound: `½‖u(t)‖² ≤ ½‖Pₙu₀‖²`. -/
-  energy_bound : ∀ t, 0 ≤ t →
-    (1 / 2 : ℝ) * ‖(u t : L2VF)‖ ^ 2 ≤
-    (1 / 2 : ℝ) * ‖velocityProjection_n n (u₀ : L2VF)‖ ^ 2
-  /-- Uniform (n-independent) regularity bound: `∫₀ᵀ h1EnergySq(u(t)) dt ≤ T‖u₀‖² + ‖u₀‖²/(2ν)`.
-  The RHS is generous and n-independent; follows from integrating the energy identity.
-
-  NOTE (scaling, unlike the ℝ³ `viscousFormSq_R3` field): here the integrand is the full
-  `h1EnergySq u = ‖u‖²_{L²} + ∑ⱼ∑'ₖ(∑ᵢkᵢ²)‖ûⱼ(k)‖²`, which carries NO `ν` and NO `(2π)²`
-  factor.  Decomposing, `∫₀ᵀ h1EnergySq(u t) = ∫₀ᵀ‖u t‖²_{L²} + (ν(2π)²)⁻¹ ∫₀ᵀ viscousFormSq ν (u t)`.
-  By the energy identity `∫₀ᵀ‖u t‖²_{L²} ≤ T‖u₀‖²` and `∫₀ᵀ viscousFormSq ν (u t) ≤ ½‖u₀‖²`,
-  the gradient part is `≤ ‖u₀‖²/(2ν(2π)²) ≤ ‖u₀‖²/(2ν)` (since `(2π)² ≥ 1`).  So this RHS is a
-  TRUE upper bound (the `T‖u₀‖²` L²-part is needed; the `/(2ν)` gradient part is generous). -/
-  reg_bound : ∀ T, 0 < T →
-    ∫ t in (0 : ℝ)..T, h1EnergySq (u t : L2VF) ≤
-    T * ‖(u₀ : L2VF)‖ ^ 2 + ‖(u₀ : L2VF)‖ ^ 2 / (2 * ν)
+abbrev GalerkinSolutionData (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma) (n : ℕ) :=
+  Galerkin.SolutionData torusDomain F.core ν u₀ n
 
 /-! ### A1: Galerkin ODE existence — DISCHARGED (issue #24)
 
@@ -370,37 +374,8 @@ this structure carries actual proof obligations and is produced by the assembly 
 Leray–Hopf energy class: a.e. `memH1VF` on `[0, T]` (giving `u ∈ L²(0,T;H¹_σ)`) and
 integrable viscous dissipation.  Without this field, `energy_ineq` could hold vacuously
 for `u ∉ H¹` because `viscousFormSq` is a `tsum` that collapses off H¹. -/
-structure LerayHopfSolutionFull (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma) where
-  /-- The solution curve. -/
-  u : Time → L2Sigma
-  /-- Weak NS equation (proof-carrying). -/
-  weak_eq : WeakFormNS ν T (torus3Evolution F) u
-  /-- Energy inequality (proof-carrying): holds for `t ∈ [0, T]`. -/
-  energy_ineq : ∀ t, 0 ≤ t → t ≤ T →
-    (1 / 2 : ℝ) * ‖(u t : L2VF)‖ ^ 2 +
-    ∫ s in (0 : ℝ)..t, viscousFormSq ν (u s : L2VF) ≤
-    (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2
-  /-- Initial trace: `u(t) → u₀` as `t → 0⁺` (proof-carrying). -/
-  initial_trace : Filter.Tendsto
-    (fun t => (u t : L2VF))
-    (nhdsWithin 0 (Set.Ici 0))
-    (nhds (u₀ : L2VF))
-  /-- **Energy class (proof-carry, v5 fix):** `u` lies in the Leray–Hopf energy class:
-  a.e. `memH1VF` on `[0, T]` (so `u ∈ L²(0,T;H¹_σ)`) and the viscous dissipation
-  `∫₀ᵀ viscousFormSq ν (u s) ds` is integrable.  This prevents `viscousFormSq` from
-  collapsing to zero off H¹ on a positive-measure set, making `energy_ineq` non-vacuous. -/
-  energy_class : (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF (u t : L2VF)) ∧
-    IntervalIntegrable (fun s => viscousFormSq ν (u s : L2VF)) MeasureTheory.volume 0 T
-  /-- **Time-measurability (proof-carry):** the solution curve `t ↦ (u t : L2VF)` is
-  `AEStronglyMeasurable` for the Lebesgue measure restricted to `[0, T]`.  This is the
-  Bochner-measurability half of the textbook Leray–Hopf class `u ∈ L∞(0,T;H) ∩ L²(0,T;V)`;
-  without it a non-measurable curve could satisfy `weak_eq` vacuously (the `WeakFormNS`
-  interval integral collapses to junk-`0` off the measurable class).  It is inherited from
-  the Aubin–Lions limit `AubinLionsPackage.u_aestronglyMeasurable` through the a.e.-link
-  (`u t = alPkg.u t` a.e. on `[0, T]`) of the good representative. -/
-  u_aestronglyMeasurable :
-    AEStronglyMeasurable (fun t => (u t : L2VF))
-      (MeasureTheory.volume.restrict (Set.Icc 0 T))
+abbrev LerayHopfSolutionFull (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma) :=
+  Galerkin.LerayHopfSolution torusDomain F.core ν T u₀
 
 /-- The **full Galerkin compactness package** carrying genuine proof fields.
 
@@ -412,34 +387,8 @@ passage) from an explicit Galerkin sequence — for the capstone, the proved axi
 curve lies in the Leray–Hopf energy class: a.e. `memH1VF` on `[0, T]` (giving
 `limit ∈ L²(0,T;H¹_σ)`) and integrable viscous dissipation.  Populated from the fifth
 conjunct of `torus_galerkin_limit_passage_of_energyClass`. -/
-structure GalerkinCompactnessPackageFull (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma) where
-  /-- The limit curve. -/
-  limit : Time → L2Sigma
-  /-- Weak NS equation for the limit. -/
-  weak_eq_limit : WeakFormNS ν T (torus3Evolution F) limit
-  /-- Energy inequality for the limit: holds for `t ∈ [0, T]`. -/
-  energy_ineq_limit : ∀ t, 0 ≤ t → t ≤ T →
-    (1 / 2 : ℝ) * ‖(limit t : L2VF)‖ ^ 2 +
-    ∫ s in (0 : ℝ)..t, viscousFormSq ν (limit s : L2VF) ≤
-    (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2
-  /-- Initial trace for the limit. -/
-  initial_trace_limit : Filter.Tendsto
-    (fun t => (limit t : L2VF))
-    (nhdsWithin 0 (Set.Ici 0))
-    (nhds (u₀ : L2VF))
-  /-- **Energy class (proof-carry, v5 fix):** the limit curve `limit` lies in the
-  Leray–Hopf energy class: a.e. `memH1VF` on `[0, T]` (so `limit ∈ L²(0,T;H¹_σ)`)
-  and the viscous dissipation is integrable.  Prevents `viscousFormSq` from collapsing
-  off H¹, making `energy_ineq_limit` non-vacuous. -/
-  energy_class_limit : (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)),
-      memH1VF (limit t : L2VF)) ∧
-    IntervalIntegrable (fun s => viscousFormSq ν (limit s : L2VF)) MeasureTheory.volume 0 T
-  /-- **Time-measurability (proof-carry):** the limit curve `t ↦ (limit t : L2VF)` is
-  `AEStronglyMeasurable` for the Lebesgue measure restricted to `[0, T]`, inherited from
-  `AubinLionsPackage.u_aestronglyMeasurable` through the good-representative a.e.-link. -/
-  u_aestronglyMeasurable_limit :
-    AEStronglyMeasurable (fun t => (limit t : L2VF))
-      (MeasureTheory.volume.restrict (Set.Icc 0 T))
+abbrev GalerkinCompactnessPackageFull (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma) :=
+  Galerkin.CompactnessPackage torusDomain F.core ν T u₀
 
 /-! ### Assembly theorems -/
 
@@ -456,14 +405,8 @@ The former `build_galerkin_package` (A1 → A2 → A3, sourcing `galSeq` from th
 /-- **Assembly:** A `GalerkinCompactnessPackageFull` yields `Nonempty (LerayHopfSolutionFull …)`. -/
 theorem exists_lerayHopf_from_package_full (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
     (pkg : GalerkinCompactnessPackageFull F ν T u₀) :
-    Nonempty (LerayHopfSolutionFull F ν T u₀) := by
-  exact
-    ⟨{ u := pkg.limit
-       weak_eq := pkg.weak_eq_limit
-       energy_ineq := pkg.energy_ineq_limit
-       initial_trace := pkg.initial_trace_limit
-       energy_class := pkg.energy_class_limit
-       u_aestronglyMeasurable := pkg.u_aestronglyMeasurable_limit }⟩
+    Nonempty (LerayHopfSolutionFull F ν T u₀) :=
+  Galerkin.exists_lerayHopf_from_package torusDomain F.core ν T u₀ pkg
 
 /-! ### Main existence theorem (capstone) — relocated (issues #22, #24)
 

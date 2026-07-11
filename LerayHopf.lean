@@ -69,6 +69,10 @@ import LerayHopf.Core
 -- no consumers yet (PR-A scaffold; wiring lands in PR-B).
 import LerayHopf.Galerkin.DissipativeODE
 import LerayHopf.Galerkin.QuadraticField
+-- Generic Galerkin bundle layer (issue #112 PR-C: domain-neutral Domain + solution bundles;
+-- both SolutionInterfaces route through these as abbrevs/extends).
+import LerayHopf.Galerkin.Domain
+import LerayHopf.Galerkin.SolutionBundles
 
 -- Torus-layer files not covered by Core (sorry-carrying, axiom-free)
 import LerayHopf.Torus.RellichEmbedding
