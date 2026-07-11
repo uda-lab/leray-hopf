@@ -1,5 +1,11 @@
 # Campaign plan — issue #4: discharge `galerkin_limit_passage_R3` (the LAST project axiom)
 
+> **ARCHIVED — CAMPAIGN COMPLETE (2026-07-05).** Historical record only. Issue #4 is closed:
+> `galerkin_limit_passage_R3` is PROVED (PR #94–#99; ℝ³ = 0 project axioms, kernel-only — see
+> `docs/STATUS.md`). Do NOT execute any instruction below — in particular the §8
+> "First dispatch-ready task" checkout recipe (`git checkout origin/lane-weakformns-p1 -- …`)
+> targets the 2026-07-04 tree and would overwrite later refactors if run against today's main.
+
 Architect: lean-architect (fable). Date: 2026-07-04. Base: main `c647b85` (preflight green,
 live pin R3 = 1 project axiom, T³ = 0).
 
