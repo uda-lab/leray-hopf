@@ -836,6 +836,7 @@ theorem galerkin_pairing_FTC (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n)
           - F.b (gs.u σ) (gs.u σ) w := by
       rw [inner_zero_right, zero_add, neg_mul]
       have hode := gs.u_ode σ hσ0 w hw
+      simp only [r3Domain_stokes, R3NSForms.core_b] at hode
       linarith [hode]
     rw [hval] at hbase
     exact hbase

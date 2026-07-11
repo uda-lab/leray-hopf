@@ -58,6 +58,7 @@ private theorem perTest_hasDerivAt_R3 (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
   have hda := (gs.u_hasDeriv t ht).inner (𝕜 := ℝ) (hasDerivAt_const t (w : L2VF_R3))
   simp only [inner_zero_right, zero_add] at hda
   have hode := gs.u_ode t ht w hwn.symm
+  simp only [r3Domain_stokes, R3NSForms.core_b] at hode
   have hval : inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF_R3)) t) (w : L2VF_R3)
       = -(ν * stokesTestPairing_R3 (gs.u t : L2VF_R3) (w : L2VF_R3) + F.b (gs.u t) (gs.u t) w) := by
     linarith

@@ -219,6 +219,7 @@ theorem torus_galerkin_energy_identity (F : Torus3NSForms) (ν : ℝ) (u₀ : L2
       funext r; ring
     -- Identify the derivative value via the ODE at test `w := uₙ(s)`.
     have hode := gs.u_ode s hs0 (gs.u s) (gs.u_inVn s)
+    simp only [torusDomain_stokes, Torus3NSForms.core_b] at hode
     have hb := F.b_self_zero (gs.u s)
     have hdiag : stokesTestPairing (gs.u s : L2VF) (gs.u s : L2VF)
         = viscousFormSq 1 (gs.u s : L2VF) := Torus.stokesTestPairing_diag _
@@ -550,6 +551,7 @@ private theorem perTest_hasDerivAt (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigm
   have hda := (gs.u_hasDeriv t ht).inner (𝕜 := ℝ) (hasDerivAt_const t (w : L2VF))
   simp only [inner_zero_right, zero_add] at hda
   have hode := gs.u_ode t ht w hwn.symm
+  simp only [torusDomain_stokes, Torus3NSForms.core_b] at hode
   have hval : inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF)) t) (w : L2VF)
       = -(ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) + F.b (gs.u t) (gs.u t) w) := by
     linarith

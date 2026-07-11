@@ -1210,7 +1210,9 @@ private theorem weakFormNS_limit_diff_bound
             ≤ Mψ * (Kb * S) := mul_le_mul_of_nonneg_left hb2 hMψ0
         nlinarith [hqv, hqc, hMψ0, hν.le, hS0]
 
-set_option maxHeartbeats 400000 in
+-- issue #112 PR-C: the generic `Domain.evolution` indirection behind `r3Evolution` adds a
+-- constant factor to `WeakFormNS (r3Evolution …)` whnf unfolding; bumped 400000 → 1000000.
+set_option maxHeartbeats 1000000 in
 /-- **WeakFormNS limit passage (conjunct 2 of `galerkin_limit_passage_R3`).**
 
 The Aubin–Lions limit curve `alPkg.u` satisfies the distributional Navier–Stokes weak equation
@@ -1392,7 +1394,7 @@ theorem weakFormNS_limit_passage
   rw [← hbridge (G w)] at hmain
   refine Eq.trans ?_ hmain
   refine intervalIntegral.integral_congr fun t _ => ?_
-  simp only [hG, Submodule.coe_inner]
+  simp only [hG, Submodule.coe_inner, R3NSForms.core_b]
 
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 

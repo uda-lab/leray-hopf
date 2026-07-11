@@ -1,4 +1,6 @@
 import LerayHopf.EvolutionTriple
+import LerayHopf.Galerkin.Domain          -- issue #112 PR-C: generic Galerkin.Domain
+import LerayHopf.Galerkin.SolutionBundles -- issue #112 PR-C: generic solution bundles
 import LerayHopf.R3.Regularity
 import LerayHopf.R3.FrechetKolmogorov  -- frechetKolmogorov_holds : FrechetKolmogorovInput (sorry-free, kernel-axioms only)
 import LerayHopf.R3.RellichBall        -- localRellichInput_of_frechetKolmogorov : FrechetKolmogorovInput → LocalRellichInput
@@ -369,34 +371,74 @@ theorem R3NSForms.b_self_zero_right {𝔊 : R3GalerkinScheme} (F : R3NSForms �
   have h := F.b_antisymm u v v
   linarith
 
-/-! ### Dissipative evolution from ℝ³ NS forms (sorry-free) -/
+/-! ### Generic Galerkin domain instance + dissipative evolution (issue #112 PR-C) -/
 
-/-- Build a `DissipativeEvolution` from an `R3GalerkinScheme` and an `R3NSForms`.
+/-- The ℝ³ Galerkin domain (parameterized by the scheme `𝔊`): ambient `L2VF_R3`,
+divergence-free subspace `L2Sigma_R3`, projector family `𝔊.P`, and the concrete ℝ³ domain
+functionals (`memH1VF_R3`, `stokesTestPairing_R3`, `viscousFormSq_R3`, test predicate
+`IsSchwartzDivFree_R3`).  The reg-bound integrand is `viscousFormSq_R3 ν` (ν carried in the
+functional) with RHS `½‖u₀‖²`. -/
+@[reducible] noncomputable def r3Domain (𝔊 : R3GalerkinScheme) : Galerkin.Domain where
+  X := L2VF_R3
+  σ := L2Sigma_R3
+  σ_complete := inferInstance
+  P := 𝔊.P
+  P_preserves_σ := 𝔊.preserves_sigma
+  regMem := memH1VF_R3
+  stokes := stokesTestPairing_R3
+  dissip := viscousFormSq_R3
+  evoReg := fun u => viscousFormSq_R3 1 u
+  evoReg_nonneg := fun u => viscousFormSq_R3_nonneg zero_le_one u
+  regIntegrand := viscousFormSq_R3
+  regBoundRHS := fun _ _ r => (1 / 2 : ℝ) * r ^ 2
+  isTest := IsSchwartzDivFree_R3
 
-`H := L2Sigma_R3`, with the `L2Sigma_R3`-subspace instances inherited from `L2VF_R3`.
-The regularity functional is `viscousFormSq_R3 1 ∘ (↑)` (matching the design doc:
-`reg := viscousFormSq_R3 1`), the viscous form is the concrete `stokesTestPairing_R3`,
-the convection form is `F.b`, and the test predicate is the **canonical**
-`IsSchwartzDivFree_R3` (Schwartz divergence-free test class — scheme-independent).
+/-- The domain-neutral convection core of an `R3NSForms` (the `b_galerkin` non-vacuity pin
+stays on `R3NSForms`; this is a projection onto the `NSFormCore` fields). -/
+def R3NSForms.core {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊) :
+    Galerkin.NSFormCore (r3Domain 𝔊) where
+  b := F.b
+  b_antisymm := F.b_antisymm
+  b_add_1 := F.b_add_1
+  b_add_2 := F.b_add_2
+  b_add_3 := F.b_add_3
+  b_smul_1 := F.b_smul_1
+  b_smul_2 := F.b_smul_2
+  b_smul_3 := F.b_smul_3
+  b_bound := F.b_bound
 
-Using `IsSchwartzDivFree_R3` here (rather than `IsGalerkinTest_R3 𝔊`) ensures that
-`WeakFormNS … (r3Evolution 𝔊 F) u` is tested against the full Schwartz div-free class,
-which is the correct formulation for the whole-space Leray–Hopf weak equation.
+/-! ### Domain-projection reduction lemmas (issue #112 PR-C, §6.2)
 
-This construction is **sorry-free**: `DissipativeEvolution` carries no Galerkin or
-compactness fields. -/
+`rfl`-lemmas normalizing `r3Domain 𝔊` / `R3NSForms.core` projections back to the concrete
+ℝ³ functionals, so downstream `rw`/`linarith` sites that pattern-match the concrete forms
+keep working after the abbrev/extends rewiring.  (Not `@[simp]`-tagged.) -/
+
+theorem r3Domain_stokes (𝔊 : R3GalerkinScheme) (u w : L2VF_R3) :
+    (r3Domain 𝔊).stokes u w = stokesTestPairing_R3 u w := rfl
+
+theorem r3Domain_dissip (𝔊 : R3GalerkinScheme) (μ : ℝ) (u : L2VF_R3) :
+    (r3Domain 𝔊).dissip μ u = viscousFormSq_R3 μ u := rfl
+
+theorem r3Domain_regMem (𝔊 : R3GalerkinScheme) (u : L2VF_R3) :
+    (r3Domain 𝔊).regMem u = memH1VF_R3 u := rfl
+
+theorem r3Domain_regIntegrand (𝔊 : R3GalerkinScheme) (μ : ℝ) (u : L2VF_R3) :
+    (r3Domain 𝔊).regIntegrand μ u = viscousFormSq_R3 μ u := rfl
+
+theorem R3NSForms.core_b {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊) (u v w : L2Sigma_R3) :
+    (F.core).b u v w = F.b u v w := rfl
+
+/-- The `DissipativeEvolution` on `L2Sigma_R3` built from an `R3GalerkinScheme` and an
+`R3NSForms`, as `(r3Domain 𝔊).evolution F.core`.
+
+`H := L2Sigma_R3`; the regularity functional is `viscousFormSq_R3 1 ∘ (↑)`, the viscous form
+is the concrete `stokesTestPairing_R3`, the convection form is `F.b`, and the test predicate
+is the canonical `IsSchwartzDivFree_R3` (Schwartz divergence-free class — scheme-independent),
+which is the correct formulation for the whole-space Leray–Hopf weak equation.  Sorry-free:
+`DissipativeEvolution` carries no Galerkin or compactness fields. -/
 @[reducible] noncomputable def r3Evolution (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) :
-    DissipativeEvolution where
-  H := L2Sigma_R3
-  instNACG := inferInstance
-  instIPS := inferInstance
-  instCS := inferInstance
-  reg := fun u => viscousFormSq_R3 1 (u : L2VF_R3)
-  reg_nonneg := fun u => viscousFormSq_R3_nonneg zero_le_one (u : L2VF_R3)
-  viscousForm := fun u w => stokesTestPairing_R3 (u : L2VF_R3) (w : L2VF_R3)
-  convForm := F.b
-  convForm_antisymm := F.b_antisymm
-  isTest := fun w => IsSchwartzDivFree_R3 w
+    DissipativeEvolution :=
+  (r3Domain 𝔊).evolution F.core
 
 /-! ### AX-1: Galerkin ODE solution data on ℝ³ -/
 
@@ -409,35 +451,8 @@ The `u_initial` field uses the fact that `𝔊.preserves_sigma` ensures `𝔊.P 
 
 Every field is used in the Aubin–Lions assembly or the limit passage. -/
 structure GalerkinSolutionData_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ) where
-  /-- The Galerkin solution curve. -/
-  u : Time → L2Sigma_R3
-  /-- Initial condition: `u(0) = 𝔊.P n u₀` (coerced into `L2Sigma_R3` via `preserves_sigma`). -/
-  u_initial : u 0 = ⟨𝔊.P n (u₀ : L2VF_R3), 𝔊.preserves_sigma n (u₀ : L2VF_R3) u₀.2⟩
-  /-- Range in the n-th approximation subspace: `(u t : L2VF_R3) = 𝔊.P n (u t : L2VF_R3)`. -/
-  u_inVn : ∀ t, (u t : L2VF_R3) = 𝔊.P n (u t : L2VF_R3)
-  /-- The curve `t ↦ (u t : L2VF_R3)` is differentiable at every **forward** time `t ≥ 0`.
-
-  SOUNDNESS (forward-only): physical Galerkin solutions are confined by the forward energy
-  bound `½‖u(t)‖² ≤ ½‖𝔊.P n u₀‖²`, which controls the solution only for `t ≥ 0`.  This
-  quadratic-in-`u` ODE field can blow up in finite *backward* time, so asserting the
-  derivative for all `t : ℝ` was a latent over-strength claim (an un-physical guarantee that
-  the global solver cannot honor).  Restricted to `0 ≤ t`. -/
-  u_hasDeriv : ∀ t, 0 ≤ t → HasDerivAt (fun s => (u s : L2VF_R3))
-    (deriv (fun s => (u s : L2VF_R3)) t) t
-  /-- The projected Galerkin ODE at **forward** times: for `t ≥ 0` and all test vectors `w`
-  with `𝔊.P n w = w`,
-  `⟪u'(t), w⟫ + ν · stokesTestPairing_R3(u(t), w) + b(u(t), u(t), w) = 0`.
-
-  SOUNDNESS (forward-only): same rationale as `u_hasDeriv` — the ODE identity is only
-  guaranteed on the forward time interval where the energy estimate confines the solution;
-  the all-`t` form was a latent over-strength claim.  Restricted to `0 ≤ t`. -/
-  u_ode : ∀ t, 0 ≤ t → ∀ w : L2Sigma_R3,
-    (w : L2VF_R3) = 𝔊.P n (w : L2VF_R3) →
-    inner (𝕜 := ℝ) (deriv (fun s => (u s : L2VF_R3)) t) (w : L2VF_R3) +
-    ν * stokesTestPairing_R3 (u t : L2VF_R3) (w : L2VF_R3) + F.b (u t) (u t) w = 0
-  /-- H¹ regularity: the solution stays in H¹ (required for `spatial_compactness_R3`). -/
-  reg_mem : ∀ t, memH1VF_R3 (u t : L2VF_R3)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    extends Galerkin.SolutionData (r3Domain 𝔊) F.core ν u₀ n where
   /-- **Weighted-Fourier continuity (finite-dim-derived enrichment).** Each weighted-Fourier
   component `s ↦ √W • 𝓕(projⱼ (u s))` (`W = (2π)²‖ξ‖²`, the `H¹`/Dirichlet-energy graph
   norm) is continuous on forward time `Ici 0`, into `L²`.
@@ -447,22 +462,13 @@ structure GalerkinSolutionData_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
   continuous in the (stronger) weighted/H¹ norm.  It is supplied because the abstract
   `R3GalerkinScheme` interface does not expose `Vₙ`'s finite-dimensionality; the concrete producer
   discharges it from `galerkinSpan B n` being finite-dimensional.  Consumed by the viscous/H¹
-  Steklov–Jensen bound (the `n`-uniform time regularity of the Steklov averages). -/
+  Steklov–Jensen bound (the `n`-uniform time regularity of the Steklov averages).
+
+  This field is R3-specific (finite-dim-derived), so `GalerkinSolutionData_R3` `extends` the
+  generic `Galerkin.SolutionData` and adds it (a torus counterpart would be a vacuous invention;
+  ruling (a), issue #112). -/
   viscous_curve_continuous : ∀ j : Fin 3,
     ContinuousOn (fun s => weightedFourierComponent (u s : L2VF_R3) (reg_mem s) j) (Set.Ici 0)
-  /-- Uniform energy bound: `½‖u(t)‖² ≤ ½‖𝔊.P n u₀‖²`. -/
-  energy_bound : ∀ t, 0 ≤ t →
-    (1 / 2 : ℝ) * ‖(u t : L2VF_R3)‖ ^ 2 ≤
-    (1 / 2 : ℝ) * ‖𝔊.P n (u₀ : L2VF_R3)‖ ^ 2
-  /-- Uniform (n-independent) regularity bound:
-  `∫₀ᵀ viscousFormSq_R3 ν (u t) dt ≤ ½‖u₀‖²`.
-  The RHS is n-independent and `T`-independent; it follows from integrating the energy
-  identity `∫₀ᵀ viscousFormSq_R3 ν (u t) = ½‖u(0)‖² − ½‖u(T)‖² ≤ ½‖𝔊.P n u₀‖² ≤ ½‖u₀‖²`
-  (using `‖u(0)‖ = ‖𝔊.P n u₀‖ ≤ ‖u₀‖` and `½‖u(T)‖² ≥ 0`).  Note: `viscousFormSq_R3`
-  already carries the `ν` factor (`= ν · ‖∇u‖²`), so the bound is `ν`-independent. -/
-  reg_bound : ∀ T, 0 < T →
-    ∫ t in (0 : ℝ)..T, viscousFormSq_R3 ν (u t : L2VF_R3) ≤
-    (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2
 
 /-! ### AX-1 (DISCHARGED, issue #10): Galerkin ODE existence on ℝ³ — now a THEOREM
 
@@ -612,39 +618,9 @@ All fields are typed propositions (not `Prop` placeholders):
 - `initial_trace`: the initial datum is attained in the strong L² sense,
 - `energy_class`: `u ∈ L²(0,T;H¹_σ(ℝ³))` + integrable viscous dissipation
   (prevents `viscousFormSq_R3 ν` collapsing off H¹, making `energy_ineq` non-vacuous). -/
-structure LerayHopfSolutionFull_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν T : ℝ) (u₀ : L2Sigma_R3) where
-  /-- The solution curve. -/
-  u : Time → L2Sigma_R3
-  /-- Weak NS equation (proof-carrying). -/
-  weak_eq : WeakFormNS ν T (r3Evolution 𝔊 F) u
-  /-- Energy inequality (proof-carrying): holds for `t ∈ [0, T]`. -/
-  energy_ineq : ∀ t, 0 ≤ t → t ≤ T →
-    (1 / 2 : ℝ) * ‖(u t : L2VF_R3)‖ ^ 2 +
-    ∫ s in (0 : ℝ)..t, viscousFormSq_R3 ν (u s : L2VF_R3) ≤
-    (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2
-  /-- Initial trace: `u(t) → u₀` as `t → 0⁺` (proof-carrying). -/
-  initial_trace : Filter.Tendsto
-    (fun t => (u t : L2VF_R3))
-    (nhdsWithin 0 (Set.Ici 0))
-    (nhds (u₀ : L2VF_R3))
-  /-- **Energy class (proof-carry):** `u` lies in the Leray–Hopf energy class: a.e.
-  `memH1VF_R3` on `[0, T]` and integrable viscous dissipation.  This prevents
-  `viscousFormSq_R3 ν` from collapsing to zero off H¹, making `energy_ineq` non-vacuous. -/
-  energy_class :
-    (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF_R3 (u t : L2VF_R3)) ∧
-    IntervalIntegrable (fun s => viscousFormSq_R3 ν (u s : L2VF_R3))
-      MeasureTheory.volume 0 T
-  /-- **Time-measurability (proof-carry):** the solution curve `t ↦ (u t : L2VF_R3)` is
-  `AEStronglyMeasurable` for the Lebesgue measure restricted to `[0, T]`.  This is the
-  Bochner-measurability half of the textbook Leray–Hopf class `u ∈ L∞(0,T;H) ∩ L²(0,T;V)`;
-  without it a non-measurable curve could satisfy `weak_eq` vacuously (the `WeakFormNS`
-  interval integral collapses to junk-`0` off the measurable class).  It is inherited from
-  the Aubin–Lions limit `AubinLionsPackage_R3.u_aestronglyMeasurable` through the
-  a.e.-link (`u t = alPkg.u t` a.e. on `[0, T]`) of the good representative. -/
-  u_aestronglyMeasurable :
-    AEStronglyMeasurable (fun t => (u t : L2VF_R3))
-      (MeasureTheory.volume.restrict (Set.Icc 0 T))
+abbrev LerayHopfSolutionFull_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν T : ℝ) (u₀ : L2Sigma_R3) :=
+  Galerkin.LerayHopfSolution (r3Domain 𝔊) F.core ν T u₀
 
 /-- The **full Galerkin compactness package** on ℝ³, carrying genuine proof fields.
 
@@ -655,34 +631,9 @@ from an explicit Galerkin sequence; the capstone supplies that sequence axiom-fr
 `energy_class_limit` proof-carries that the limit curve lies in the Leray–Hopf energy
 class: a.e. `memH1VF_R3` + integrable viscous dissipation (non-vacuity of the
 energy inequality). -/
-structure GalerkinCompactnessPackageFull_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν T : ℝ) (u₀ : L2Sigma_R3) where
-  /-- The limit curve. -/
-  limit : Time → L2Sigma_R3
-  /-- Weak NS equation for the limit. -/
-  weak_eq_limit : WeakFormNS ν T (r3Evolution 𝔊 F) limit
-  /-- Energy inequality for the limit: holds for `t ∈ [0, T]`. -/
-  energy_ineq_limit : ∀ t, 0 ≤ t → t ≤ T →
-    (1 / 2 : ℝ) * ‖(limit t : L2VF_R3)‖ ^ 2 +
-    ∫ s in (0 : ℝ)..t, viscousFormSq_R3 ν (limit s : L2VF_R3) ≤
-    (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2
-  /-- Initial trace for the limit. -/
-  initial_trace_limit : Filter.Tendsto
-    (fun t => (limit t : L2VF_R3))
-    (nhdsWithin 0 (Set.Ici 0))
-    (nhds (u₀ : L2VF_R3))
-  /-- **Energy class (proof-carry):** the limit curve lies in the Leray–Hopf energy class:
-  a.e. `memH1VF_R3` on `[0, T]` and integrable viscous dissipation. -/
-  energy_class_limit :
-    (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF_R3 (limit t : L2VF_R3)) ∧
-    IntervalIntegrable (fun s => viscousFormSq_R3 ν (limit s : L2VF_R3))
-      MeasureTheory.volume 0 T
-  /-- **Time-measurability (proof-carry):** the limit curve `t ↦ (limit t : L2VF_R3)` is
-  `AEStronglyMeasurable` for the Lebesgue measure restricted to `[0, T]`, inherited from
-  `AubinLionsPackage_R3.u_aestronglyMeasurable` through the good-representative a.e.-link. -/
-  u_aestronglyMeasurable_limit :
-    AEStronglyMeasurable (fun t => (limit t : L2VF_R3))
-      (MeasureTheory.volume.restrict (Set.Icc 0 T))
+abbrev GalerkinCompactnessPackageFull_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν T : ℝ) (u₀ : L2Sigma_R3) :=
+  Galerkin.CompactnessPackage (r3Domain 𝔊) F.core ν T u₀
 
 /-! ### Assembly theorems
 
@@ -699,14 +650,8 @@ stay acyclic.  `GalerkinCompactnessPackageFull_R3`, `galerkin_limit_passage_R3` 
 theorem exists_lerayHopf_from_package_full_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν T : ℝ) (u₀ : L2Sigma_R3)
     (pkg : GalerkinCompactnessPackageFull_R3 𝔊 F ν T u₀) :
-    Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀) := by
-  exact
-    ⟨{ u := pkg.limit
-       weak_eq := pkg.weak_eq_limit
-       energy_ineq := pkg.energy_ineq_limit
-       initial_trace := pkg.initial_trace_limit
-       energy_class := pkg.energy_class_limit
-       u_aestronglyMeasurable := pkg.u_aestronglyMeasurable_limit }⟩
+    Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀) :=
+  Galerkin.exists_lerayHopf_from_package (r3Domain 𝔊) F.core ν T u₀ pkg
 
 /-! **Main existence theorem on ℝ³ (capstone) — RELOCATED (issue #10).**
 
