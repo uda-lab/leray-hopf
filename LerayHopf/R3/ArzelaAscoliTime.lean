@@ -279,7 +279,7 @@ This route does NOT use `L2VF_R3_weakSeqCompact_closedBall` (that axiom is DELET
 `AubinLionsLimitPassage`, the capstone) continue to see this by the SAME name and type. -/
 theorem galerkin_weakLimit_R3
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (u₀ : L2Sigma_R3)
-    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) (φ : ℕ → ℕ)
+    (galSeq : ∀ n, Galerkin.SolutionData (r3Domain 𝔊) F.core ν u₀ n) (φ : ℕ → ℕ)
     (hφ : StrictMono φ)
     (T : ℝ) (hT : 0 < T)
     -- Hypothesis: for each integer radius k, there EXISTS a measurable per-ball limit g_k such
@@ -953,7 +953,8 @@ theorem u_lim_aestronglyMeasurable
           Filter.atTop (nhds (g_k t)) :=
     hk
   -- Step 3: Apply axiom B.
-  obtain ⟨u, hmeas, hconv⟩ := galerkin_weakLimit_R3 𝔊 F ν u₀ galSeq φ hφ T hT hball
+  obtain ⟨u, hmeas, hconv⟩ :=
+    galerkin_weakLimit_R3 𝔊 F ν u₀ (fun n => (galSeq n).toSolutionData) φ hφ T hT hball
   exact ⟨φ, u, hφ, hmeas, hconv⟩
 
 end LerayHopf
