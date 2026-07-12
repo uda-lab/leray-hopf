@@ -47,18 +47,39 @@ variable {galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n}
 
 /-! ### Per-test equi-Lipschitz bound -/
 
+/-- **Generic-bundle counterpart of `EnergyWeakLsc.galerkin_norm_le_u0`** (verbatim port): the
+Galerkin state is `L²`-bounded by the initial datum, using only the generic `energy_bound` field
+and `𝔊.norm_le` — no R3-specific (`viscous_curve_continuous`) enrichment is needed for this fact.
+
+Kept local/private rather than reusing `galerkin_norm_le_u0` directly: that lemma is typed on the
+concrete `GalerkinSolutionData_R3`, and `perTest_lipschitz_R3`'s narrowed (issue #135) `galSeq`
+argument is generic — there is no `GalerkinSolutionData_R3 → Galerkin.SolutionData` direction to
+project along, so the (already-verified) proof is ported instead of the statement being reused. -/
+private theorem galerkin_norm_le_u0_generic (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
+    (gs : Galerkin.SolutionData (r3Domain 𝔊) F.core ν u₀ n) {t : ℝ} (ht : 0 ≤ t) :
+    ‖(gs.u t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
+  have hP : ‖𝔊.P n (u₀ : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ := 𝔊.norm_le n (u₀ : L2VF_R3)
+  have henergy := gs.energy_bound t ht
+  have hsq : ‖(gs.u t : L2VF_R3)‖ ^ 2 ≤ ‖(u₀ : L2VF_R3)‖ ^ 2 := by
+    have h2 : ‖𝔊.P n (u₀ : L2VF_R3)‖ ^ 2 ≤ ‖(u₀ : L2VF_R3)‖ ^ 2 := by
+      have := mul_le_mul hP hP (norm_nonneg _) (norm_nonneg _)
+      nlinarith [this]
+    nlinarith [henergy, h2]
+  exact le_of_sq_le_sq hsq (norm_nonneg _)
+
 /-- The scalar test curve `t ↦ ⟪uₙ(t), w⟫` has derivative
 `-(ν·stokesTestPairing_R3(uₙ t, w) + b(uₙ t, uₙ t, w))` at forward times, for tests fixed at
 level `n` (from `u_hasDeriv` + `u_ode`).  R3 port of the torus `perTest_hasDerivAt`. -/
 private theorem perTest_hasDerivAt_R3 (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
-    (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (w : L2Sigma_R3)
+    (gs : Galerkin.SolutionData (r3Domain 𝔊) F.core ν u₀ n) (w : L2Sigma_R3)
     (hwn : 𝔊.P n (w : L2VF_R3) = (w : L2VF_R3)) (t : ℝ) (ht : 0 ≤ t) :
     HasDerivAt (fun s => inner (𝕜 := ℝ) ((gs.u s : L2VF_R3)) (w : L2VF_R3))
       (-(ν * stokesTestPairing_R3 (gs.u t : L2VF_R3) (w : L2VF_R3) + F.b (gs.u t) (gs.u t) w)) t := by
   have hda := (gs.u_hasDeriv t ht).inner (𝕜 := ℝ) (hasDerivAt_const t (w : L2VF_R3))
   simp only [inner_zero_right, zero_add] at hda
   have hode := gs.u_ode t ht w hwn.symm
-  simp only [r3Domain_stokes, R3NSForms.core_b] at hode
+  simp only [R3NSForms.core_b] at hode
   have hval : inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF_R3)) t) (w : L2VF_R3)
       = -(ν * stokesTestPairing_R3 (gs.u t : L2VF_R3) (w : L2VF_R3) + F.b (gs.u t) (gs.u t) w) := by
     linarith
@@ -73,7 +94,7 @@ where `Cs(w)` comes from `stokesTestPairing_abs_le` via `range_schwartz` + negLa
 and `Cb(w)` from `F.b_bound`. -/
 theorem perTest_lipschitz_R3
     (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma_R3)
-    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (galSeq : ∀ n, Galerkin.SolutionData (r3Domain 𝔊) F.core ν u₀ n)
     (w : L2Sigma_R3) (hw : IsSchwartzDivFree_R3 w) (n₀ : ℕ)
     (hn₀ : 𝔊.P n₀ (w : L2VF_R3) = (w : L2VF_R3)) :
     ∃ L : ℝ, 0 ≤ L ∧ ∀ n, n₀ ≤ n → ∀ s ∈ Set.Ici (0 : ℝ), ∀ t ∈ Set.Ici (0 : ℝ),
@@ -121,7 +142,7 @@ theorem perTest_lipschitz_R3
         ≤ L := by
     intro r hr
     rw [Real.norm_eq_abs, abs_neg]
-    have hnorm := galerkin_norm_le_u0 𝔊 F ν u₀ n gs (Set.mem_Ici.mp hr)
+    have hnorm := galerkin_norm_le_u0_generic 𝔊 F ν u₀ n gs (Set.mem_Ici.mp hr)
     have h1 : |ν * stokesTestPairing_R3 (gs.u r : L2VF_R3) (w : L2VF_R3)|
         ≤ ν * Cs * ‖(u₀ : L2VF_R3)‖ := by
       rw [abs_mul, abs_of_pos hν, mul_assoc]
@@ -221,7 +242,8 @@ theorem exists_weak_representative_R3
     have hsdf : IsSchwartzDivFree_R3 w := by
       obtain ⟨ψ, hψ⟩ := 𝔊.range_schwartz n₀ (w : L2VF_R3)
       exact ⟨ψ, fun j => by rw [← hn₀]; exact hψ j⟩
-    obtain ⟨L, hL0, hLip⟩ := perTest_lipschitz_R3 ν hν u₀ galSeq w hsdf n₀ hn₀
+    obtain ⟨L, hL0, hLip⟩ :=
+      perTest_lipschitz_R3 ν hν u₀ (fun n => (galSeq n).toSolutionData) w hsdf n₀ hn₀
     refine cauchySeq_of_equiLipschitz_of_dense (T := T)
       (fun n s => inner (𝕜 := ℝ) (c n s) (w : L2VF_R3)) L hL0 n₀ ?_ S ?_ ?_ ht
     · intro n hn s hsI t' htI'
@@ -320,7 +342,8 @@ theorem exists_weak_representative_R3
     have hsdf : IsSchwartzDivFree_R3 w := by
       obtain ⟨ψ, hψ⟩ := 𝔊.range_schwartz n₀ (w : L2VF_R3)
       exact ⟨ψ, fun j => by rw [← hn₀]; exact hψ j⟩
-    obtain ⟨L, hL0, hLip⟩ := perTest_lipschitz_R3 ν hν u₀ galSeq w hsdf n₀ hn₀
+    obtain ⟨L, hL0, hLip⟩ :=
+      perTest_lipschitz_R3 ν hν u₀ (fun n => (galSeq n).toSolutionData) w hsdf n₀ hn₀
     refine ⟨L, hL0, fun s hsI t htI => ?_⟩
     have h1 : Tendsto (fun n => inner (𝕜 := ℝ) (c n t) (w : L2VF_R3)
         - inner (𝕜 := ℝ) (c n s) (w : L2VF_R3)) atTop
