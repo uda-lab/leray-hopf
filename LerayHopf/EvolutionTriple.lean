@@ -113,7 +113,14 @@ for the displayed integrand, because the current capstones package those obligat
 domain-specific full solution structures (`LerayHopfSolutionFull` and
 `LerayHopfSolutionFull_R3`) through their `energy_class` fields and in the limit-passage
 axioms that produce the good representative. Public statements should therefore cite the
-full solution structures, not bare `WeakFormNS`, as the weak-solution contract. -/
+full solution structures, not bare `WeakFormNS`, as the weak-solution contract.
+
+**Test-function scope note (issue #146).** The test functions here are **separated-variable**
+`ψ(t) · w(x)` (a scalar temporal factor times a fixed spatial test vector), not a general
+space-time test function `φ(t, x)` ranging over, e.g., `C_c^∞((0,T) × Ω)`. Whether/how this
+identity relates to the standard space-time test formulation of the weak Navier–Stokes
+equation is **out of scope**: this repository neither proves nor assumes an equivalence
+between the two; it states and uses only the separated-variable identity above. -/
 def WeakFormNS (ν T : ℝ) (E : DissipativeEvolution) (u : Time → E.H) : Prop :=
   letI := E.instNACG
   letI := E.instIPS

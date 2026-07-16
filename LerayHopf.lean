@@ -18,8 +18,11 @@ corresponding `exists_lerayHopf_*` theorem into scope; each capstone file's own
 `SolutionInterfaces.lean` support layer provides the surrounding definitions
 (`Torus3NSForms`/`R3NSForms`, assembly helpers) but does not itself export the
 theorem. `LerayHopfSolutionFull(_R3)` is **proof-carrying**: its fields are actual
-proofs of the weak Navier–Stokes equation, the energy inequality, the initial trace,
-and the energy class `u ∈ L²(0,T;H¹_σ)` — not `Prop` placeholders.
+proofs of the weak Navier–Stokes equation (against separated-variable tests), the
+energy inequality on `[0,T]`, a one-sided initial trace at `t → 0⁺`, and the energy
+class (a.e.-in-time H¹ membership plus interval-integrable viscous dissipation — not
+literal Bochner membership `u ∈ L²(0,T;H¹_σ)`) — not `Prop` placeholders. See
+`README.md`'s claims table for the exact field-by-claim mapping.
 
 No claim is made that regularity, uniqueness, or non-uniqueness of the
 Navier–Stokes equations has been formalized.

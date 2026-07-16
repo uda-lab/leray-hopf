@@ -308,7 +308,8 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
   (v4) a TOTAL real Stokes form with H¹ diagonal is impossible (∞ off H¹) ⇒ **de-axiomatized** the
   viscous form entirely (concrete `stokesTestPairing`/`viscousFormSq`); A4 is now convection-only;
   (v5) energy inequality didn't enforce the H¹ energy class (`tsum` collapse) ⇒ proof-carry
-  a.e.-`memH1VF` + integrable dissipation (`u∈L²(0,T;H¹_σ)`);
+  a.e.-`memH1VF` + integrable dissipation (a.e.-in-time H¹ membership; not literal Bochner
+  membership `u∈L²(0,T;H¹_σ)`, see `README.md`'s claims table);
   (v6) A3 asserted pointwise facts for an arbitrary null-set representative ⇒ made A3 **existential**
   (a good representative exists);
   (v7) the existential became untethered (≈ standalone existence) ⇒ added the a.e.-link
