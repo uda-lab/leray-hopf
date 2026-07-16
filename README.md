@@ -91,7 +91,7 @@ abbreviations for `Galerkin.LerayHopfSolution`.
 | Existence on ℝ³ | `exists_lerayHopf_r3` | For every `u₀ ∈ L²_σ(ℝ³)`, `ν > 0`, `T > 0`: `∃ 𝔊 F, Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)`. |
 | Galerkin-level approximate solutions exist | `Galerkin.SolutionData` (per `n`) | An **intermediate** structure (per-`n` finite-dimensional Galerkin ODE data with uniform bounds) — not itself the final solution; consumed by `Galerkin.CompactnessPackage` / `exists_lerayHopf_from_package` on the way to `LerayHopfSolution`. |
 
-Nothing above is a regularity, uniqueness, or non-uniqueness claim.
+Nothing above is a smoothness, uniqueness, or non-uniqueness claim.
 
 ## Layout
 

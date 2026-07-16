@@ -112,8 +112,9 @@ only. It deliberately does not bundle interval-integrability or measurability si
 for the displayed integrand, because the current capstones package those obligations in the
 domain-specific full solution structures (`LerayHopfSolutionFull` and
 `LerayHopfSolutionFull_R3`) through their `energy_class` fields and in the limit-passage
-axioms that produce the good representative. Public statements should therefore cite the
-full solution structures, not bare `WeakFormNS`, as the weak-solution contract.
+layer that produces the good representative (proved theorems on both domains; no live
+project axiom remains here). Public statements should therefore cite the full solution
+structures, not bare `WeakFormNS`, as the weak-solution contract.
 
 **Test-function scope note (issue #146).** The test functions here are **separated-variable**
 `ψ(t) · w(x)` (a scalar temporal factor times a fixed spatial test vector), not a general
