@@ -93,6 +93,26 @@ abbreviations for `Galerkin.LerayHopfSolution`.
 
 Nothing above is a smoothness, uniqueness, or non-uniqueness claim.
 
+## Import guide (issue #147)
+
+`import LerayHopf` is the **complete release surface**: both capstones plus every
+supporting layer, and it is **sorry-free** — statically enforced in CI by
+`scripts/check-release-cone.sh`, which walks the transitive import closure of
+`LerayHopf.lean` and fails if any file it reaches contains a `sorry`, marked or unmarked.
+Narrower imports are also available for consumers who only need one piece:
+
+| Import | Brings in | Status |
+|---|---|---|
+| `import LerayHopf.Core` | Axiom-free, `sorryAx`-free spatial/regularity layer shared by both domains (L²_σ spaces, Leray/Galerkin projections, Fourier machinery). | Sorry-free, axiom-free. |
+| `import LerayHopf.Torus.Capstone` | The full 𝕋³ capstone chain, `exists_lerayHopf_torus3`. | Kernel-only (no project axioms, no `sorryAx`). |
+| `import LerayHopf.R3Capstone` | The full ℝ³ capstone chain, `exists_lerayHopf_r3`. | Kernel-only (no project axioms, no `sorryAx`). |
+| `import LerayHopf` | Everything above, plus the remaining supporting files needed to assemble both capstones (Bochner Gelfand-triple time theory used by the R3 limit-passage chain, Galerkin ODE solvers, etc.). | **Sorry-free** (issue #147). |
+| `import LerayHopf.Experimental` | Explicit **opt-in** for incomplete Bochner time-layer work not needed by either capstone: `Bochner.TimeSobolevAC`, `Bochner.TimeMollification`, `Bochner.TimeMollifierInterval`, `Bochner.TimeSobolevExperimental`. | Contains all 6 remaining `sorry`s; see that file's docstring for the per-module inventory. |
+
+Nothing reachable from `import LerayHopf` imports `LerayHopf.Experimental`, and nothing in
+`LerayHopf.Experimental` is needed by either capstone — the split is enforced, not just
+documented.
+
 ## Layout
 
 - **Lean sources:** `LerayHopf/` — `R3/` (ℝ³), `Torus/` (𝕋³), `Bochner/` (Gelfand-triple
@@ -116,9 +136,12 @@ Nothing above is a smoothness, uniqueness, or non-uniqueness claim.
 - The `LerayHopf/` import DAG has **zero dead files**: every `.lean` file under
   `LerayHopf/` is reachable via at least one `import` statement.
 - Doc-string coverage on public declarations is high throughout the tree.
-- Exactly **6** remaining `sorry`s, every one same-line `-- ALLOW_SORRY:`-marked and
-  none reachable from either capstone — all six are Lions–Magenes-class Bochner-time
-  walls: `Bochner/TimeSobolev.lean:535`, `Bochner/TimeSobolevAC.lean:322`,
+- Exactly **6** remaining `sorry`s, every one same-line `-- ALLOW_SORRY:`-marked, none
+  reachable from either capstone, and — since issue #147 — none reachable from
+  `import LerayHopf` at all (see "Import guide" above; enforced by
+  `scripts/check-release-cone.sh`). All six are Lions–Magenes-class Bochner-time walls,
+  gathered behind the explicit opt-in `LerayHopf.Experimental`:
+  `Bochner/TimeSobolevExperimental.lean:57`, `Bochner/TimeSobolevAC.lean:322`,
   `Bochner/TimeMollification.lean:196`,
   `Bochner/TimeMollifierInterval.lean:297,466,601`. Verify with
   `grep -rn 'sorry -- ALLOW_SORRY' LerayHopf/`.

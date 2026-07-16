@@ -172,8 +172,9 @@ also built on the placeholder `LerayHopfSolution`) was deleted alongside it.
 
 Actual residual marked `sorry` (6 total, all outside both capstone cones, all Lions–Magenes-class
 Bochner-time walls):
-- `LerayHopf/Bochner/TimeSobolev.lean:535` — D1 Lions–Magenes good-representative embedding
-  (`w1pTime_continuous_in_H`); declared months-class residual.
+- `LerayHopf/Bochner/TimeSobolevExperimental.lean:57` — D1 Lions–Magenes good-representative
+  embedding (`w1pTime_continuous_in_H`); declared months-class residual. Extracted from
+  `TimeSobolev.lean` by issue #147 (see below).
 - `LerayHopf/Bochner/TimeSobolevAC.lean:322` — Bochner–Fubini distributional FTC for the
   interval primitive `w(t)=∫₀ᵗ v`; isolated single residual of R1.
 - `LerayHopf/Bochner/TimeMollification.lean:196` — S1 time-mollification with linked
@@ -187,6 +188,17 @@ Bochner-time walls):
 **Both capstones are unaffected by all residual sorries** — the kernel-only `#print axioms` pin
 (`[propext, Classical.choice, Quot.sound]`, no `sorryAx`) is the authoritative justification,
 not import-level reachability.
+
+**(issue #147):** all 6 residuals above are now also outside the **release import cone**, not
+just outside the capstone cones. `import LerayHopf` (root) transitively imports none of them;
+they are reachable only via the explicit opt-in `import LerayHopf.Experimental`.
+`w1pTime_continuous_in_H` was extracted out of `TimeSobolev.lean` into a new
+`TimeSobolevExperimental.lean` (nothing else depends on it — `TraceEnergy.lean` already
+documented it as quarantined — so `TimeSobolev.lean` itself is now sorry-free and stays in the
+release cone, still imported directly by `R3/AubinLionsLimitPassage.lean` and
+`R3/EnergyWeakLsc.lean` for the unrelated, sorry-free `kineticEnergy_lsc_transfer`).
+`scripts/check-release-cone.sh` enforces this statically in CI: it fails if the transitive
+import closure of `LerayHopf.lean` ever contains a `sorry`, marked or unmarked.
 
 **Former analytic frontier (HISTORICAL — both capstones now UNCONDITIONAL, 2026-07-05).**
 These were the items that required structural mathlib sub-libraries to close the existence

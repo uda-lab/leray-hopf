@@ -48,11 +48,16 @@ proof but in content (`docs/scratch/galerkin-domain-plan.md` §4 ruling (b)).
 
 Gelfand-triple / Bochner-space-in-time infrastructure. Consumed by both domains'
 Aubin–Lions and limit-passage arguments; carries the project's remaining marked
-`sorry`s (Lions–Magenes-class walls; see `HANDOFF.md` §4 and `AGENTS.md`).
+`sorry`s (Lions–Magenes-class walls; see `HANDOFF.md` §4 and `AGENTS.md`). Since issue #147
+the sorry-carrying files (`TimeSobolevAC.lean`, `TimeMollification.lean`,
+`TimeMollifierInterval.lean`, `TimeSobolevExperimental.lean`) are reachable only via the
+explicit opt-in `LerayHopf.Experimental`, not from root `import LerayHopf` — see the README's
+"Import guide".
 
-`GelfandTriple.lean`, `TimeSobolev.lean`, `TimeSobolevAC.lean`, `TimeConvolution.lean`,
-`TimeMollifierInterval.lean`, `TimeMollification.lean`, `StepFunctionCompactness.lean`,
-`ScalarEquicontinuity.lean`, `WeakLimitToolkit.lean`.
+`GelfandTriple.lean`, `TimeSobolev.lean` (sorry-free), `TimeSobolevExperimental.lean`,
+`TimeSobolevAC.lean`, `TimeConvolution.lean`, `TimeMollifierInterval.lean`,
+`TimeMollification.lean`, `StepFunctionCompactness.lean`, `ScalarEquicontinuity.lean`,
+`WeakLimitToolkit.lean`.
 
 Imported by: `LerayHopf/R3/GoodRepresentative.lean`, `R3/SpacetimePrecompact.lean`,
 `R3/AubinLionsLimitPassage.lean`, `Torus/ModeCompactness.lean`.

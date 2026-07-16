@@ -40,9 +40,14 @@ Navier–Stokes equations has been formalized.
   (`exists_lerayHopf_torus3`).
 * `LerayHopf.R3Capstone` — re-exports the full ℝ³ capstone chain
   (`exists_lerayHopf_r3`).
-* `LerayHopf` (this file) — re-exports all three layers, plus the remaining
-  sorry-carrying support files (Bochner time theory, Galerkin ODE solvers, limit
-  passage, etc.) needed to assemble both capstones.
+* `LerayHopf` (this file) — re-exports all three layers, plus the remaining support
+  files (Bochner time theory, Galerkin ODE solvers, limit passage, etc.) needed to
+  assemble both capstones. **Sorry-free release surface (issue #147):** every module
+  transitively imported from here is free of `sorry`, marked or unmarked — see
+  `scripts/check-release-cone.sh`, which enforces this statically in CI.
+* `LerayHopf.Experimental` — explicit **opt-in** for the incomplete Bochner time-layer
+  work that does NOT live in the release cone (four modules, six `sorry`s total; see that
+  file's docstring for the per-module inventory). Nothing under `LerayHopf` imports it.
 
 Side branches (independent of the existence capstones):
 * `LerayHopf.BlowupLowerBound`  (Branch A) — algebraic blow-up lower bound, sorry-free.
@@ -51,13 +56,18 @@ For the narrative status (axiom ledger, remaining `sorry` inventory, verificatio
 commands) see `README.md` and `HANDOFF.md`; for the mathematical roadmap see
 `docs/milestone.md` and `docs/ROADMAP.md`.
 
-## Import surface structure (Wave-0 axiom-removal refactor)
+## Import surface structure (Wave-0 axiom-removal refactor, extended by issue #147)
 
 The import surface is split:
 - `import LerayHopf.Core`            — axiom-free, sorryAx-free spatial/regularity layer
 - `import LerayHopf.Torus.Capstone` — T³ kernel-only capstone re-export
 - `import LerayHopf.R3Capstone`     — ℝ³ kernel-only capstone re-export
-- `import LerayHopf`                 — (this file) re-exports all three layers
+- `import LerayHopf`                 — (this file) the complete release surface: both
+  capstones plus all supporting layers, **sorry-free**
+- `import LerayHopf.Experimental`   — explicit opt-in for incomplete Bochner time-layer
+  work (`TimeSobolevAC`, `TimeMollification`, `TimeMollifierInterval`,
+  `TimeSobolevExperimental`); not part of the release surface and not needed for either
+  capstone
 
 Core work that does not require the capstone re-exports should use
 `import LerayHopf.Core` to stay project-axiom-free.
@@ -142,13 +152,15 @@ import LerayHopf.R3.GalerkinTrilinearBound  -- issue #46 PR-2: Galerkin trilinea
 import LerayHopf.R3.GalerkinTimeModulus  -- issue #46 PR-3: good-sampling + master uniform sampling-error bound (File D)
 import LerayHopf.R3.SpacetimePrecompact  -- issue #46 PR-4: assembled LOCAL spacetime precompactness (File E)
 
--- Bochner layer (sorry-carrying)
+-- Bochner layer. Sorry-free in the root closure (issue #147): the incomplete Bochner
+-- time-layer modules (TimeSobolevAC, TimeMollification, TimeMollifierInterval, and the
+-- relocated w1pTime_continuous_in_H) live behind the explicit opt-in `LerayHopf.Experimental`
+-- and are NOT imported here. `TimeSobolev` stays: it is sorry-free (its one former sorry,
+-- w1pTime_continuous_in_H, was extracted to TimeSobolevExperimental.lean) and is needed
+-- directly by R3/AubinLionsLimitPassage.lean and R3/EnergyWeakLsc.lean for kineticEnergy_lsc_transfer.
 import LerayHopf.Bochner.GelfandTriple
 import LerayHopf.Bochner.TimeSobolev
-import LerayHopf.Bochner.TimeSobolevAC
 import LerayHopf.Bochner.TimeConvolution
-import LerayHopf.Bochner.TimeMollifierInterval
-import LerayHopf.Bochner.TimeMollification
 import LerayHopf.Bochner.StepFunctionCompactness  -- issue #46 PR-1: generic step-curve Lp compactness (File A)
 import LerayHopf.Bochner.ScalarEquicontinuity     -- T-AL-2 (#23): domain-neutral scalar equicontinuity engine
 import LerayHopf.Bochner.WeakLimitToolkit         -- issue #4 PR-5: generic Hilbert weak-limit toolkit (hoisted from Torus/TraceEnergy)
