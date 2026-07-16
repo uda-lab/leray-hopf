@@ -232,7 +232,8 @@ Fields (named, mirroring `R3/ConvectionForm.lean:145`):
 - `b : L2Sigma → L2Sigma → L2Sigma → ℝ` — total candidate form.
 - `b_extends : ∀ u v w, IsGalerkinTest u → IsGalerkinTest v → IsGalerkinTest w → ` (or the
   common-`Vₙ` predicate) `→ b u v w = galerkinConvection (commonLevel …) u v w` — the
-  operator-extension / pin to the genuine finite form (the frontier link; excludes `b=0`).
+  operator-extension / pin to the genuine finite form (the frontier link; pins `b` to the
+  canonical formula — non-triviality is not separately formalized, see issue #153).
 - `b_multilinear : ∃ B : L2Sigma →ₗ[ℝ] L2Sigma →ₗ[ℝ] L2Sigma →ₗ[ℝ] ℝ, ∀ u v w, b u v w = B u v w`
   — algebraic trilinear witness (gives `b_add_*`, `b_smul_*`).
 - `b_antisymm_gap : ∀ u v w, b u v w = - b u w v` — the asserted residual (third-slot
@@ -371,4 +372,5 @@ Either:
 - `galerkinConvection_antisymm` is used ONLY with its `Vₙ` hypotheses (§1.3, §5 PR-0).
 - Faithfulness preserved: in every GREEN artifact `b` is genuine on the Galerkin-test slot
   (`b_extends` + `b_galerkin`), where the weak form and the R3-mirror limit passage
-  evaluate it; non-vacuity holds via the pin to `galerkinConvection`.
+  evaluate it, via the pin to `galerkinConvection` (non-triviality of that pin is not
+  separately formalized, see issue #153).

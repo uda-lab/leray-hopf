@@ -472,7 +472,7 @@ What is genuinely missing — and what this structure carries:
 
 - `b`              — a total candidate convection form on all of `L²_σ(𝕋³)`;
 - `b_galerkin_pin` — `b` *restricts* to the finite `galerkinConvection n` on Galerkin
-                     subspaces `Vₙ` (the operator-extension content + the non-vacuity pin;
+                     subspaces `Vₙ` (the operator-extension content + the formula pin;
                      this is exactly the `Torus3NSForms.b_galerkin` shape, and the value is
                      well-posed across levels by `galerkinConvection_level_stable`);
 - `b_multilinear` — `b` is realised by a genuine `ℝ`-trilinear-map tower
@@ -510,11 +510,12 @@ This is a **hypothesis** (data + Prop fields), **not** an `axiom`, and it never 
 structure TorusConvectionGap where
   /-- The **total** candidate convection form on all of `L²_σ(𝕋³)`. -/
   b : L2Sigma → L2Sigma → L2Sigma → ℝ
-  /-- **Operator-extension property + non-vacuity pin (the frontier).** On every Galerkin
+  /-- **Operator-extension property + formula pin (the frontier).** On every Galerkin
   subspace `Vₙ`, `b` restricts to the finite box-truncated form `galerkinConvection n`.  This is
   exactly the `Torus3NSForms.b_galerkin` shape; the value is independent of the level `n` once it
-  bounds the supports (`galerkinConvection_level_stable`), so the pin is well-posed.  It excludes
-  `b = 0` since `galerkinConvection` is generically nonzero. -/
+  bounds the supports (`galerkinConvection_level_stable`), so the pin is well-posed.  Non-triviality
+  (`b ≠ 0`) is not separately formalized: no concrete witness theorem is proved in this
+  repository (issue #153). -/
   b_galerkin_pin : ∀ (n : ℕ) (u v w : L2Sigma),
     velocityProjection_n n (u : L2VF) = (u : L2VF) →
     velocityProjection_n n (v : L2VF) = (v : L2VF) →
@@ -566,7 +567,8 @@ Given the isolated `TorusConvectionGap`, a genuine `Torus3NSForms` exists, **sor
 So `TorusConvectionGap` does **not** hand over the quantitative `Torus3NSForms` content ready-made:
 the unrestricted bound is derived from the test-diagonal bound through fixed-test continuity and
 density; only the algebraic trilinear/antisymmetry content is asserted, as the honest residual of
-the missing weak operator.  Non-vacuity flows through `g.b_galerkin_pin` (excludes `b = 0`). -/
+the missing weak operator.  The formula pin flows through `g.b_galerkin_pin` (non-triviality
+`b ≠ 0` is not separately formalized — see issue #153). -/
 theorem Torus3NSForms_of_gap (g : TorusConvectionGap) : Nonempty Torus3NSForms := by
   obtain ⟨B, hB⟩ := g.b_multilinear
   refine ⟨{ b := g.b
