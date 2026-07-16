@@ -43,7 +43,6 @@ Navier–Stokes equations has been formalized.
 
 Side branches (independent of the existence capstones):
 * `LerayHopf.BlowupLowerBound`  (Branch A) — algebraic blow-up lower bound, sorry-free.
-* `LerayHopf.NonuniquenessStatement` (Branch B) — non-uniqueness proposition, scaffold only.
 
 For the narrative status (axiom ledger, remaining `sorry` inventory, verification
 commands) see `README.md` and `HANDOFF.md`; for the mathematical roadmap see
@@ -78,7 +77,6 @@ import LerayHopf.Galerkin.SolutionBundles
 import LerayHopf.Torus.RellichEmbedding
 import LerayHopf.Torus.H1Sigma
 import LerayHopf.EvolutionTriple
-import LerayHopf.Statement
 import LerayHopf.EnergyEstimate
 
 -- Capstone re-export layers

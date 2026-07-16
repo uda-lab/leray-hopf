@@ -13,9 +13,6 @@ import LerayHopf.Torus.VelocityGalerkin
 -- Abstract ODE/energy skeleton (no axioms, no sorry)
 import LerayHopf.EnergySkeleton
 
--- Scaffold-era declaration (sorry-free, axiom-free; included for module-graph completeness)
-import LerayHopf.NonuniquenessStatement
-
 -- Side branches
 import LerayHopf.BlowupLowerBound
 
@@ -57,8 +54,7 @@ The full `import LerayHopf` surface continues to export both layers.
 
 `Torus.Basic`, `Torus.Domain`, `Torus.FunctionSpaces`, `Torus.DivergenceFree`,
 `Torus.SobolevTorus`, `Torus.Leray`, `Torus.GalerkinProjection`,
-`Torus.VelocityGalerkin`, `EnergySkeleton`,
-`NonuniquenessStatement`, `BlowupLowerBound`.
+`Torus.VelocityGalerkin`, `EnergySkeleton`, `BlowupLowerBound`.
 
 ### ℝ³ layer — fully sorry-free and axiom-free (spatial/Fourier sublayer)
 
