@@ -48,8 +48,9 @@ nonlinear cancellation `b(u,u,u) = 0`) — requires infrastructure absent from
 mathlib (torus divergence theorem, Lp-level gradient operators).
 See `docs/scratch/m4-energy.md` Section 2 for details.
 
-The `AbstractEnergyLaw` structure below is the honest interface that any
-such concrete construction must supply.
+The theorems below state the abstract energy law directly as hypotheses on a
+curve `u : ℝ → H`; they are the honest interface that any such concrete
+construction must supply.
 
 ## Assumptions
 
@@ -61,35 +62,11 @@ open MeasureTheory
 
 namespace LerayHopf
 
-/-! ## Section 1: Abstract energy-law data structure -/
-
-/-- Data package for an abstract Galerkin approximation:
-a curve `u : ℝ → H` in a real inner product space `H`, a dissipation form
-`D : H → ℝ` (representing `ν ‖∇u(t)‖²` in the abstract), and an abstract
-trilinear form `B : H → H → H → ℝ`.
-
-The CONCRETE Navier-Stokes realization on `L²_σ(𝕋³)` — defining the convection
-trilinear form and proving skew-symmetry by integration by parts on the torus —
-requires infrastructure absent from mathlib and is not constructed here.
-This structure collects what such a construction must supply. -/
-structure AbstractGalerkinData where
-  /-- The ambient real inner product space. -/
-  H : Type*
-  /-- Normed add comm group instance on `H`. -/
-  inst_nacg : NormedAddCommGroup H
-  /-- Inner product space instance on `H` over `ℝ`. -/
-  inst_ips  : InnerProductSpace ℝ H
-  /-- The Galerkin solution curve. -/
-  u   : ℝ → H
-  /-- Pointwise dissipation: represents `ν ‖∇u(t)‖²` evaluated at `u(t)`. -/
-  D   : H → ℝ
-  /-- Abstract trilinear form (the role of the convective nonlinearity). -/
-  B   : H → H → H → ℝ
-
-/-! The abstract Galerkin ODE law for an `AbstractGalerkinData` `d` is:
-`∀ t, HasDerivAt d.u (deriv d.u t) t ∧ inner (deriv d.u t) (d.u t) + d.D (d.u t) + d.B (d.u t) (d.u t) (d.u t) = 0`.
-This is stated directly as a hypothesis in the theorems below rather than as a standalone def,
-since bundling the instances into `AbstractGalerkinData` makes the explicit `@` form verbose. -/
+/-! The abstract Galerkin ODE law for a curve `u : ℝ → H` with dissipation `D : H → ℝ`
+and trilinear form `B : H → H → H → ℝ` is:
+`∀ t, HasDerivAt u (deriv u t) t ∧ inner (deriv u t) (u t) + D (u t) + B (u t) (u t) (u t) = 0`.
+This is stated directly as a hypothesis in the theorems below rather than bundled into a
+standalone structure, which would make the explicit `@` form verbose. -/
 
 /-! ## Section 2: Abstract Galerkin energy identity -/
 

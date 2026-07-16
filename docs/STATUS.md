@@ -118,7 +118,7 @@ the row marked **REMOVED** below.)
 
 The ℝ³ spatial+regularity layer is **built axiom-free** (`R3/Domain.lean`, `DivergenceFree.lean`,
 `Regularity.lean`): `L2Sigma_R3 := ⨅ φ:𝓢, ker(divTestFunctional φ)` (weak divergence against Schwartz
-tests; closed div-free subspace), `lerayProjection_R3`, `memH1VF_R3` (via `MemSobolev`),
+tests; closed div-free subspace), `memH1VF_R3` (via `MemSobolev`),
 `stokesTestPairing_R3`/`viscousFormSq_R3` (via the L² Fourier transform `Lp.fourierTransformₗᵢ`),
 `convIntegralSchwartz` (the genuine convection integral on Schwartz fields). The abstract
 `DissipativeEvolution`/`WeakFormNS`/`AbstractEnergyLaw` layer is **reused unmodified**.

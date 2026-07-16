@@ -157,7 +157,7 @@ theorem tailEnn_lsc_of_weak (N : ℕ) (v : L2VF) (vk : ℕ → L2VF)
 
 /-- (P0.12) Weak-convergence upgrade `L2Sigma` tests → all `L2VF` tests, via the Leray
 projection: for div-free `v n, u`, testing against `y : L2VF` equals testing against
-`lerayProjection y ∈ L2Sigma`.  Makes P0.6c's premise reachable from the T-AL-4
+`L2Sigma.starProjection y ∈ L2Sigma`.  Makes P0.6c's premise reachable from the T-AL-4
 capstone's weak-convergence conjunct. -/
 theorem tendsto_inner_L2VF_of_tendsto_inner_L2Sigma
     (v : ℕ → L2Sigma) (u : L2Sigma)

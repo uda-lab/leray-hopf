@@ -8,7 +8,7 @@ open MeasureTheory
 # Basic objects for the Leray–Hopf formalization
 
 **Scaffold only.** This file fixes the *types* the existence theory will talk about —
-the spatial 3-torus domain, a placeholder spatial-field type, and the solution-concept
+the spatial 3-torus domain and the solution-concept
 record `LerayHopfSolution` whose fields are `Prop` placeholders. The torus carries the
 real product Haar (probability) measure; other analytical content is refined in later
 milestones.
@@ -28,12 +28,6 @@ with its product Haar (probability) measure.
 `AddCircle.measureSpace` (total mass 1), and the product measure on
 `Fin 3 → UnitAddCircle` is provided by `MeasureTheory.MeasureSpace.pi`. -/
 abbrev Torus3 := UnitAddTorus (Fin 3)
-
-/-- Placeholder for a spatial field on a domain `Ω` (e.g. an element of `L²_σ(Ω)`).
-Realized as a real function space in a later milestone. -/
-structure SpatialField (Ω : Type*) where
-  carrier : Type*
-  dummy : True := by trivial
 
 /-- The concept of a Leray–Hopf weak solution, as a record of the defining properties.
 

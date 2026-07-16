@@ -27,7 +27,6 @@ R3-d through the `IsSchwartzDivFree_R3` witnesses.
 
 ## Declarations (dependency order)
 
-- `convFormSchwartzWitness`     : the R3-d value on explicit Schwartz witnesses (a `def`).
 - `convFormSchwartz_witness_wd` : well-definedness — equal `toLp` classes ⇒ equal value.
 - `convFormSchwartz`            : the well-defined functional on the `IsSchwartzDivFree_R3`
                                    class (via `Exists.choose` + well-definedness).
@@ -47,21 +46,11 @@ All proof bodies are discharged. **No new `axiom`/`opaque`/`constant`.**
 namespace LerayHopf
 open MeasureTheory LineDeriv SchwartzMap
 
-/-! ### S1 — The R3-d value on explicit Schwartz witnesses -/
+/-! ### S2 — Well-definedness: equal `toLp` classes give equal value
 
-/-- **S1.** The convection value `∫(u·∇)v·w` on *explicit* Schwartz component witnesses.
-
-Given `u v w : L2Sigma_R3` together with component-wise Schwartz representatives
-`ψu ψv ψw` (the data exposed by `IsSchwartzDivFree_R3`), this is just the genuine
-`convIntegralSchwartz` of those representatives.  It is a thin wrapper recording the
-intended dependency on the *fields* `u v w` (through their witnesses); the genuine
-field-level functional `convFormSchwartz` below quotients out the choice of witness via
-well-definedness (S2). -/
-noncomputable def convFormSchwartzWitness
-    (ψu ψv ψw : Fin 3 → SchwartzMap Domain3 ℝ) : ℝ :=
-  convIntegralSchwartz ψu ψv ψw
-
-/-! ### S2 — Well-definedness: equal `toLp` classes give equal value -/
+(The convection value on *explicit* Schwartz component witnesses is just
+`convIntegralSchwartz` itself; the field-level functional `convFormSchwartz` below
+quotients out the choice of witness via well-definedness.) -/
 
 /-- **S2.** Well-definedness of the convection value in the Schwartz witnesses.
 
