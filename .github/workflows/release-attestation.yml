@@ -105,6 +105,11 @@ jobs:
         continue-on-error: true
         run: bash scripts/check-release-cone.sh 2>&1 | tee logs/check-release-cone.log
 
+      - name: Guardrail — statement cards (issue #158)
+        id: guard_statement_cards
+        continue-on-error: true
+        run: bash scripts/check-statement-cards.sh 2>&1 | tee logs/check-statement-cards.log
+
       - name: Guardrail — axiom live pin (capstone evidence anchor, issue #150)
         id: guard_axiom_live
         continue-on-error: true
@@ -126,6 +131,7 @@ jobs:
             [check-theorem-names.sh]="${{ steps.guard_names.outcome }}"
             [check-axioms.sh]="${{ steps.guard_axiom_static.outcome }}"
             [check-release-cone.sh]="${{ steps.guard_release_cone.outcome }}"
+            [check-statement-cards.sh]="${{ steps.guard_statement_cards.outcome }}"
             [check-axioms-live.sh]="${{ steps.guard_axiom_live.outcome }}"
           )
 
@@ -151,7 +157,8 @@ jobs:
             echo "| \`scripts/check-theorem-names.sh\` | ${OUTCOME[check-theorem-names.sh]} |"
             echo "| \`scripts/check-axioms.sh\` | ${OUTCOME[check-axioms.sh]} |"
             echo "| \`scripts/check-release-cone.sh\` | ${OUTCOME[check-release-cone.sh]} |"
-            echo "| \`scripts/check-axioms-live.sh\` (capstone pin) | ${OUTCOME[check-axioms-live.sh]} |"
+            echo "| \`scripts/check-statement-cards.sh\` | ${OUTCOME[check-statement-cards.sh]} |"
+            echo "| \`scripts/check-axioms-live.sh\` (capstone pin + Experimental axiom-profile visibility) | ${OUTCOME[check-axioms-live.sh]} |"
             echo
             echo "## Guard log checksums (sha256)"
             echo
@@ -194,6 +201,7 @@ jobs:
             "${{ steps.guard_names.outcome }}" \
             "${{ steps.guard_axiom_static.outcome }}" \
             "${{ steps.guard_release_cone.outcome }}" \
+            "${{ steps.guard_statement_cards.outcome }}" \
             "${{ steps.guard_axiom_live.outcome }}"; do
             if [ "$outcome" != "success" ]; then
               FAILED=1

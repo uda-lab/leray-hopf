@@ -6,9 +6,17 @@ name: lean
 # scripts/hooks/pre-push git hook (see docs/build-and-checks.md).
 on:
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
+    # `paths-ignore` cannot express mixed include/exclude (GitHub Actions docs: use
+    # `paths` with `!` for that). Positive `paths` list instead, evaluated in order
+    # with last-match-wins: everything triggers by default, docs/**/*.md is excluded,
+    # then docs/statement-cards/** is explicitly re-included — check-statement-cards.sh's
+    # guard (b) (issue #158) enforces that ledger, so a PR that only deletes/renames a
+    # card must still trigger the guards job.
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!**/*.md'
+      - 'docs/statement-cards/**'
   workflow_dispatch:
 
 # Cancel superseded runs on the same ref.
@@ -34,6 +42,8 @@ jobs:
         run: bash scripts/check-axioms.sh
       - name: Guardrail — release-cone sorry-free (issue #147)
         run: bash scripts/check-release-cone.sh
+      - name: Guardrail — statement cards (issue #158)
+        run: bash scripts/check-statement-cards.sh
 
   # Full build + axiom pins — MANUAL ONLY (workflow_dispatch).
   full-build:
@@ -56,5 +66,7 @@ jobs:
         run: bash scripts/check-axioms.sh
       - name: Guardrail — release-cone sorry-free (issue #147)
         run: bash scripts/check-release-cone.sh
+      - name: Guardrail — statement cards (issue #158)
+        run: bash scripts/check-statement-cards.sh
       - name: Guardrail — axiom live pin
         run: bash scripts/check-axioms-live.sh

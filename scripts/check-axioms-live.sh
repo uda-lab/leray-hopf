@@ -248,6 +248,45 @@ assert_core_clean "lower_bound_from_inverse_square_lifespan"
 assert_core_clean "localCompactness_R3_of_ballCompact"
 
 # ---------------------------------------------------------------------------
+# Experimental-module axiom profile (issue #158 "public sorry / scaffold theorem の
+# axiom profile を release tooling で可視化" requirement) — VISIBILITY ONLY, does not
+# affect FAIL. Prints the axiom set of every `sorryAx`-carrying declaration behind the
+# `LerayHopf.Experimental` opt-in (see scripts/print_axioms.lean and
+# docs/statement-cards/) so release tooling shows what is unproven in the release
+# candidate without gating the build on it — those declarations are outside the
+# release cone precisely because they are still `sorry` (see check-release-cone.sh).
+# `timeConv_prod_integrable` is `private` and cannot be named from print_axioms.lean at
+# all, so it is not listed here; see its statement card for why that is expected.
+# ---------------------------------------------------------------------------
+echo ""
+echo "==> Experimental-module axiom profile (visibility only, not gated):"
+
+print_experimental_axioms() {
+  local decl="$1"
+
+  local block
+  block="$(printf '%s\n' "$OUTPUT" \
+    | awk "/depends on axioms: \[/{found=1; line=\"\"} found{line=line\$0\" \"} /\]/{if(found) print line; found=0}" \
+    | grep -F "'LerayHopf.Bochner.${decl}'" || true)"
+
+  if [ -z "$block" ]; then
+    echo "  ?? LerayHopf.Bochner.${decl} — no '#print axioms' output found (did the Experimental import fail?)"
+  else
+    local axiom_list
+    axiom_list="$(printf '%s\n' "$block" | grep -oE '\[.*\]')"
+    echo "  LerayHopf.Bochner.${decl}: $axiom_list"
+  fi
+}
+
+print_experimental_axioms "w1pTime_continuous_in_H"
+print_experimental_axioms "isWeakTimeDeriv_primitive"
+print_experimental_axioms "timeMollification_exists"
+print_experimental_axioms "weakTimeDerivℝ_even_reflection"
+print_experimental_axioms "w1pTime_lineExtension"
+echo "  (timeConv_prod_integrable is private — not name-addressable here; see its"
+echo "   statement card, docs/statement-cards/timeConv_prod_integrable.md.)"
+echo ""
+
 if [ "$FAIL" -ne 0 ]; then
   echo "AXIOM LIVE PIN FAILED — see errors above." >&2
   exit 1

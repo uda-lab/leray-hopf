@@ -41,14 +41,21 @@ lake build
 ## Discipline checks
 
 ```bash
-bash scripts/check-no-sorry.sh        # unmarked `sorry`
-bash scripts/check-no-axiom.sh        # unmarked axiom/constant/opaque/unsafe
-bash scripts/check-theorem-names.sh   # overclaiming declaration names
+bash scripts/check-no-sorry.sh          # unmarked `sorry`
+bash scripts/check-no-axiom.sh          # unmarked axiom/constant/opaque/unsafe
+bash scripts/check-theorem-names.sh     # overclaiming declaration names
+bash scripts/check-axioms.sh            # axiom-leak static pre-filter
+bash scripts/check-release-cone.sh      # release cone (import LerayHopf) is sorry-free
+bash scripts/check-statement-cards.sh   # every ALLOW_SORRY decl has a statement card (issue #158)
 ```
+
+`check-statement-cards.sh` also pins `w1pTime_continuous_in_H` at `p = q = 2` — see
+`docs/statement-gates.md` for the statement-card process this enforces and
+`docs/postmortems/2026-07-w1ptime-false-statement.md` for why.
 
 ## Preflight (run before and after editing)
 
-Builds, then runs all three checks in order:
+Builds, then runs all the discipline checks above (plus the live axiom pin) in order:
 
 ```bash
 bash scripts/agent-preflight.sh
@@ -82,10 +89,13 @@ Markers are per-line by design, so every exception is justified where it occurs.
 
 Auto full builds are **abolished** (GitHub Actions cost).
 
-- **PRs** run the `guards` job: grep guards only (`check-no-sorry.sh`,
-  `check-no-axiom.sh`, `check-theorem-names.sh`). No Lean build on CI for PRs.
-- **Full build + axiom pins** (`check-axioms.sh`, `check-axioms-live.sh`) run
-  **manually** via the `lean` workflow's `workflow_dispatch` trigger on GitHub.
+- **PRs** run the `guards` job: the six static/textual guards above
+  (`check-no-sorry.sh`, `check-no-axiom.sh`, `check-theorem-names.sh`, `check-axioms.sh`,
+  `check-release-cone.sh`, `check-statement-cards.sh`). No Lean build on CI for PRs.
+- **Full build + live axiom pin** (`check-axioms-live.sh`, which additionally prints the
+  `LerayHopf.Experimental` axiom profile for visibility — see
+  `docs/statement-gates.md`) runs **manually** via the `lean` workflow's
+  `workflow_dispatch` trigger on GitHub, together with all six guards above.
 - **Release-candidate build attestation** — a separate, persisted evidence record
   for one exact SHA — runs manually via the `release-attestation` workflow (see
   below).

@@ -157,6 +157,13 @@ documented.
   `Bochner/TimeMollification.lean:196`,
   `Bochner/TimeMollifierInterval.lean:297,466,601`. Verify with
   `grep -rn 'sorry -- ALLOW_SORRY' LerayHopf/`.
+- Every one of those 6 has a **statement card** under `docs/statement-cards/` (exact type,
+  literature reference, hypothesis mapping, consumer/special case, boundary-case checklist);
+  see `docs/statement-gates.md` for the process and
+  `docs/postmortems/2026-07-w1ptime-false-statement.md` for the incident that motivated it
+  (`w1pTime_continuous_in_H` carried a false generic-exponent claim, unproved, before issue
+  #158's correction). `scripts/check-statement-cards.sh` enforces card coverage and pins
+  `w1pTime_continuous_in_H` at its corrected `p = q = 2` signature in CI.
 
 ## Build and CI
 
