@@ -43,9 +43,6 @@ noncomputable def memH1Torus (f : L2C) : Prop :=
   Summable (fun k : Fin 3 → ℤ =>
     (1 + ∑ i : Fin 3, (k i : ℝ) ^ 2) * ‖mFourierCoeff3 f k‖ ^ 2)
 
-/-- The torus Sobolev space H¹(𝕋³; ℂ) as a subset of L²(𝕋³; ℂ). -/
-def H1Torus : Set L2C := {f | memH1Torus f}
-
 /-! ### Sanity check: the zero function lies in H¹(𝕋³) -/
 
 /-- The zero function is in H¹(𝕋³; ℂ), confirming the predicate is non-vacuous. -/

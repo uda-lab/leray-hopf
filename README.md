@@ -50,9 +50,7 @@ Mazur weak-limit closure, and the determined-form convection extensions — is
 > declarations outside the two capstone cones are tracked in [`docs/STATUS.md`](docs/STATUS.md).
 
 Public summaries should cite the proof-carrying `LerayHopfSolutionFull` /
-`LerayHopfSolutionFull_R3` structures and the capstones above. The older
-generic `ExistsLerayHopf` / `LerayHopfSolution` layer is scaffold-only and should not
-be described as a PDE existence theorem.
+`LerayHopfSolutionFull_R3` structures and the capstones above.
 
 ## Layout
 
@@ -77,11 +75,10 @@ be described as a PDE existence theorem.
 - The `LerayHopf/` import DAG has **zero dead files**: every `.lean` file under
   `LerayHopf/` is reachable via at least one `import` statement.
 - Doc-string coverage on public declarations is high throughout the tree.
-- Exactly **7** remaining `sorry`s, every one same-line `-- ALLOW_SORRY:`-marked and
-  none reachable from either capstone: `LerayHopf/Statement.lean:39` (an intentional
-  scaffold placeholder, kept distinct from the real capstones by design) and six
-  Lions–Magenes-class Bochner-time walls — `Bochner/TimeSobolev.lean:545`,
-  `Bochner/TimeSobolevAC.lean:350`, `Bochner/TimeMollification.lean:196`,
+- Exactly **6** remaining `sorry`s, every one same-line `-- ALLOW_SORRY:`-marked and
+  none reachable from either capstone — all six are Lions–Magenes-class Bochner-time
+  walls: `Bochner/TimeSobolev.lean:535`, `Bochner/TimeSobolevAC.lean:322`,
+  `Bochner/TimeMollification.lean:196`,
   `Bochner/TimeMollifierInterval.lean:297,466,601`. Verify with
   `grep -rn 'sorry -- ALLOW_SORRY' LerayHopf/`.
 

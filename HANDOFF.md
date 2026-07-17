@@ -56,10 +56,9 @@ open LerayHopf
 #print axioms exists_lerayHopf_r3' > /tmp/chk.lean && lake env lean /tmp/chk.lean
 ```
 Toolchain: `leanprover/lean4:v4.31.0-rc2` (see `lean-toolchain`). The two capstones are
-`sorryAx`-free (asserted by the live pin). Marked `ALLOW_SORRY` frontier/scaffold debt exists in
-non-capstone files (e.g. `Statement.lean:Scaffold.exists_lerayHopf_torus3_statement`, the deliberate
-scaffold target kept by the no-rename rule, and the `Bochner/`/campaign scaffolds); see
-`docs/STATUS.md` for the ledger — none of it leaks into the capstones.
+`sorryAx`-free (asserted by the live pin). Marked `ALLOW_SORRY` frontier debt exists in
+non-capstone `Bochner/` campaign files only; see `docs/STATUS.md` for the ledger — none of
+it leaks into the capstones.
 
 ## 3. Repository map
 

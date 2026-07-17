@@ -45,7 +45,6 @@ which has type `𝓢(Domain3, ℝ) →L[ℝ] 𝓢(Domain3, ℝ)`.  We then embed
 - `divTestFunctional φ`   : `L2VF_R3 →L[ℝ] ℝ` — weak divergence against φ
 - `L2Sigma_R3`            : `Submodule ℝ L2VF_R3` — the closed div-free subspace
 - `isClosed_L2Sigma_R3`   : `IsClosed (L2Sigma_R3 : Set L2VF_R3)`
-- `lerayProjection_R3`    : `L2VF_R3 →L[ℝ] L2Sigma_R3` — the Leray projection
 -/
 
 namespace LerayHopf
@@ -177,17 +176,6 @@ instance : L2Sigma_R3.HasOrthogonalProjection :=
   inferInstance
 
 /-! ### Leray projection -/
-
-/-- The Leray projection Π_σ : L2VF_R3 →L[ℝ] L2Sigma_R3.
-
-The orthogonal projection of L²(ℝ³; ℝ³) onto the closed weakly-divergence-free subspace
-`L2Sigma_R3 = L²_σ(ℝ³)`.  Its range is exactly `L2Sigma_R3` and its kernel is
-`L2Sigma_R3`ᗮ (the space of L² gradients, by the Helmholtz decomposition — not
-formalized here).
-
-Defined as `L2Sigma_R3.orthogonalProjectionOnto`. -/
-noncomputable def lerayProjection_R3 : L2VF_R3 →L[ℝ] L2Sigma_R3 :=
-  L2Sigma_R3.orthogonalProjectionOnto
 
 /-! ### Genuine Schwartz convection integral (non-vacuity pin) -/
 

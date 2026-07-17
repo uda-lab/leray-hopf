@@ -50,8 +50,8 @@ maintains this ledger as the final report.
 
 | # | Milestone | State |
 |---|---|---|
-| M1 | Structural spine (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton) | in progress — **superseded (2026-07-11, issue #112 PR-D):** `LerayHopf/GalerkinPackage.lean` and `LerayHopf/ExistenceFromPackage.lean` — and their public names `GalerkinCompactnessPackage` / `exists_lerayHopf_from_galerkin_package` — were **deleted**. Both capstones are long past this M1 stage; the generic package/existence plumbing this row describes now lives in `LerayHopf/Galerkin/Domain.lean` + `LerayHopf/Galerkin/SolutionBundles.lean` as `Galerkin.CompactnessPackage` / `Galerkin.exists_lerayHopf_from_package`, consumed by the R3/Torus lanes via the `…Full` abbrevs (`GalerkinCompactnessPackageFull_R3`, `GalerkinCompactnessPackageFull`, etc.). See `docs/architecture.md` for the current module layout. |
-| Side A/B | Blow-up lower bound · nonuniqueness statement | done (pending commit) |
+| M1 | Structural spine (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton) | in progress — **superseded (2026-07-11, issue #112 PR-D):** `LerayHopf/GalerkinPackage.lean` and `LerayHopf/ExistenceFromPackage.lean` — and their public names `GalerkinCompactnessPackage` / `exists_lerayHopf_from_galerkin_package` — were **deleted**. Both capstones are long past this M1 stage; the generic package/existence plumbing this row describes now lives in `LerayHopf/Galerkin/Domain.lean` + `LerayHopf/Galerkin/SolutionBundles.lean` as `Galerkin.CompactnessPackage` / `Galerkin.exists_lerayHopf_from_package`, consumed by the R3/Torus lanes via the `…Full` abbrevs (`GalerkinCompactnessPackageFull_R3`, `GalerkinCompactnessPackageFull`, etc.). See `docs/architecture.md` for the current module layout. **Also superseded (2026-07-17, issue #144):** `LerayHopf/Statement.lean` and the placeholder `LerayHopfSolution` in `Torus/Basic.lean` — the row's `Statement` component — were **deleted**, closing out the M1 vacuity caveat by removal rather than refinement (see "Known scaffold caveats" above). |
+| Side A/B | Blow-up lower bound · nonuniqueness statement | Branch A (`BlowupLowerBound.lean`) done. Branch B (`NonuniquenessStatement.lean`, `LerayHopfNonunique`) **deleted (2026-07-17, issue #144)** — it was built on the same placeholder `LerayHopfSolution` deleted from `Torus/Basic.lean` and was not a genuine non-uniqueness claim. |
 | M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | **done** (axiom-free) |
 | M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | **done** (axiom-free) |
 | M4 | Finite-dim Galerkin ODE + energy identity | **abstract done** (axiom-free); concrete = frontier |
@@ -118,7 +118,7 @@ the row marked **REMOVED** below.)
 
 The ℝ³ spatial+regularity layer is **built axiom-free** (`R3/Domain.lean`, `DivergenceFree.lean`,
 `Regularity.lean`): `L2Sigma_R3 := ⨅ φ:𝓢, ker(divTestFunctional φ)` (weak divergence against Schwartz
-tests; closed div-free subspace), `lerayProjection_R3`, `memH1VF_R3` (via `MemSobolev`),
+tests; closed div-free subspace), `memH1VF_R3` (via `MemSobolev`),
 `stokesTestPairing_R3`/`viscousFormSq_R3` (via the L² Fourier transform `Lp.fourierTransformₗᵢ`),
 `convIntegralSchwartz` (the genuine convection integral on Schwartz fields). The abstract
 `DissipativeEvolution`/`WeakFormNS`/`AbstractEnergyLaw` layer is **reused unmodified**.
@@ -158,21 +158,23 @@ and `L²_σ` is a closed submodule giving its Hilbert structure + Leray projecti
 **In the Lean tree:** the headline existence theorems (`exists_lerayHopf_torus3`,
 `exists_lerayHopf_r3`) and the R3-d/P5/P3 deliverables are sorry-free and
 `#print axioms`-clean.  (Renamed from bare `exists_lerayHopf_torus3`/`exists_lerayHopf_r3` in
-Wave-0; Issue #1 item 3.) Marked (`ALLOW_SORRY`) `sorry` declarations currently present:
-- `Statement.lean:exists_lerayHopf_torus3_statement` — the deliberate scaffold target (not
-  frontier debt; superseded by the proved `exists_lerayHopf_torus3`; kept by the
-  no-rename rule).
+Wave-0; Issue #1 item 3.)
 **`kineticEnergy_lsc_bound` (E1) and `aubinLionsPackage_R3_of_timeCompactness` (C2) are PROVED
 sorry-free** as of issue #31 and issue #15 respectively.  `AubinLionsLimitPassage.lean` carries
 zero `sorry` lines.  Their former open status is historical.
 
-Actual residual marked `sorry` (7 total, all outside both capstone cones):
-- `LerayHopf/Statement.lean:37` — deliberate scaffold target
-  (`exists_lerayHopf_torus3_statement`); kept by the no-rename rule, superseded by the proved
-  `exists_lerayHopf_torus3`.
-- `LerayHopf/Bochner/TimeSobolev.lean:544` — D1 Lions–Magenes good-representative embedding
+**(issue #144, 2026-07-17):** the former scaffold target `Statement.lean:
+exists_lerayHopf_torus3_statement` — together with the underlying placeholder
+`LerayHopfSolution`/`ExistsLerayHopf` in `Torus/Basic.lean` — has been **deleted**; it was a
+permanent `ALLOW_SORRY` on a structurally-vacuous `Prop`-field record that risked being
+mistaken for the real capstones. `LerayHopf/NonuniquenessStatement.lean` (`LerayHopfNonunique`,
+also built on the placeholder `LerayHopfSolution`) was deleted alongside it.
+
+Actual residual marked `sorry` (6 total, all outside both capstone cones, all Lions–Magenes-class
+Bochner-time walls):
+- `LerayHopf/Bochner/TimeSobolev.lean:535` — D1 Lions–Magenes good-representative embedding
   (`w1pTime_continuous_in_H`); declared months-class residual.
-- `LerayHopf/Bochner/TimeSobolevAC.lean:350` — Bochner–Fubini distributional FTC for the
+- `LerayHopf/Bochner/TimeSobolevAC.lean:322` — Bochner–Fubini distributional FTC for the
   interval primitive `w(t)=∫₀ᵗ v`; isolated single residual of R1.
 - `LerayHopf/Bochner/TimeMollification.lean:196` — S1 time-mollification with linked
   L²(V)/L²(V') convergence; interval Steklov assembly wall.
@@ -207,26 +209,20 @@ The **abstract energy law ⟹ energy inequality ⟹ nonincreasing energy** chain
 These are deliberate properties of the M1 scaffold, recorded so they are never mistaken
 for proved mathematics. Each is discharged by the monotone refinement of placeholders.
 
-- **`ExistsLerayHopf` is vacuous at M1.** `LerayHopfSolution`'s analytical fields are free
-  `Prop` placeholders, so `ExistsLerayHopf Ω u₀` is structurally inhabited and is *not*
-  yet a meaningful existence claim. `exists_lerayHopf_from_galerkin_package` is therefore a
-  real but currently low-content implication (package ⟹ solution). The target
-  `exists_lerayHopf_torus3_statement` is kept as a marked `sorry` and must **not** be
-  discharged via a junk package. _Discharge:_ M2+ refines the `Prop` fields into real
-  predicates (`WeakEquation`, `EnergyClass`, …) tied to the candidate field, `u₀`, `Ω`,
-  after which the implication carries genuine analytical content.
-  **Partially superseded (2026-07-11, issue #112 PR-D):** `exists_lerayHopf_from_galerkin_package`
-  and its host file `GalerkinPackage.lean` were **deleted**; the generic package/existence
-  layer now lives in `LerayHopf/Galerkin/Domain.lean` + `LerayHopf/Galerkin/SolutionBundles.lean`
-  as `Galerkin.CompactnessPackage` / `Galerkin.exists_lerayHopf_from_package`, and both
-  capstones (`exists_lerayHopf_torus3`, `exists_lerayHopf_r3`) consume this layer with full
-  analytical content via the lanes' `…Full` abbrevs — that half of the caveat is resolved.
-  The `ExistsLerayHopf`/`LerayHopfSolution` vacuity itself is **unaffected and still stands**:
-  `LerayHopf/Torus/Basic.lean`'s `LerayHopfSolution` still has free `Prop` fields and
-  `LerayHopf/Statement.lean`'s `ExistsLerayHopf` is still vacuous at that scaffold target — PR-D
-  did not touch either file. Do not read this deletion as discharging the M1 vacuity warning
-  for `ExistsLerayHopf`; it only retires the one theorem that used to consume the vacuous
-  package.
+- ~~**`ExistsLerayHopf` is vacuous at M1.**~~ **RESOLVED by deletion (issue #144, 2026-07-17).**
+  The M1-era placeholder `LerayHopfSolution` (free `Prop` fields, `Torus/Basic.lean`) and the
+  vacuous `ExistsLerayHopf`/`Scaffold.exists_lerayHopf_torus3_statement` it fed (`Statement.lean`)
+  were **deleted outright** rather than further refined, once the real capstones
+  (`exists_lerayHopf_torus3`, `exists_lerayHopf_r3`, both proof-carrying and kernel-only) made
+  the M1 scaffold's structural role obsolete and its name/namespace collision with the
+  production `Galerkin.LerayHopfSolution` a release-blocking overclaim risk. This caveat no
+  longer applies — there is no vacuous `ExistsLerayHopf` left in the public API to misread.
+  (Partial history: `exists_lerayHopf_from_galerkin_package` and its host file
+  `GalerkinPackage.lean` were already deleted in issue #112 PR-D, 2026-07-11; the generic
+  package/existence layer lives on in `LerayHopf/Galerkin/Domain.lean` +
+  `LerayHopf/Galerkin/SolutionBundles.lean` as `Galerkin.CompactnessPackage` /
+  `Galerkin.exists_lerayHopf_from_package`, consumed by both capstones via the lanes'
+  `…Full` abbrevs — unaffected by this deletion.)
 - **`Torus3` is a fresh placeholder with the zero measure**, not the real torus. The zero
   measure is intentionally wrong-but-honest (signals "unrealized"). _Discharge:_ M2 realizes
   `Torus3 := UnitAddTorus 3` with Haar/volume measure.
@@ -337,13 +333,13 @@ for proved mathematics. Each is discharged by the monotone refinement of placeho
 
 ## Notes
 
-- `exists_lerayHopf_torus3_statement` (in `Statement.lean`) is intentionally a marked `sorry`
-  (the original scaffold target). It is superseded by the genuinely proved
-  `exists_lerayHopf_torus3` (in `TorusGalerkinODECapstone.lean`), which carries the
+- The original scaffold target `exists_lerayHopf_torus3_statement` (formerly in
+  `Statement.lean`, permanently marked `sorry`) has been **deleted (issue #144)**: the genuinely
+  proved `exists_lerayHopf_torus3` (in `TorusGalerkinODECapstone.lean`) — which carries the
   proof-carrying `LerayHopfSolutionFull` (weak form, energy inequality, initial trace, energy
-  class) **unconditionally** — all T³ project axioms removed (issue #23 T-AL-6 finish line;
-  `#print axioms` = kernel-only). The scaffold `sorry` is kept (no-rename rule) and is not
-  frontier debt.
+  class) **unconditionally**, all T³ project axioms removed (issue #23 T-AL-6 finish line;
+  `#print axioms` = kernel-only) — made the scaffold target obsolete rather than merely
+  superseded, so it was removed instead of kept as a permanent `ALLOW_SORRY`.
   (`exists_lerayHopf_torus3` was renamed from `exists_lerayHopf_torus3` in Wave-0.)
 - **Next:** pivot to R³ — instantiate the abstract `DissipativeEvolution`/`WeakFormNS` + the
   abstract A1–A3 pattern; R³ needs its OWN spatial-compactness axiom (Rellich FAILS on ℝ³ —

@@ -13,8 +13,7 @@ Reused unmodified by both 𝕋³ and ℝ³ — the key structural payoff of the 
 | `LerayHopf/EvolutionTriple.lean` | `DissipativeEvolution` (pivot Hilbert space `H` + regularity functional + viscous/convection forms), `WeakFormNS`, `convForm_self_zero` |
 | `LerayHopf/EnergyEstimate.lean` | `AbstractEnergyLaw`, the Galerkin energy identity, energy non-increase |
 | `LerayHopf/EnergySkeleton.lean` | Abstract energy-inequality skeleton (scaffold-era, sorry-free) |
-| `LerayHopf/Statement.lean` | The original scaffold target statement (`Scaffold.exists_lerayHopf_torus3_statement`) — kept as a marked-`sorry` historical placeholder, distinct from the real capstones |
-| `LerayHopf/BlowupLowerBound.lean`, `NonuniquenessStatement.lean` | Independent side branches (Branch A / B) |
+| `LerayHopf/BlowupLowerBound.lean` | Independent side branch (Branch A) |
 
 ## Generic Galerkin layer — `LerayHopf/Galerkin/`
 
@@ -152,7 +151,7 @@ package without pulling the NS-specific solution machinery along.
 Collects everything above that is **project-axiom-free** and `sorryAx`-free:
 `Torus.Basic/Domain/FunctionSpaces/DivergenceFree/SobolevTorus/Leray/
 GalerkinProjection/VelocityGalerkin`, `EnergySkeleton`,
-`NonuniquenessStatement`, `BlowupLowerBound`, and the ℝ³ spatial/Fourier sublayer
+`BlowupLowerBound`, and the ℝ³ spatial/Fourier sublayer
 (`R3.Domain/DivergenceFree/Regularity/FourierL2/RellichBall/SpatialCompactness/
 TrilinearEstimate`). `import LerayHopf.Core` gives this layer without pulling in
 either capstone's support modules. (`LerayHopf/Galerkin/` is axiom-free and

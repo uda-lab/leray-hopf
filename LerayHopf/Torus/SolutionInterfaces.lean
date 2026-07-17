@@ -367,8 +367,8 @@ All three fields are typed propositions (not `Prop` placeholders):
 - `energy_ineq`: the energy inequality holds for all `t ≥ 0`,
 - `initial_trace`: the initial datum is attained in the strong L² sense.
 
-Compare with the scaffold `LerayHopfSolution` (in `Basic.lean`) which uses `Prop` fields;
-this structure carries actual proof obligations and is produced by the assembly below.
+This structure carries actual proof obligations (not `Prop` placeholders) and is
+produced by the assembly below.
 
 **Energy class (v5 fix):** The `energy_class` field proof-carries that `u` lies in the
 Leray–Hopf energy class: a.e. `memH1VF` on `[0, T]` (giving `u ∈ L²(0,T;H¹_σ)`) and

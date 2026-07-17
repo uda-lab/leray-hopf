@@ -130,23 +130,11 @@ fires automatically once `CompleteSpace L2Sigma` is established (D-15). -/
 instance : L2Sigma.HasOrthogonalProjection :=
   inferInstance
 
-/-! ### D-17: The Leray projection -/
+/-! ### D-18 through D-21b: Properties of the Leray projection (for lean-prover)
 
-/-- The Leray projection Π_div : L2VF →L[ℝ] L2Sigma.
-
-The orthogonal projection of `L²(𝕋³;ℝ³)` onto the closed divergence-free subspace
-`L2Sigma = L²_σ(𝕋³)`.  Its range is exactly `L2Sigma` and its kernel is
-`L2Sigma`ᗮ (the orthogonal complement of `L2Sigma` in `L2VF`).
-
-Note: the Helmholtz decomposition identifies `L2Sigma`ᗮ with the space of L²
-gradients (i.e. `{∇φ : φ ∈ H¹(𝕋³)}`), but this identification is NOT formalized
-here and should be regarded as future work.
-
-Defined as `L2Sigma.orthogonalProjectionOnto`. -/
-noncomputable def lerayProjection : L2VF →L[ℝ] L2Sigma :=
-  L2Sigma.orthogonalProjectionOnto
-
-/-! ### D-18 through D-21b: Properties of the Leray projection (for lean-prover) -/
+The Leray projection Π_div — the orthogonal projection of `L²(𝕋³;ℝ³)` onto the closed
+divergence-free subspace `L2Sigma = L²_σ(𝕋³)` — enters everywhere below directly as
+`L2Sigma.starProjection` (the mathlib star-projection of the closed submodule). -/
 
 /-- The Leray projection (as L2VF → L2VF map) is idempotent: applying it twice
 equals applying it once. Uses `Submodule.isIdempotentElem_starProjection`. -/
