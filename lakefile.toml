@@ -1,8 +1,11 @@
 name = "lerayHopf"
+version = "0.1.0"
+description = "Lean 4 formalization of Leray-Hopf weak-solution existence for the incompressible Navier-Stokes equations on the periodic 3-torus and on R^3, via the Galerkin method. Two capstone theorems are proved kernel-only (no project axioms, no sorryAx); see README.md for the exact modeling scope and claims table."
+keywords = ["math", "pde", "navier-stokes", "leray-hopf", "formalization", "galerkin"]
+license = "Apache-2.0"
+readmeFile = "README.md"
+reservoir = true
 defaultTargets = ["LerayHopf"]
-
-# Mathematical scope lives in docs/; theorems are added in later PRs.
-# This package is currently a scaffold and declares no mathematical content.
 
 # The resolved commit is pinned in lake-manifest.json (the reproducibility source of truth).
 # Bumping it via `lake update` is an explicit lean-coder task; do not run it as a side effect.
