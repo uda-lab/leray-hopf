@@ -5,25 +5,21 @@ import LerayHopf.Torus.GalerkinScheme
 open MeasureTheory Filter Topology
 
 /-!
-# Torus test family for the T-AL-1 campaign (issue #23)
+# Torus test family (issue #23, torus `aubin_lions` de-axiomatization)
 
-This file belongs to the `T-AL-1` node of the torus `aubin_lions` mode-wise
-de-axiomatization campaign; see `docs/scratch/torus-aubinlions-modewise-plan.md`.
+Two facts about the Galerkin test class needed by the mode-wise construction:
 
-Two statements were transcribed VERBATIM from the Phase-0 campaign spike (now deleted;
-see PR history); proof bodies were discharged by `lean-prover`.
-
-* `stokesTestPairing_bound_of_galerkinTest` (plan §2 P0.2 / S1):
+* `stokesTestPairing_bound_of_galerkinTest`:
   the Stokes test pairing with a Galerkin test is bounded by `C(w)·‖u‖`.
 
-* `exists_galerkin_test_family` (plan §2 P0.1 / S2):
+* `exists_galerkin_test_family`:
   there exists a countable family of Galerkin tests that finitely spans each
   finite-dimensional `velocitySpan N`.
 -/
 
 namespace LerayHopf
 
-/-! ## P0.2 (S1) — Stokes pairing bound for band-limited tests
+/-! ## Stokes pairing bound for band-limited tests
 
 `stokesTestPairing u w` is the mode sum `∑_j ∑'_k (2π)²|k|² Re(û_j(k)·conj(ŵ_j(k)))`;
 for a Galerkin test `w` the `k`-sum is a finite `fourierBox` sum (`coeff_zero_outside_box`),
@@ -78,7 +74,7 @@ theorem stokesTestPairing_bound_of_galerkinTest (w : L2Sigma) (hw : IsGalerkinTe
     _ ≤ |cjk| * ((‖fourierCoeffCLM k‖ * ‖L2VF_projComponentC j‖ * ‖u‖) * ‖cw_k‖) := by gcongr
     _ = |cjk| * (‖fourierCoeffCLM k‖ * ‖L2VF_projComponentC j‖) * ‖cw_k‖ * ‖u‖ := by ring
 
-/-! ## P0.1 (S2) — the countable band-limited div-free test family
+/-! ## The countable band-limited div-free test family
 
 A countable family of Galerkin tests that finitely spans each finite-dimensional
 `velocitySpan N`; density in `L2Sigma` follows from `velocityProjection_n_tendsto`. -/

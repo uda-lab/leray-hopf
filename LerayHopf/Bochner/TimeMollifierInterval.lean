@@ -22,7 +22,7 @@ Gelfand triple).
    route needs NO pointwise/`Lp` coeFn bridge, so it is genuinely closeable here.
 
 2. `isWeakTimeDerivℝ_smul_cutoff` (B2) — the **cutoff/Leibniz product rule** for whole-line
-   Banach-valued weak derivatives. **PROVED sorry-free this PR** (corrected signature: added the
+   Banach-valued weak derivatives. **PROVED sorry-free** (corrected signature: added the
    `LocallyIntegrable u`/`LocallyIntegrable v` Fubini/`integral_add` hypotheses).
 
 3. `timeConvL2_weakDeriv_comm` (WALL A) — the commutation `(ρ ⋆ u)' = ρ ⋆ v` in the **whole-line**
@@ -414,7 +414,7 @@ Sub-lemma order per recommended dispatch (§3 of design note):
 - B0 / §2a: the `IsWeakTimeDerivℝ` conclusion for `w1pTime_lineExtension` (signature update).
 - B1 / §2b: even-reflection reflects the weak derivative with sign flip (no Dirac at 0).
 - B2 / §2c: cutoff (Leibniz) product rule for whole-line weak derivatives.
-- B2e-global / §2e: `isWeakTimeDerivℝ_comp_clm` is in `TimeSobolev.lean` (added this PR).
+- B2e-global / §2e: `isWeakTimeDerivℝ_comp_clm` is in `TimeSobolev.lean`.
 - B3 / §2d: assembly: ūV := χ • (reflection of uV), all three properties + weak-deriv identity.
 -/
 
@@ -566,7 +566,7 @@ supported in a bounded neighbourhood of `[0,T]` with `χ ≡ 1` on `[0,T]` (B2 g
 product rule for the weak derivative; `χ' ≡ 0` on `[0,T]` so `ū' =ᵐ u'` there).
 
 **Genuine wall (WALL B assembly, not weakened).** The no-boundary-jump identity assembles B1
-(`weakTimeDerivℝ_even_reflection`) + B2 (`isWeakTimeDerivℝ_smul_cutoff`, PROVED this PR) +
+(`weakTimeDerivℝ_even_reflection`) + B2 (`isWeakTimeDerivℝ_smul_cutoff`, PROVED) +
 `isWeakTimeDerivℝ_comp_clm` (CLM transport through `hToVprime∘ι`, PROVED). Two residual
 blockers remain:
 

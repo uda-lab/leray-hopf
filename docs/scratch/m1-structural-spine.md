@@ -1,7 +1,7 @@
 # M1 task contract — structural spine
 
 Executable contract for Milestone 1 (the MVP structural spine). Interface authority:
-`docs/leray_hopf_lean_mvp_plan.md` (Milestones A–F). Roadmap: `docs/milestone.md` (M1–4).
+`docs/archive/leray_hopf_lean_mvp_plan.md` (Milestones A–F). Roadmap: `docs/archive/milestone.md` (M1–4).
 Rules: `AGENTS.md`, `docs/guardrails.md`.
 
 ## Files, declarations, ownership (dependency order)

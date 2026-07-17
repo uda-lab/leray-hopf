@@ -183,7 +183,7 @@ with the five key properties needed for the Galerkin construction:
   approximation theory).  The convergence is RESTRICTED to `L2Sigma_R3`: a divergence-free
   Galerkin scheme is total only in `L²_σ(ℝ³)`, never in all of `L²(ℝ³; ℝ³)` (its prefix-span
   projections land in the closed div-free subspace, so an unrestricted `∀ u : L2VF_R3` form
-  would force every `u` to be divergence-free — a latent over-strength, Codex-confirmed).
+  would force every `u` to be divergence-free — a latent over-strength).
   Every consumer applies `P n` only to div-free data, so the Σ-restriction is exactly what
   the Leray–Hopf assembly needs;
 - `norm_le`: `‖P n u‖ ≤ ‖u‖` (non-expansiveness; follows e.g. from the fact that `P n` is

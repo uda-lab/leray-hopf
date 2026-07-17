@@ -5,19 +5,21 @@ Operational protocol for AI agents working on this Lean formalization. Read
 
 ## 1. Mission
 
-Formalize Leray–Hopf weak existence as scoped in `docs/milestone.md` and
-`docs/leray_hopf_lean_mvp_plan.md`, advancing one small, reviewed, build-green step
-at a time, without ever overstating what has been proved.
+Formalize Leray–Hopf weak existence — both capstones (`exists_lerayHopf_torus3`,
+`exists_lerayHopf_r3`) are proved and kernel-only; see `HANDOFF.md` / `docs/STATUS.md` for
+current status and `docs/architecture.md` for the module layout — advancing one small,
+reviewed, build-green step at a time, without ever overstating what has been proved. (The
+original scope-setting plan files, `docs/archive/milestone.md` and
+`docs/archive/leray_hopf_lean_mvp_plan.md`, are archived and historical.)
 
 ## 2. Source-of-truth hierarchy
 
 When two sources conflict, the higher one wins:
 
 1. The user's instruction in the current task.
-2. The project plan files (`docs/milestone.md`, `docs/leray_hopf_lean_mvp_plan.md`).
-3. `AGENTS.md`.
-4. Existing Lean theorem statements already in the repository.
-5. `README.md` and the rest of `docs/`.
+2. `AGENTS.md`.
+3. Existing Lean theorem statements already in the repository.
+4. `README.md` and the rest of `docs/`.
 
 If a higher source is silent, defer to the next; never invent scope that no source supports.
 

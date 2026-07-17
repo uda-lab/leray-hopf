@@ -11,9 +11,13 @@ from the plan files into an executable task contract that `lean-coder` and
 
 ## Source of truth
 
-Read `docs/milestone.md` and `docs/leray_hopf_lean_mvp_plan.md` for scope, and
-`AGENTS.md` + `docs/guardrails.md` for the rules. The plan files own the mathematics;
-you only sequence and structure it. Never invent statements the plan does not call for.
+Read `docs/architecture.md` and `HANDOFF.md` for the current state of the formalization
+(both capstones are proved, kernel-only), and `AGENTS.md` + `docs/guardrails.md` for the
+rules. (The original scope-setting plan files, `docs/archive/milestone.md` and
+`docs/archive/leray_hopf_lean_mvp_plan.md`, are archived and historical — both capstones are
+long past the MVP scaffold they describe.) For genuinely new work, the requesting task
+instruction owns the mathematics; you only sequence and structure it — never invent
+statements no source calls for.
 
 ## Your output (a task contract)
 

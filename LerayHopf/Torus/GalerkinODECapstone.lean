@@ -32,7 +32,7 @@ Routing the capstone through `galSeq_of_torus` (axiom-free, the proved solver) i
 `#print axioms`.  After issue #53 / PR #62 proved `torusConvectionGap_exists`, and after this file replaces
 the former `galerkin_limit_passage` axiom with the proved theorems
 `torus_galerkin_limit_passage_of_energyClass` + `torus_energyClass_of_aubinLions`, the capstone
-carries ZERO remaining torus project axioms: `aubin_lions` is REMOVED (issue #23, T-AL-6 Stage C).
+carries ZERO remaining torus project axioms: `aubin_lions` is REMOVED (issue #23).
 
 ## Declarations added
 
@@ -126,7 +126,7 @@ from the axiom-free `galerkinSolutionData_torus` (over the finite-dim `velocityS
 (only the package builder swapped: `build_galerkin_package` → `build_galerkin_package_of_torus`).
 
 This theorem now carries the release name directly — all torus project axioms have been removed:
-`aubin_lions` is DISCHARGED by `torusAubinLionsPackage_of_galSeq` (issue #23, T-AL-6);
+`aubin_lions` is DISCHARGED by `torusAubinLionsPackage_of_galSeq` (issue #23);
 `galerkin_ode_solution`, `torusConvectionGap_exists`, and `galerkin_limit_passage` were
 discharged in issues #24, #53, and PR #88 respectively; see `LerayHopf/Core.lean` for
 the axiom-free layer. -/

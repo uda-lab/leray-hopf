@@ -9,9 +9,10 @@ inequality and one nontrivial consequence: if the dissipation is nonnegative and
 viscosity is nonnegative, the energy is nonincreasing. This checks that the formalization
 is more than a collection of records.
 
-The accumulated-dissipation form (`A : ℝ → ℝ → ℝ`) is used per the MVP plan's Decision;
-the interval-integral form is a later refinement. Interface authority:
-`docs/leray_hopf_lean_mvp_plan.md` (Milestone E).
+The accumulated-dissipation form (`A : ℝ → ℝ → ℝ`) is used per the original MVP plan's
+design decision; the interval-integral form was considered as a later refinement but not
+adopted. Design-decision reference (archived, historical): `docs/archive/leray_hopf_lean_mvp_plan.md`
+(Milestone E).
 -/
 
 namespace LerayHopf

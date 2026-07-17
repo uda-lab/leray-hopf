@@ -66,7 +66,7 @@ Originally the `R3GalerkinScheme.tendsto_id` field quantified over **all**
 basis: such a basis is total only in `L2Sigma_R3`, not in all of `L²(ℝ³; ℝ³)`
 (the Galerkin space is genuinely not dense in the full L²; its prefix-span projections
 land in the closed div-free subspace, so the unrestricted form would force every `u` to
-be divergence-free).  This was a latent over-strength (Codex-confirmed at gate-1).
+be divergence-free).  This was a latent over-strength.
 
 It has been **RESOLVED** by a soundness fix in `SolutionInterfaces.lean`: the
 `R3GalerkinScheme.tendsto_id` field is now `∀ u, u ∈ L2Sigma_R3 → …`.  D5

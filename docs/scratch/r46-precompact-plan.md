@@ -30,7 +30,7 @@
     the Steklov averaging infrastructure.
   - `spatial_compactness_R3` (proved theorem in `SolutionInterfaces.lean`): for any L²∩H¹-bounded
     div-free sequence, there exists a subsequence converging in L²(B_R) for all R.
-- Plan reference: `docs/milestone.md` Milestone 8 (Aubin–Lions / compactness axiom removal).
+- Plan reference: `docs/archive/milestone.md` Milestone 8 (Aubin–Lions / compactness axiom removal).
 
 ---
 

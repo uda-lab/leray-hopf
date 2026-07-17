@@ -57,7 +57,7 @@ restated here. Note this uses the FULL strength of the Gelfand triple: `u ∈ L�
 yield continuity into the pivot `H` — the dual-pairing integrability that argument needs holds
 at `p = q = 2` by Cauchy–Schwarz.
 
-**Scaffold-only this cycle** (months-class). -/
+**Scaffold-only** (months-class, genuinely incomplete). -/
 theorem w1pTime_continuous_in_H (GT : GelfandTriple) {T : ℝ} (hT : 0 < T)
     {uV : ℝ → GT.V} (W : W1pTime GT 2 2 T uV) :
     letI := GT.instNACG_V; letI := GT.instIPS_V;
@@ -67,7 +67,7 @@ theorem w1pTime_continuous_in_H (GT : GelfandTriple) {T : ℝ} (hT : 0 < T)
   -- TODO: Lions–Magenes embedding `W^{1,2}(0,T;V) ∩ L^2(0,T;V') ↪ C([0,T];H)`.
   -- Missing mathlib pillar: vector-valued time-Sobolev / Bochner-time good-representative
   -- theory (the same pillar behind axiom `galerkin_limit_passage*`). MONTHS-CLASS residual,
-  -- deferred this cycle per contract §2 (D1 embedding) / §7 DoD.
+  -- deferred (D1 embedding); see the file docstring "Status" section.
   sorry -- ALLOW_SORRY: D1 Lions–Magenes good-representative embedding, p=q=2 case (issue #158 correction) — declared MONTHS-CLASS residual (contract §2 / §7); body deferred.
 
 end LerayHopf.Bochner

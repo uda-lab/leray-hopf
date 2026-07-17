@@ -5,8 +5,8 @@ import Mathlib.Analysis.SpecialFunctions.Sqrt
 
 **Branch A scaffold.** A self-contained, PDE-free algebraic implication of the kind
 used in blow-up lower bounds: a local-lifespan estimate forces a lower bound on the
-blow-up quantity `N`. This is Branch A of `docs/milestone.md`, independent of the main
-existence spine.
+blow-up quantity `N`. This is Branch A of the original roadmap (`docs/archive/milestone.md`,
+archived, historical), independent of the main existence spine.
 
 **Hypothesis:** the remaining lifespan from `t` is *at least* `C / N(t)²`, i.e.
 `C / N(t)² ≤ T - t`. This says the solution cannot blow up sooner than `C/N²`.

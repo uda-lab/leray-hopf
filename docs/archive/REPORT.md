@@ -2,7 +2,7 @@
 
 > **Historical snapshot.** This report describes the original autonomous run (T³, branch
 > `autorun/leray-hopf-torus3`) and is NOT updated to track the frontier. For the *current*
-> axiom frontier and status see [`STATUS.md`](STATUS.md), the repo [`README`](../README.md),
+> axiom frontier and status see [`STATUS.md`](../STATUS.md), the repo [`README`](../../README.md),
 > and the canonical live pin `scripts/check-axioms-live.sh`. As of 2026-07-05 BOTH capstones
 > are **KERNEL-ONLY (0 project axioms)**:
 > ℝ³ — `galerkin_limit_passage_R3` PROVED as a theorem (issue #4 PR-6, `LimitPassage.lean`);
@@ -13,7 +13,7 @@
 > (`GalerkinPackage.lean`, `ExistenceFromPackage.lean`, and their public names
 > `GalerkinCompactnessPackage` / `exists_lerayHopf_from_galerkin_package`) have since been
 > **deleted**, replaced by the generic `LerayHopf/Galerkin/` layer — see
-> [`architecture.md`](architecture.md) for the current module layout.
+> [`architecture.md`](../architecture.md) for the current module layout.
 
 Leray–Hopf weak existence on the real 3-torus, built bottom-up on mathlib.
 Branch `autorun/leray-hopf-torus3`, 10 milestone commits on top of `9232c05`.

@@ -1,8 +1,8 @@
 # Architecture
 
-A one-page module map of the ~80-file `LerayHopf/` tree, grouped by layer. For the
-mathematical narrative see `docs/REPORT.md` / `docs/formalization-review-ja.md`; for the
-axiom ledger see `HANDOFF.md` / `docs/STATUS.md`.
+A one-page module map of the ~95-file `LerayHopf/` tree, grouped by layer. For the
+mathematical narrative see `docs/archive/REPORT.md` (historical) / `docs/formalization-review-ja.md`;
+for the axiom ledger see `HANDOFF.md` / `docs/STATUS.md`.
 
 ## Shared abstract layer (top-level, domain-neutral)
 

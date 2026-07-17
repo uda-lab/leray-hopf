@@ -922,8 +922,8 @@ Galerkin curves' time-equicontinuity is a TRUE standalone consequence of their p
 (`galerkin_norm_le_u0`) and ODE structure; the single irreducible fact mathlib cannot supply is the
 Bochner-time-LOCAL compactness *extraction* itself, which this axiom names directly.  By stating it
 unconditionally we absorb the modulus, so the time layer rests on exactly THIS ONE axiom — the
-redundant `timeCompactnessInput_R3` axiom from the prior revision of this PR (which only ever fed
-this extraction) is dropped.
+earlier, redundant `timeCompactnessInput_R3` axiom (which only ever fed this extraction) has
+been dropped.
 
 Once supplied, the whole `AubinLionsPackage_R3` is assembled axiom-free from this conclusion:
 `u_aestronglyMeasurable` is the second conjunct; `strong_convergence` follows for each ball `R`

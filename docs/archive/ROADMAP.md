@@ -1,5 +1,11 @@
 # ROADMAP — toward axiom-free Leray–Hopf (re-cut 2026-06-18)
 
+> **Archived (2026-07-17, issue #148).** This document is a completed campaign log: its stated
+> endpoint — both capstones at 0 project axioms — was reached on 2026-07-05 (see the "Honest
+> horizon" section below), and everything else here is PR/stream/task-codename archaeology from
+> the removal campaign. For the current axiom status see `HANDOFF.md` / `README.md` / the live
+> pin `scripts/check-axioms-live.sh`; for future-work direction see `HANDOFF.md` §6.
+
 Measured by the discipline that matters (lean-formalization-discipline): **progress = project
 axioms actually removed from the capstone `exists_lerayHopf_r3` + shrinking isolated-hypothesis
 debt**, never merged sibling files.

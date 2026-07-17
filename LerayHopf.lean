@@ -53,10 +53,11 @@ Side branches (independent of the existence capstones):
 * `LerayHopf.BlowupLowerBound`  (Branch A) — algebraic blow-up lower bound, sorry-free.
 
 For the narrative status (axiom ledger, remaining `sorry` inventory, verification
-commands) see `README.md` and `HANDOFF.md`; for the mathematical roadmap see
-`docs/milestone.md` and `docs/ROADMAP.md`.
+commands) see `README.md` and `HANDOFF.md`. The original milestone plan and axiom-removal
+roadmap (`docs/archive/milestone.md`, `docs/archive/ROADMAP.md`) are archived and historical
+— both capstones are long past them, at 0 project axioms each.
 
-## Import surface structure (Wave-0 axiom-removal refactor, extended by issue #147)
+## Import surface structure
 
 The import surface is split:
 - `import LerayHopf.Core`            — axiom-free, sorryAx-free spatial/regularity layer
@@ -77,17 +78,18 @@ Core work that does not require the capstone re-exports should use
 import LerayHopf.Core
 
 -- Generic Galerkin layer (issue #112: domain-neutral dissipative-ODE + quadratic-field
--- construction, deduplicating the R3/Torus GalerkinODESolve CLM towers). Mathlib-only,
--- no consumers yet (PR-A scaffold; wiring lands in PR-B).
+-- construction, deduplicating the R3/Torus GalerkinODESolve CLM towers); consumed by
+-- R3/Torus GalerkinODESolve.lean and R3/GalerkinODEExistence.lean.
 import LerayHopf.Galerkin.DissipativeODE
 import LerayHopf.Galerkin.QuadraticField
--- Generic Galerkin bundle layer (issue #112 PR-C: domain-neutral Domain + solution bundles;
+-- Generic Galerkin bundle layer (issue #112: domain-neutral Domain + solution bundles;
 -- both SolutionInterfaces route through these as abbrevs/extends).
 import LerayHopf.Galerkin.Domain
 import LerayHopf.Galerkin.SolutionBundles
 
--- Torus-layer files not covered by Core (sorry-free, axiom-free — "sorry-carrying"
--- label corrected by issue #147's release-cone audit, stale since these were discharged)
+-- Torus-layer files not covered by Core, needed to assemble the capstone (sorry-free per
+-- the release-cone guard; axiom-free — the former "sorry-carrying" label was stale since
+-- these were discharged)
 import LerayHopf.Torus.RellichEmbedding
 import LerayHopf.Torus.H1Sigma
 import LerayHopf.EvolutionTriple
@@ -108,7 +110,7 @@ import LerayHopf.Torus.ConvectionForm
 
 -- T³ Galerkin ODE solver + capstone wiring (issue #24: removes galerkin_ode_solution axiom)
 import LerayHopf.Torus.GalerkinScheme
--- T-AL-1 (#23): torus test family
+-- Torus test family (issue #23): countable spanning family of Galerkin test functions
 import LerayHopf.Torus.TestFamily
 import LerayHopf.Torus.GalerkinODESolve
 import LerayHopf.Torus.GalerkinODECapstone
@@ -129,8 +131,9 @@ import LerayHopf.Torus.ViscousLimit
 -- T³ galerkin_limit_passage removal: orthogonality calculus for velocityProjection_n (PR-1)
 import LerayHopf.Torus.ProjectionAdjoint
 
--- R3 files not covered by Core (sorry-free, axiom-free — "sorry-carrying or
--- axiom-dependent" label corrected by issue #147's release-cone audit, stale since discharged)
+-- R3 files not covered by Core, needed to assemble the capstone (sorry-free per the
+-- release-cone guard; axiom-free — the former "sorry-carrying or axiom-dependent" label
+-- was stale since these were discharged)
 import LerayHopf.R3.GalerkinScheme
 import LerayHopf.R3.SchwartzDivFreeBasis
 import LerayHopf.R3.GalerkinODE
@@ -164,10 +167,10 @@ import LerayHopf.Bochner.GelfandTriple
 import LerayHopf.Bochner.TimeSobolev
 import LerayHopf.Bochner.TimeConvolution
 import LerayHopf.Bochner.StepFunctionCompactness  -- issue #46 PR-1: generic step-curve Lp compactness (File A)
-import LerayHopf.Bochner.ScalarEquicontinuity     -- T-AL-2 (#23): domain-neutral scalar equicontinuity engine
+import LerayHopf.Bochner.ScalarEquicontinuity     -- issue #23: domain-neutral scalar equicontinuity engine
 import LerayHopf.Bochner.WeakLimitToolkit         -- issue #4 PR-5: generic Hilbert weak-limit toolkit (hoisted from Torus/TraceEnergy)
-import LerayHopf.Torus.ModeCompactness             -- T-AL-3 (#23): mode-wise extraction (equi-Lipschitz + engine assembly)
-import LerayHopf.Torus.ModeTail                    -- T-AL-5 (#23): mode-wise tail bounds
-import LerayHopf.Torus.AubinLionsAssembly          -- T-AL-6 (#23): aubin_lions replacement assembly
+import LerayHopf.Torus.ModeCompactness             -- issue #23: mode-wise extraction (equi-Lipschitz + engine assembly)
+import LerayHopf.Torus.ModeTail                    -- issue #23: mode-wise tail bounds
+import LerayHopf.Torus.AubinLionsAssembly          -- issue #23: aubin_lions replacement assembly
 import LerayHopf.R3.GoodRepresentative            -- issue #4 PR-5: R3 weakly-continuous representative (scaffold)
 import LerayHopf.R3.LimitPassage                  -- issue #4 PR-6: galerkin_limit_passage_R3 PROVED (zero project axioms)
