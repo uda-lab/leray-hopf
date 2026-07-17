@@ -40,7 +40,16 @@
 # isolated fixture tree instead of the real repo.
 set -euo pipefail
 
-ROOT="${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+# The scanned root (below) is parameterizable for the test harness and may not
+# be this script's own directory (a fixture tree has no scripts/lib/), so the
+# shared keyword vocabulary is sourced from THIS script's real location, not
+# from $ROOT.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/lean-decl-keywords.sh
+. "$SCRIPT_DIR/lib/lean-decl-keywords.sh"
+
+ROOT="${1:-$SCRIPT_DIR/..}"
+ROOT="$(cd "$ROOT" && pwd)"
 cd "$ROOT"
 
 ENTRY="${2:-LerayHopf.lean}"
@@ -124,18 +133,28 @@ sort -u "$closure" -o "$closure"
 #   SORRY     — any `sorry` token in code (unchanged from the original #147 guard).
 #   AXIOM     — any `axiom`/`constant`/`opaque`/`unsafe` declaration in code.
 #   NAMESPACE — any `namespace <dotted-ident>` opener, OR any directly qualified
-#     declaration (`theorem X.Y.foo ...`), where a reserved word
-#     (Scaffold/Placeholder/Stub/Draft) appears as ANY dot-separated component —
-#     not only when it is the sole, unqualified identifier. The original version
-#     matched only the latter, so `namespace LerayHopf.Scaffold` (or any
-#     multi-component qualified form) passed unflagged even though every
-#     declaration inside it is exactly the placeholder-namespace case this check
-#     exists to reject (PR #172 review, issue #151). A bare (non-dotted)
-#     declaration whose own name equals a reserved word — e.g. `theorem Scaffold`
-#     with no `.` — is intentionally left to `check-theorem-names.sh`'s
-#     repo-wide, `ALLOW_NAME`-escapable reserved-term guard instead: it is a
-#     naming choice, not a declaration living under a namespace.
-scan="$(xargs -0 awk '
+#     declaration using the vocabulary in lib/lean-decl-keywords.sh
+#     (`theorem X.Y.foo ...`, `inductive X.Y.Foo ...`, ...), where a reserved
+#     word (Scaffold/Placeholder/Stub/Draft) appears as ANY dot-separated
+#     component — not only when it is the sole, unqualified identifier, and not
+#     only for a subset of declaration keywords. Two rounds of PR #172 review
+#     (issue #151) each caught a real gap here: round 1 — `namespace
+#     LerayHopf.Scaffold` (a multi-component qualified form) passed unflagged
+#     because only the sole/first component was checked; round 2 —
+#     `inductive X.Scaffold.Foo` passed unflagged because the recognized
+#     keyword set omitted `inductive`, which is why that set is now centralized
+#     in lib/lean-decl-keywords.sh rather than hardcoded per-script. A bare
+#     (non-dotted) declaration whose own name equals a reserved word — e.g.
+#     `theorem Scaffold` with no `.` — is intentionally left to
+#     `check-theorem-names.sh`'s repo-wide, `ALLOW_NAME`-escapable reserved-term
+#     guard instead: it is a naming choice, not a declaration living under a
+#     namespace.
+scan="$(xargs -0 awk -v kw="$LEAN_DECL_KEYWORDS" -v mods="$LEAN_DECL_MODIFIERS" '
+  BEGIN {
+    declRegex     = "^[[:space:]]*(@\\[[^]]*\\][[:space:]]*)*((" mods ")[[:space:]]+)*(" kw ")[[:space:]]+"
+    declIdentRegex = "(" kw ")[[:space:]]+[A-Za-z0-9_.]+"
+    declStripRegex = "^(" kw ")[[:space:]]+"
+  }
   FNR == 1 { depth = 0 }
   {
     line = $0; code = ""; inLine = 0
@@ -164,10 +183,10 @@ scan="$(xargs -0 awk '
       stmt = substr(code, RSTART, RLENGTH)
       sub(/^[[:space:]]*namespace[[:space:]]+/, "", stmt)
       ident = stmt
-    } else if (code ~ /^[[:space:]]*(@\[[^]]*\][[:space:]]*)*((private|protected|noncomputable|scoped|local|nonrec)[[:space:]]+)*(theorem|lemma|def|abbrev|instance|structure|class)[[:space:]]+/) {
-      if (match(code, /(theorem|lemma|def|abbrev|instance|structure|class)[[:space:]]+[A-Za-z0-9_.]+/) > 0) {
+    } else if (code ~ declRegex) {
+      if (match(code, declIdentRegex) > 0) {
         stmt = substr(code, RSTART, RLENGTH)
-        sub(/^(theorem|lemma|def|abbrev|instance|structure|class)[[:space:]]+/, "", stmt)
+        sub(declStripRegex, "", stmt)
         if (index(stmt, ".") > 0) ident = stmt
       }
     }

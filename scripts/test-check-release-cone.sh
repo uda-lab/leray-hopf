@@ -79,6 +79,22 @@ run_case "qualified-declaration" 1 '
 theorem LerayHopf.Scaffold.placeholderThm : True := trivial
 '
 
+# The round-2 bypass reported in PR #172 review: `inductive` was missing from
+# the recognized declaration-keyword set, so a qualified `inductive` name under
+# a reserved namespace passed unflagged even though `theorem`/`def`/etc. did not.
+run_case "qualified-inductive-declaration" 1 '
+inductive LerayHopf.Scaffold.Token where
+  | mk
+'
+
+# `partial` is a real Lean 4 declaration modifier (`partial def`); confirms the
+# centralized modifier vocabulary (lib/lean-decl-keywords.sh) is actually wired
+# in, not just the keyword vocabulary.
+run_case "partial-modifier-qualified-declaration" 1 '
+partial def LerayHopf.Scaffold.loopForever (n : Nat) : Nat :=
+  LerayHopf.Scaffold.loopForever (n + 1)
+'
+
 run_case "marked-axiom" 1 '
 axiom fakeAxiom : True  -- ALLOW_AXIOM: intentionally marked; must still be rejected in-cone
 '

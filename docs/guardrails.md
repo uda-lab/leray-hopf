@@ -66,10 +66,16 @@ why it matters, and what to do instead. CI enforces the mechanical ones
   all**, unlike every other guard in this document. The check covers a reserved word appearing
   as **any** dot-separated component of a qualified `namespace X.Y.Z` opener, and a directly
   qualified declaration (`theorem X.Scaffold.foo ...`, valid Lean 4 syntax with no enclosing
-  `namespace` block) — not only an unqualified `namespace Scaffold`. It is also comment-aware:
-  a reserved word appearing inside a block-comment docstring does not trip it (PR #172 review
-  caught both an initial version that missed the qualified form and one that scanned raw,
-  un-stripped lines). `scripts/test-check-release-cone.sh` is the committed, executable
+  `namespace` block) using any keyword in the shared `scripts/lib/lean-decl-keywords.sh`
+  vocabulary (`theorem`/`lemma`/`def`/`abbrev`/`instance`/`structure`/`class`/`inductive`) —
+  not only an unqualified `namespace Scaffold`, and not only a subset of declaration keywords.
+  It is also comment-aware: a reserved word appearing inside a block-comment docstring does not
+  trip it. PR #172 review caught three real gaps across two rounds: (1) an initial version that
+  matched only the unqualified/first-component case, (2) a version that scanned raw, un-stripped
+  lines instead of comment-stripped text, (3) a version whose recognized declaration-keyword set
+  omitted `inductive` — which is why that vocabulary is now centralized in one shared file rather
+  than duplicated (and independently drifting) across `check-release-cone.sh` and
+  `check-theorem-names.sh`. `scripts/test-check-release-cone.sh` is the committed, executable
   regression coverage for all of the above, run in CI alongside the guard itself.
 - **Why:** Closes the gap demonstrated by the historical `Scaffold.exists_lerayHopf_torus3_statement`
   — a bare-Prop placeholder that was reachable from `import LerayHopf` before issue #144
