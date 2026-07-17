@@ -23,8 +23,18 @@
 # and `ALLOW_SORRY:` (e.g. LerayHopf/Experimental.lean's inventory docstring)
 # is not mistaken for a real code sorry.
 #
-# FAIL-CLOSED: set -euo pipefail; no error suppression anywhere in the scan.
+# FAIL-CLOSED: set -euo pipefail. The two `grep_or_empty` calls below are the only
+# place a command's nonzero exit is tolerated, and only for grep's own "no lines
+# matched" status (1) — any other exit code (a real grep/awk failure) still
+# propagates and aborts the script, so a broken scan can never silently report
+# success.
 set -euo pipefail
+
+# grep that treats "no match" (exit 1) as an empty, successful result, but still
+# aborts (via `set -e`) on any other nonzero exit (a real grep error).
+grep_or_empty() {
+  grep "$@" || { local rc=$?; [ "$rc" -eq 1 ]; }
+}
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -81,7 +91,9 @@ if [ ! -s "$list" ]; then
   echo "OK: no Lean sources to scan for statement cards."
 else
   # Comment-aware scan (same block/line-comment stripping as check-no-sorry.sh):
-  # tracks the most recently seen `theorem`/`lemma`/`def` name in each file's
+  # tracks the most recently seen declaration name (`theorem`/`lemma`/`def`/
+  # `abbrev`/`instance`/`structure`/`class` — the same keyword set
+  # check-theorem-names.sh treats as declaration-introducing) in each file's
   # CODE portion, and reports that name whenever a later CODE-portion `sorry`
   # is found on a line also carrying an `ALLOW_SORRY:` marker.
   decls="$(xargs -0 awk '
@@ -102,9 +114,9 @@ else
         code = code substr(line, i, 1); i++
       }
 
-      if (code ~ /^[[:space:]]*(private[[:space:]]+|protected[[:space:]]+|noncomputable[[:space:]]+|scoped[[:space:]]+|local[[:space:]]+|nonrec[[:space:]]+)*(theorem|lemma|def)[[:space:]]+/) {
+      if (code ~ /^[[:space:]]*(private[[:space:]]+|protected[[:space:]]+|noncomputable[[:space:]]+|scoped[[:space:]]+|local[[:space:]]+|nonrec[[:space:]]+)*(theorem|lemma|def|abbrev|instance|structure|class)[[:space:]]+/) {
         rest = code
-        sub(/^[[:space:]]*(private[[:space:]]+|protected[[:space:]]+|noncomputable[[:space:]]+|scoped[[:space:]]+|local[[:space:]]+|nonrec[[:space:]]+)*(theorem|lemma|def)[[:space:]]+/, "", rest)
+        sub(/^[[:space:]]*(private[[:space:]]+|protected[[:space:]]+|noncomputable[[:space:]]+|scoped[[:space:]]+|local[[:space:]]+|nonrec[[:space:]]+)*(theorem|lemma|def|abbrev|instance|structure|class)[[:space:]]+/, "", rest)
         match(rest, /^[^ \t(){}:]+/)
         if (RLENGTH > 0) decl = substr(rest, RSTART, RLENGTH)
       }
@@ -116,7 +128,7 @@ else
     }
   ' < "$list" | sort -u)"
 
-  no_decl="$(printf '%s\n' "$decls" | grep ':NO-DECL-FOUND$' || true)"
+  no_decl="$(printf '%s\n' "$decls" | grep_or_empty ':NO-DECL-FOUND$')"
   if [ -n "$no_decl" ]; then
     printf '%s\n' "$no_decl" >&2
     echo "ERROR: found a code-level 'sorry -- ALLOW_SORRY:' with no preceding" >&2
@@ -125,7 +137,7 @@ else
     FAIL=1
   fi
 
-  names="$(printf '%s\n' "$decls" | grep -v ':NO-DECL-FOUND$' | sed '/^$/d' || true)"
+  names="$(printf '%s\n' "$decls" | grep_or_empty -v ':NO-DECL-FOUND$' | sed '/^$/d')"
   missing=0
   if [ -n "$names" ]; then
     while IFS= read -r name; do

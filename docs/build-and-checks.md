@@ -55,7 +55,7 @@ bash scripts/check-statement-cards.sh   # every ALLOW_SORRY decl has a statement
 
 ## Preflight (run before and after editing)
 
-Builds, then runs all three checks in order:
+Builds, then runs all the discipline checks above (plus the live axiom pin) in order:
 
 ```bash
 bash scripts/agent-preflight.sh

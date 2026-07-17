@@ -41,6 +41,12 @@ bash scripts/check-theorem-names.sh
 echo "==> scripts/check-axioms.sh"
 bash scripts/check-axioms.sh
 
+echo "==> scripts/check-release-cone.sh"
+bash scripts/check-release-cone.sh
+
+echo "==> scripts/check-statement-cards.sh"
+bash scripts/check-statement-cards.sh
+
 echo "==> scripts/check-axioms-live.sh"
 bash scripts/check-axioms-live.sh
 

@@ -9,6 +9,10 @@ on:
     paths-ignore:
       - 'docs/**'
       - '**/*.md'
+      # Re-include docs/statement-cards/**: check-statement-cards.sh's guard (b)
+      # (issue #158) is enforced by this workflow, and its ledger IS those files —
+      # a PR that only deletes/renames a card must still trigger the guard.
+      - '!docs/statement-cards/**'
   workflow_dispatch:
 
 # Cancel superseded runs on the same ref.

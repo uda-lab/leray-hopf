@@ -12,8 +12,11 @@ increasing confidence). Read that postmortem once; this document is the checklis
 A `sorry`-carrying public declaration passes through three gates that must be reported
 **separately** — passing one is not evidence for the others:
 
-1. **Elaboration gate.** The declaration type-checks. Evidence: `lake build` /
-   `scripts/check-*.sh` textual guards passing, CI green.
+1. **Elaboration gate.** The declaration type-checks. Evidence: an actual `lake build` (local,
+   or the `lean` workflow's manual `full-build` / `release-attestation` dispatch) passing.
+   **Not evidence:** a green PR CI run by itself — on pull requests, CI runs only the fast
+   textual guards (`scripts/check-*.sh`), never `lake build` (see `docs/build-and-checks.md`);
+   a PR being green says nothing about elaboration.
 2. **Axiom gate.** The declaration introduces no undeclared `axiom`/`opaque`/`unsafe`, and its
    `sorry` is marked `-- ALLOW_SORRY: <reason>`. Evidence: `scripts/check-no-axiom.sh`,
    `scripts/check-axioms.sh`, `scripts/check-axioms-live.sh`.
