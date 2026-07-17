@@ -212,7 +212,10 @@ kept intact" language this doc, `README.md`, `docs/architecture.md`, and
 postmortem, the `leray-hopf-notes` corpus repin, and recurrence-prevention process items — none
 of which are source-code blockers for this repo.
 `scripts/check-release-cone.sh` enforces this statically in CI: it fails if the transitive
-import closure of `LerayHopf.lean` ever contains a `sorry`, marked or unmarked.
+import closure of `LerayHopf.lean` ever contains a `sorry`, marked or unmarked. Since issue
+#151 it additionally fails on any `axiom`/`constant`/`opaque`/`unsafe` (marked or unmarked)
+or any `Scaffold`/`Placeholder`/`Stub`/`Draft` namespace found in that same closure — see
+`docs/guardrails.md`.
 
 **Former analytic frontier (HISTORICAL — both capstones now UNCONDITIONAL, 2026-07-05).**
 These were the items that required structural mathlib sub-libraries to close the existence

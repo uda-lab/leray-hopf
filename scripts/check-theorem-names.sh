@@ -13,7 +13,17 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 # Reserved terms that must not appear in declaration names. Extend as needed.
-TERMS='millennium|global_regular|smooth_global|navier_stokes_solved|clay|uniqueness_solved|regularity_solved'
+#
+# `statement`/`scaffold` (issue #151): closes the gap demonstrated by the historical
+# `Scaffold.exists_lerayHopf_torus3_statement` — a bare-Prop placeholder declaration,
+# reachable from `import LerayHopf` before issue #144 deleted it, whose name looked
+# like a proved theorem but was only ever a statement shell. Neither term collides
+# with any current declaration line in the tree (verified at introduction time); a
+# legitimate bare-statement declaration remains expressible via
+# `-- ALLOW_NAME: statement only`. `check-release-cone.sh` additionally bans the
+# `Scaffold`/`Placeholder`/`Stub`/`Draft` namespaces outright (no escape) from the
+# release cone specifically — this guard is the repo-wide, escapable complement.
+TERMS='millennium|global_regular|smooth_global|navier_stokes_solved|clay|uniqueness_solved|regularity_solved|statement|scaffold'
 
 # Enumerate Lean sources fail-closed: `find` writes to a temp file and its exit
 # status is checked BEFORE the list is consumed (a bare process substitution

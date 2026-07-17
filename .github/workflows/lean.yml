@@ -40,7 +40,7 @@ jobs:
         run: bash scripts/check-theorem-names.sh
       - name: Guardrail — axiom-leak static pre-filter
         run: bash scripts/check-axioms.sh
-      - name: Guardrail — release-cone sorry-free (issue #147)
+      - name: Guardrail — release-cone sorry/axiom-free, no placeholder namespaces (issues #147, #151)
         run: bash scripts/check-release-cone.sh
       - name: Guardrail — statement cards (issue #158)
         run: bash scripts/check-statement-cards.sh
@@ -64,7 +64,7 @@ jobs:
         run: bash scripts/check-theorem-names.sh
       - name: Guardrail — axiom-leak static pre-filter
         run: bash scripts/check-axioms.sh
-      - name: Guardrail — release-cone sorry-free (issue #147)
+      - name: Guardrail — release-cone sorry/axiom-free, no placeholder namespaces (issues #147, #151)
         run: bash scripts/check-release-cone.sh
       - name: Guardrail — statement cards (issue #158)
         run: bash scripts/check-statement-cards.sh

@@ -45,7 +45,8 @@ bash scripts/check-no-sorry.sh          # unmarked `sorry`
 bash scripts/check-no-axiom.sh          # unmarked axiom/constant/opaque/unsafe
 bash scripts/check-theorem-names.sh     # overclaiming declaration names
 bash scripts/check-axioms.sh            # axiom-leak static pre-filter
-bash scripts/check-release-cone.sh      # release cone (import LerayHopf) is sorry-free
+bash scripts/check-release-cone.sh      # release cone (import LerayHopf): sorry-free, axiom-free,
+                                         #   no placeholder namespaces (issues #147, #151)
 bash scripts/check-statement-cards.sh   # every ALLOW_SORRY decl has a statement card (issue #158)
 ```
 
@@ -84,6 +85,13 @@ The checks honor same-line justification markers:
 | `-- ALLOW_NAME: <reason>` | a reserved term in a declaration name on that line |
 
 Markers are per-line by design, so every exception is justified where it occurs.
+
+**Exception — the release cone has no marker escape.** Inside the transitive import
+closure of `LerayHopf.lean` (`import LerayHopf`), `check-release-cone.sh` rejects `sorry`
+and `axiom`/`constant`/`opaque`/`unsafe` even when marked, and rejects the
+`Scaffold`/`Placeholder`/`Stub`/`Draft` namespaces outright (see `docs/guardrails.md`).
+The fix there is always to move the module behind `LerayHopf.Experimental`, never to add
+a marker.
 
 ## CI
 
