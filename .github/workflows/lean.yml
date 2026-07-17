@@ -32,6 +32,8 @@ jobs:
         run: bash scripts/check-theorem-names.sh
       - name: Guardrail — axiom-leak static pre-filter
         run: bash scripts/check-axioms.sh
+      - name: Guardrail — release-cone sorry-free (issue #147)
+        run: bash scripts/check-release-cone.sh
 
   # Full build + axiom pins — MANUAL ONLY (workflow_dispatch).
   full-build:
@@ -52,5 +54,7 @@ jobs:
         run: bash scripts/check-theorem-names.sh
       - name: Guardrail — axiom-leak static pre-filter
         run: bash scripts/check-axioms.sh
+      - name: Guardrail — release-cone sorry-free (issue #147)
+        run: bash scripts/check-release-cone.sh
       - name: Guardrail — axiom live pin
         run: bash scripts/check-axioms-live.sh

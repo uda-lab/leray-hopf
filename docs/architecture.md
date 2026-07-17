@@ -48,11 +48,17 @@ proof but in content (`docs/scratch/galerkin-domain-plan.md` §4 ruling (b)).
 
 Gelfand-triple / Bochner-space-in-time infrastructure. Consumed by both domains'
 Aubin–Lions and limit-passage arguments; carries the project's remaining marked
-`sorry`s (Lions–Magenes-class walls; see `HANDOFF.md` §4 and `AGENTS.md`).
+`sorry`s (Lions–Magenes-class walls; see `HANDOFF.md` §4 and `AGENTS.md`). Since issue #147
+the sorry-carrying files (`TimeSobolevAC.lean`, `TimeMollification.lean`,
+`TimeMollifierInterval.lean`, `TimeSobolevExperimental.lean`) are reachable only via the
+explicit opt-in `LerayHopf.Experimental`, not from root `import LerayHopf` — see the README's
+"Import guide". `TimeSobolevExperimental.lean`'s `w1pTime_continuous_in_H` is restricted to
+`p = q = 2`, not stated at the prior generic-`p,q` signature: issue #158 found that FALSE.
 
-`GelfandTriple.lean`, `TimeSobolev.lean`, `TimeSobolevAC.lean`, `TimeConvolution.lean`,
-`TimeMollifierInterval.lean`, `TimeMollification.lean`, `StepFunctionCompactness.lean`,
-`ScalarEquicontinuity.lean`, `WeakLimitToolkit.lean`.
+`GelfandTriple.lean`, `TimeSobolev.lean` (sorry-free), `TimeSobolevExperimental.lean`,
+`TimeSobolevAC.lean`, `TimeConvolution.lean`, `TimeMollifierInterval.lean`,
+`TimeMollification.lean`, `StepFunctionCompactness.lean`, `ScalarEquicontinuity.lean`,
+`WeakLimitToolkit.lean`.
 
 Imported by: `LerayHopf/R3/GoodRepresentative.lean`, `R3/SpacetimePrecompact.lean`,
 `R3/AubinLionsLimitPassage.lean`, `Torus/ModeCompactness.lean`.
@@ -162,6 +168,9 @@ see the next section.)
 
 Re-exports `LerayHopf.Core` + the generic `LerayHopf.Galerkin` layer (`DissipativeODE`,
 `QuadraticField`, `Domain`, `SolutionBundles`) + `Torus.Capstone` + `R3Capstone`, plus the
-remaining sorry-carrying files needed to build both capstones end to end (Bochner layer, the
-Torus/R3 analytic-frontier files listed above). See the module docstring in
-`LerayHopf.lean` for the full import list and layering rationale.
+remaining supporting files needed to build both capstones end to end (the sorry-free part of
+the Bochner layer, the Torus/R3 analytic-frontier files listed above). Since issue #147 this
+is a **sorry-free release surface**, statically enforced by `scripts/check-release-cone.sh`:
+the four still-incomplete Bochner modules are NOT among these remaining files — they live
+behind the explicit opt-in `LerayHopf.Experimental` instead (see the Bochner section above).
+See the module docstring in `LerayHopf.lean` for the full import list and layering rationale.

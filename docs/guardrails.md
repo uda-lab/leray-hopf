@@ -29,6 +29,18 @@ why it matters, and what to do instead. CI enforces the mechanical ones
 - **Why:** Unmarked `sorry` accumulates and hides which proofs are real.
 - **Instead:** Justify each gap in place, or finish the proof. Track allowed `sorry` as work.
 
+## No-incomplete-in-release-cone rule
+
+- **What:** No `sorry` — marked or unmarked — may be reachable from `import LerayHopf` (the
+  root release surface). `scripts/check-release-cone.sh` walks the transitive import closure
+  of `LerayHopf.lean` statically and fails on any `sorry` it finds there, with no
+  `ALLOW_SORRY` exemption (unlike `check-no-sorry.sh`, which permits a justified `sorry`
+  anywhere in the repo).
+- **Why:** A justified, tracked `sorry` is still an incomplete proof; the public root import
+  should not surface incomplete work even when each gap is individually accounted for.
+- **Instead:** Move incomplete modules behind an explicit opt-in import, e.g.
+  `LerayHopf.Experimental` (issue #147), and document what is incomplete in its docstring.
+
 ## No-vacuous-proof rule
 
 - **What:** Do not replace a theorem's content with `True`, `Nonempty _`, or any trivially

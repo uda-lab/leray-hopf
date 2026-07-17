@@ -171,8 +171,10 @@ inequality, initial trace, energy class.
   strong L² convergence. Sorry-free, #print axioms clean.
 - `kineticEnergy_lsc_bound` (`AubinLionsLimitPassage.lean`): OPEN (sorry) — blocked
   by time-measurability of the limit.
-- `w1pTime_continuous_in_H` (`Bochner/TimeSobolev.lean`): OPEN (sorry) — Lions–Magenes
-  good-representative; months-class.
+- `w1pTime_continuous_in_H` (`Bochner/TimeSobolevExperimental.lean`, relocated from
+  `TimeSobolev.lean` by issue #147, restricted to `p = q = 2` by issue #158 after the prior
+  generic-`p,q` statement was found FALSE): OPEN (sorry) — Lions–Magenes good-representative;
+  months-class.
 
 **Gap (same as T³ `galerkin_limit_passage`):** No W^{1,p}(0,T;X) Bochner–Sobolev theory
 in Mathlib. The weak time derivative, initial trace recovery, energy-class lower-closure,
