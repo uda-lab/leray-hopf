@@ -517,7 +517,7 @@ theorem W1pTime.ofHValuedDeriv (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ}
            mem_q := hmem_q
            weakDeriv := hwd }⟩
 
-/-- **Lions–Magenes good-representative embedding — relocated and corrected (issues #147, #158).**
+/-! ### Lions–Magenes good-representative embedding — relocated and corrected (issues #147, #158)
 
 `w1pTime_continuous_in_H` now lives in `LerayHopf.Bochner.TimeSobolevExperimental`, so the
 release surface `import LerayHopf` stays sorry-free. It is also no longer stated at the prior
