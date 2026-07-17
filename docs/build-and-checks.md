@@ -20,10 +20,12 @@ elan reads `lean-toolchain` and installs the pinned Lean version automatically o
 mathlib-alignment, not a stale pin left over from bootstrap: `[[require]] mathlib` in
 `lakefile.toml` tracks `rev = "master"` (a floating target, made reproducible by the explicit
 commit pin in `lake-manifest.json`), and the mathlib commit currently pinned there itself
-depends on `leanprover/lean4-cli` at `inputRev = "v4.31.0-rc2"` — i.e. mathlib master, as
-resolved, requires exactly this Lean toolchain to build. Moving to a later stable release
-ahead of mathlib's own pin would desync the build. Re-evaluate this pin whenever `lake update`
-re-resolves mathlib (an explicit `lean-coder` task; see below).
+depends on `leanprover/lean4-cli` at `inputRev = "v4.31.0-rc2"`. That match is evidence — not
+a formal proof — that mathlib master, as resolved, targets this same Lean release; it is the
+closest signal available without querying the Lean/mathlib release calendar directly. Treat
+this pin as tied to mathlib's own toolchain, not to a preference for release-candidates: moving
+to a later stable release ahead of mathlib's own pin risks desyncing the build. Re-evaluate
+this pin whenever `lake update` re-resolves mathlib (an explicit `lean-coder` task; see below).
 
 ## Build
 
