@@ -31,10 +31,12 @@ the determined-form construction in `TorusConvectionExtension.lean`.  The capsto
 ## Architecture
 
 The two axioms remaining in this file are *true* and *minimal* (every field is used in the
-assembly).  Non-vacuity of the convection form `b` is pinned (in the downstream theorem) via
-`b_galerkin` to the finite Galerkin convection form `galerkinConvection`, which is generically
-nonzero and explicitly excludes `b = 0`.  The spatial half of Aubin–Lions is *not* axiomatized:
-it is supplied as an explicit hypothesis discharged by the proved `rellich_L2Sigma`.
+assembly).  The convection form `b` is pinned (in the downstream theorem) via `b_galerkin` to
+the finite Galerkin convection form `galerkinConvection`.  Non-triviality (`b ≠ 0`) is not
+separately formalized: no concrete witness theorem is proved in this repository (issue #153);
+this is a statement about the scope of the formal guarantee, not about mathematical soundness.
+The spatial half of Aubin–Lions is *not* axiomatized: it is supplied as an explicit hypothesis
+discharged by the proved `rellich_L2Sigma`.
 
 **v4 de-axiomatization:** The viscous (Stokes) form is no longer a field of `Torus3NSForms`
 (axiom A4).  It is the concrete `stokesTestPairing` definition (a Fourier tsum), which is
@@ -74,7 +76,7 @@ the proved def `torusAubinLionsPackage_of_galSeq` in `TorusAubinLionsAssembly.le
 
 namespace LerayHopf
 
-/-! ### Finite Galerkin convection form (non-vacuity pin) -/
+/-! ### Finite Galerkin convection form (formula pin) -/
 
 /-- The finite (box-`n`) Galerkin convection form.
 
@@ -83,8 +85,10 @@ For Fourier modes `e^{2πi k·x}`, the convection structure constant is:
 where `û_a(k) = mFourierCoeff3 (L2VF_projComponentC a u) k`.
 
 This is the correct finite-sum approximation of the convection trilinear form `(u·∇)v·w`
-on `𝕋³`.  It is well-defined (finite sum), generically nonzero (so `b = 0` is excluded by
-`b_galerkin`), and equals the genuine convection form on Galerkin subspaces `Vₙ`. -/
+on `𝕋³`.  It is well-defined (finite sum), pinned to `b` by `b_galerkin`, and equals the
+genuine convection form on Galerkin subspaces `Vₙ`.  Whether it is nonzero (and hence
+whether the pin excludes `b = 0`) is not separately formalized in this repository — see
+the scope note on `Torus3NSForms.b_galerkin` (issue #153). -/
 noncomputable def galerkinConvection (n : ℕ) (u v w : L2VF) : ℝ :=
   (∑ i : Fin 3, ∑ a : Fin 3, ∑ k ∈ fourierBox n, ∑ l ∈ fourierBox n,
     (mFourierCoeff3 (L2VF_projComponentC a u) k) *
@@ -127,10 +131,12 @@ def IsGalerkinTest (w : L2Sigma) : Prop :=
 /-- The bundle of T³ Navier–Stokes forms: only the trilinear convection form `b`
 (the viscous form is the concrete `stokesTestPairing`, NOT axiomatized).
 
-**Non-vacuity:** The field `b_galerkin` pins `b` to `galerkinConvection` on Galerkin
-subspaces, which is generically nonzero.  This excludes the vacuous witness `b := 0`
-and ensures the existence witness `torus3_NSForms_exists` (issue #22, in
-`TorusConvectionForm.lean`) is genuinely about Navier–Stokes (not Stokes or heat).
+**Formula pin (scope note, issue #153):** The field `b_galerkin` pins `b` to
+`galerkinConvection` on Galerkin subspaces — the canonical convection structure constant,
+not a calibration constant, so `torus3_NSForms_exists` (issue #22, in
+`TorusConvectionForm.lean`) is about the genuine Navier–Stokes convection form (not Stokes
+or heat).  Non-triviality (`b ≠ 0`) is not separately formalized: no concrete witness
+theorem is proved in this repository.
 
 **Antisymmetry convention:** `b u v w = -b u w v` (skew in the last two slots).
 This is the correct form for the T³ convection form `b(u,v,w) = ∫ (u·∇v)·w`.
@@ -172,12 +178,12 @@ structure Torus3NSForms where
   convergence in the nonlinear limit passage. -/
   b_bound : ∀ (w : L2Sigma), IsGalerkinTest w →
     ∃ C : ℝ, ∀ (u v : L2Sigma), |b u v w| ≤ C * ‖(u : L2VF)‖ * ‖(v : L2VF)‖
-  /-- Non-vacuity pin: `b` agrees with `galerkinConvection` on Galerkin subspaces `Vₙ`.
-  This field genuinely excludes `b = 0` (which would fail here since `galerkinConvection ≢ 0`).
-  **FLAG for Codex non-vacuity audit:** (i) `galerkinConvection` is the correct convection
-  structure constant from `(u·∇)v` on `𝕋³`; (ii) this field excludes `b = 0`; (iii) the
-  genuine convection form witnesses `torus3_NSForms_exists` (issue #22); (iv) `b_bound` is the
-  smooth-test L² bound. -/
+  /-- Formula pin: `b` agrees with `galerkinConvection` on Galerkin subspaces `Vₙ`.
+  (i) `galerkinConvection` is the correct convection structure constant from `(u·∇)v` on `𝕋³`;
+  (ii) this field pins `b` to that formula — non-triviality (`b ≠ 0`) is **not** separately
+  formalized here (no concrete witness theorem is proved in this repository, issue #153);
+  (iii) the pinned convection form witnesses `torus3_NSForms_exists` (issue #22); (iv) `b_bound`
+  is the smooth-test L² bound. -/
   b_galerkin : ∀ (n : ℕ) (u v w : L2Sigma),
     velocityProjection_n n (u : L2VF) = (u : L2VF) →
     velocityProjection_n n (v : L2VF) = (v : L2VF) →
@@ -236,7 +242,7 @@ integrand is the full `h1EnergySq` (ν-independent) with RHS `T‖u₀‖² + �
   regBoundRHS := fun ν T r => T * r ^ 2 + r ^ 2 / (2 * ν)
   isTest := IsGalerkinTest
 
-/-- The domain-neutral convection core of a `Torus3NSForms` (the `b_galerkin` non-vacuity
+/-- The domain-neutral convection core of a `Torus3NSForms` (the `b_galerkin` formula
 pin stays on `Torus3NSForms`; this is a projection onto the `NSFormCore` fields). -/
 def Torus3NSForms.core (F : Torus3NSForms) : Galerkin.NSFormCore torusDomain where
   b := F.b

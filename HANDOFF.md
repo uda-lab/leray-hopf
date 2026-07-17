@@ -90,8 +90,11 @@ it leaks into the capstones.
 ## 4. The axioms (what is admitted, and why)
 
 All carry `-- ALLOW_AXIOM: <reason + Temam/Leray/Lemarié-Rieusset ref>` and a `## Assumptions` entry.
-`b(u,u,u)=0` is a **proved lemma** (not an axiom); convection forms are **non-vacuity-pinned** to a
-concrete convection integral so `b=0` (secretly-Stokes) is excluded.
+`b(u,u,u)=0` is a **proved lemma** (not an axiom); convection forms are **formula-pinned** to a
+concrete convection integral.  Non-triviality (`b ≠ 0`, i.e. that the pin excludes the
+secretly-Stokes `b=0` case) is *not* separately formalized: no concrete witness theorem is
+proved in this repository — a statement about the scope of the formal guarantee, not about
+mathematical soundness (issue #153).
 
 | Role | T³ | ℝ³ | Underlying gap |
 |---|---|---|---|

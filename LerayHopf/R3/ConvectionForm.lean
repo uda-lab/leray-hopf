@@ -125,8 +125,10 @@ One axiom is added in THIS file.
    equivalence.  The fixed-test bound is therefore still ASSUMED (in continuous form), not
    proved.  What genuinely becomes theorem content is (a) the multilinear algebra (`b_add`,
    `b_smul` from `b_multilinear`) and (b) density (`schwartz_dense`, proved separately).
-   NON-VACUOUS: `b_extends` + `convFormSchwartz_eq_witness` pin `b` to `convIntegralSchwartz`
-   on Schwartz triples, excluding `b = 0`.
+   FORMULA PIN: `b_extends` + `convFormSchwartz_eq_witness` pin `b` to `convIntegralSchwartz`
+   on Schwartz triples.  Non-triviality (`b ≠ 0`) is not separately formalized — no concrete
+   witness theorem is proved in this repository; see the scope note in `SolutionInterfaces.lean`
+   (issue #153).
    Temam II.§1; Lemarié-Rieusset §5; mirrors torus `torusConvectionGap_exists` (issue #22).
 -/
 
@@ -197,8 +199,9 @@ structure ConvectionGap (𝔊 : R3GalerkinScheme) where
   restricts to the already-proven Tier-S functional `convFormSchwartz`.  This is the only
   link between `b` and the genuine `∫(u·∇)v·w`; the algebraic/analytic Schwartz-class
   properties of `b` are then *inherited* from the `convFormSchwartz_*` lemmas, not assumed
-  here.  (Non-vacuity flows from this together with the Tier-S `convFormSchwartz_eq_witness`
-  pin to `convIntegralSchwartz`, excluding `b = 0`.) -/
+  here.  (Together with the Tier-S `convFormSchwartz_eq_witness` pin to `convIntegralSchwartz`,
+  this pins `b` to the canonical formula; non-triviality `b ≠ 0` is not separately formalized —
+  no concrete witness theorem is proved in this repository, see issue #153.) -/
   b_extends : ∀ (u v w : L2Sigma_R3)
     (hu : IsSchwartzDivFree_R3 u) (hv : IsSchwartzDivFree_R3 v)
     (hw : IsSchwartzDivFree_R3 w),
@@ -277,8 +280,9 @@ structure ConvectionGapOp (𝔊 : R3GalerkinScheme) where
   restricts to the already-proven Tier-S functional `convFormSchwartz`.  This is the only
   link between `b` and the genuine `∫(u·∇)v·w`; the algebraic/analytic Schwartz-class
   properties of `b` are then *inherited* from the `convFormSchwartz_*` lemmas, not assumed
-  here.  (Non-vacuity flows from this together with the Tier-S `convFormSchwartz_eq_witness`
-  pin to `convIntegralSchwartz`, excluding `b = 0`.) -/
+  here.  (Together with the Tier-S `convFormSchwartz_eq_witness` pin to `convIntegralSchwartz`,
+  this pins `b` to the canonical formula; non-triviality `b ≠ 0` is not separately formalized —
+  no concrete witness theorem is proved in this repository, see issue #153.) -/
   b_extends : ∀ (u v w : L2Sigma_R3)
     (hu : IsSchwartzDivFree_R3 u) (hv : IsSchwartzDivFree_R3 v)
     (hw : IsSchwartzDivFree_R3 w),
@@ -335,8 +339,10 @@ the bound and the pin are derived from the Tier-S lemmas through `b_extends` /
 `b_cont_fixedTest`; only the algebraic trilinear/antisymmetry content (`b_multilinear`,
 `b_antisymm_gap`) is asserted, as the honest residual of the missing weak operator.
 Discharging `ConvectionGap` later (when the weak-`(u·∇)v` extension calculus lands)
-discharges `r3_NSForms_exist` for free, with no edit to `SolutionInterfaces.lean`, and never
-vacuously (the `convFormSchwartz_eq_witness` pin through `b_extends` excludes `b = 0`). -/
+discharges `r3_NSForms_exist` for free, with no edit to `SolutionInterfaces.lean`: the
+`convFormSchwartz_eq_witness` pin through `b_extends` pins the result to the canonical
+convection formula (non-triviality is a scope-of-guarantee note, not a separately formalized
+fact — see issue #153). -/
 theorem R3NSForms_of_gap (𝔊 : R3GalerkinScheme) (g : ConvectionGap 𝔊) :
     Nonempty (R3NSForms 𝔊) := by
   obtain ⟨B, hB⟩ := g.b_multilinear

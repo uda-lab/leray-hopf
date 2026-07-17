@@ -17,7 +17,8 @@ integrands and bounds, test predicate) that parameterize the solution bundles in
 `LerayHopf/R3/SolutionInterfaces.lean`).
 
 `NSFormCore` is the domain-neutral projection of the NS convection form; the per-lane
-non-vacuity pins (`b_galerkin`) stay on `Torus3NSForms` / `R3NSForms`.  `Domain.evolution`
+formula pins (`b_galerkin`) stay on `Torus3NSForms` / `R3NSForms` (non-triviality of the
+pinned formula is not separately formalized, see issue #153).  `Domain.evolution`
 assembles a `DissipativeEvolution` from a `Domain` and an `NSFormCore`.
 
 ## Main definitions

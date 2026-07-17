@@ -62,12 +62,15 @@ ALL six former axioms are now discharged (AX-1 issue #10; AX-4 issue #56; AX-2 +
 `𝔊 : R3GalerkinScheme` is threaded as a parameter throughout (cleaner than
 `.some` noise).
 
-**Non-vacuity (issue #56):** Preserved via `r3ConvectionGapOp_holds` (same non-vacuity as
-the former axiom).  The field `b_extends` + `convFormSchwartz_eq_witness` force
-`b = convIntegralSchwartz` on Schwartz triples, excluding `b = 0`.  The non-vacuity pin is
-inherited by `R3NSForms_of_gap` through its `b_galerkin` field derivation
-(`b_galerkin ← b_extends + convFormSchwartz_eq_witness`), so `r3_NSForms_exists` still
-excludes the trivial form.
+**Formula pin (issue #56; scope note issue #153):** Preserved via `r3ConvectionGapOp_holds`
+(same pin as the former axiom).  The field `b_extends` + `convFormSchwartz_eq_witness` force
+`b = convIntegralSchwartz` on Schwartz triples — `b` is pinned to the canonical convection
+formula.  The pin is inherited by `R3NSForms_of_gap` through its `b_galerkin` field derivation
+(`b_galerkin ← b_extends + convFormSchwartz_eq_witness`), so `r3_NSForms_exists` inherits the
+same pin.  Non-triviality (`b ≠ 0`) is **not** separately formalized: no concrete witness
+theorem (e.g. `convIntegralSchwartz ≠ 0` on a specific Schwartz triple) is proved in this
+repository.  This is a statement about the scope of the formal guarantee, not about
+mathematical soundness.
 
 **v4 de-axiomatization lesson applied:** The viscous (Stokes) form is the concrete
 `stokesTestPairing_R3` — NOT axiomatized — for all `u : L2VF_R3`.
@@ -112,8 +115,12 @@ swapped for; it is NOT assumed here.
 
 1. `r3GalerkinScheme_exists` — NO LONGER AN AXIOM (DISCHARGED, issue #21). Existence of a
    Galerkin approximation-projection family on `L²_σ(ℝ³)` with smooth (Schwartz) range.  The
-   `range_schwartz` field excludes `P = id` (L² ⊄ Schwartz), ensuring every Galerkin test
-   field is Schwartz so `b_bound` and `reg_mem` are non-vacuous.  The `tendsto_id` field is
+   `range_schwartz` field requires every element of `range (P n)` to have Schwartz component
+   representatives, which is the formal content that makes `b_bound` and `reg_mem` non-vacuous
+   (every Galerkin test field is Schwartz).  Since `L²(ℝ³) ⊄ 𝒮(ℝ³)` mathematically, `range_schwartz`
+   entails `P n ≠ id`, but that entailment is not itself formalized as a standalone Lean fact
+   here — `range_schwartz` is the field that is actually stated and used downstream.  The
+   `tendsto_id` field is
    RESTRICTED to `u ∈ L2Sigma_R3` (a divergence-free Galerkin scheme is total only in
    `L²_σ(ℝ³)`; an unrestricted `∀ u : L2VF_R3` form was a latent over-strength, removed).
    Now PROVED as the `theorem` `r3GalerkinScheme_exists` in `SchwartzDivFreeBasis.lean`,
@@ -183,8 +190,9 @@ with the five key properties needed for the Galerkin construction:
   the L² projection onto a subspace);
 - `idem`: `P n ∘ P n = P n` (idempotence; `P n` is a projection);
 - `range_schwartz`: every element of the range of `P n` has Schwartz component
-  representatives (excludes `P = id` since `L²(ℝ³) ⊄ Schwartz(ℝ³)`; ensures every
-  `IsGalerkinTest_R3` field is Schwartz so `b_bound` and `reg_mem`/H¹ apply). -/
+  representatives (mathematically this entails `P n ≠ id`, since `L²(ℝ³) ⊄ Schwartz(ℝ³)`,
+  though that entailment is not separately formalized here; `range_schwartz` itself ensures
+  every `IsGalerkinTest_R3` field is Schwartz so `b_bound` and `reg_mem`/H¹ apply). -/
 structure R3GalerkinScheme where
   /-- The n-th approximation projector. -/
   P : ℕ → (L2VF_R3 →L[ℝ] L2VF_R3)
@@ -205,10 +213,11 @@ structure R3GalerkinScheme where
   Schwartz functions `ψ : Fin 3 → 𝓢(Domain3, ℝ)` such that the `j`-th component of
   `P n u` equals `(ψ j).toLp 2 volume`.
 
-  This field excludes `P n = id` (since L²(ℝ³) ⊄ Schwartz(ℝ³)); as a consequence every
-  `IsGalerkinTest_R3 𝔊 w` field is component-wise Schwartz, making `b_bound` (smooth-test
-  bound) and `reg_mem` (H¹ regularity) non-vacuous.  Smooth/Hermite Galerkin bases
-  satisfy this. -/
+  Mathematically this entails `P n ≠ id` (since L²(ℝ³) ⊄ Schwartz(ℝ³)), though that entailment
+  is not separately formalized as a standalone Lean fact here — `range_schwartz` is the field
+  that is actually stated and used downstream: every `IsGalerkinTest_R3 𝔊 w` field is
+  component-wise Schwartz, making `b_bound` (smooth-test bound) and `reg_mem` (H¹ regularity)
+  non-vacuous.  Smooth/Hermite Galerkin bases satisfy this. -/
   range_schwartz : ∀ (n : ℕ) (u : L2VF_R3),
     ∃ (ψ : Fin 3 → SchwartzMap Domain3 ℝ),
     ∀ j : Fin 3,
@@ -273,9 +282,11 @@ projection `𝔊.P n`.  The pin `b_galerkin` uses Schwartz component witnesses
 (`L2VF_projComponent_R3 j`) directly — independent of `𝔊` — to pin `b` to
 `convIntegralSchwartz` on Schwartz div-free fields.
 
-**Non-vacuity:** `b_galerkin` pins `b` to `convIntegralSchwartz` (the genuine
-`∑_{i,a} ∫ u_a (∂_a v_i) w_i` convection integral) on Schwartz div-free fields.
-This excludes `b := 0` since `convIntegralSchwartz ≢ 0` on a concrete Schwartz triple.
+**Formula pin (scope note, issue #153):** `b_galerkin` pins `b` to `convIntegralSchwartz`
+(the canonical `∑_{i,a} ∫ u_a (∂_a v_i) w_i` convection integral) on Schwartz div-free
+fields.  Non-triviality (`b ≠ 0`) is **not** separately formalized: no concrete witness
+theorem (e.g. `convIntegralSchwartz ≠ 0` on a specific Schwartz triple) is proved in this
+repository.
 
 **Antisymmetry convention:** `b u v w = -b u w v` (skew in the last two slots).
 
@@ -309,18 +320,19 @@ structure R3NSForms (𝔊 : R3GalerkinScheme) where
   b_bound : ∀ (w : L2Sigma_R3), IsSchwartzDivFree_R3 w →
     ∃ C : ℝ, ∀ (u v : L2Sigma_R3),
       |b u v w| ≤ C * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖
-  /-- **Non-vacuity pin (genuine):** `b` agrees with `convIntegralSchwartz` on L²_σ fields
+  /-- **Formula pin:** `b` agrees with `convIntegralSchwartz` on L²_σ fields
   that are component-wise represented by Schwartz witnesses (via `L2VF_projComponent_R3`).
 
   Concretely: given `ψu ψv ψw : Fin 3 → 𝓢(Domain3, ℝ)` such that each component projection
   `L2VF_projComponent_R3 j (u : L2VF_R3) = (ψu j).toLp 2 volume` (and similarly for `v`, `w`),
   we require `b u v w = convIntegralSchwartz ψu ψv ψw`.
 
-  This is the **faithful** non-vacuity pin: `convIntegralSchwartz` is the genuine
-  `∑_{i,a} ∫ u_a (∂_a v_i) w_i` convection integral (not a calibration constant), so
-  `b = 0` is excluded (the genuine convection form does not vanish on all Schwartz triples).
-  The Schwartz div-free set is dense in `L²_σ(ℝ³)`, so the pin constrains `b` on a dense
-  subset — sufficient for faithfulness. -/
+  This is the **faithful** formula pin: `convIntegralSchwartz` is the canonical
+  `∑_{i,a} ∫ u_a (∂_a v_i) w_i` convection integral, not a calibration constant.
+  Non-triviality (`b ≠ 0`, i.e. that the convection form does not vanish on all Schwartz
+  triples) is **not** separately formalized here — that is a statement about the scope of
+  this formal guarantee, not about mathematical soundness.  The Schwartz div-free set is
+  dense in `L²_σ(ℝ³)`, so the pin constrains `b` on a dense subset. -/
   b_galerkin : ∀ (ψu ψv ψw : Fin 3 → SchwartzMap Domain3 ℝ)
     (u v w : L2Sigma_R3),
     (∀ j : Fin 3,
@@ -393,7 +405,7 @@ functional) with RHS `½‖u₀‖²`. -/
   regBoundRHS := fun _ _ r => (1 / 2 : ℝ) * r ^ 2
   isTest := IsSchwartzDivFree_R3
 
-/-- The domain-neutral convection core of an `R3NSForms` (the `b_galerkin` non-vacuity pin
+/-- The domain-neutral convection core of an `R3NSForms` (the `b_galerkin` formula pin
 stays on `R3NSForms`; this is a projection onto the `NSFormCore` fields). -/
 def R3NSForms.core {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊) :
     Galerkin.NSFormCore (r3Domain 𝔊) where

@@ -177,7 +177,7 @@ instance : L2Sigma_R3.HasOrthogonalProjection :=
 
 /-! ### Leray projection -/
 
-/-! ### Genuine Schwartz convection integral (non-vacuity pin) -/
+/-! ### Genuine Schwartz convection integral (formula pin) -/
 
 /-- **The genuine Schwartz convection integral `∫(u·∇)v·w`.**
 
