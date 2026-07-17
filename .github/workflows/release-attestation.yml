@@ -1,0 +1,206 @@
+name: release-attestation
+
+# Formal release-candidate build attestation (issue #150).
+#
+# Purpose: produce durable, reproducible EVIDENCE that one exact commit SHA has a
+# full `lake build` pass plus all discipline guards, including the capstone live
+# axiom pin (`check-axioms-live.sh`). This is not a substitute for CI: it never
+# runs on push/pull_request/schedule, only on explicit manual dispatch against a
+# named release candidate.
+#
+# Relationship to the `lean` workflow's `full-build` job: that job is a routine,
+# developer-triggered `workflow_dispatch` sanity build against whichever ref the
+# Actions UI branch/tag selector offers, and produces no persisted evidence beyond
+# the raw job log. This workflow is deliberately separate and self-contained
+# (duplicating the build + guard steps rather than depending on `lean.yml`) so:
+#   (a) it exposes an explicit `ref` INPUT, letting it attest an arbitrary commit
+#       SHA that need not be a branch tip or tag, independent of the dispatch ref;
+#   (b) its meaning does not drift if `lean.yml` changes for unrelated reasons;
+#   (c) it produces a structured attestation record (job summary + artifact),
+#       which routine `full-build` dispatches intentionally do not.
+#
+# Evidence persistence caveat: the job summary and artifact are subject to
+# GitHub's run/artifact retention window (`retention-days` below is set to the
+# platform maximum for public repositories — 90 days). This is NOT literally
+# permanent storage. For a release that must be durably archived past that
+# window, copy the attestation file onto a GitHub Release as an asset (Release
+# assets do not expire) — see docs/build-and-checks.md.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Exact commit SHA (or tag) of the release candidate to attest'
+        required: true
+        type: string
+
+concurrency:
+  group: release-attestation-${{ inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    # Cache misses (mathlib bumped since the last cached build) can make a full
+    # build slow; this ceiling is generous headroom above the cache-hit case.
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    # Pin the shell explicitly: an unqualified `run:` step's default shell
+    # behavior is not guaranteed to enable `pipefail`, and every guarded step
+    # below relies on `cmd | tee log` reporting `cmd`'s exit status, not `tee`'s.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout candidate ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Prepare log directory
+        run: mkdir -p logs
+
+      - name: Record candidate metadata
+        id: meta
+        run: |
+          SHA="$(git rev-parse HEAD)"
+          TOOLCHAIN="$(cat lean-toolchain)"
+          MANIFEST_SHA256="$(sha256sum lake-manifest.json | awk '{print $1}')"
+          {
+            echo "sha=$SHA"
+            echo "toolchain=$TOOLCHAIN"
+            echo "manifest_sha256=$MANIFEST_SHA256"
+            echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build (full lake build, mathlib-cache-first)
+        id: build
+        continue-on-error: true
+        uses: leanprover/lean-action@v1
+        with:
+          use-mathlib-cache: true
+
+      - name: Guardrail — no unmarked sorry
+        id: guard_sorry
+        continue-on-error: true
+        run: bash scripts/check-no-sorry.sh 2>&1 | tee logs/check-no-sorry.log
+
+      - name: Guardrail — no undeclared axiom/opaque/unsafe
+        id: guard_axiom
+        continue-on-error: true
+        run: bash scripts/check-no-axiom.sh 2>&1 | tee logs/check-no-axiom.log
+
+      - name: Guardrail — no overclaiming theorem names
+        id: guard_names
+        continue-on-error: true
+        run: bash scripts/check-theorem-names.sh 2>&1 | tee logs/check-theorem-names.log
+
+      - name: Guardrail — axiom-leak static pre-filter
+        id: guard_axiom_static
+        continue-on-error: true
+        run: bash scripts/check-axioms.sh 2>&1 | tee logs/check-axioms.log
+
+      - name: Guardrail — release-cone sorry-free (issue #147)
+        id: guard_release_cone
+        continue-on-error: true
+        run: bash scripts/check-release-cone.sh 2>&1 | tee logs/check-release-cone.log
+
+      - name: Guardrail — axiom live pin (capstone evidence anchor, issue #150)
+        id: guard_axiom_live
+        continue-on-error: true
+        run: bash scripts/check-axioms-live.sh 2>&1 | tee logs/check-axioms-live.log
+
+      - name: Compose attestation record
+        if: always()
+        id: attest
+        run: |
+          set -euo pipefail
+
+          FINISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          declare -A OUTCOME=(
+            [build]="${{ steps.build.outcome }}"
+            [check-no-sorry.sh]="${{ steps.guard_sorry.outcome }}"
+            [check-no-axiom.sh]="${{ steps.guard_axiom.outcome }}"
+            [check-theorem-names.sh]="${{ steps.guard_names.outcome }}"
+            [check-axioms.sh]="${{ steps.guard_axiom_static.outcome }}"
+            [check-release-cone.sh]="${{ steps.guard_release_cone.outcome }}"
+            [check-axioms-live.sh]="${{ steps.guard_axiom_live.outcome }}"
+          )
+
+          {
+            echo "# Release-candidate build attestation"
+            echo
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Attested SHA | \`${{ steps.meta.outputs.sha }}\` |"
+            echo "| lean-toolchain | \`${{ steps.meta.outputs.toolchain }}\` |"
+            echo "| lake-manifest.json sha256 | \`${{ steps.meta.outputs.manifest_sha256 }}\` |"
+            echo "| Started (UTC) | ${{ steps.meta.outputs.started_at }} |"
+            echo "| Finished (UTC) | $FINISHED_AT |"
+            echo "| Workflow run | $RUN_URL |"
+            echo
+            echo "## Steps"
+            echo
+            echo "| Step | Result |"
+            echo "|---|---|"
+            echo "| full \`lake build\` (mathlib-cache-first) | ${OUTCOME[build]} |"
+            echo "| \`scripts/check-no-sorry.sh\` | ${OUTCOME[check-no-sorry.sh]} |"
+            echo "| \`scripts/check-no-axiom.sh\` | ${OUTCOME[check-no-axiom.sh]} |"
+            echo "| \`scripts/check-theorem-names.sh\` | ${OUTCOME[check-theorem-names.sh]} |"
+            echo "| \`scripts/check-axioms.sh\` | ${OUTCOME[check-axioms.sh]} |"
+            echo "| \`scripts/check-release-cone.sh\` | ${OUTCOME[check-release-cone.sh]} |"
+            echo "| \`scripts/check-axioms-live.sh\` (capstone pin) | ${OUTCOME[check-axioms-live.sh]} |"
+            echo
+            echo "## Guard log checksums (sha256)"
+            echo
+            echo '```'
+            if ls logs/*.log >/dev/null 2>&1; then
+              sha256sum logs/*.log
+            else
+              echo "no guard logs captured"
+            fi
+            echo '```'
+            echo
+            echo "The full \`lake build\` step's log is not re-hashed here (it is written"
+            echo "incrementally by the composite build action); it is preserved verbatim as"
+            echo "part of this workflow run at the run URL above."
+            echo
+            echo "A green result on every row above certifies exactly the SHA in the table,"
+            echo "not the branch HEAD at read time. If HEAD has since moved, this record says"
+            echo "nothing about the new commits — re-run this workflow against the new SHA."
+          } | tee attestation.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload attestation artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-attestation-${{ steps.meta.outputs.sha }}
+          path: |
+            attestation.md
+            logs/*.log
+          retention-days: 90
+
+      - name: Fail job if any step failed
+        if: always()
+        run: |
+          set -euo pipefail
+          FAILED=0
+          for outcome in \
+            "${{ steps.build.outcome }}" \
+            "${{ steps.guard_sorry.outcome }}" \
+            "${{ steps.guard_axiom.outcome }}" \
+            "${{ steps.guard_names.outcome }}" \
+            "${{ steps.guard_axiom_static.outcome }}" \
+            "${{ steps.guard_release_cone.outcome }}" \
+            "${{ steps.guard_axiom_live.outcome }}"; do
+            if [ "$outcome" != "success" ]; then
+              FAILED=1
+            fi
+          done
+          if [ "$FAILED" -ne 0 ]; then
+            echo "One or more attestation steps did not succeed — see the job summary above." >&2
+            exit 1
+          fi
+          echo "All attestation steps succeeded."

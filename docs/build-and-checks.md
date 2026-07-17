@@ -86,6 +86,9 @@ Auto full builds are **abolished** (GitHub Actions cost).
   `check-no-axiom.sh`, `check-theorem-names.sh`). No Lean build on CI for PRs.
 - **Full build + axiom pins** (`check-axioms.sh`, `check-axioms-live.sh`) run
   **manually** via the `lean` workflow's `workflow_dispatch` trigger on GitHub.
+- **Release-candidate build attestation** — a separate, persisted evidence record
+  for one exact SHA — runs manually via the `release-attestation` workflow (see
+  below).
 - **Mandatory build gate** is the **local incremental build**, enforced by the
   `scripts/hooks/pre-push` git hook.
 
@@ -104,3 +107,44 @@ Verify activation:
 ```bash
 git config --get core.hooksPath   # should print: scripts/hooks
 ```
+
+## Release-candidate build attestation (issue #150)
+
+The README badge links to the `release-attestation` workflow, a `workflow_dispatch`-only
+job that certifies one exact commit SHA has a full `lake build` pass plus all discipline
+guards, including the capstone live axiom pin (`check-axioms-live.sh`). It never runs on
+push, pull request, or a schedule, and it is separate from the `lean` workflow's routine
+`full-build` dispatch job (see above) — it takes an explicit SHA input and produces a
+persisted attestation record, rather than only a job log.
+
+### Producing a new attestation
+
+```bash
+gh workflow run release-attestation.yml --repo uda-lab/lean-pde -f ref=<candidate-sha-or-tag>
+```
+
+The run resolves `<candidate-sha-or-tag>` and checks it out, records the resulting commit
+SHA, the `lean-toolchain` content, and the sha256 of `lake-manifest.json`, runs the full
+build and every guard script, and writes the results as:
+
+- the workflow run's **job summary** (a Markdown table: SHA, toolchain, manifest hash,
+  per-step pass/fail, guard log checksums), and
+- an **artifact** named `release-attestation-<sha>` (the same Markdown file plus the raw
+  guard logs), retained for 90 days (the GitHub maximum for public repositories).
+
+### Finding the SHA of the latest attestation
+
+Open the workflow's [runs page](https://github.com/uda-lab/lean-pde/actions/workflows/release-attestation.yml)
+(same link as the README badge) and open the most recent run — the job summary states the
+attested SHA at the top. **A green badge or a green run does not mean the current branch
+HEAD is attested** — it means exactly the SHA recorded in that run's summary is attested.
+If commits have landed since that SHA, treat the code between the attested SHA and HEAD as
+unattested (though still covered by the local pre-push build gate and, on PRs, the fast
+`guards` job) until a new attestation is run against the new candidate SHA.
+
+### Durability caveat
+
+The job summary and artifact are bounded by GitHub's run/artifact retention window, not
+stored forever. For a commit that is being cut as an actual public release, additionally
+attach the attestation Markdown file as an asset on the corresponding GitHub Release —
+Release assets do not expire.
