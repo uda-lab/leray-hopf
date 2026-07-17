@@ -21,10 +21,10 @@ name: release-attestation
 #
 # Evidence persistence caveat: the job summary and artifact are subject to
 # GitHub's run/artifact retention window (`retention-days` below is set to the
-# platform maximum for public repositories). This is NOT literally permanent
-# storage. For a release that must be durably archived past that window, copy the
-# attestation file onto a GitHub Release as an asset (Release assets do not
-# expire) — see docs/build-and-checks.md.
+# platform maximum for public repositories — 90 days). This is NOT literally
+# permanent storage. For a release that must be durably archived past that
+# window, copy the attestation file onto a GitHub Release as an asset (Release
+# assets do not expire) — see docs/build-and-checks.md.
 on:
   workflow_dispatch:
     inputs:
@@ -45,6 +45,12 @@ jobs:
     timeout-minutes: 120
     permissions:
       contents: read
+    # Pin the shell explicitly: an unqualified `run:` step's default shell
+    # behavior is not guaranteed to enable `pipefail`, and every guarded step
+    # below relies on `cmd | tee log` reporting `cmd`'s exit status, not `tee`'s.
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout candidate ref
         uses: actions/checkout@v4
@@ -174,7 +180,7 @@ jobs:
           path: |
             attestation.md
             logs/*.log
-          retention-days: 400
+          retention-days: 90
 
       - name: Fail job if any step failed
         if: always()

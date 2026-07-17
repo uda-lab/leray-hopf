@@ -123,14 +123,14 @@ persisted attestation record, rather than only a job log.
 gh workflow run release-attestation.yml --repo uda-lab/lean-pde -f ref=<candidate-sha-or-tag>
 ```
 
-The run checks out exactly `<candidate-sha-or-tag>`, records its `lean-toolchain` content
-and the sha256 of `lake-manifest.json`, runs the full build and every guard script, and
-writes the results as:
+The run resolves `<candidate-sha-or-tag>` and checks it out, records the resulting commit
+SHA, the `lean-toolchain` content, and the sha256 of `lake-manifest.json`, runs the full
+build and every guard script, and writes the results as:
 
 - the workflow run's **job summary** (a Markdown table: SHA, toolchain, manifest hash,
   per-step pass/fail, guard log checksums), and
 - an **artifact** named `release-attestation-<sha>` (the same Markdown file plus the raw
-  guard logs), retained for 400 days (the GitHub maximum for public repositories).
+  guard logs), retained for 90 days (the GitHub maximum for public repositories).
 
 ### Finding the SHA of the latest attestation
 
