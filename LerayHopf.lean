@@ -42,9 +42,11 @@ Navier–Stokes equations has been formalized.
   (`exists_lerayHopf_r3`).
 * `LerayHopf` (this file) — re-exports all three layers, plus the remaining support
   files (Bochner time theory, Galerkin ODE solvers, limit passage, etc.) needed to
-  assemble both capstones. **Sorry-free release surface (issue #147):** every module
-  transitively imported from here is free of `sorry`, marked or unmarked — see
-  `scripts/check-release-cone.sh`, which enforces this statically in CI.
+  assemble both capstones. **Sorry-free, axiom-free release surface (issues #147, #151):**
+  every module transitively imported from here is free of `sorry` and of
+  `axiom`/`constant`/`opaque`/`unsafe`, marked or unmarked, and free of any
+  `Scaffold`/`Placeholder`/`Stub`/`Draft` namespace — see `scripts/check-release-cone.sh`,
+  which enforces this statically in CI with no marker escape.
 * `LerayHopf.Experimental` — explicit **opt-in** for the incomplete Bochner time-layer
   work that does NOT live in the release cone (four modules, six `sorry`s total; see that
   file's docstring for the per-module inventory). Nothing under `LerayHopf` imports it.

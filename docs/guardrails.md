@@ -8,9 +8,12 @@ why it matters, and what to do instead. CI enforces the mechanical ones
 
 - **What:** A declaration must not be named, documented, or summarized as a result it
   does not prove. Reserved terms (`millennium`, `global_regular`, `navier_stokes_solved`,
-  `clay`, …) are blocked in declaration names by `check-theorem-names.sh`.
+  `clay`, `statement`, `scaffold`, …) are blocked in declaration names by
+  `check-theorem-names.sh`.
 - **Why:** Readers and downstream proofs trust names and summaries. A misleading name is
-  a silent false claim that can propagate.
+  a silent false claim that can propagate. `statement`/`scaffold` were added by issue #151
+  to close the gap demonstrated by the historical `Scaffold.exists_lerayHopf_torus3_statement`
+  — a bare-Prop placeholder whose name read like a proved theorem.
 - **Instead:** Name for what is actually proved. If it is only a statement, say so and
   mark it `-- ALLOW_NAME: statement only`.
 
@@ -40,6 +43,48 @@ why it matters, and what to do instead. CI enforces the mechanical ones
   should not surface incomplete work even when each gap is individually accounted for.
 - **Instead:** Move incomplete modules behind an explicit opt-in import, e.g.
   `LerayHopf.Experimental` (issue #147), and document what is incomplete in its docstring.
+
+## No-axiom-in-release-cone rule (issue #151)
+
+- **What:** No `axiom`, `constant`, `opaque`, or `unsafe` declaration — marked or unmarked —
+  may be reachable from `import LerayHopf`. `scripts/check-release-cone.sh` fails on any such
+  declaration it finds in the closure, with no `ALLOW_AXIOM` exemption (unlike
+  `check-no-axiom.sh`, which permits a justified, marked axiom anywhere in the repo). The scan
+  is comment-aware — the same block/line-comment stripper the sorry scan uses — so an example
+  `axiom` line inside a module docstring does not trip it (PR #172 review).
+- **Why:** `check-no-axiom.sh` alone leaves a gap: an `-- ALLOW_AXIOM:`-marked declaration is
+  accepted anywhere, including inside the release cone. This rule makes "the release surface
+  is project-axiom-free" an enforced structural guarantee, not just true today by inspection.
+- **Instead:** Move axiom-carrying modules behind an explicit opt-in import, e.g.
+  `LerayHopf.Experimental`, and document the assumption there.
+
+## No-placeholder-namespace-in-release-cone rule (issue #151)
+
+- **What:** No declaration under the `Scaffold`, `Placeholder`, `Stub`, or `Draft` namespace
+  (case-insensitive) may be reachable from `import LerayHopf`. `scripts/check-release-cone.sh`
+  fails on any such namespace it finds in the closure — this check has **no marker escape at
+  all**, unlike every other guard in this document. The check covers a reserved word appearing
+  as **any** dot-separated component of a qualified `namespace X.Y.Z` opener, and a directly
+  qualified declaration (`theorem X.Scaffold.foo ...`, valid Lean 4 syntax with no enclosing
+  `namespace` block) using any keyword in the shared `scripts/lib/lean-decl-keywords.sh`
+  vocabulary (`theorem`/`lemma`/`def`/`abbrev`/`instance`/`structure`/`class`/`inductive`) —
+  not only an unqualified `namespace Scaffold`, and not only a subset of declaration keywords.
+  It is also comment-aware: a reserved word appearing inside a block-comment docstring does not
+  trip it. PR #172 review caught three real gaps across two rounds: (1) an initial version that
+  matched only the unqualified/first-component case, (2) a version that scanned raw, un-stripped
+  lines instead of comment-stripped text, (3) a version whose recognized declaration-keyword set
+  omitted `inductive` — which is why that vocabulary is now centralized in one shared file rather
+  than duplicated (and independently drifting) across `check-release-cone.sh` and
+  `check-theorem-names.sh`. `scripts/test-check-release-cone.sh` is the committed, executable
+  regression coverage for all of the above, run in CI alongside the guard itself.
+- **Why:** Closes the gap demonstrated by the historical `Scaffold.exists_lerayHopf_torus3_statement`
+  — a bare-Prop placeholder that was reachable from `import LerayHopf` before issue #144
+  deleted it outright. A fixed reserved-term list (see No-overclaim rule) cannot anticipate
+  every future placeholder name; banning the namespace class itself is a structural guard
+  that does not depend on guessing names in advance. An incomplete-work namespace has no
+  legitimate reason to be part of the release surface, hence no escape hatch.
+- **Instead:** Rename the namespace, or move the module behind an explicit opt-in import, e.g.
+  `LerayHopf.Experimental`.
 
 ## No-vacuous-proof rule
 

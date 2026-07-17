@@ -44,6 +44,9 @@ bash scripts/check-axioms.sh
 echo "==> scripts/check-release-cone.sh"
 bash scripts/check-release-cone.sh
 
+echo "==> scripts/test-check-release-cone.sh"
+bash scripts/test-check-release-cone.sh
+
 echo "==> scripts/check-statement-cards.sh"
 bash scripts/check-statement-cards.sh
 

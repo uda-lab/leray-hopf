@@ -106,9 +106,11 @@ Nothing above is a smoothness, uniqueness, or non-uniqueness claim.
 ## Import guide (issue #147)
 
 `import LerayHopf` is the **complete release surface**: both capstones plus every
-supporting layer, and it is **sorry-free** — statically enforced in CI by
-`scripts/check-release-cone.sh`, which walks the transitive import closure of
-`LerayHopf.lean` and fails if any file it reaches contains a `sorry`, marked or unmarked.
+supporting layer, and it is **sorry-free and axiom-free, with no placeholder
+namespaces** — statically enforced in CI by `scripts/check-release-cone.sh`, which
+walks the transitive import closure of `LerayHopf.lean` and fails if any file it
+reaches contains a `sorry` or an `axiom`/`constant`/`opaque`/`unsafe` (marked or
+unmarked), or a `Scaffold`/`Placeholder`/`Stub`/`Draft` namespace (issues #147, #151).
 Narrower imports are also available for consumers who only need one piece:
 
 | Import | Brings in | Status |
@@ -116,7 +118,7 @@ Narrower imports are also available for consumers who only need one piece:
 | `import LerayHopf.Core` | Axiom-free, `sorryAx`-free spatial/regularity layer shared by both domains (L²_σ spaces, Leray/Galerkin projections, Fourier machinery). | Sorry-free, axiom-free. |
 | `import LerayHopf.Torus.Capstone` | The full 𝕋³ capstone chain, `exists_lerayHopf_torus3`. | Kernel-only (no project axioms, no `sorryAx`). |
 | `import LerayHopf.R3Capstone` | The full ℝ³ capstone chain, `exists_lerayHopf_r3`. | Kernel-only (no project axioms, no `sorryAx`). |
-| `import LerayHopf` | Everything above, plus the remaining supporting files needed to assemble both capstones (Bochner Gelfand-triple time theory used by the R3 limit-passage chain, Galerkin ODE solvers, etc.). | **Sorry-free** (issue #147). |
+| `import LerayHopf` | Everything above, plus the remaining supporting files needed to assemble both capstones (Bochner Gelfand-triple time theory used by the R3 limit-passage chain, Galerkin ODE solvers, etc.). | **Sorry-free, axiom-free, no placeholder namespaces** (issues #147, #151). |
 | `import LerayHopf.Experimental` | Explicit **opt-in** for incomplete Bochner time-layer work not needed by either capstone: `Bochner.TimeSobolevAC`, `Bochner.TimeMollification`, `Bochner.TimeMollifierInterval`, `Bochner.TimeSobolevExperimental`. | Contains all 6 remaining `sorry`s; see that file's docstring for the per-module inventory. `TimeSobolevExperimental`'s `w1pTime_continuous_in_H` is restricted to `p = q = 2` — its prior generic-`p,q` statement was found FALSE (issue #158, explicit `p = q = 1` counterexample). |
 
 Nothing reachable from `import LerayHopf` imports `LerayHopf.Experimental`, and nothing in
@@ -151,7 +153,9 @@ documented.
 - Exactly **6** remaining `sorry`s, every one same-line `-- ALLOW_SORRY:`-marked, none
   reachable from either capstone, and — since issue #147 — none reachable from
   `import LerayHopf` at all (see "Import guide" above; enforced by
-  `scripts/check-release-cone.sh`). All six are Lions–Magenes-class Bochner-time walls,
+  `scripts/check-release-cone.sh`, which since issue #151 also enforces that the release
+  cone is axiom-free and free of placeholder namespaces). All six are Lions–Magenes-class
+  Bochner-time walls,
   gathered behind the explicit opt-in `LerayHopf.Experimental`:
   `Bochner/TimeSobolevExperimental.lean:71`, `Bochner/TimeSobolevAC.lean:322`,
   `Bochner/TimeMollification.lean:196`,
@@ -174,9 +178,10 @@ bash scripts/agent-preflight.sh    # build + guardrail checks
 
 CI (`.github/workflows/lean.yml`) runs fast textual guardrail checks on every PR — no Lean
 build (the mandatory build gate is local, via the `pre-push` hook) — blocking overclaiming
-theorem names, unmarked `sorry`, undeclared axioms, and any `sorry` reachable from the release
-import cone (`scripts/check-release-cone.sh`, issue #147). The full build plus the live axiom
-pin described above run manually via `workflow_dispatch`.
+theorem names, unmarked `sorry`, undeclared axioms, and any `sorry`, axiom, or placeholder
+namespace reachable from the release import cone (`scripts/check-release-cone.sh`, issues
+#147, #151). The full build plus the live axiom pin described above run manually via
+`workflow_dispatch`.
 
 ## License and citation
 

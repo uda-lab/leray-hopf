@@ -12,8 +12,21 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=lib/lean-decl-keywords.sh
+. "$ROOT/scripts/lib/lean-decl-keywords.sh"
+
 # Reserved terms that must not appear in declaration names. Extend as needed.
-TERMS='millennium|global_regular|smooth_global|navier_stokes_solved|clay|uniqueness_solved|regularity_solved'
+#
+# `statement`/`scaffold` (issue #151): closes the gap demonstrated by the historical
+# `Scaffold.exists_lerayHopf_torus3_statement` — a bare-Prop placeholder declaration,
+# reachable from `import LerayHopf` before issue #144 deleted it, whose name looked
+# like a proved theorem but was only ever a statement shell. Neither term collides
+# with any current declaration line in the tree (verified at introduction time); a
+# legitimate bare-statement declaration remains expressible via
+# `-- ALLOW_NAME: statement only`. `check-release-cone.sh` additionally bans the
+# `Scaffold`/`Placeholder`/`Stub`/`Draft` namespaces outright (no escape) from the
+# release cone specifically — this guard is the repo-wide, escapable complement.
+TERMS='millennium|global_regular|smooth_global|navier_stokes_solved|clay|uniqueness_solved|regularity_solved|statement|scaffold'
 
 # Enumerate Lean sources fail-closed: `find` writes to a temp file and its exit
 # status is checked BEFORE the list is consumed (a bare process substitution
@@ -32,12 +45,16 @@ fi
 
 # Single awk scan over all sources, fed via NUL-safe xargs batching
 # (ARG_MAX-safe). Match: declaration line (keyword optionally preceded by
-# attributes/modifiers) containing a reserved term case-insensitively
-# (tolower), without an ALLOW_NAME justification. No here-strings and no
+# attributes/modifiers, keyword/modifier vocabulary from lib/lean-decl-keywords.sh)
+# containing a reserved term case-insensitively (tolower), without an ALLOW_NAME
+# justification. The declaration-line anchor is built as a dynamic regex from
+# `kw`/`mods` (rather than a literal `/.../`) precisely so it can be centralized —
+# see lib/lean-decl-keywords.sh's header for why. No here-strings and no
 # per-file grep: a failing awk/xargs in any batch makes the plain command
 # substitution non-zero, which `set -e` turns into an abort (fail-closed).
-violations="$(xargs -0 awk -v terms="$TERMS" '
-  /^[[:space:]]*(@\[[^]]*\][[:space:]]*)*((private|protected|noncomputable|scoped|local|nonrec)[[:space:]]+)*(theorem|lemma|def|abbrev|instance|structure|class)[[:space:]]/ && !/ALLOW_NAME:/ && tolower($0) ~ terms {
+violations="$(xargs -0 awk -v terms="$TERMS" -v kw="$LEAN_DECL_KEYWORDS" -v mods="$LEAN_DECL_MODIFIERS" '
+  BEGIN { declRegex = "^[[:space:]]*(@\\[[^]]*\\][[:space:]]*)*((" mods ")[[:space:]]+)*(" kw ")[[:space:]]" }
+  $0 ~ declRegex && !/ALLOW_NAME:/ && tolower($0) ~ terms {
     printf "%s:%d:%s\n", FILENAME, FNR, $0
   }
 ' < "$list")"
