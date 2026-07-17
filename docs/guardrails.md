@@ -49,7 +49,9 @@ why it matters, and what to do instead. CI enforces the mechanical ones
 - **What:** No `axiom`, `constant`, `opaque`, or `unsafe` declaration — marked or unmarked —
   may be reachable from `import LerayHopf`. `scripts/check-release-cone.sh` fails on any such
   declaration it finds in the closure, with no `ALLOW_AXIOM` exemption (unlike
-  `check-no-axiom.sh`, which permits a justified, marked axiom anywhere in the repo).
+  `check-no-axiom.sh`, which permits a justified, marked axiom anywhere in the repo). The scan
+  is comment-aware — the same block/line-comment stripper the sorry scan uses — so an example
+  `axiom` line inside a module docstring does not trip it (PR #172 review).
 - **Why:** `check-no-axiom.sh` alone leaves a gap: an `-- ALLOW_AXIOM:`-marked declaration is
   accepted anywhere, including inside the release cone. This rule makes "the release surface
   is project-axiom-free" an enforced structural guarantee, not just true today by inspection.
@@ -61,7 +63,14 @@ why it matters, and what to do instead. CI enforces the mechanical ones
 - **What:** No declaration under the `Scaffold`, `Placeholder`, `Stub`, or `Draft` namespace
   (case-insensitive) may be reachable from `import LerayHopf`. `scripts/check-release-cone.sh`
   fails on any such namespace it finds in the closure — this check has **no marker escape at
-  all**, unlike every other guard in this document.
+  all**, unlike every other guard in this document. The check covers a reserved word appearing
+  as **any** dot-separated component of a qualified `namespace X.Y.Z` opener, and a directly
+  qualified declaration (`theorem X.Scaffold.foo ...`, valid Lean 4 syntax with no enclosing
+  `namespace` block) — not only an unqualified `namespace Scaffold`. It is also comment-aware:
+  a reserved word appearing inside a block-comment docstring does not trip it (PR #172 review
+  caught both an initial version that missed the qualified form and one that scanned raw,
+  un-stripped lines). `scripts/test-check-release-cone.sh` is the committed, executable
+  regression coverage for all of the above, run in CI alongside the guard itself.
 - **Why:** Closes the gap demonstrated by the historical `Scaffold.exists_lerayHopf_torus3_statement`
   — a bare-Prop placeholder that was reachable from `import LerayHopf` before issue #144
   deleted it outright. A fixed reserved-term list (see No-overclaim rule) cannot anticipate

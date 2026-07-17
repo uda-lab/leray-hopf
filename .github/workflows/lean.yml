@@ -42,6 +42,8 @@ jobs:
         run: bash scripts/check-axioms.sh
       - name: Guardrail — release-cone sorry/axiom-free, no placeholder namespaces (issues #147, #151)
         run: bash scripts/check-release-cone.sh
+      - name: Guardrail — release-cone regression tests (issue #151)
+        run: bash scripts/test-check-release-cone.sh
       - name: Guardrail — statement cards (issue #158)
         run: bash scripts/check-statement-cards.sh
 
@@ -66,6 +68,8 @@ jobs:
         run: bash scripts/check-axioms.sh
       - name: Guardrail — release-cone sorry/axiom-free, no placeholder namespaces (issues #147, #151)
         run: bash scripts/check-release-cone.sh
+      - name: Guardrail — release-cone regression tests (issue #151)
+        run: bash scripts/test-check-release-cone.sh
       - name: Guardrail — statement cards (issue #158)
         run: bash scripts/check-statement-cards.sh
       - name: Guardrail — axiom live pin

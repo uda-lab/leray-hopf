@@ -31,12 +31,19 @@
 #
 # FAIL-CLOSED: set -euo pipefail; any parse/scan failure aborts nonzero, never
 # reports success on a partial scan.
+#
+# OPTIONAL ARGS (for scripts/test-check-release-cone.sh only — the normal `bash
+# scripts/check-release-cone.sh` CI/local invocation takes none and is unaffected):
+#   $1 — project root to scan (default: this script's parent directory)
+#   $2 — entry module, relative to that root (default: LerayHopf.lean)
+# This lets the regression-test harness point the exact same guard logic at an
+# isolated fixture tree instead of the real repo.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$ROOT"
 
-ENTRY="LerayHopf.lean"
+ENTRY="${2:-LerayHopf.lean}"
 if [ ! -r "$ENTRY" ]; then
   echo "ERROR: root module '$ENTRY' is missing or unreadable — cannot compute the release cone." >&2
   exit 1
@@ -103,11 +110,32 @@ fi
 
 sort -u "$closure" -o "$closure"
 
-# --- Step 2: comment-aware `sorry` scan over exactly the closure files. Same
-# block/line-comment stripper as check-no-sorry.sh, but with NO ALLOW_SORRY
-# exemption: any code-level `sorry` token in the release cone is a violation,
-# justified or not. ---
-sorry_violations="$(xargs -0 awk '
+# --- Step 2: ONE comment-aware pass over exactly the closure files, computing the
+# same block/line-comment-stripped `code` text per line (as check-no-sorry.sh) and
+# testing it against all three checks below. A single pass (rather than one awk
+# invocation per check) guarantees the sorry/axiom/namespace checks share
+# identical comment-stripping — a prior version ran the axiom and namespace scans
+# on raw, un-stripped lines, so a code-like example inside a module docstring
+# could trip them despite the file header's claim that comments don't (PR #172
+# review, issue #151). NONE of the three checks below have an `ALLOW_*` marker
+# escape: a justified sorry/axiom/namespace-content elsewhere in the repo is
+# still not permitted to be reachable from the release surface.
+#
+#   SORRY     — any `sorry` token in code (unchanged from the original #147 guard).
+#   AXIOM     — any `axiom`/`constant`/`opaque`/`unsafe` declaration in code.
+#   NAMESPACE — any `namespace <dotted-ident>` opener, OR any directly qualified
+#     declaration (`theorem X.Y.foo ...`), where a reserved word
+#     (Scaffold/Placeholder/Stub/Draft) appears as ANY dot-separated component —
+#     not only when it is the sole, unqualified identifier. The original version
+#     matched only the latter, so `namespace LerayHopf.Scaffold` (or any
+#     multi-component qualified form) passed unflagged even though every
+#     declaration inside it is exactly the placeholder-namespace case this check
+#     exists to reject (PR #172 review, issue #151). A bare (non-dotted)
+#     declaration whose own name equals a reserved word — e.g. `theorem Scaffold`
+#     with no `.` — is intentionally left to `check-theorem-names.sh`'s
+#     repo-wide, `ALLOW_NAME`-escapable reserved-term guard instead: it is a
+#     naming choice, not a declaration living under a namespace.
+scan="$(xargs -0 awk '
   FNR == 1 { depth = 0 }
   {
     line = $0; code = ""; inLine = 0
@@ -124,35 +152,41 @@ sorry_violations="$(xargs -0 awk '
       if (two == "/-") { depth++; i += 2; continue }
       code = code substr(line, i, 1); i++
     }
+
     if (code ~ /(^|[^A-Za-z0-9_])sorry([^A-Za-z0-9_]|$)/)
-      printf "%s:%d:%s\n", FILENAME, FNR, line
-  }
-' < <(tr '\n' '\0' < "$closure") 2>&1)"
+      printf "SORRY\t%s:%d:%s\n", FILENAME, FNR, line
 
-# --- Step 3: axiom/constant/opaque/unsafe scan over exactly the closure files
-# (issue #151). Same declaration-leading-keyword anchor as check-no-axiom.sh, but
-# WITHOUT its `!/ALLOW_AXIOM:/` exemption: any such declaration in the release
-# cone is a violation, justified or not. Anchoring to the declaration-leading
-# keyword (not a bare token scan like the sorry check above) means occurrences in
-# comments, identifiers, or strings do not trip the check — matching
-# check-no-axiom.sh's own matching discipline. ---
-axiom_violations="$(xargs -0 awk '
-  /^[[:space:]]*(@\[[^]]*\][[:space:]]*)*((private|protected|noncomputable|scoped|local)[[:space:]]+)*(axiom|constant|opaque|unsafe)[[:space:]]/ {
-    printf "%s:%d:%s\n", FILENAME, FNR, $0
+    if (code ~ /^[[:space:]]*(@\[[^]]*\][[:space:]]*)*((private|protected|noncomputable|scoped|local)[[:space:]]+)*(axiom|constant|opaque|unsafe)[[:space:]]/)
+      printf "AXIOM\t%s:%d:%s\n", FILENAME, FNR, line
+
+    ident = ""
+    if (match(code, /^[[:space:]]*namespace[[:space:]]+[A-Za-z0-9_.]+/) > 0) {
+      stmt = substr(code, RSTART, RLENGTH)
+      sub(/^[[:space:]]*namespace[[:space:]]+/, "", stmt)
+      ident = stmt
+    } else if (code ~ /^[[:space:]]*(@\[[^]]*\][[:space:]]*)*((private|protected|noncomputable|scoped|local|nonrec)[[:space:]]+)*(theorem|lemma|def|abbrev|instance|structure|class)[[:space:]]+/) {
+      if (match(code, /(theorem|lemma|def|abbrev|instance|structure|class)[[:space:]]+[A-Za-z0-9_.]+/) > 0) {
+        stmt = substr(code, RSTART, RLENGTH)
+        sub(/^(theorem|lemma|def|abbrev|instance|structure|class)[[:space:]]+/, "", stmt)
+        if (index(stmt, ".") > 0) ident = stmt
+      }
+    }
+    if (ident != "") {
+      m = split(ident, parts, ".")
+      for (k = 1; k <= m; k++) {
+        p = tolower(parts[k])
+        if (p == "scaffold" || p == "placeholder" || p == "stub" || p == "draft") {
+          printf "NAMESPACE\t%s:%d:%s\n", FILENAME, FNR, line
+          break
+        }
+      }
+    }
   }
 ' < <(tr '\n' '\0' < "$closure"))"
 
-# --- Step 4: reserved placeholder-namespace scan over exactly the closure files
-# (issue #151). `namespace Scaffold`/`Placeholder`/`Stub`/`Draft` (case-insensitive)
-# has no legitimate reason to be reachable from the release surface — this has NO
-# marker escape (see file header). Matches `check-theorem-names.sh`'s declaration
-# scan discipline (anchored, so prose mentions in docstrings/comments do not trip
-# it). ---
-namespace_violations="$(xargs -0 awk '
-  tolower($0) ~ /^[[:space:]]*namespace[[:space:]]+(scaffold|placeholder|stub|draft)([[:space:]]|$)/ {
-    printf "%s:%d:%s\n", FILENAME, FNR, $0
-  }
-' < <(tr '\n' '\0' < "$closure"))"
+sorry_violations="$(printf '%s\n' "$scan" | grep '^SORRY' | cut -f2- || true)"
+axiom_violations="$(printf '%s\n' "$scan" | grep '^AXIOM' | cut -f2- || true)"
+namespace_violations="$(printf '%s\n' "$scan" | grep '^NAMESPACE' | cut -f2- || true)"
 
 file_count="$(wc -l < "$closure" | tr -d '[:space:]')"
 FAIL=0
