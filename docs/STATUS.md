@@ -209,7 +209,7 @@ case ever actually analyzed (the issue #4 Lions–Magenes proof spike uses Cauch
 `L²(V') × L²(V)`) — the minimal safe fix, corrected in place of the "genuine form / statement
 kept intact" language this doc, `README.md`, `docs/architecture.md`, and
 `docs/pdelib-staging.md` previously carried. Issue #158 remains open for the broader
-postmortem, the `lean-pde-notes` corpus repin, and recurrence-prevention process items — none
+postmortem, the `leray-hopf-notes` corpus repin, and recurrence-prevention process items — none
 of which are source-code blockers for this repo.
 `scripts/check-release-cone.sh` enforces this statically in CI: it fails if the transitive
 import closure of `LerayHopf.lean` ever contains a `sorry`, marked or unmarked.

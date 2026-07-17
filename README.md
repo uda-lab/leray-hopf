@@ -1,6 +1,6 @@
-# lean-pde
+# leray-hopf
 
-[![Release-candidate build attestation](https://github.com/uda-lab/lean-pde/actions/workflows/release-attestation.yml/badge.svg?event=workflow_dispatch)](https://github.com/uda-lab/lean-pde/actions/workflows/release-attestation.yml)
+[![Release-candidate build attestation](https://github.com/uda-lab/leray-hopf/actions/workflows/release-attestation.yml/badge.svg?event=workflow_dispatch)](https://github.com/uda-lab/leray-hopf/actions/workflows/release-attestation.yml)
 
 A Lean 4 + mathlib formalization of **Leray–Hopf weak existence** for the
 incompressible Navier–Stokes equations, on the periodic 3-torus 𝕋³ and on whole
