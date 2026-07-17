@@ -50,7 +50,48 @@ Mazur weak-limit closure, and the determined-form convection extensions — is
 > declarations outside the two capstone cones are tracked in [`docs/STATUS.md`](docs/STATUS.md).
 
 Public summaries should cite the proof-carrying `LerayHopfSolutionFull` /
-`LerayHopfSolutionFull_R3` structures and the capstones above.
+`LerayHopfSolutionFull_R3` structures and the capstones above — **not** a paraphrase that
+claims more than the fields below.
+
+### Modeling scope
+
+- **No external force.** The weak identity carried by `weak_eq` has no forcing term; this is
+  the homogeneous Navier–Stokes equation only.
+- **Finite time horizon, not global-in-time.** `T : ℝ` with `hT : 0 < T` is an input to the
+  capstones: for each such `T` there is a solution on `[0, T]`. This is not a claim of a single
+  solution simultaneously valid on `[0, ∞)`.
+- **𝕋³ is the unit torus.** `Torus3 = (AddCircle 1)³` — period **1** in each coordinate (not
+  `2π`), with the Fourier basis convention `e^{2πi k·x}`; see `LerayHopf/Torus/Domain.lean`.
+  ℝ³ is whole space with no periodicity.
+- **Separated-variable weak formulation.** `WeakFormNS` tests against `ψ(t) · w(x)` (a scalar
+  temporal factor times a fixed spatial test vector `w` from the domain's Galerkin/Schwartz
+  div-free test class), not a general space-time test function `φ(t, x)`. The relation to the
+  standard space-time test formulation is **out of scope** — this repository neither proves
+  nor assumes it; see `WeakFormNS`'s docstring in `LerayHopf/EvolutionTriple.lean`.
+
+### Claims table (issue #146)
+
+Every mathematical claim below is matched to the exact field/theorem that carries it, so that
+no natural-language paraphrase can silently claim more than the type. `D` ranges over the
+generic `Galerkin.Domain` (`torusDomain` or `r3Domain 𝔊`); `LerayHopfSolutionFull(_R3)` are
+abbreviations for `Galerkin.LerayHopfSolution`.
+
+| Natural-language claim | Field / theorem | What is actually guaranteed |
+|---|---|---|
+| The solution curve stays divergence-free | `LerayHopfSolution.u : Time → ↥D.σ` | Type-level: `u t` is valued in the closed divergence-free subspace `σ` for every `t`, by construction. |
+| `u` solves the weak Navier–Stokes equation | `weak_eq : WeakFormNS ν T (D.evolution C) u` | Holds against separated-variable tests `ψ(t)·w(x)` (see "Modeling scope" above); no forcing term. |
+| Energy inequality | `energy_ineq` | `½‖u(t)‖² + ∫₀ᵗ dissip(ν, u(s)) ds ≤ ½‖u₀‖²` for `t ∈ [0, T]` (not for all `t ≥ 0`). |
+| Initial condition is attained | `initial_trace` | `u(t) → u₀` in the ambient-L² norm as `t → 0⁺` — a **one-sided trace at `t = 0` only**. This is *not* a claim of weak continuity on all of `[0, T]`. |
+| a.e.-in-time H¹ regularity | `energy_class.1` | `∀ᵐ t ∈ [0, T], regMem (u t)` (a.e. H¹ membership). |
+| Viscous dissipation is integrable | `energy_class.2` | `IntervalIntegrable (fun s => dissip ν (u s)) volume 0 T`. |
+| `u ∈ L²(0,T;H¹_σ)` (literal Bochner space membership) | — **not a field** | **Not claimed.** `energy_class` gives a.e. pointwise H¹ membership plus integrable dissipation — not Bochner `MemLp` valued in `H¹` as a Banach space. The measurability field below is into the *ambient* L² space, not into H¹, so it does not upgrade the a.e. statement to a literal Bochner-space membership. |
+| `u` is measurable as a function of time | `u_aestronglyMeasurable` | `AEStronglyMeasurable (fun t => (u t : D.X)) …` on `[0, T]`, valued in the **ambient L² Hilbert space** `D.X` (not H¹). |
+| `u ∈ C_w([0,T]; L²_σ)` (weak continuity in time) | — **not a field** | **Not claimed as a public guarantee.** Only the one-sided trace at `t = 0` (`initial_trace`) is exposed as a field; general-`t` weak continuity is a deliberate non-inclusion — a definitional choice of this repository's public structure, not a proof gap (see `docs/formalization-review-ja.md` §4.2 for the internal-construction note). |
+| Existence on 𝕋³ | `exists_lerayHopf_torus3` | For every `u₀ ∈ L²_σ`, `ν > 0`, `T > 0`: `∃ F, Nonempty (LerayHopfSolutionFull F ν T u₀)`. |
+| Existence on ℝ³ | `exists_lerayHopf_r3` | For every `u₀ ∈ L²_σ(ℝ³)`, `ν > 0`, `T > 0`: `∃ 𝔊 F, Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)`. |
+| Galerkin-level approximate solutions exist | `Galerkin.SolutionData` (per `n`) | An **intermediate** structure (per-`n` finite-dimensional Galerkin ODE data with uniform bounds) — not itself the final solution; consumed by `Galerkin.CompactnessPackage` / `exists_lerayHopf_from_package` on the way to `LerayHopfSolution`. |
+
+Nothing above is a smoothness, uniqueness, or non-uniqueness claim.
 
 ## Layout
 

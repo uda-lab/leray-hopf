@@ -362,18 +362,26 @@ structure AubinLionsPackage (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
 
 /-- The **full Leray–Hopf solution** structure carrying genuine proof fields.
 
-All three fields are typed propositions (not `Prop` placeholders):
-- `weak_eq`: the curve satisfies the weak NS identity for all test functions,
-- `energy_ineq`: the energy inequality holds for all `t ≥ 0`,
-- `initial_trace`: the initial datum is attained in the strong L² sense.
+All fields are typed propositions (not `Prop` placeholders):
+- `weak_eq`: the curve satisfies the weak NS identity against separated-variable tests
+  `ψ(t)w(x)` with `w` ranging over `IsGalerkinTest` (the standard space-time test
+  formulation is not derived from this; see `WeakFormNS`'s docstring),
+- `energy_ineq`: the energy inequality holds for `t ∈ [0, T]`,
+- `initial_trace`: the initial datum is attained in the strong L² sense as `t → 0⁺`
+  (a one-sided trace at the initial time only; this is **not** a claim of weak
+  continuity `u ∈ C_w([0,T]; L²_σ)` on the whole interval, which is not a field of
+  this structure).
 
 This structure carries actual proof obligations (not `Prop` placeholders) and is
 produced by the assembly below.
 
 **Energy class (v5 fix):** The `energy_class` field proof-carries that `u` lies in the
-Leray–Hopf energy class: a.e. `memH1VF` on `[0, T]` (giving `u ∈ L²(0,T;H¹_σ)`) and
-integrable viscous dissipation.  Without this field, `energy_ineq` could hold vacuously
-for `u ∉ H¹` because `viscousFormSq` is a `tsum` that collapses off H¹. -/
+Leray–Hopf energy class: a.e. `memH1VF` on `[0, T]` and interval-integrable viscous
+dissipation. This gives a.e.-in-time H¹ membership plus integrable dissipation — **not**
+literal Bochner space membership `u ∈ L²(0,T;H¹_σ)`, since `u_aestronglyMeasurable` is
+strong measurability into the ambient `L2VF`, not into `H¹` as a Banach space. Without
+this field, `energy_ineq` could hold vacuously for `u ∉ H¹` because `viscousFormSq` is a
+`tsum` that collapses off H¹. -/
 abbrev LerayHopfSolutionFull (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma) :=
   Galerkin.LerayHopfSolution torusDomain F.core ν T u₀
 
@@ -384,9 +392,11 @@ passage) from an explicit Galerkin sequence — for the capstone, the proved axi
 `galSeq_of_torus` (issue #24).
 
 **Energy class (v5 fix):** The `energy_class_limit` field proof-carries that the limit
-curve lies in the Leray–Hopf energy class: a.e. `memH1VF` on `[0, T]` (giving
-`limit ∈ L²(0,T;H¹_σ)`) and integrable viscous dissipation.  Populated from the fifth
-conjunct of `torus_galerkin_limit_passage_of_energyClass`. -/
+curve lies in the Leray–Hopf energy class: a.e. `memH1VF` on `[0, T]` and
+interval-integrable viscous dissipation — a.e.-in-time H¹ membership plus integrable
+dissipation, **not** literal Bochner membership `limit ∈ L²(0,T;H¹_σ)` (see the note on
+`LerayHopfSolutionFull` above). Populated from the fifth conjunct of
+`torus_galerkin_limit_passage_of_energyClass`. -/
 abbrev GalerkinCompactnessPackageFull (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma) :=
   Galerkin.CompactnessPackage torusDomain F.core ν T u₀
 

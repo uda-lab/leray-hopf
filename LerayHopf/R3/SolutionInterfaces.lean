@@ -613,11 +613,18 @@ After PR-6, `exists_lerayHopf_r3` has **zero project axioms**. -/
 /-- The **full Leray–Hopf solution** structure on ℝ³, carrying genuine proof fields.
 
 All fields are typed propositions (not `Prop` placeholders):
-- `weak_eq`: the curve satisfies the weak NS identity for all test functions,
+- `weak_eq`: the curve satisfies the weak NS identity against separated-variable tests
+  `ψ(t)w(x)` with `w` ranging over `IsSchwartzDivFree_R3` (the standard space-time test
+  formulation is not derived from this; see `WeakFormNS`'s docstring),
 - `energy_ineq`: the Leray–Hopf energy inequality on `[0, T]`,
-- `initial_trace`: the initial datum is attained in the strong L² sense,
-- `energy_class`: `u ∈ L²(0,T;H¹_σ(ℝ³))` + integrable viscous dissipation
-  (prevents `viscousFormSq_R3 ν` collapsing off H¹, making `energy_ineq` non-vacuous). -/
+- `initial_trace`: the initial datum is attained in the strong L² sense as `t → 0⁺` (a
+  one-sided trace at the initial time only, **not** weak continuity `C_w([0,T]; L²_σ)`
+  on the whole interval, which is not a field of this structure),
+- `energy_class`: a.e. `memH1VF_R3` on `[0, T]` and interval-integrable viscous
+  dissipation (prevents `viscousFormSq_R3 ν` collapsing off H¹, making `energy_ineq`
+  non-vacuous). This is a.e.-in-time H¹ membership plus integrable dissipation, **not**
+  literal Bochner membership `u ∈ L²(0,T;H¹_σ(ℝ³))`, since `u_aestronglyMeasurable` is
+  strong measurability into the ambient `L2VF_R3`, not into `H¹` as a Banach space. -/
 abbrev LerayHopfSolutionFull_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν T : ℝ) (u₀ : L2Sigma_R3) :=
   Galerkin.LerayHopfSolution (r3Domain 𝔊) F.core ν T u₀

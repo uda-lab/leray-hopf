@@ -24,8 +24,12 @@ theorem exists_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
 ```
 
 `LerayHopfSolution(_R3)Full` is **proof-carrying**: its fields are actual proofs of the weak NS
-equation (`WeakFormNS`, over canonical Schwartz/smooth div-free tests), the energy inequality on
-`[0,T]`, the initial trace, and the energy class `u ∈ L²(0,T;H¹_σ)`.
+equation (`WeakFormNS`, over separated-variable tests `ψ(t)w(x)` with `w` canonical
+Schwartz/smooth div-free), the energy inequality on `[0,T]`, the one-sided initial trace at
+`t → 0⁺`, and the energy class — a.e.-in-time H¹ membership plus interval-integrable viscous
+dissipation. See `README.md`'s claims table for the exact field-by-claim mapping; in
+particular the energy class is **not** literal Bochner membership `u ∈ L²(0,T;H¹_σ)`, and
+there is no `C_w([0,T];L²_σ)` weak-continuity field.
 
 - Current frontier (2026-07-09): ℝ³ closed with **0** project axioms; T³ closed with **0** project axioms — each + 3 kernel (`propext`/`Classical.choice`/`Quot.sound`).
 - The entire **spatial+regularity layer** on both domains is built **axiom-free**.
