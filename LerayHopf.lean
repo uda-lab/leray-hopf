@@ -86,7 +86,8 @@ import LerayHopf.Galerkin.QuadraticField
 import LerayHopf.Galerkin.Domain
 import LerayHopf.Galerkin.SolutionBundles
 
--- Torus-layer files not covered by Core (sorry-carrying, axiom-free)
+-- Torus-layer files not covered by Core (sorry-free, axiom-free — "sorry-carrying"
+-- label corrected by issue #147's release-cone audit, stale since these were discharged)
 import LerayHopf.Torus.RellichEmbedding
 import LerayHopf.Torus.H1Sigma
 import LerayHopf.EvolutionTriple
@@ -128,7 +129,8 @@ import LerayHopf.Torus.ViscousLimit
 -- T³ galerkin_limit_passage removal: orthogonality calculus for velocityProjection_n (PR-1)
 import LerayHopf.Torus.ProjectionAdjoint
 
--- R3 files not covered by Core (sorry-carrying or axiom-dependent)
+-- R3 files not covered by Core (sorry-free, axiom-free — "sorry-carrying or
+-- axiom-dependent" label corrected by issue #147's release-cone audit, stale since discharged)
 import LerayHopf.R3.GalerkinScheme
 import LerayHopf.R3.SchwartzDivFreeBasis
 import LerayHopf.R3.GalerkinODE

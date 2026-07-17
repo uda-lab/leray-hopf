@@ -153,9 +153,11 @@ lake build
 bash scripts/agent-preflight.sh    # build + guardrail checks
 ```
 
-CI (`.github/workflows/lean.yml`) builds the project and runs guardrail checks that
-block overclaiming theorem names, unmarked `sorry`, and undeclared axioms, plus the
-live axiom pin described above.
+CI (`.github/workflows/lean.yml`) runs fast textual guardrail checks on every PR — no Lean
+build (the mandatory build gate is local, via the `pre-push` hook) — blocking overclaiming
+theorem names, unmarked `sorry`, undeclared axioms, and any `sorry` reachable from the release
+import cone (`scripts/check-release-cone.sh`, issue #147). The full build plus the live axiom
+pin described above run manually via `workflow_dispatch`.
 
 ## License and citation
 
