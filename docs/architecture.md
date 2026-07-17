@@ -52,7 +52,8 @@ Aubin–Lions and limit-passage arguments; carries the project's remaining marke
 the sorry-carrying files (`TimeSobolevAC.lean`, `TimeMollification.lean`,
 `TimeMollifierInterval.lean`, `TimeSobolevExperimental.lean`) are reachable only via the
 explicit opt-in `LerayHopf.Experimental`, not from root `import LerayHopf` — see the README's
-"Import guide".
+"Import guide". `TimeSobolevExperimental.lean`'s `w1pTime_continuous_in_H` is restricted to
+`p = q = 2`, not stated at the prior generic-`p,q` signature: issue #158 found that FALSE.
 
 `GelfandTriple.lean`, `TimeSobolev.lean` (sorry-free), `TimeSobolevExperimental.lean`,
 `TimeSobolevAC.lean`, `TimeConvolution.lean`, `TimeMollifierInterval.lean`,

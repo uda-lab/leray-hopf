@@ -107,7 +107,7 @@ Narrower imports are also available for consumers who only need one piece:
 | `import LerayHopf.Torus.Capstone` | The full 𝕋³ capstone chain, `exists_lerayHopf_torus3`. | Kernel-only (no project axioms, no `sorryAx`). |
 | `import LerayHopf.R3Capstone` | The full ℝ³ capstone chain, `exists_lerayHopf_r3`. | Kernel-only (no project axioms, no `sorryAx`). |
 | `import LerayHopf` | Everything above, plus the remaining supporting files needed to assemble both capstones (Bochner Gelfand-triple time theory used by the R3 limit-passage chain, Galerkin ODE solvers, etc.). | **Sorry-free** (issue #147). |
-| `import LerayHopf.Experimental` | Explicit **opt-in** for incomplete Bochner time-layer work not needed by either capstone: `Bochner.TimeSobolevAC`, `Bochner.TimeMollification`, `Bochner.TimeMollifierInterval`, `Bochner.TimeSobolevExperimental`. | Contains all 6 remaining `sorry`s; see that file's docstring for the per-module inventory. |
+| `import LerayHopf.Experimental` | Explicit **opt-in** for incomplete Bochner time-layer work not needed by either capstone: `Bochner.TimeSobolevAC`, `Bochner.TimeMollification`, `Bochner.TimeMollifierInterval`, `Bochner.TimeSobolevExperimental`. | Contains all 6 remaining `sorry`s; see that file's docstring for the per-module inventory. `TimeSobolevExperimental`'s `w1pTime_continuous_in_H` is restricted to `p = q = 2` — its prior generic-`p,q` statement was found FALSE (issue #158, explicit `p = q = 1` counterexample). |
 
 Nothing reachable from `import LerayHopf` imports `LerayHopf.Experimental`, and nothing in
 `LerayHopf.Experimental` is needed by either capstone — the split is enforced, not just
@@ -143,7 +143,7 @@ documented.
   `import LerayHopf` at all (see "Import guide" above; enforced by
   `scripts/check-release-cone.sh`). All six are Lions–Magenes-class Bochner-time walls,
   gathered behind the explicit opt-in `LerayHopf.Experimental`:
-  `Bochner/TimeSobolevExperimental.lean:57`, `Bochner/TimeSobolevAC.lean:322`,
+  `Bochner/TimeSobolevExperimental.lean:71`, `Bochner/TimeSobolevAC.lean:322`,
   `Bochner/TimeMollification.lean:196`,
   `Bochner/TimeMollifierInterval.lean:297,466,601`. Verify with
   `grep -rn 'sorry -- ALLOW_SORRY' LerayHopf/`.
