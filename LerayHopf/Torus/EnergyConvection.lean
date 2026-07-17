@@ -66,12 +66,14 @@ theorem memH1VF_zero : memH1VF (0 : L2VF) := fun j => by
 -- Both `mFourierCoeff3_add` and `mFourierCoeff3_smul_eq` require increasing heartbeats
 -- because unfolding the `lp` coercion through `FunLike` and `Subtype.val` triggers
 -- expensive `whnf` reduction beyond the default 200000 limit.
-set_option maxHeartbeats 0 in
+-- issue #152: was `maxHeartbeats 0` (unlimited); 4000000 is sufficient, confirmed by a
+-- targeted `lake build LerayHopf.Torus.EnergyConvection` (~3m wall clock on the CI host).
+set_option maxHeartbeats 4000000 in
 private lemma mFourierCoeff3_add (f g : L2C) (k : Fin 3 → ℤ) :
     mFourierCoeff3 (f + g) k = mFourierCoeff3 f k + mFourierCoeff3 g k := by
   simp only [mFourierCoeff3, map_add, lp.coeFn_add, Pi.add_apply]
 
-set_option maxHeartbeats 0 in
+set_option maxHeartbeats 4000000 in
 /-- Helper: `mFourierCoeff3 (c • f) k = (c : ℂ) * mFourierCoeff3 f k`.
 
 Follows the same `rw` chain as `TorusConvectionForm.lean` (lines 88–93). -/
@@ -82,19 +84,19 @@ private lemma mFourierCoeff3_smul_eq (c : ℝ) (f : L2C) (k : Fin 3 → ℤ) :
       lp.coeFn_smul, Pi.smul_apply, smul_eq_mul]
   rfl
 
-set_option maxHeartbeats 0 in
+set_option maxHeartbeats 4000000 in
 /-- Helper: the norm of a Fourier coefficient of `f + g` is bounded by the sum of norms. -/
 private lemma mFourierCoeff3_norm_add_le (f g : L2C) (k : Fin 3 → ℤ) :
     ‖mFourierCoeff3 (f + g) k‖ ≤ ‖mFourierCoeff3 f k‖ + ‖mFourierCoeff3 g k‖ := by
   rw [mFourierCoeff3_add]; exact norm_add_le _ _
 
-set_option maxHeartbeats 0 in
+set_option maxHeartbeats 4000000 in
 /-- Helper: `‖mFourierCoeff3 (c • f) k‖ = |c| * ‖mFourierCoeff3 f k‖`. -/
 private lemma mFourierCoeff3_norm_smul (c : ℝ) (f : L2C) (k : Fin 3 → ℤ) :
     ‖mFourierCoeff3 (c • f) k‖ = |c| * ‖mFourierCoeff3 f k‖ := by
   rw [mFourierCoeff3_smul_eq, norm_mul, Complex.norm_real, Real.norm_eq_abs]
 
-set_option maxHeartbeats 0 in
+set_option maxHeartbeats 4000000 in
 /-- `memH1VF` is closed under addition: if `u` and `v` are H¹, so is `u + v`.
 
 Key: `‖(f̂+ĝ)(k)‖² ≤ 2(‖f̂(k)‖² + ‖ĝ(k)‖²)` (parallelogram / Cauchy–Schwarz), so
@@ -135,7 +137,7 @@ theorem memH1VF_add {u v : L2VF} (hu : memH1VF u) (hv : memH1VF v) :
              mul_nonneg hk (sq_nonneg (‖mFourierCoeff3 (L2VF_projComponentC j u) k‖)),
              mul_nonneg hk (sq_nonneg (‖mFourierCoeff3 (L2VF_projComponentC j v) k‖))]
 
-set_option maxHeartbeats 0 in
+set_option maxHeartbeats 4000000 in
 /-- `memH1VF` is closed under real scalar multiplication: if `u` is H¹ and `c : ℝ`,
 then `c • u` is H¹.
 

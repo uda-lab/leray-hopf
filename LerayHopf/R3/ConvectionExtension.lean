@@ -107,9 +107,13 @@ changed.
 
 open MeasureTheory TemperedDistribution SchwartzMap LineDeriv TensorProduct
 
-set_option synthInstance.maxHeartbeats 1000000
-set_option maxHeartbeats 4000000
-
+-- issue #152: this file previously carried a file-wide `set_option synthInstance.maxHeartbeats
+-- 1000000` / `set_option maxHeartbeats 4000000`. Removing the file-wide override and rebuilding
+-- with defaults (targeted `lake build LerayHopf.R3.ConvectionExtension`) showed only 9 of the
+-- 67 declarations below time out under the default budget; those 9 now each carry the same
+-- values as declaration-local `set_option ... in` (search `convBLTspan_add` for the two
+-- declarations that already had a local override before this change). All other declarations
+-- build under the Lean/mathlib defaults.
 namespace LerayHopf.R3.ConvectionExtension
 
 /-! ### C0 — `H1Sigma'` (re-typing of H¹_σ inside `L2Sigma_R3`) -/
@@ -422,6 +426,8 @@ B4d `convFormH1_smul_3`).  This is the span-representation-independence content 
 edge bilinear needs. -/
 
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- `convBLT_fixedTest` is **additive in the test `w`**: for two Schwartz tests `w, w'`,
 `convBLT_fixedTest (w + w') = convBLT_fixedTest w + convBLT_fixedTest w'`. -/
 private theorem convBLT_fixedTest_add_w
@@ -446,6 +452,8 @@ private theorem convBLT_fixedTest_add_w
   unfold valH1
   exact convFormH1_add_3 (vfOf u) (vfOf v) w w' (vfOf_mem u) (vfOf_mem v) hw_H1 hw'_H1
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- `convBLT_fixedTest` is **homogeneous in the test `w`**: for a Schwartz test `w` and
 scalar `c`, `convBLT_fixedTest (c • w) = c • convBLT_fixedTest w`. -/
 private theorem convBLT_fixedTest_smul_w
@@ -619,6 +627,8 @@ private theorem schwartzSpan_coe_smul (c : ℝ) (s : schwartzSpan) :
     ((c • s : schwartzSpan) : L2VF_R3) = c • (s : L2VF_R3) := by
   rfl
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- On a single Schwartz `w`, `convBLTspan ⟨w, _⟩` agrees with `convBLT_fixedTest w`. -/
 private theorem convBLTspan_eq_fixedTest
     (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
@@ -692,6 +702,8 @@ private theorem eH1L_spanToH1 (s : schwartzSpan) :
 
 private theorem vfOf_spanToH1 (s : schwartzSpan) : vfOf (spanToH1 s) = (s : L2VF_R3) := rfl
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- `convBLTspan` on H¹ first slot and a span second slot is the genuine `convFormH1`. -/
 private theorem convBLTspan_eH1_span (s : schwartzSpan) (a : H1Sigma') (s' : schwartzSpan) :
     convBLTspan s (eH1L a) (s' : L2Sigma_R3)
@@ -703,6 +715,8 @@ private theorem convBLTspan_eH1_span (s : schwartzSpan) (a : H1Sigma') (s' : sch
   -- `vfOf (spanToH1 s') = (s' : L2VF_R3)` definitionally, so `h` closes the goal.
   exact h
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **Overlap agreement.** For `s, s' ∈ 𝒮` and any `u`,
 `convBLTspan s' u (s : L²) = -convBLTspan s u (s' : L²)` (B6 antisymmetry, extended in `u`
 by density). -/
@@ -790,11 +804,15 @@ theorem convFormL2_multilinear :
       ∀ (u v w : L2Sigma_R3), convFormL2_def u v w = B u v w :=
   LerayHopf.TensorEdgeGluing.convFormL2_multilinear schwartzSpan convBLTspanLin convBLTspanLin_overlap
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- `b u v w = − b u w v` for all `u v w`. -/
 theorem convFormL2_antisymm (u v w : L2Sigma_R3) :
     convFormL2_def u v w = -convFormL2_def u w v :=
   LerayHopf.TensorEdgeGluing.convFormL2_antisymm schwartzSpan convBLTspanLin convBLTspanLin_overlap u v w
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **C5b `detExtend_on_edgeSlot3` [the determined identity].**
 On the slot-3-Schwartz edge `L²_σ ⊗ 𝒮`, `detExtend u` is the genuine determined value:
 for ALL `u, v` and any Schwartz `w`, `detExtend u (v ⊗ₜ w) = convBLT_fixedTest w … u v`,
@@ -818,6 +836,8 @@ theorem detExtend_on_edgeSlot3
 
 /-! ### C9 — `convFormL2_extends` -/
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **C9 `convFormL2_extends` [PR-4].** On Schwartz triples, `b u v w = convFormSchwartz`.
 
 **Proof:** all three of `u, v, w` are Schwartz ⇒ `v ⊗ₜ w ∈ 𝒮 ⊗ 𝒮 ⊆ D`, so `detExtend`
@@ -857,6 +877,8 @@ theorem convFormL2_extends
 
 /-! ### C10 — `convFormL2_cont_fixedTest` (the CRUX 5th field) -/
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **C10 `convFormL2_cont_fixedTest` [CRUX 5th field — PR-4].** For Schwartz `w`,
 `(u, v) ↦ b u v w` is jointly L²-continuous.
 
