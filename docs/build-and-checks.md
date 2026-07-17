@@ -14,6 +14,17 @@ export PATH="$HOME/.elan/bin:$PATH"
 
 elan reads `lean-toolchain` and installs the pinned Lean version automatically on first use.
 
+### Why `lean-toolchain` pins an RC, not a stable release
+
+`lean-toolchain` currently pins `leanprover/lean4:v4.31.0-rc2`. This is deliberate
+mathlib-alignment, not a stale pin left over from bootstrap: `[[require]] mathlib` in
+`lakefile.toml` tracks `rev = "master"` (a floating target, made reproducible by the explicit
+commit pin in `lake-manifest.json`), and the mathlib commit currently pinned there itself
+depends on `leanprover/lean4-cli` at `inputRev = "v4.31.0-rc2"` — i.e. mathlib master, as
+resolved, requires exactly this Lean toolchain to build. Moving to a later stable release
+ahead of mathlib's own pin would desync the build. Re-evaluate this pin whenever `lake update`
+re-resolves mathlib (an explicit `lean-coder` task; see below).
+
 ## Build
 
 ```bash
