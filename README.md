@@ -1,8 +1,18 @@
 # lean-pde
 
+[![Release-candidate build attestation](https://github.com/uda-lab/lean-pde/actions/workflows/release-attestation.yml/badge.svg?event=workflow_dispatch)](https://github.com/uda-lab/lean-pde/actions/workflows/release-attestation.yml)
+
 A Lean 4 + mathlib formalization of **Leray–Hopf weak existence** for the
 incompressible Navier–Stokes equations, on the periodic 3-torus 𝕋³ and on whole
 space ℝ³.
+
+> The badge above is **not** an "always green" CI badge — this repository does not
+> run a full `lake build` on every commit (see `docs/build-and-checks.md`). It
+> reflects the most recent **manual, on-demand** release-candidate build
+> attestation, which certifies exactly the commit SHA recorded in that workflow
+> run, not the current branch HEAD. Click through to the run to read the attested
+> SHA and, if HEAD has since moved, re-run the attestation against the new SHA
+> before treating this as evidence for the current tip.
 
 ## What is actually proved
 
