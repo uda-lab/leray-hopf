@@ -120,7 +120,7 @@ persisted attestation record, rather than only a job log.
 ### Producing a new attestation
 
 ```bash
-gh workflow run release-attestation.yml --repo uda-lab/lean-pde -f ref=<candidate-sha-or-tag>
+gh workflow run release-attestation.yml --repo uda-lab/leray-hopf -f ref=<candidate-sha-or-tag>
 ```
 
 The run resolves `<candidate-sha-or-tag>` and checks it out, records the resulting commit
@@ -134,7 +134,7 @@ build and every guard script, and writes the results as:
 
 ### Finding the SHA of the latest attestation
 
-Open the workflow's [runs page](https://github.com/uda-lab/lean-pde/actions/workflows/release-attestation.yml)
+Open the workflow's [runs page](https://github.com/uda-lab/leray-hopf/actions/workflows/release-attestation.yml)
 (same link as the README badge) and open the most recent run — the job summary states the
 attested SHA at the top. **A green badge or a green run does not mean the current branch
 HEAD is attested** — it means exactly the SHA recorded in that run's summary is attested.

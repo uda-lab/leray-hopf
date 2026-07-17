@@ -36,7 +36,7 @@ Each record has: `id`, `name`, `private`, `kind`, `signature`, `doc`, `file`,
   resolves to exactly one record `id` (asserted before write). The run exits nonzero if
   a dep is unresolved for an unknown reason, an `id` is duplicated, or a dep dangles.
 
-Design constraints (spike S0, tracking uda-lab/lean-pde-notes#2):
+Design constraints (spike S0, tracking uda-lab/leray-hopf-notes#2):
 * `import Lean` ONLY.
 * `loadExts := true` on import — required so declaration ranges, docstrings, instance,
   reducibility and structure env-extensions carry their imported state (see the note on

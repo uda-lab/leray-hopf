@@ -163,9 +163,11 @@ further work beyond the closed existence theorems.
   reviewers are read-only. The **orchestrator never edits `.lean` directly** — it sequences agents,
   runs Codex, and edits `docs/` only.
 - **Codex is orchestrator-owned**: workers request a review in their report; the orchestrator acquires
-  Codex review via the Hermes broker: `python3 "$REVIEW_ACQUIRE_SCRIPT" uda-lab/lean-pde <PR#> codex`
-  (do NOT copy/override `REVIEW_ACQUIRE_SCRIPT`), and routes the verdict back. **The axiom audit
-  is a BLOCKING gate** before any proving; iterate to *approve*.
+  Codex review via the Hermes broker: `python3 "$REVIEW_ACQUIRE_SCRIPT" uda-lab/leray-hopf <PR#> codex`
+  (do NOT copy/override `REVIEW_ACQUIRE_SCRIPT`; if the broker's allowlist has not yet caught up
+  with the `uda-lab/lean-pde` → `uda-lab/leray-hopf` rename, pass `uda-lab/lean-pde` instead —
+  GitHub's rename redirect resolves both to the same repository), and routes the verdict back.
+  **The axiom audit is a BLOCKING gate** before any proving; iterate to *approve*.
 - **Guardrails (CI)**: every `axiom` needs same-line `-- ALLOW_AXIOM:`; every `sorry` same-line
   `-- ALLOW_SORRY:`; declaration names must avoid the reserved overclaim terms. `scripts/agent-preflight.sh`
   before and after every Lean change; never report success on a red build.

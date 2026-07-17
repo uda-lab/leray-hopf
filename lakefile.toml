@@ -17,7 +17,7 @@ rev = "master"
 [[lean_lib]]
 name = "LerayHopf"
 
-# S0 spike (uda-lab/lean-pde-notes#2): metadata extractor over the already-built
+# S0 spike (uda-lab/leray-hopf-notes#2): metadata extractor over the already-built
 # LerayHopf oleans. Compiles against Lean core only (ExtractNotes.lean imports `Lean`
 # but NOT `LerayHopf`), so `lake build extract_notes` must not rebuild the library.
 [[lean_exe]]
