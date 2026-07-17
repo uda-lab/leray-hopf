@@ -52,9 +52,10 @@ extension with fixed-Galerkin-test continuity, not a canonical continuous pure-`
 
 open MeasureTheory TensorProduct
 
-set_option synthInstance.maxHeartbeats 1000000
-set_option maxHeartbeats 4000000
-
+-- issue #152: this file previously carried a file-wide `set_option synthInstance.maxHeartbeats
+-- 1000000` / `set_option maxHeartbeats 4000000`. A targeted
+-- `lake build LerayHopf.Torus.ConvectionExtension` with the file-wide override removed
+-- (defaults restored) built clean, so the override was dropped entirely rather than narrowed.
 namespace LerayHopf.TorusConvectionExtension
 
 /-! ### T0 — `galerkinTestSpan` : the Galerkin-test span `𝒢` -/
