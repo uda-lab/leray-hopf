@@ -29,6 +29,7 @@ proof-carrying total trilinear extension pinned to the finite Fourier/Galerkin t
 form and continuous in the two solution slots at fixed Galerkin tests; it is not a claim of a
 canonical continuous operator on all pure `L² × L² × L²` triples.
 
-Import this module ONLY when you need the axiom-dependent results.
-For axiom-free work, use `import LerayHopf.Core`.
+Import this module when you need the capstone theorem `exists_lerayHopf_torus3` itself
+(kernel-only, zero project axioms). For axiom-free work that does not need the capstone,
+`import LerayHopf.Core` has a smaller import footprint.
 -/

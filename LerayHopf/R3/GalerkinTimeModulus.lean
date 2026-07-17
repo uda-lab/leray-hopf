@@ -512,7 +512,7 @@ private theorem intervalIntegral_rpow_le_of_nonneg {h : ℝ → ℝ} {T : ℝ} (
 /-! ### D3 — MASTER `n`-uniform integrated sampling-error bound -/
 
 set_option maxHeartbeats 1600000 in
-/-- **D3 (MASTER; Codex-gated statement).** The `n`-uniform integrated sampling-error
+/-- **D3 (MASTER).** The `n`-uniform integrated sampling-error
 bound.  There is a constant `C_mod ≥ 0` — a function of `‖u₀‖, ν, T, C_b` ONLY, standing
 OUTSIDE every quantifier over the Galerkin level `n`, the Galerkin data `gs`, and the mesh
 count `m` — such that for every level `n`, every Galerkin solution `gs` at that level, and

@@ -1,10 +1,9 @@
 /-
-# LerayHopf.Bochner.TimeSobolev — Stream D, Stages D1 + D2
+# LerayHopf.Bochner.TimeSobolev — abstract Bochner–Sobolev-in-time, Stages D1 + D2
 
-**Stream:** D (abstract Bochner–Sobolev-in-time / Gelfand triple). **Contract:**
-`docs/scratch/stream-d-bochner-time.md` (Stages D1, D2). **Status:** scaffold this cycle —
-definitions + faithful theorem SIGNATURES; proof bodies deferred (lean-prover targets),
-each carrying a precise `ALLOW_SORRY` / `TODO`.
+Abstract Bochner–Sobolev-in-time / Gelfand-triple vocabulary and theorems (Stage D1: the
+weak time derivative and the `W1pTime` bundle; Stage D2: the measurable-representative
+primitives). This file is sorry-free — see "Scaffold ledger" below for what is proved.
 
 This file is domain-neutral. It depends only on `LerayHopf.Bochner.GelfandTriple`
 (itself depending only on `EvolutionTriple` + mathlib) and on mathlib's Bochner / `Lp` /
@@ -49,11 +48,11 @@ unaffected — see `LerayHopf/Experimental.lean` for the opt-in aggregator.
 No new `axiom`/`opaque`/`constant`. Genuinely-missing inputs appear as explicit
 hypotheses, never axioms.
 
-## Scaffold ledger (this cycle)
+## Scaffold ledger
 
 Definitions (scaffold): `IsWeakTimeDeriv`, `GelfandTriple.Vprime`,
 `GelfandTriple.hToVprime`, `W1pTime`.
-**Proved this cycle (sorry-free):** `hasDerivAt_isWeakTimeDeriv` (strong⇒weak time derivative
+**Proved (sorry-free):** `hasDerivAt_isWeakTimeDeriv` (strong⇒weak time derivative
 via Bochner IBP), `aeStronglyMeasurable_of_spaceTimeL2` and `kineticEnergy_lsc_transfer` (both
 after a statement-gate fix adding the isolated `hg : AEStronglyMeasurable g μ` hypothesis — the
 prior hypothesis-free forms were FALSE; Vitali counterexamples kept in their docstrings),
@@ -61,11 +60,11 @@ prior hypothesis-free forms were FALSE; Vitali counterexamples kept in their doc
 bundled as a genuine `H →L[ℝ] V'`, equal to `hToVprime` pointwise), and
 `isWeakTimeDeriv_comp_clm` (transport of a weak time derivative through a CLM, given
 interval-integrability of the Bochner integrands).
-**Proved this cycle (sorry-free, issue #13-B):** `isWeakTimeDeriv_unique` — after adding the
+**Proved (sorry-free, issue #13-B):** `isWeakTimeDeriv_unique` — after adding the
   faithful `[CompleteSpace X]` guard (domain fix: without it `integral_of_not_completeSpace`
   collapses both `h₁`/`h₂` to `0 = -0`, admitting arbitrary `v₁,v₂`; identical to D2 precedent)
   and importing `Mathlib.Analysis.Distribution.AEEqOfIntegralContDiff` (vector-valued du Bois-Reymond).
-`W1pTime.ofHValuedDeriv` is **sorry-free this cycle**: under the domain guards `1 ≤ p` /
+`W1pTime.ofHValuedDeriv` is **sorry-free**: under the domain guards `1 ≤ p` /
 `1 ≤ q` (the Lions–Magenes space is only defined for exponents ≥ 1, so these are faithful
 preconditions, not proof-strengthening), the two interval-integrability obligations are
 discharged via `MemLp.integrable` on the finite measure combined with the private helper
@@ -135,7 +134,7 @@ derivatives of the same curve `u` on `(0, T)`, then they agree a.e. on `[0, T]`.
 
 (Fundamental lemma of the calculus of variations / du Bois-Reymond for Bochner integrals.)
 
-**Proved this cycle** (sorry-free, issue #13-B): `[CompleteSpace X]` is the faithful domain fix
+**Proved** (sorry-free, issue #13-B): `[CompleteSpace X]` is the faithful domain fix
 (see body comment); proof via `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`. -/
 theorem isWeakTimeDeriv_unique [CompleteSpace X] {T : ℝ} (hT : 0 < T) {u v₁ v₂ : ℝ → X}
     (h₁ : IsWeakTimeDeriv T u v₁) (h₂ : IsWeakTimeDeriv T u v₂)
@@ -199,7 +198,7 @@ abstract weak-derivative API (integration by parts via
 complete. The intended consumers (Galerkin velocity curves in `L2VF_R3` / the pivot Hilbert
 space `H`) are complete, so this is a faithful precondition, not a weakening.
 
-**Proved this cycle** (sorry-free). -/
+**Proved** (sorry-free). -/
 theorem hasDerivAt_isWeakTimeDeriv [CompleteSpace X] {T : ℝ} (hT : 0 < T) {u v : ℝ → X}
     (hu : ∀ t ∈ Set.Ioo (0 : ℝ) T, HasDerivAt u (v t) t)
     (hu_cont : ContinuousOn u (Set.Icc 0 T))
@@ -286,7 +285,7 @@ Fields:
 - `weakDeriv` : `u'` is the weak time derivative, in `V'`, of the curve `t ↦ (ι (uV t)) ∈ V'`
   (the embedding of `u` into `V'`), so the bundle is a genuine Sobolev-in-time element.
 
-**Scaffold (definition) this cycle.** -/
+**Scaffold (definition).** -/
 structure W1pTime (GT : GelfandTriple) (p q : ℝ≥0∞) (T : ℝ)
     (uV : ℝ → GT.V) where
   /-- The `V'`-valued weak time-derivative curve (Lions–Magenes `u' ∈ L^q(0,T;V')`). -/
@@ -450,7 +449,7 @@ This is the H-valued ⇒ V' embedding direction kept SEPARATE from the primary `
 definition (per the Gelfand-triple discipline: the primary object lives in `V'`; the
 `H`-valued version is a stronger input, not the contract).
 
-**Proved this cycle** (sorry-free). Route: post-compose with `hToVprimeCLM`; `MemLp` carried
+**Proved** (sorry-free). Route: post-compose with `hToVprimeCLM`; `MemLp` carried
 by `comp_memLp'`; weak-derivative identity transported by `isWeakTimeDeriv_comp_clm`;
 both interval-integrability obligations discharged by `intervalIntegrable_smul_of_integrableOn_Icc`
 using `MemLp.integrable` under the `1 ≤ p` / `1 ≤ q` guards. -/
@@ -563,7 +562,7 @@ identification, no spatial content). The lemma's real content is then the a.e.-c
 subsequence; the first conjunct is `hg` itself, kept in the conclusion so the lemma packages
 "measurable representative + a.e. subsequence" for its E1-style consumer.
 
-**Proved this cycle** (sorry-free). Route: `tendstoInMeasure_of_tendsto_eLpNorm` (needs `hg`)
+**Proved** (sorry-free). Route: `tendstoInMeasure_of_tendsto_eLpNorm` (needs `hg`)
 ⇒ `TendstoInMeasure.exists_seq_tendsto_ae`. -/
 theorem aeStronglyMeasurable_of_spaceTimeL2
     {μ : Measure ℝ} {f : ℕ → ℝ → β} {g : ℝ → β}
@@ -604,7 +603,7 @@ of a non-measurable function) so `hconv` holds, yet `{t : ‖g t‖ > 1} = V` is
 null set (positive outer measure), so `∀ᵐ t, ‖g t‖ ≤ 1` FAILS. The norm bound on the limit
 genuinely needs `g` measurable. No-smuggle: `hg` asserts only measurability of `g`.
 
-**Proved this cycle** (sorry-free), given `hg`. -/
+**Proved** (sorry-free), given `hg`. -/
 theorem kineticEnergy_lsc_transfer {β : Type*} [NormedAddCommGroup β]
     {μ : Measure ℝ} {f : ℕ → ℝ → β} {g : ℝ → β} {M : ℝ}
     (hf : ∀ n, AEStronglyMeasurable (f n) μ)

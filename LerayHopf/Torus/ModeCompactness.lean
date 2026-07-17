@@ -1,15 +1,9 @@
 /-
 # LerayHopf.Torus.ModeCompactness
 
-T-AL-3 node (torus `aubin_lions` mode-wise campaign, issue #23):
-mode-wise Galerkin extraction — equi-Lipschitz test pairings + T-AL-2 engine assembly.
-
-Plan reference: `docs/scratch/torus-aubinlions-modewise-plan.md` §3 row T-AL-3.
-
-Statements frozen by architect gate 2026-07-03 (originally in the campaign spike, now deleted —
-T-AL-3 section, commit bb02ea7; see PR history).  Three leaf lemmas (P0.3, P0.9a, P0.9b) are
-discharged (`lean-prover`); the capstone wiring (P0.9c, `exists_galerkin_modewise_extraction`) is
-the architect-verified glue body.  Every term is sorry-free.
+Mode-wise Galerkin extraction (issue #23, torus `aubin_lions` removal): equi-Lipschitz test
+pairings plus the scalar equicontinuity engine of `Bochner/ScalarEquicontinuity.lean`, assembled
+into the capstone wiring `exists_galerkin_modewise_extraction`. Every term is sorry-free.
 
 Assumptions: none (no project axioms, no opaque/unsafe; all leaves proved).
 -/
@@ -180,11 +174,9 @@ theorem exists_galerkin_modewise_extraction
   choose g hg using hconv
   exact ⟨φ, hφ, g, hg⟩
 
-/-! ## T-AL-4 — Riesz limit curve and finite-dim strong convergence (issue #23)
+/-! ## Riesz limit curve and finite-dim strong convergence (issue #23)
 
-Plan reference: `docs/scratch/torus-aubinlions-modewise-plan.md` §3 row T-AL-4.
-Statements frozen by architect gate 2026-07-03.  Leaves P0.5 and P0.10 are for the
-prover; P0.11 capstone is architect-verified wiring (sorry-free). -/
+All lemmas below are sorry-free. -/
 
 /-- Private helper (shared by P0.5 and P0.10): on a divergence-free input the level-`N`
 Fourier–Galerkin truncation is the orthonormal-coordinate expansion over the
@@ -221,11 +213,10 @@ private theorem velocityProjection_eq_sum_inner (N : ℕ) (x : L2Sigma) :
     _ = ∑ i, inner (𝕜 := ℝ) ((x : L2VF)) ((b i : L2VF)) • ((b i : L2VF)) :=
         Finset.sum_congr rfl fun i _ => by rw [hcoef i]
 
-/-- (P0.5) Riesz limit curve from uniformly convergent test pairings.
+/-- Riesz limit curve from uniformly convergent test pairings.
 
 Conclusions: weak convergence at EVERY `t ∈ [0,T]` (against `L2Sigma` tests), the
-`M`-ball bound, and AE strong measurability.  T-AL-4 GATE (architect, 2026-07-03):
-CONFIRMED AS-FROZEN — this is the production Step-C statement, verbatim. -/
+`M`-ball bound, and AE strong measurability. -/
 theorem exists_weak_limit_curve
     (T : ℝ) (hT : 0 < T) (M : ℝ)
     (v : ℕ → ℝ → L2Sigma)

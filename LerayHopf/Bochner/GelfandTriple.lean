@@ -1,9 +1,8 @@
 /-
-# LerayHopf.Bochner.GelfandTriple — Stream D, Stage D0 (abstract Gelfand triple)
+# LerayHopf.Bochner.GelfandTriple — abstract Gelfand triple
 
-**Stream:** D (abstract Bochner–Sobolev-in-time / Gelfand triple). **Contract:**
-`docs/scratch/stream-d-bochner-time.md` (Stage D0). **Status:** scaffold this cycle
-(structure definitions + the `ofDissipativeEvolution` bridge SIGNATURE; proof body deferred).
+Abstract Bochner–Sobolev-in-time / Gelfand triple foundation. `GelfandTriple.ofDissipativeEvolution`
+is sorry-free (see "Scaffold ledger" below).
 
 This is a domain-neutral foundation: it depends only on `LerayHopf.EvolutionTriple`
 (the 0-axiom abstract layer) and mathlib. Both `torus3Evolution` and `r3Evolution` are
@@ -41,7 +40,7 @@ inner-product/Hilbert structure, so deriving one would overclaim from insufficie
 `ι : V →L[ℝ] E.H`, so its linearity and continuity are part of the input contract (not an
 unprovable obligation against free additive/scalar instances).
 
-## Scaffold ledger (this cycle)
+## Scaffold ledger
 
 - `GelfandTriple` — structure definition (scaffold; no proof obligation).
 - `GelfandTriple.IsOfDissipativeEvolution` — `def` of the faithfulness contract (a `Prop`,

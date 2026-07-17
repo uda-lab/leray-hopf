@@ -1,16 +1,9 @@
 /-
 # LerayHopf.Torus.ModeTail
 
-T-AL-5 node (torus `aubin_lions` mode-wise campaign, issue #23):
-Step-E tail bounds — the eight leaf lemmas (P0.6a/b/b'/c + P0.12–P0.15) that feed the
-T-AL-6 assembly step.
-
-Plan reference: `docs/scratch/torus-aubinlions-modewise-plan.md` §3 row T-AL-5.
-
-These statements were frozen by the architect gate 2026-07-03 (originally in the campaign spike,
-now deleted — T-AL-5 section, commit d69883b; see PR history).
-All eight are LEAF lemmas, discharged `sorry`-free by `lean-prover` (one private helper
-`tendsto_real_functional_of_weak` added for the weak-lsc coefficient convergence).
+Tail bounds for the torus `aubin_lions` mode-wise construction (issue #23): eight leaf
+lemmas that feed the `AubinLionsAssembly.lean` assembly step, all sorry-free (one private
+helper `tendsto_real_functional_of_weak` for the weak-lsc coefficient convergence).
 
 Assumptions: none beyond what `TorusModeCompactness` already carries.
 -/

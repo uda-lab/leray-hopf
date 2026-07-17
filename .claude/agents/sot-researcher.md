@@ -11,7 +11,9 @@ trustworthy reference list (SSoT) that later mathematical work cites: the analys
 
 ## Mandate
 
-- Research the scope set by `docs/milestone.md` / `docs/leray_hopf_lean_mvp_plan.md`.
+- Research the scope set by the current task instruction and `docs/architecture.md` /
+  `HANDOFF.md` (the original `docs/archive/milestone.md` /
+  `docs/archive/leray_hopf_lean_mvp_plan.md` are archived and historical).
 - Produce/maintain entries under `docs/references/` (create the dir if missing): a stable
   reference list plus, when asked, focused mathlib-API surveys for a given milestone.
 

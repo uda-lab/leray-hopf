@@ -23,7 +23,7 @@ the Galerkin level, so the constant cannot secretly depend on them.
 - `eLpNorm_six_le_of_schwartzRep`               : C2 — `‖ψ_i‖_{L⁶} ≤ C₆·√(V₁ v)`
 - `schwartz_trilinear_bound_L326_energy`        : C4 helper, public — the `(3,2,6)`-Hölder
   per-term trilinear bound `|∫ f·g·h| ≤ ‖f‖_{L³}·‖g‖_{L²}·‖h‖_{L⁶}` for a scalar Schwartz
-  triple; a reusable fact independent of the Galerkin context, made citable this cycle
+  triple; a reusable fact independent of the Galerkin context
 - `convIntegralSchwartz_bound_energy`           : C4 — energy-class trilinear bound (`∃ C_b` outside)
 - `bForm_galerkin_abs_le`                       : C5 — same bound for `F.b` on level-`n` states
 - `galerkin_bForm_curve_continuousOn`           : C6 — `b`-integrand continuous along the curve
@@ -528,7 +528,7 @@ private theorem eLpNorm_three_component_toReal_le_energy
         rw [rpow_const_sqrt_quarter_energy hC₆0 hV_nn]
         ring
 
-/-- **C4 (Codex-gated statement).** Energy-class bound on the Schwartz convection integral:
+/-- **C4.** Energy-class bound on the Schwartz convection integral:
 there is an absolute constant `C_b ≥ 0` such that for ALL triples of `L²`-fields `u v w`
 with Schwartz representatives `ψu ψv ψw` (componentwise `toLp` equalities),
 `|convIntegralSchwartz ψu ψv ψw|
@@ -619,7 +619,7 @@ theorem convIntegralSchwartz_bound_energy :
 
 /-! ### C5 — `n`-uniform trilinear bound for the abstract form `F.b` -/
 
-/-- **C5 (Codex-gated statement — `n`-uniformity is the load-bearing claim).** The abstract
+/-- **C5 (`n`-uniformity is the load-bearing claim).** The abstract
 convection form `F.b` obeys the same energy-class bound as `convIntegralSchwartz`, uniformly
 over the Galerkin level `n`: for the ambient scheme `𝔊` and forms `F` there is a constant
 `C_b ≥ 0` (obtained from C4's absolute constant) such that for ALL levels `n` and ALL level-`n` states `u v w : L2Sigma_R3`
@@ -798,7 +798,7 @@ theorem galerkin_bForm_curve_continuousOn (gs : GalerkinSolutionData_R3 𝔊 F �
 
 /-! ### B9 — pairing FTC (deferred here from PR-1) -/
 
-/-- **B9 (Codex-gated statement; deferred from PR-1).** The weak-form pairing FTC along the
+/-- **B9 (deferred from `GalerkinCurveBounds.lean`, see its docstring).** The weak-form pairing FTC along the
 Galerkin curve: for a level-`n` test `w` (`(w:L2VF_R3) = 𝔊.P n w`) and `0 ≤ a ≤ b`,
 `⟪u(b) − u(a), w⟫ = ∫ σ in a..b, (−ν · stokes(u σ, w) − b(u σ, u σ, w))`.
 

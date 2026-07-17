@@ -15,11 +15,14 @@ open MeasureTheory Filter Topology
 /-!
 # Solution interfaces of Leray–Hopf existence on 𝕋³
 
-**M6 — assembly + the remaining axiom.**
+**M6 — assembly.**
 
-This file closes the T³ Leray–Hopf existence proof by axiomatizing the analytic result that
-remains out of reach in Lean (Aubin–Lions time compactness),
-constructing the proof-carrying solution structures, and assembling the existence machinery.
+This file closes the T³ Leray–Hopf existence proof by constructing the proof-carrying
+solution structures and assembling the existence machinery. It originally axiomatized the
+Aubin–Lions time-compactness result as the analytic frontier out of reach in Lean; that former
+`aubin_lions` axiom has since been **proved** (issue #23, `torusAubinLionsPackage_of_galSeq`
+in `TorusAubinLionsAssembly.lean`) — no project axiom remains in this file, see "Assumptions"
+below.
 
 **Issue #22 de-axiomatization:** The former fat axiom A4 `torus3_NSForms_exist` has been
 **removed**.  `Nonempty Torus3NSForms` is now the theorem `torus3_NSForms_exists` in
@@ -30,8 +33,9 @@ the determined-form construction in `TorusConvectionExtension.lean`.  The capsto
 
 ## Architecture
 
-The two axioms remaining in this file are *true* and *minimal* (every field is used in the
-assembly).  The convection form `b` is pinned (in the downstream theorem) via `b_galerkin` to
+This file's construction was originally built around two axioms, both true and minimal
+(every field was used in the assembly) — both have since been removed (see "Assumptions"
+below); no axiom remains here.  The convection form `b` is pinned (in the downstream theorem) via `b_galerkin` to
 the finite Galerkin convection form `galerkinConvection`.  Non-triviality (`b ≠ 0`) is not
 separately formalized: no concrete witness theorem is proved in this repository (issue #153);
 this is a statement about the scope of the formal guarantee, not about mathematical soundness.
@@ -53,7 +57,7 @@ sound for all `u : L2VF`.  The energy-inequality fields use `viscousFormSq ν` d
   `u_hasDeriv`/`u_ode` forward-only `∀ t, 0 ≤ t →`, matching the merged ℝ³ sibling — the all-`t`
   form was an un-physical over-claim, see those fields' SOUNDNESS comments)
 - `AubinLionsPackage`               : structure carrying the compactness subsequence (parameterized by the Galerkin sequence)
-- (no project axioms remain in this file — `aubin_lions` REMOVED, issue #23 T-AL-6)
+- (no project axioms remain in this file — `aubin_lions` REMOVED, issue #23)
 - `LerayHopfSolutionFull`           : proof-carrying Leray–Hopf solution structure
 - `GalerkinCompactnessPackageFull`  : proof-carrying Galerkin compactness package
 - `exists_lerayHopf_from_package_full` : copies proofs from package to solution
@@ -70,7 +74,7 @@ unconditionally by the proved `galerkinSolutionData_torus`.  The former `galerki
 has been **removed**: it is replaced by the proved theorems
 `torus_galerkin_limit_passage_of_energyClass` + `torus_energyClass_of_aubinLions`, assembled in
 `TorusGalerkinODECapstone.lean` (the consumer had to move downstream to avoid an import cycle).
-The former `aubin_lions` project axiom has been **removed** (issue #23, this change): it is now
+The former `aubin_lions` project axiom has been **removed** (issue #23): it is now
 the proved def `torusAubinLionsPackage_of_galSeq` in `TorusAubinLionsAssembly.lean`.
 -/
 
@@ -359,7 +363,7 @@ structure AubinLionsPackage (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
     AEStronglyMeasurable (fun t => (u t : L2VF))
       (MeasureTheory.volume.restrict (Set.Icc 0 T))
 
--- NOTE: `aubin_lions` (former Axiom A2) was REMOVED in issue #23 (T-AL-6 Stage C).
+-- NOTE: `aubin_lions` (former Axiom A2) was REMOVED in issue #23.
 -- Its content is now the proved def `torusAubinLionsPackage_of_galSeq` in
 -- `LerayHopf/Torus/AubinLionsAssembly.lean`.  The `AubinLionsPackage` structure (above)
 -- remains as the shared type; only the axiom that produced it is gone.

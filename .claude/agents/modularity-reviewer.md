@@ -11,9 +11,11 @@ packaged rather than tangled into structural code.
 
 ## Reference architecture
 
-The intended layout is in `docs/leray_hopf_lean_mvp_plan.md` (Basic → Statement →
-GalerkinPackage → ExistenceFromPackage → EnergySkeleton, with later refinement PRs). Use it
-as the target shape; flag drift from it.
+The current module layout is documented in `docs/architecture.md`; use it as the target
+shape and flag drift from it. (The original MVP scaffold plan, `docs/archive/leray_hopf_lean_mvp_plan.md`
+— Basic → Statement → GalerkinPackage → ExistenceFromPackage → EnergySkeleton — is archived
+and historical: those scaffold files were deleted in issue #144 once the real capstones
+superseded them.)
 
 ## What to evaluate
 

@@ -25,10 +25,10 @@ header prose, and provides the per-component `norm_weightedFourierComponent_sq`
 plus `FourierL2.viscousFormSq_R3_eq_integral_normSq_fourier` (F7).  So B4 is stated
 here as the thin wrapper summing those two public lemmas.
 
-**B9 deferral:** `galerkin_pairing_FTC` (plan task B9) is DEFERRED to PR-2 (File C),
-because its proof needs the b-integrand continuity C6 for the interval-integrability
-of the right-hand side; per plan §3 (B9 note) and §5 (PR-1 slice) it is NOT stated
-in this PR.  The helper `stokesTestPairing_eq_sum_inner_wFC` (the weight-split
+**B9 deferral:** `galerkin_pairing_FTC` is stated and proved in `GalerkinTrilinearBound.lean`
+instead, because its proof needs the b-integrand continuity C6 for the interval-integrability
+of the right-hand side; it is NOT stated in this file.  The helper
+`stokesTestPairing_eq_sum_inner_wFC` (the weight-split
 bilinear expansion B9 will use for the stokes term) IS stated here, against the
 actual `stokesTestPairing_R3` definition (`Regularity.lean:123`).
 
@@ -263,7 +263,7 @@ theorem stokesTestPairing_eq_sum_inner_wFC (u w : L2VF_R3)
         exact integral_re (MeasureTheory.L2.integrable_inner (𝕜 := ℂ)
           (weightedFourierComponent w hw j) (weightedFourierComponent u hu j))
 
-/-- **B7 (Codex-gated statement).** Weighted-Fourier Cauchy–Schwarz for the stokes pairing:
+/-- **B7.** Weighted-Fourier Cauchy–Schwarz for the stokes pairing:
 for H¹ fields `u, w`,
 `|stokesTestPairing_R3 u w| ≤ √(V₁ u) · √(V₁ w)` where `V₁ := viscousFormSq_R3 1`.
 

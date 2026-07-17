@@ -43,7 +43,7 @@ weakly-continuous; can be refined to `C_w` later) and is kept intact. Note this 
 FULL strength of the Gelfand triple: `u ∈ L^p(·;V)` and `u' ∈ L^q(·;V')` (the genuine
 `V'`-valued derivative carried by `W`) together yield continuity into the pivot `H`.
 
-**Scaffold-only this cycle** (months-class). -/
+**Scaffold-only** (months-class, genuinely incomplete). -/
 theorem w1pTime_continuous_in_H (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ} (hT : 0 < T)
     (hpq : 1 ≤ p ∧ 1 ≤ q) {uV : ℝ → GT.V} (W : W1pTime GT p q T uV) :
     letI := GT.instNACG_V; letI := GT.instIPS_V;
@@ -53,7 +53,7 @@ theorem w1pTime_continuous_in_H (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ
   -- TODO: Lions–Magenes embedding `W^{1,p}(0,T;V) ∩ L^q(0,T;V') ↪ C([0,T];H)`.
   -- Missing mathlib pillar: vector-valued time-Sobolev / Bochner-time good-representative
   -- theory (the same pillar behind axiom `galerkin_limit_passage*`). MONTHS-CLASS residual,
-  -- deferred this cycle per contract §2 (D1 embedding) / §7 DoD.
+  -- deferred (D1 embedding); see the file docstring "Status" section.
   sorry -- ALLOW_SORRY: D1 Lions–Magenes good-representative embedding — declared MONTHS-CLASS residual (contract §2 / §7); statement kept intact, body deferred.
 
 end LerayHopf.Bochner

@@ -24,9 +24,9 @@ lands here, one level below `AubinLionsLimitPassage`, mirroring the #10/#24 caps
   UNCONDITIONAL, LOCAL Bochner-time compactness extraction (per-ball `restrictToBall R` a.e.-in-time
   L² convergence, not global), supplied to
   `aubinLionsPackage_R3_of_timeCompactness`.  Stating it unconditionally absorbs the
-  time-equicontinuity modulus, so the time layer rests on exactly THIS ONE axiom; the redundant
-  `timeCompactnessInput_R3` axiom from the prior revision of this PR (which only fed this extraction)
-  is dropped.  `TimeCompactnessInput` remains a plain hypothesis *type*, never inherently an axiom.
+  time-equicontinuity modulus, so the time layer rests on exactly THIS ONE axiom; the earlier,
+  redundant `timeCompactnessInput_R3` axiom (which only fed this extraction) has been dropped.
+  `TimeCompactnessInput` remains a plain hypothesis *type*, never inherently an axiom.
 
 So the capstone `exists_lerayHopf_r3` swaps `aubin_lions_R3` →
 `galerkinSpaceTimeExtraction_R3` for the time-compactness layer (a 1-for-1 thin swap), with the
@@ -43,9 +43,9 @@ open MeasureTheory
 
 /-! ### Assembly (relocated from `SolutionInterfaces.lean`, issue #15)
 
-NOTE (axiom collapse): the prior revision of this PR introduced a redundant
-`timeCompactnessInput_R3` axiom (a separate `n`-uniform L² time-equicontinuity modulus); it has been
-DROPPED.  Its content is now absorbed into the single UNCONDITIONAL extraction axiom
+NOTE (axiom collapse): an earlier revision introduced a redundant, separate `n`-uniform L²
+time-equicontinuity-modulus axiom, `timeCompactnessInput_R3`; it has been DROPPED. Its
+content is now absorbed into the single UNCONDITIONAL extraction axiom
 `galerkinSpaceTimeExtraction_R3` (`AubinLionsLimitPassage.lean`), so the time layer rests on exactly
 ONE axiom.  The proved
 constructor `aubinLionsPackage_R3_of_timeCompactness` no longer takes a `TimeCompactnessInput`

@@ -11,7 +11,8 @@ This file fixes the *types* the existence theory talks about — the spatial 3-t
 domain and the time axis. The torus carries the real product Haar (probability)
 measure.
 
-Interface authority: `docs/leray_hopf_lean_mvp_plan.md` (Milestone A/M2, historical).
+Interface authority (archived, historical): `docs/archive/leray_hopf_lean_mvp_plan.md`
+(Milestone A/M2).
 -/
 
 namespace LerayHopf

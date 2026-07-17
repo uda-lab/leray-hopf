@@ -83,13 +83,15 @@ it leaks into the capstones.
 | `LerayHopf/Torus/GalerkinODECapstone.lean` | T³ capstone `exists_lerayHopf_torus3` | 0 |
 | `LerayHopf/R3/GalerkinODECapstone.lean` | ℝ³ capstone `exists_lerayHopf_r3` | 0 |
 | `docs/STATUS.md` | axiom ledger + Codex audit log (per round) | — |
-| `docs/REPORT.md` | narrative final report (T³ + ℝ³) | — |
+| `docs/archive/REPORT.md` | narrative final report (T³ + ℝ³), archived/historical | — |
 | `docs/formalization-review-ja.md` | **Japanese** deep review: key lemmas w/ NL-proof translations, non-trivial tactics, NL↔Lean gaps | — |
 | `docs/scratch/m6-*.md`, `r3c-*.md` | design contracts (orchestrator deltas, per Codex round) | — |
 
-## 4. The axioms (what is admitted, and why)
+## 4. Former axioms — all removed (historical ledger)
 
-All carry `-- ALLOW_AXIOM: <reason + Temam/Leray/Lemarié-Rieusset ref>` and a `## Assumptions` entry.
+Both capstones are kernel-only: no project axiom is currently admitted. Each row below was
+once an `axiom` carrying `-- ALLOW_AXIOM: <reason + Temam/Leray/Lemarié-Rieusset ref>` and a
+`## Assumptions` entry before being discharged as a theorem.
 `b(u,u,u)=0` is a **proved lemma** (not an axiom); convection forms are **formula-pinned** to a
 concrete convection integral.  Non-triviality (`b ≠ 0`, i.e. that the pin excludes the
 secretly-Stokes `b=0` case) is *not* separately formalized: no concrete witness theorem is
@@ -110,32 +112,33 @@ Removed axioms (now proved theorem content — do NOT list as live):
 T³ `galerkin_limit_passage` (#25 / PR #75), `galerkin_spacetime_precompact_R3`
 (#46 PR-4, 2026-07-04).
 
-## 5. De-axiomatizing: the cost, and why heavy
+## 5. De-axiomatizing: what each former axiom cost (historical)
 
-Each axiom is a thin interface over a **missing mathlib infrastructure pillar**:
+Each former axiom was a thin interface over a **missing mathlib infrastructure pillar**; all
+five are now discharged and both capstones are kernel-only:
 
 - **P1** weak derivatives + `(u·∇)v` operator + IBP/divergence on `Lp` + 3D trilinear estimate —
-  **DISCHARGED at the capstone level** (determined-form BLT constructions, #53/#56); no convection
-  axiom is live.
+  **DISCHARGED at the capstone level** (determined-form BLT constructions, #53/#56).
 - **P2** Bochner–Sobolev `W^{1,2}(0,T;X)` + weak time-derivative + **Aubin–Lions lemma** — the ℝ³
   half (`galerkin_spacetime_precompact_R3`) **DISCHARGED** (#46 PR-4, step-curve route, File E);
-  remaining T³ Aubin–Lions content: discharged by the mode-wise spectral route (issue #23).
+  the T³ half: discharged by the mode-wise spectral route (issue #23).
 - **P3** **Rellich–Kondrachov** on bounded domains — **PROVED** (ℝ³ FK chain, issue #2; T³ Fourier tails).
 - **P4** nonlinear limit passage (the actual Leray argument) — T³ **PROVED** (#25 / PR #75);
-  ℝ³ (`galerkin_limit_passage_R3`) still live, gated on P2.
+  ℝ³ **PROVED** (`galerkin_limit_passage_R3`, issue #4 PR-6).
 - **P5** ℝ³ Galerkin scheme (Hermite basis / freq projector) — **PROVED** (issue #21, curl-density route).
 
-Full de-axiomatization ≈ **a multi-person-year mathlib sub-chapter**. This is *why* the project
-axiomatizes the frontier cleanly (true, minimal, referenced building blocks) and captures the
-**logical architecture** soundly instead of grinding it out.
+Full de-axiomatization turned out to be **a multi-person-year mathlib sub-chapter**, done
+incrementally rather than axiomatized-and-left: each frontier item above was closed with a
+true, minimal, referenced building block, one at a time, rather than accepted as a permanent
+axiom.
 
-## 6. Current work queues and strategic options
+## 6. Strategic options for future work
 
-**Active next actions (2026-07-09):**
-
-- **T³ Aubin–Lions (issue #23): DISCHARGED.** The mode-wise spectral route now lands as `torusAubinLionsPackage_of_galSeq`, so no live torus project axiom remains.
-- **ℝ³ limit passage:** `galerkin_limit_passage_R3` is already discharged, so the public
-  capstone is also kernel-only. New work should not assume any live ℝ³ project axiom.
+Both capstones are already kernel-only (§4): the T³ Aubin–Lions axiom is DISCHARGED (the
+mode-wise spectral route lands as `torusAubinLionsPackage_of_galSeq`, issue #23) and the ℝ³
+`galerkin_limit_passage_R3` axiom is DISCHARGED (issue #4 PR-6) — new work should not
+reintroduce a live project axiom on either domain. The options below are about *optional*
+further work beyond the closed existence theorems.
 
 **Strategic options:**
 

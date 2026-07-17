@@ -17,8 +17,11 @@ Run the preflight and read the source-of-truth chain:
 bash scripts/agent-preflight.sh
 ```
 
-Source-of-truth order (higher wins): current task instruction → `docs/*plan*.md`
-and `docs/milestone.md` → this file → existing Lean theorem statements → README/docs.
+Source-of-truth order (higher wins): current task instruction → this file → existing Lean
+theorem statements → README/docs. (The original scope-setting plan files,
+`docs/archive/milestone.md` and `docs/archive/leray_hopf_lean_mvp_plan.md`, are archived and
+historical — both capstones are long past their MVP scaffold, which was deleted in issue #144;
+see `docs/architecture.md` for the current module layout.)
 
 ## Hard rules
 

@@ -1,8 +1,8 @@
 # Architecture
 
-A one-page module map of the ~80-file `LerayHopf/` tree, grouped by layer. For the
-mathematical narrative see `docs/REPORT.md` / `docs/formalization-review-ja.md`; for the
-axiom ledger see `HANDOFF.md` / `docs/STATUS.md`.
+A one-page module map of the ~95-file `LerayHopf/` tree, grouped by layer. For the
+mathematical narrative see `docs/archive/REPORT.md` (historical) / `docs/formalization-review-ja.md`;
+for the axiom ledger see `HANDOFF.md` / `docs/STATUS.md`.
 
 ## Shared abstract layer (top-level, domain-neutral)
 
@@ -167,6 +167,8 @@ see the next section.)
 
 Re-exports `LerayHopf.Core` + the generic `LerayHopf.Galerkin` layer (`DissipativeODE`,
 `QuadraticField`, `Domain`, `SolutionBundles`) + `Torus.Capstone` + `R3Capstone`, plus the
-remaining sorry-carrying files needed to build both capstones end to end (Bochner layer, the
-Torus/R3 analytic-frontier files listed above). See the module docstring in
-`LerayHopf.lean` for the full import list and layering rationale.
+remaining supporting files needed to build both capstones end to end (Bochner layer, the
+Torus/R3 analytic-frontier files listed above). This root import closure is **sorry-free**
+(issue #147, enforced by `scripts/check-release-cone.sh`); the genuinely sorry-carrying Bochner
+files live behind the explicit opt-in `LerayHopf.Experimental` instead. See the module
+docstring in `LerayHopf.lean` for the full import list and layering rationale.

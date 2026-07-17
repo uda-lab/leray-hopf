@@ -1,8 +1,8 @@
 /-
-# LerayHopf.Bochner.ScalarEquicontinuity — T-AL-2 (#23): domain-neutral scalar equicontinuity engine
+# LerayHopf.Bochner.ScalarEquicontinuity — domain-neutral scalar equicontinuity engine
 
-**Campaign node:** T-AL-2 (torus `aubin_lions` removal, issue #23).
-**Plan:** `docs/scratch/torus-aubinlions-modewise-plan.md` §2 P0.4 (S3).
+Built for the torus `aubin_lions` removal (issue #23), but domain-neutral: nothing here is
+torus-specific.
 
 This file is a **domain-neutral, PDE-free, torus-free** scalar analysis engine.
 It depends only on Mathlib (real analysis, uniform convergence, filters, intervals)

@@ -120,10 +120,12 @@ documented.
   [`docs/architecture.md`](docs/architecture.md) for a module map by layer, and
   [`docs/pdelib-staging.md`](docs/pdelib-staging.md) for the inventory of which
   generic-layer content is ready to lift into the external `pdelib` project.
-- **Mathematical scope / roadmap:** [`docs/milestone.md`](docs/milestone.md),
-  [`docs/leray_hopf_lean_mvp_plan.md`](docs/leray_hopf_lean_mvp_plan.md),
-  [`docs/ROADMAP.md`](docs/ROADMAP.md).
 - **Current axiom ledger / integrity backstop:** [`docs/STATUS.md`](docs/STATUS.md).
+- **Historical design/roadmap docs** (both capstones are long past these; kept for
+  provenance): [`docs/archive/milestone.md`](docs/archive/milestone.md),
+  [`docs/archive/leray_hopf_lean_mvp_plan.md`](docs/archive/leray_hopf_lean_mvp_plan.md),
+  [`docs/archive/ROADMAP.md`](docs/archive/ROADMAP.md),
+  [`docs/archive/REPORT.md`](docs/archive/REPORT.md).
 - **References (SSoT):** [`docs/references/`](docs/references/).
 - **Agent rules:** [`AGENTS.md`](AGENTS.md); roles + Codex review protocol:
   [`docs/agent-roles.md`](docs/agent-roles.md); build/checks:

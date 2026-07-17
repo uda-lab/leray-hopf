@@ -20,7 +20,8 @@
 Running ledger for the autonomous build of Leray–Hopf weak existence on the real
 3-torus. This file is the **integrity backstop and final report**: every `sorry` and
 every `axiom` in the Lean sources is listed here with a reason, a reference, and a
-plan to discharge it. Higher-level scope/posture: the approved plan and `docs/milestone.md`.
+plan to discharge it. Higher-level scope/posture: the original approved plan,
+`docs/archive/milestone.md` (archived, historical — both capstones are long past it).
 
 ## Goal (authoritative)
 
@@ -50,7 +51,7 @@ maintains this ledger as the final report.
 
 | # | Milestone | State |
 |---|---|---|
-| M1 | Structural spine (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton) | in progress — **superseded (2026-07-11, issue #112 PR-D):** `LerayHopf/GalerkinPackage.lean` and `LerayHopf/ExistenceFromPackage.lean` — and their public names `GalerkinCompactnessPackage` / `exists_lerayHopf_from_galerkin_package` — were **deleted**. Both capstones are long past this M1 stage; the generic package/existence plumbing this row describes now lives in `LerayHopf/Galerkin/Domain.lean` + `LerayHopf/Galerkin/SolutionBundles.lean` as `Galerkin.CompactnessPackage` / `Galerkin.exists_lerayHopf_from_package`, consumed by the R3/Torus lanes via the `…Full` abbrevs (`GalerkinCompactnessPackageFull_R3`, `GalerkinCompactnessPackageFull`, etc.). See `docs/architecture.md` for the current module layout. **Also superseded (2026-07-17, issue #144):** `LerayHopf/Statement.lean` and the placeholder `LerayHopfSolution` in `Torus/Basic.lean` — the row's `Statement` component — were **deleted**, closing out the M1 vacuity caveat by removal rather than refinement (see "Known scaffold caveats" above). |
+| M1 | Structural spine (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton) | **superseded** (2026-07-11, issue #112 PR-D): `LerayHopf/GalerkinPackage.lean` and `LerayHopf/ExistenceFromPackage.lean` — and their public names `GalerkinCompactnessPackage` / `exists_lerayHopf_from_galerkin_package` — were **deleted**. Both capstones are long past this M1 stage; the generic package/existence plumbing this row describes now lives in `LerayHopf/Galerkin/Domain.lean` + `LerayHopf/Galerkin/SolutionBundles.lean` as `Galerkin.CompactnessPackage` / `Galerkin.exists_lerayHopf_from_package`, consumed by the R3/Torus lanes via the `…Full` abbrevs (`GalerkinCompactnessPackageFull_R3`, `GalerkinCompactnessPackageFull`, etc.). See `docs/architecture.md` for the current module layout. **Also superseded (2026-07-17, issue #144):** `LerayHopf/Statement.lean` and the placeholder `LerayHopfSolution` in `Torus/Basic.lean` — the row's `Statement` component — were **deleted**, closing out the M1 vacuity caveat by removal rather than refinement (see "Known scaffold caveats" above). |
 | Side A/B | Blow-up lower bound · nonuniqueness statement | Branch A (`BlowupLowerBound.lean`) done. Branch B (`NonuniquenessStatement.lean`, `LerayHopfNonunique`) **deleted (2026-07-17, issue #144)** — it was built on the same placeholder `LerayHopfSolution` deleted from `Torus/Basic.lean` and was not a genuine non-uniqueness claim. |
 | M2 | Real domain & function spaces (Torus3, L²(T³), L²_σ, H¹, Bochner) | **done** (axiom-free) |
 | M3 | Galerkin P_n + Leray Π_div (Fourier multipliers) | **done** (axiom-free) |

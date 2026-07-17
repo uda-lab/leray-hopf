@@ -433,9 +433,9 @@ a further strictly-monotone `ρ` and a measurable limit curve `g_k : ℝ → L2b
 that the Bochner `L²`-in-time norm of `restrictToBall k ((galSeq (ψ (ρ n))).u t) - g_k t`
 tends to `0`.
 
-The statement is **binder-for-binder identical** to the axiom
-`galerkin_spacetime_precompact_R3` in `ArzelaAscoliTime.lean` — only the name differs.  This
-is the theorem that will discharge that axiom (E3).
+The statement is **binder-for-binder identical** to `galerkin_spacetime_precompact_R3` in
+`ArzelaAscoliTime.lean` — only the name differs.  This is the theorem that discharges the
+former axiom of that name (E3).
 
 Route (plan §3 E2): fix `ψ, k`; the family `t ↦ restrictToBall k ((galSeq (ψ n)).u t)` is
 `MemLp` by E1; its `toLp` range is totally bounded (D3's `n`-uniform integrated sampling
