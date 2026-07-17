@@ -111,9 +111,9 @@ open MeasureTheory TemperedDistribution SchwartzMap LineDeriv TensorProduct
 -- 1000000` / `set_option maxHeartbeats 4000000`. Removing the file-wide override and rebuilding
 -- with defaults (targeted `lake build LerayHopf.R3.ConvectionExtension`) showed only 9 of the
 -- 67 declarations below time out under the default budget; those 9 now each carry the same
--- values as declaration-local `set_option ... in` (search `convBLTspan_add` for the two
--- declarations that already had a local override before this change). All other declarations
--- build under the Lean/mathlib defaults.
+-- values as declaration-local `set_option ... in` (search `convBLTspan_add` for two more
+-- declarations that already had an unrelated pre-existing local override). All declarations
+-- without a local `set_option ... in` override build under the Lean/mathlib defaults.
 namespace LerayHopf.R3.ConvectionExtension
 
 /-! ### C0 — `H1Sigma'` (re-typing of H¹_σ inside `L2Sigma_R3`) -/
