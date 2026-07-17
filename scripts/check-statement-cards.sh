@@ -118,7 +118,13 @@ else
         rest = code
         sub(/^[[:space:]]*(private[[:space:]]+|protected[[:space:]]+|noncomputable[[:space:]]+|scoped[[:space:]]+|local[[:space:]]+|nonrec[[:space:]]+)*(theorem|lemma|def|abbrev|instance|structure|class)[[:space:]]+/, "", rest)
         match(rest, /^[^ \t(){}:]+/)
+        # An anonymous declaration (e.g. instance : Foo := ..., where rest starts
+        # with a colon) matches zero-length here. Reset decl to "" rather than
+        # leaving the PRECEDING declaration name in place -- otherwise a later
+        # sorry -- ALLOW_SORRY on this anonymous declaration would be silently
+        # misattributed to whatever card the prior named declaration already has.
         if (RLENGTH > 0) decl = substr(rest, RSTART, RLENGTH)
+        else decl = ""
       }
 
       if (code ~ /(^|[^A-Za-z0-9_])sorry([^A-Za-z0-9_]|$)/ && line ~ /ALLOW_SORRY:/) {
@@ -131,9 +137,11 @@ else
   no_decl="$(printf '%s\n' "$decls" | grep_or_empty ':NO-DECL-FOUND$')"
   if [ -n "$no_decl" ]; then
     printf '%s\n' "$no_decl" >&2
-    echo "ERROR: found a code-level 'sorry -- ALLOW_SORRY:' with no preceding" >&2
-    echo "  theorem/lemma/def on the same file to attribute it to. Investigate — this" >&2
-    echo "  scanner should never see this on a well-formed Lean file." >&2
+    echo "ERROR: found a code-level 'sorry -- ALLOW_SORRY:' with no attributable" >&2
+    echo "  named declaration on the same file (either no preceding declaration at" >&2
+    echo "  all, or it is an anonymous instance/def with no name). Give the" >&2
+    echo "  declaration a name and add a statement card, or otherwise make it" >&2
+    echo "  attributable before merging." >&2
     FAIL=1
   fi
 

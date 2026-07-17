@@ -6,13 +6,17 @@ name: lean
 # scripts/hooks/pre-push git hook (see docs/build-and-checks.md).
 on:
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
-      # Re-include docs/statement-cards/**: check-statement-cards.sh's guard (b)
-      # (issue #158) is enforced by this workflow, and its ledger IS those files —
-      # a PR that only deletes/renames a card must still trigger the guard.
-      - '!docs/statement-cards/**'
+    # `paths-ignore` cannot express mixed include/exclude (GitHub Actions docs: use
+    # `paths` with `!` for that). Positive `paths` list instead, evaluated in order
+    # with last-match-wins: everything triggers by default, docs/**/*.md is excluded,
+    # then docs/statement-cards/** is explicitly re-included — check-statement-cards.sh's
+    # guard (b) (issue #158) enforces that ledger, so a PR that only deletes/renames a
+    # card must still trigger the guards job.
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!**/*.md'
+      - 'docs/statement-cards/**'
   workflow_dispatch:
 
 # Cancel superseded runs on the same ref.
