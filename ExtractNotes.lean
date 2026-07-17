@@ -3,10 +3,13 @@
 
 Zero-dependency metadata extractor for the LerayHopf library.
 
-This executable imports the *already-built* `LerayHopf` oleans (it deliberately does
-NOT `import LerayHopf`, so the exe compiles against Lean core only and never drags the
-library/mathlib into its own build), reflects over the resulting `Environment`, and
-emits one JSON record per LerayHopf declaration.
+This executable imports the *already-built* `LerayHopf` and `LerayHopf.Experimental` oleans
+(it deliberately does NOT `import` either at the top of this file, so the exe compiles
+against Lean core only and never drags the library/mathlib into its own build), reflects
+over the resulting `Environment`, and emits one JSON record per LerayHopf declaration.
+Both the release surface and the `Experimental` opt-in (the incomplete Bochner time-layer
+modules split out by issue #147) are covered, so the annotated corpus does not silently
+lose those declarations on a repin (issue #166).
 
 Run it under the project's Lean search path so the LerayHopf/mathlib oleans are found.
 The JSON array goes to stdout by default, or to `--out <path>`; the human-readable
@@ -360,8 +363,11 @@ unsafe def main (rawArgs : List String) : IO UInt32 := do  -- ALLOW_AXIOM: exe-o
         return 1
   Lean.enableInitializersExecution
   Lean.initSearchPath (← Lean.findSysroot)
-  let env ← Lean.importModules #[{ module := `LerayHopf }] {} (trustLevel := 1024)
-    (loadExts := true)
+  -- Import both the release surface and the Experimental opt-in (issue #147 split) so the
+  -- Bochner time-layer modules gathered behind `LerayHopf.Experimental` are not silently
+  -- dropped from the extracted corpus (issue #166).
+  let env ← Lean.importModules #[{ module := `LerayHopf }, { module := `LerayHopf.Experimental }]
+    {} (trustLevel := 1024) (loadExts := true)
   let coreCtx : Core.Context := {
     fileName := "<extract_notes>"
     fileMap := FileMap.ofString ""
