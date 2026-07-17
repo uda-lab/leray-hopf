@@ -1,7 +1,7 @@
 # M2 Task Contract: Real Domain & Function Spaces
 
 **Milestone:** M2 — "Real domain & function spaces"  
-**Scope:** `docs/milestone.md` Milestone 5 territory + refinement of M1 placeholders.  
+**Scope:** `docs/archive/milestone.md` Milestone 5 territory + refinement of M1 placeholders.  
 **Planner:** lean-planner · 2026-06-10  
 **Status of M1 spine:** in progress (Basic/Statement/GalerkinPackage/ExistenceFromPackage/EnergySkeleton)
 

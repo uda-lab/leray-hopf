@@ -1,7 +1,7 @@
 # Stream D — Abstract Bochner–Sobolev-in-time + Aubin–Lions/Simon library (task contract)
 
 **Planner:** lean-planner. **Status:** planning artifact only (no `.lean` edited).
-**Scope source of truth:** `docs/milestone.md` (M6/M8), `docs/leray_hopf_lean_mvp_plan.md`,
+**Scope source of truth:** `docs/archive/milestone.md` (M6/M8), `docs/archive/leray_hopf_lean_mvp_plan.md`,
 `HANDOFF.md` §5–6 (pillar **P2**), and the existing axiom signatures in
 `LerayHopf/Torus/SolutionInterfaces.lean` + `LerayHopf/R3/SolutionInterfaces.lean`.
 **Discipline:** `lean-formalization-discipline` skill — Mathlib boundary first, honest

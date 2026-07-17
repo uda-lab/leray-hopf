@@ -27,7 +27,7 @@ and axiom-free (modulo kernel axioms) R3 Aubin–Lions chain.
   - `u_ode t ht w hw`: ODE identity — RHS = `ν * stokesTestPairing_R3 (u t) w + F.b (u t) (u t) w`.
   - `energy_bound t ht`: `½‖u t‖² ≤ ½‖P_n u₀‖²`.
   - `reg_bound T hT`: `∫₀ᵀ viscousFormSq_R3 ν (u t) dt ≤ ½‖u₀‖²`.
-- Plan reference: `docs/leray_hopf_lean_mvp_plan.md` Milestone 8 (Aubin–Lions axiom removal).
+- Plan reference: `docs/archive/leray_hopf_lean_mvp_plan.md` Milestone 8 (Aubin–Lions axiom removal).
 
 ---
 

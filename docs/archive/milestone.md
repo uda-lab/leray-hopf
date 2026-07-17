@@ -16,7 +16,7 @@
 > 削除済み、`GalerkinCompactnessPackage` / `exists_lerayHopf_from_galerkin_package` という
 > 公開名も同時に廃止）。両カプストーン定理 `exists_lerayHopf_torus3` / `exists_lerayHopf_r3`
 > は既に kernel-only（プロジェクト axiom ゼロ）で完成している。現在のモジュール構成は
-> [`docs/architecture.md`](./architecture.md)、達成状況は [`docs/STATUS.md`](./STATUS.md) を
+> [`docs/architecture.md`](../architecture.md)、達成状況は [`docs/STATUS.md`](../STATUS.md) を
 > 参照。以下は設計プロセスの歴史的記録として残す。
 
 ## Phase 0：スコープ

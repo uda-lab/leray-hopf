@@ -2,8 +2,8 @@
 
 # Bochner-time foundation metaplan — driving the FINAL 4 project axioms to ZERO
 
-**Planner doc. PLAN ONLY — no Lean edited.** Scope is fixed by `docs/milestone.md` +
-`docs/leray_hopf_lean_mvp_plan.md`; this doc only sequences the removal of the last four
+**Planner doc. PLAN ONLY — no Lean edited.** Scope is fixed by `docs/archive/milestone.md` +
+`docs/archive/leray_hopf_lean_mvp_plan.md`; this doc only sequences the removal of the last four
 project axioms and decomposes the shared Bochner functional-analysis build they need.
 
 **Predecessor spikes (read these first):** `docs/scratch/bc-feasibility.md` (4-axiom survey),
