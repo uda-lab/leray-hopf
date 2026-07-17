@@ -172,9 +172,10 @@ also built on the placeholder `LerayHopfSolution`) was deleted alongside it.
 
 Actual residual marked `sorry` (6 total, all outside both capstone cones, all Lions–Magenes-class
 Bochner-time walls):
-- `LerayHopf/Bochner/TimeSobolevExperimental.lean:57` — D1 Lions–Magenes good-representative
-  embedding (`w1pTime_continuous_in_H`); declared months-class residual. Extracted from
-  `TimeSobolev.lean` by issue #147 (see below).
+- `LerayHopf/Bochner/TimeSobolevExperimental.lean:71` — D1 Lions–Magenes good-representative
+  embedding (`w1pTime_continuous_in_H`), restricted to `p = q = 2`; declared months-class
+  residual. Extracted from `TimeSobolev.lean` by issue #147; statement corrected (not just
+  relocated) by issue #158, which found the prior generic-`p,q` form FALSE (see below).
 - `LerayHopf/Bochner/TimeSobolevAC.lean:322` — Bochner–Fubini distributional FTC for the
   interval primitive `w(t)=∫₀ᵗ v`; isolated single residual of R1.
 - `LerayHopf/Bochner/TimeMollification.lean:196` — S1 time-mollification with linked
@@ -197,6 +198,18 @@ they are reachable only via the explicit opt-in `import LerayHopf.Experimental`.
 documented it as quarantined — so `TimeSobolev.lean` itself is now sorry-free and stays in the
 release cone, still imported directly by `R3/AubinLionsLimitPassage.lean` and
 `R3/EnergyWeakLsc.lean` for the unrelated, sorry-free `kineticEnergy_lsc_transfer`).
+
+**(issue #158, found during #147's review):** `w1pTime_continuous_in_H`'s prior generic-`p,q`
+signature (`{p q : ℝ≥0∞} (hpq : 1 ≤ p ∧ 1 ≤ q)`) was FALSE — an explicit weighted-`ℓ²`
+counterexample at `p = q = 1` (separate `L¹` integrability of `u` and `u'` does not make the
+dual pairing `⟨u', u⟩` integrable, which the proof route needs via Hölder; no `H`-continuous
+a.e. representative need exist). The declaration is now restricted to `p = q = 2`, the only
+case ever actually analyzed (the issue #4 Lions–Magenes proof spike uses Cauchy–Schwarz on
+`L²(V') × L²(V)`) — the minimal safe fix, corrected in place of the "genuine form / statement
+kept intact" language this doc, `README.md`, `docs/architecture.md`, and
+`docs/pdelib-staging.md` previously carried. Issue #158 remains open for the broader
+postmortem, the `lean-pde-notes` corpus repin, and recurrence-prevention process items — none
+of which are source-code blockers for this repo.
 `scripts/check-release-cone.sh` enforces this statically in CI: it fails if the transitive
 import closure of `LerayHopf.lean` ever contains a `sorry`, marked or unmarked.
 

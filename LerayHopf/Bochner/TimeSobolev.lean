@@ -28,10 +28,13 @@ introduces no import cycle and may be reused by both the T³ and ℝ³ capstones
 - `W1pTime.ofHValuedDeriv` — the SEPARATE STRONGER specialization: an `H`-valued weak time
   derivative yields a `W1pTime` element (via the embedding `H ↪ V'`).
 
-**Relocated (issue #147):** `w1pTime_continuous_in_H` (the Lions–Magenes good-representative
-embedding, a months-class residual) now lives in `LerayHopf.Bochner.TimeSobolevExperimental`,
-so the release surface `import LerayHopf` stays sorry-free. Everything else in this file is
-unaffected — see `LerayHopf/Experimental.lean` for the opt-in aggregator.
+**Relocated and corrected (issues #147, #158):** `w1pTime_continuous_in_H` (the Lions–Magenes
+good-representative embedding, a months-class residual) now lives in
+`LerayHopf.Bochner.TimeSobolevExperimental`, so the release surface `import LerayHopf` stays
+sorry-free. Its statement was also corrected there: the prior generic-`p,q` signature was
+FALSE (issue #158, explicit `p = q = 1` counterexample) and is now restricted to `p = q = 2`,
+the only case with an actual proof plan. Everything else in this file is unaffected — see
+`LerayHopf/Experimental.lean` for the opt-in aggregator.
 
 ## Stage D2 — measurable representative primitive (KEY — unblocks P2's E1)
 
@@ -74,7 +77,8 @@ discharged via `MemLp.integrable` on the finite measure combined with the privat
 honest domain restriction; the previous over-strength-flagged form (without those guards) was
 corrected before the proof was attempted.
 Months-class residual (scaffold-only + `TODO`): `w1pTime_continuous_in_H`, relocated to
-`LerayHopf.Bochner.TimeSobolevExperimental` (issue #147).
+`LerayHopf.Bochner.TimeSobolevExperimental` (issue #147) and there restricted to `p = q = 2`
+after the prior generic-`p,q` statement was found FALSE (issue #158).
 -/
 
 import LerayHopf.Bochner.GelfandTriple
@@ -514,15 +518,17 @@ theorem W1pTime.ofHValuedDeriv (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ}
            mem_q := hmem_q
            weakDeriv := hwd }⟩
 
-/-- **Lions–Magenes good-representative embedding — relocated (issue #147).**
+/-- **Lions–Magenes good-representative embedding — relocated and corrected (issues #147, #158).**
 
 `w1pTime_continuous_in_H` now lives in `LerayHopf.Bochner.TimeSobolevExperimental`, so the
-release surface `import LerayHopf` stays sorry-free. This file's other declarations
-(`W1pTime`, `GelfandTriple.hToVprimeCLM`, `aeStronglyMeasurable_of_spaceTimeL2`,
-`kineticEnergy_lsc_transfer`, …) are unaffected and remain sorry-free in the root closure;
-`R3/AubinLionsLimitPassage.lean` and `R3/EnergyWeakLsc.lean` continue to import this file
-directly for `kineticEnergy_lsc_transfer` (Stage D2 below), which does not depend on the
-relocated theorem. -/
+release surface `import LerayHopf` stays sorry-free. It is also no longer stated at the prior
+generic `{p q} (hpq : 1 ≤ p ∧ 1 ≤ q)` signature — issue #158 found that FALSE (explicit
+`p = q = 1` counterexample) — but restricted to `p = q = 2`, the only case with an actual
+proof plan. This file's other declarations (`W1pTime`, `GelfandTriple.hToVprimeCLM`,
+`aeStronglyMeasurable_of_spaceTimeL2`, `kineticEnergy_lsc_transfer`, …) are unaffected and
+remain sorry-free in the root closure; `R3/AubinLionsLimitPassage.lean` and
+`R3/EnergyWeakLsc.lean` continue to import this file directly for `kineticEnergy_lsc_transfer`
+(Stage D2 below), which does not depend on the relocated theorem. -/
 
 /-! ### Stage D2 — measurable-representative primitive (KEY, unblocks P2's E1) -/
 
