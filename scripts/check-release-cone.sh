@@ -59,10 +59,18 @@ while [ -s "$worklist" ]; do
     # `grep` (not a here-string source) is captured into a variable rather than
     # piped into `while read`: under `pipefail`, a file with ZERO matching import
     # lines makes `grep` exit 1, and piping that straight into a loop would abort
-    # the whole script via `set -e`. Capturing with `|| true` absorbs the no-match
-    # case without masking a genuine downstream failure.
-    matches="$(grep -E '^[[:space:]]*import[[:space:]]+LerayHopf\.' "$file" || true)"
-    if [ -n "$matches" ]; then
+    # the whole script via `set -e`. Explicit status handling (matching the
+    # house style in check-axioms.sh): 0 = matches found, 1 = no matches (fine,
+    # not every file imports project modules), >1 = grep itself failed (a
+    # scanner error, not "no results") and must abort, not be silently treated
+    # as an empty closure contribution.
+    status=0
+    matches="$(grep -E '^[[:space:]]*import[[:space:]]+LerayHopf\.' "$file")" || status=$?
+    if [ "$status" -gt 1 ]; then
+      echo "ERROR: import scan failed for '$file' (grep exit $status)." >&2
+      exit 1
+    fi
+    if [ "$status" -eq 0 ]; then
       while IFS= read -r line; do
         mod="$(printf '%s\n' "$line" | sed -E 's/^[[:space:]]*import[[:space:]]+([A-Za-z0-9_.]+).*/\1/')"
         printf '%s\n' "${mod//./\/}.lean"

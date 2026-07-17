@@ -88,7 +88,8 @@ import LerayHopf.Galerkin.Domain
 import LerayHopf.Galerkin.SolutionBundles
 
 -- Torus-layer files not covered by Core, needed to assemble the capstone (sorry-free per
--- the release-cone guard; axiom-free)
+-- the release-cone guard; axiom-free — the former "sorry-carrying" label was stale since
+-- these were discharged)
 import LerayHopf.Torus.RellichEmbedding
 import LerayHopf.Torus.H1Sigma
 import LerayHopf.EvolutionTriple
@@ -131,7 +132,8 @@ import LerayHopf.Torus.ViscousLimit
 import LerayHopf.Torus.ProjectionAdjoint
 
 -- R3 files not covered by Core, needed to assemble the capstone (sorry-free per the
--- release-cone guard; axiom-free)
+-- release-cone guard; axiom-free — the former "sorry-carrying or axiom-dependent" label
+-- was stale since these were discharged)
 import LerayHopf.R3.GalerkinScheme
 import LerayHopf.R3.SchwartzDivFreeBasis
 import LerayHopf.R3.GalerkinODE

@@ -167,8 +167,9 @@ see the next section.)
 
 Re-exports `LerayHopf.Core` + the generic `LerayHopf.Galerkin` layer (`DissipativeODE`,
 `QuadraticField`, `Domain`, `SolutionBundles`) + `Torus.Capstone` + `R3Capstone`, plus the
-remaining supporting files needed to build both capstones end to end (Bochner layer, the
-Torus/R3 analytic-frontier files listed above). This root import closure is **sorry-free**
-(issue #147, enforced by `scripts/check-release-cone.sh`); the genuinely sorry-carrying Bochner
-files live behind the explicit opt-in `LerayHopf.Experimental` instead. See the module
-docstring in `LerayHopf.lean` for the full import list and layering rationale.
+remaining supporting files needed to build both capstones end to end (the sorry-free part of
+the Bochner layer, the Torus/R3 analytic-frontier files listed above). Since issue #147 this
+is a **sorry-free release surface**, statically enforced by `scripts/check-release-cone.sh`:
+the four still-incomplete Bochner modules are NOT among these remaining files — they live
+behind the explicit opt-in `LerayHopf.Experimental` instead (see the Bochner section above).
+See the module docstring in `LerayHopf.lean` for the full import list and layering rationale.
