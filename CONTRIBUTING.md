@@ -34,21 +34,38 @@ currently divided, and an unsolicited large PR may not fit it.
 
 ## Build-cost policy
 
-Do **not** run a full, cold `lake build` to prepare a PR — it is expensive, and this
-repository's CI deliberately never runs one automatically. The gates are layered:
+This repository does not impose a single mandatory build gate on every contributor.
+Run whatever validation is proportionate to your change, and report what you ran —
+never report a build as green without having actually run it.
 
-- **What you run locally, every time:** `bash scripts/agent-preflight.sh` — an
-  incremental `lake build` plus every textual discipline guard. This is the
-  mandatory gate, enforced by the `pre-push` git hook once activated
-  (`git config core.hooksPath scripts/hooks`; see `docs/build-and-checks.md`).
-- **What PR CI runs:** only the fast textual guards (the `guards` job in
-  `.github/workflows/lean.yml`) — no Lean build at all. A green PR CI run is
-  evidence for the axiom/naming/sorry guards, not for elaboration; see the "three
-  gates" in `docs/statement-gates.md` for why that distinction matters.
-- **What you do *not* need to produce:** a full/cold build or a release-candidate
-  attestation. Those run manually, on demand, by the maintainer (`workflow_dispatch`
-  on the `lean` workflow, and the separate `release-attestation` workflow); see
-  `docs/build-and-checks.md`. Do not block a PR on producing one yourself.
+- **Docs / templates / other non-Lean changes** (like this file): there is nothing
+  to build. The CI `guards` job (`.github/workflows/lean.yml`) runs its textual
+  checks on every PR that touches a triggering path — it scans the whole
+  repository, not just your diff — so it is the applicable automated check; a
+  green run there is the relevant evidence.
+- **Changes touching `.lean`, `lakefile.toml`, or `lean-toolchain`:** build locally
+  and report the result. An incremental build is the minimum expected; a full,
+  cold build is **not required, but it is not discouraged either** — if you have
+  the time and resources to run one, it is stronger evidence and welcome. See
+  `docs/build-and-checks.md` for how to build and which discipline checks exist.
+- **`bash scripts/agent-preflight.sh`** (incremental build plus every textual
+  guard) is this project's internal AI-agent-team tooling; see `AGENTS.md` and
+  `docs/agent-roles.md` for the rules that bind that team specifically. It is
+  available and convenient to run if you have the Lean toolchain set up, but it is
+  **not** a gate imposed on external human contributors — do not treat it as a
+  precondition for opening a PR.
+- **The `pre-push` git hook** (`git config core.hooksPath scripts/hooks`), if you
+  activate it, is a **partial** local backstop, not equivalent to
+  `agent-preflight.sh`: it always runs three textual guards
+  (`check-no-sorry.sh`, `check-no-axiom.sh`, `check-theorem-names.sh`) and, only
+  when Lean/build files changed, an incremental `lake build`. It does **not** run
+  `check-axioms.sh`, `check-release-cone.sh`, `test-check-release-cone.sh`, or
+  `check-statement-cards.sh` — those run in the CI `guards` job. Activating the
+  hook is optional and useful, not a substitute for that job passing.
+- **What you will not be asked to produce as a precondition for review:** a
+  full/cold build result or a release-candidate attestation. Those are separate,
+  maintainer-run, on-demand steps (`workflow_dispatch` on the `lean` workflow, and
+  the `release-attestation` workflow); see `docs/build-and-checks.md`.
 - **Dependency updates:** bumping the pinned mathlib revision (`lake update`) is an
   explicit, maintainer-only task, not something to do as a side effect of an
   unrelated PR — `lake-manifest.json` is the reproducibility source of truth; see

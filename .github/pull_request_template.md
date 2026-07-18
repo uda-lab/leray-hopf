@@ -27,6 +27,13 @@ Closes #<!-- issue number, or write `Refs #<n>` instead if this PR only partiall
 
 ## Validation
 
-- [ ] `bash scripts/agent-preflight.sh` passed locally (incremental build + all discipline guards)
-- [ ] For a change touching `.lean` / `lakefile` / `lean-toolchain`: the local build is green (do not report success otherwise — see AGENTS.md's "Build-first rule")
-- [ ] No full/cold `lake build` was required for this review — see CONTRIBUTING.md's build-cost policy if you believe one is needed
+<!-- Describe what you actually ran, proportionate to the change — see
+     CONTRIBUTING.md's "Build-cost policy". There is no single mandatory gate
+     imposed on every contributor; `agent-preflight.sh` is this project's internal
+     agent-team tooling, not a required external-contributor step. Never report a
+     build as green without having run it (AGENTS.md's "Build-first rule"). -->
+
+- [ ] Docs / templates / other non-Lean change — no build applicable; the CI `guards` job is the relevant check
+- [ ] `.lean` / `lakefile.toml` / `lean-toolchain` changed — local build result:
+- [ ] Full/cold `lake build`, if run (optional; stronger evidence when you have the resources for it):
+- [ ] Discipline guards run and how (e.g. `agent-preflight.sh`, the `pre-push` hook, or individual `scripts/check-*.sh`):

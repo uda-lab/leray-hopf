@@ -16,8 +16,9 @@ here.
 - **A guard bypass** — a way to make `scripts/check-no-sorry.sh`,
   `scripts/check-no-axiom.sh`, `scripts/check-release-cone.sh`, or another discipline
   guard in `docs/guardrails.md` pass on code it is supposed to reject. Open an issue
-  describing the bypass; if you would rather not disclose it publicly first, use the
-  contact address on the repository owner's GitHub profile.
+  describing the bypass. There is currently no private disclosure channel for this
+  repository — until one is established, report guard bypasses the same way as
+  everything else, via a public issue.
 - **Supply-chain concerns** — anything about the pinned mathlib revision
   (`lake-manifest.json`) or the CI workflow files (`.github/workflows/`) that looks
   tampered with or suspicious. Open an issue.

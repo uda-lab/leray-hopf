@@ -1,6 +1,6 @@
 ---
 name: Build failure
-about: `lake build` or a discipline check script fails
+about: "`lake build` or a discipline check script fails"
 title: "[build] "
 labels: bug
 ---
