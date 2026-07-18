@@ -567,6 +567,77 @@ private theorem tendsto_setLIntegral_closedBall (f : Domain3 → ENNReal) (hf : 
       Metric.closedBall_subset_closedBall (by exact_mod_cast hk) hk₀
     rw [Set.indicator_of_mem hmem]
 
+/-- **Textbook step (D3a helper).** The radial classification map `x ↦ ⌈dist x 0⌉₊`, used to
+partition `Domain3` into the annuli `{c = j}` from which a single global representative is
+assembled out of the per-ball limits `g k`. -/
+private noncomputable def ballClassify (x : Domain3) : ℕ := ⌈dist x (0 : Domain3)⌉₊
+
+/-- **Textbook step (D3a helper).** `x` lies in the closed ball of radius `k` iff its
+classification index `ballClassify x` is at most `k`. -/
+private theorem mem_closedBall_iff_ballClassify_le (x : Domain3) (k : ℕ) :
+    x ∈ Metric.closedBall (0 : Domain3) (k : ℝ) ↔ ballClassify x ≤ k := by
+  simp only [ballClassify, Metric.mem_closedBall, Nat.ceil_le]
+
+/-- **Textbook step (D3a helper).** `ballClassify` is measurable: each fiber `{c = k}` is the
+measurable annulus `B_k \ (⋃ j < k, B_j)`. -/
+private theorem measurable_ballClassify : Measurable ballClassify := by
+  refine measurable_to_countable' fun k => ?_
+  have hset : (ballClassify ⁻¹' {k})
+      = Metric.closedBall (0 : Domain3) (k : ℝ)
+        \ (⋃ j ∈ Finset.range k, Metric.closedBall (0 : Domain3) (j : ℝ)) := by
+    ext x
+    simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_diff, Set.mem_iUnion,
+      Finset.mem_range, not_exists, mem_closedBall_iff_ballClassify_le]
+    constructor
+    · rintro rfl
+      exact ⟨le_rfl, fun j hj => by omega⟩
+    · rintro ⟨hck, hlt⟩
+      by_contra hne
+      have hlt' : ballClassify x < k := lt_of_le_of_ne hck hne
+      exact hlt (ballClassify x) hlt' le_rfl
+  rw [hset]
+  exact (measurableSet_closedBall).diff
+    (MeasurableSet.biUnion (Finset.range k).countable_toSet
+      (fun j _ => measurableSet_closedBall))
+
+/-- **Textbook step (D3a helper).** The `B_k`-limit of the diagonal subsequence, further
+restricted to `B_j` (`j ≤ k`), agrees with the `B_j`-limit: `furtherRestrict` is continuous
+and both sequences converge to the restriction of the same limit. -/
+private theorem ballLimit_furtherRestrict_eq
+    (z : ℕ → L2VF_R3) (ψ : ℕ → ℕ) (g : ∀ k : ℕ, L2ballR3 (k : ℝ))
+    (hg : ∀ k : ℕ, Tendsto (fun n => restrictToBall (k : ℝ) (z (ψ n))) atTop (𝓝 (g k)))
+    (j k : ℕ) (hjk : (j : ℝ) ≤ (k : ℝ)) :
+    furtherRestrict (j : ℝ) (k : ℝ) hjk (g k) = g j := by
+  have hcont := (furtherRestrict_continuous (j : ℝ) (k : ℝ) hjk).tendsto (g k)
+  have hcomp := hcont.comp (hg k)
+  simp only [Function.comp_def] at hcomp
+  have hseq : (fun n => furtherRestrict (j : ℝ) (k : ℝ) hjk
+      (restrictToBall (k : ℝ) (z (ψ n))))
+      = fun n => restrictToBall (j : ℝ) (z (ψ n)) :=
+    funext fun n => furtherRestrict_restrictToBall (j : ℝ) (k : ℝ) hjk (z (ψ n))
+  rw [hseq] at hcomp
+  exact tendsto_nhds_unique hcomp (hg j)
+
+/-- **Textbook step (D3a helper).** Consistency of the ball-limits at the a.e.-function level:
+`g j =ᵐ g k` on `B_j` for `j ≤ k`, obtained from `ballLimit_furtherRestrict_eq` by unfolding
+the `coeFn` of `furtherRestrict`. -/
+private theorem ballLimit_ae_eq_of_le
+    (z : ℕ → L2VF_R3) (ψ : ℕ → ℕ) (g : ∀ k : ℕ, L2ballR3 (k : ℝ))
+    (hg : ∀ k : ℕ, Tendsto (fun n => restrictToBall (k : ℝ) (z (ψ n))) atTop (𝓝 (g k)))
+    (j k : ℕ) (hjk : j ≤ k) :
+    (g j : Domain3 → EuclideanSpace ℝ (Fin 3))
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) (j : ℝ))]
+      (g k : Domain3 → EuclideanSpace ℝ (Fin 3)) := by
+  have hjkR : (j : ℝ) ≤ (k : ℝ) := by exact_mod_cast hjk
+  have heq := ballLimit_furtherRestrict_eq z ψ g hg j k hjkR
+  have hfr_coe := furtherRestrict_coeFn (j : ℝ) (k : ℝ) hjkR (g k)
+  have hgj : (g j : Domain3 → EuclideanSpace ℝ (Fin 3))
+      =ᵐ[volume.restrict (Metric.closedBall (0 : Domain3) (j : ℝ))]
+        (furtherRestrict (j : ℝ) (k : ℝ) hjkR (g k) : Domain3 → EuclideanSpace ℝ (Fin 3)) := by
+    rw [heq]
+  filter_upwards [hgj, hfr_coe] with x hx hfx
+  rw [hx, hfx]
+
 /-- **D3a.** The per-ball limits from D2 are mutually consistent: the limit on B_k agrees
 a.e. on B_j (j ≤ k) with the limit on B_j (both are L² limits of the same subsequence's
 restrictions, and restriction B_k → B_j is continuous). Used to assemble a single global g. -/
@@ -592,60 +663,23 @@ theorem ballLimits_are_consistent (B : LocalRellichInput) (M : ℝ)
     have hnt : Tendsto (fun n => ‖restrictToBall (k : ℝ) (z (ψ n))‖) atTop (𝓝 ‖g k‖) :=
       (continuous_norm.tendsto (g k)).comp (hg k)
     exact le_of_tendsto' hnt hbound_seq
-  -- (B) Consistency: for `j ≤ k`, the further-restriction of `g k` equals `g j`.
-  have hcons_fr : ∀ (j k : ℕ) (hjk : (j : ℝ) ≤ (k : ℝ)),
-      furtherRestrict (j : ℝ) (k : ℝ) hjk (g k) = g j := by
-    intro j k hjk
-    -- `furtherRestrict j k` is continuous and maps the `B_k` limit to a `B_j` limit.
-    have hcont := (furtherRestrict_continuous (j : ℝ) (k : ℝ) hjk).tendsto (g k)
-    have hcomp := hcont.comp (hg k)
-    simp only [Function.comp_def] at hcomp
-    have hseq : (fun n => furtherRestrict (j : ℝ) (k : ℝ) hjk
-        (restrictToBall (k : ℝ) (z (ψ n))))
-        = fun n => restrictToBall (j : ℝ) (z (ψ n)) :=
-      funext fun n => furtherRestrict_restrictToBall (j : ℝ) (k : ℝ) hjk (z (ψ n))
-    rw [hseq] at hcomp
-    exact tendsto_nhds_unique hcomp (hg j)
   -- (C) Consistency at the a.e.-function level: `g j =ᵐ g k` on `B_j` for `j ≤ k`.
   have hcons_ae : ∀ (j k : ℕ), j ≤ k →
       (g j : Domain3 → EuclideanSpace ℝ (Fin 3))
         =ᵐ[volume.restrict (ball j)] (g k : Domain3 → EuclideanSpace ℝ (Fin 3)) := by
     intro j k hjk
-    have hjkR : (j : ℝ) ≤ (k : ℝ) := by exact_mod_cast hjk
-    have heq := hcons_fr j k hjkR
-    have hfr_coe := furtherRestrict_coeFn (j : ℝ) (k : ℝ) hjkR (g k)
-    -- `g j = furtherRestrict j k (g k)` as Lp elements, so a.e. equal; combine with coeFn.
-    have hgj : (g j : Domain3 → EuclideanSpace ℝ (Fin 3))
-        =ᵐ[volume.restrict (ball j)]
-          (furtherRestrict (j : ℝ) (k : ℝ) hjkR (g k) : Domain3 → EuclideanSpace ℝ (Fin 3)) := by
-      rw [heq]
-    filter_upwards [hgj, hfr_coe] with x hx hfx
-    rw [hx, hfx]
+    exact ballLimit_ae_eq_of_le z ψ g hg j k hjk
   -- (D) The global index function `c x = ⌈dist x 0⌉₊` and the induced partition into annuli.
-  set c : Domain3 → ℕ := fun x => ⌈dist x (0 : Domain3)⌉₊ with hc
+  set c : Domain3 → ℕ := ballClassify with hc
   -- `x ∈ B_k ↔ c x ≤ k`.
   have hmem_ball_iff : ∀ (x : Domain3) (k : ℕ), x ∈ ball k ↔ c x ≤ k := by
     intro x k
-    simp only [hball, hc, Metric.mem_closedBall, Nat.ceil_le]
-  -- measurability of `c`: preimages of points are measurable annuli.
+    simp only [hball, hc]
+    exact mem_closedBall_iff_ballClassify_le x k
+  -- measurability of `c`: `ballClassify` is measurable.
   have hcmeas : Measurable c := by
-    refine measurable_to_countable' fun k => ?_
-    -- `{c = k} = {c ≤ k} \ {c ≤ k-1}` (with `{c ≤ k} = B_k`), both measurable.
-    have hset : (c ⁻¹' {k}) = ball k \ (⋃ j ∈ Finset.range k, ball j) := by
-      ext x
-      simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_diff, Set.mem_iUnion,
-        Finset.mem_range, not_exists, hmem_ball_iff]
-      constructor
-      · rintro rfl
-        exact ⟨le_rfl, fun j hj => by omega⟩
-      · rintro ⟨hck, hlt⟩
-        by_contra hne
-        have hlt' : c x < k := lt_of_le_of_ne hck hne
-        exact hlt (c x) hlt' le_rfl
-    rw [hset]
-    exact (measurableSet_closedBall).diff
-      (MeasurableSet.biUnion (Finset.range k).countable_toSet
-        (fun j _ => measurableSet_closedBall))
+    simp only [hc]
+    exact measurable_ballClassify
   -- The global a.e. function: pick the ball-limit indexed by `c x = ⌈‖x‖⌉₊`.
   set g₀ : Domain3 → EuclideanSpace ℝ (Fin 3) :=
     fun x => (g (c x) : Domain3 → EuclideanSpace ℝ (Fin 3)) x with hg₀def
