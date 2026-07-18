@@ -8,8 +8,6 @@ Closes #<!-- issue number, or write `Refs #<n>` instead if this PR only partiall
 
 ## Files changed / declarations added or renamed
 
-<!-- Per AGENTS.md "Every PR / handoff must report". -->
-
 ## Remaining `sorry` (count + locations)
 
 ## New assumptions (`axiom`/`opaque`/`unsafe` added, with justification)
@@ -31,9 +29,11 @@ Closes #<!-- issue number, or write `Refs #<n>` instead if this PR only partiall
      CONTRIBUTING.md's "Build-cost policy". There is no single mandatory gate
      imposed on every contributor; `agent-preflight.sh` is this project's internal
      agent-team tooling, not a required external-contributor step. Never report a
-     build as green without having run it (AGENTS.md's "Build-first rule"). -->
+     build as green without having run it (docs/guardrails.md's "Build-first
+     rule"). -->
 
-- [ ] Docs / templates / other non-Lean change — no build applicable; the CI `guards` job is the relevant check
+- [ ] Docs/templates-only change (no scripts, workflows, or hooks touched) — no build applicable; the CI `guards` job is the relevant check
+- [ ] Other non-Lean change (a `scripts/check-*.sh` guard, CI workflow, or git hook) — how you verified it:
 - [ ] `.lean` / `lakefile.toml` / `lean-toolchain` changed — local build result:
 - [ ] Full/cold `lake build`, if run (optional; stronger evidence when you have the resources for it):
 - [ ] Discipline guards run and how (e.g. `agent-preflight.sh`, the `pre-push` hook, or individual `scripts/check-*.sh`):

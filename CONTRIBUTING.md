@@ -10,16 +10,22 @@ points at the existing documentation rather than duplicating it.
 
 Read, in this order:
 
-1. [`AGENTS.md`](AGENTS.md) — hard rules (no theorem renaming, no unmarked `sorry`,
-   no silent axioms, no vacuous proofs, …).
-2. [`docs/guardrails.md`](docs/guardrails.md) — why those rules exist, and what CI
-   enforces mechanically vs. what review enforces.
-3. [`docs/build-and-checks.md`](docs/build-and-checks.md) — how to build and which
-   checks to run.
-4. [`docs/statement-gates.md`](docs/statement-gates.md) — how theorem *statements*
+1. [`docs/guardrails.md`](docs/guardrails.md) — the discipline rules that bind any
+   change to this repository (no theorem renaming, no unmarked `sorry`, no silent
+   axioms, no vacuous proofs, …), why they exist, and what CI enforces mechanically
+   vs. what review enforces. This is the rule set that applies to you.
+2. [`docs/build-and-checks.md`](docs/build-and-checks.md) — how to build and which
+   checks exist.
+3. [`docs/statement-gates.md`](docs/statement-gates.md) — how theorem *statements*
    (not just proofs) get reviewed. Read this once even if you are not touching a
    statement — it explains a class of bug this repository has actually shipped; see
    [`docs/postmortems/2026-07-w1ptime-false-statement.md`](docs/postmortems/2026-07-w1ptime-false-statement.md).
+4. [`AGENTS.md`](AGENTS.md) — optional background, not a requirement placed on
+   you: the operating rules for this project's internal AI agent team
+   (`docs/agent-roles.md`). Its tooling mandates (e.g. running
+   `agent-preflight.sh`) are agent-team procedure, not something asked of a human
+   contributor — the rule set that does bind your changes is `docs/guardrails.md`
+   above.
 
 ## Scope of contributions
 
@@ -38,11 +44,16 @@ This repository does not impose a single mandatory build gate on every contribut
 Run whatever validation is proportionate to your change, and report what you ran —
 never report a build as green without having actually run it.
 
-- **Docs / templates / other non-Lean changes** (like this file): there is nothing
-  to build. The CI `guards` job (`.github/workflows/lean.yml`) runs its textual
-  checks on every PR that touches a triggering path — it scans the whole
-  repository, not just your diff — so it is the applicable automated check; a
-  green run there is the relevant evidence.
+- **Docs/templates-only changes** (like this file): there is nothing to build. The
+  CI `guards` job (`.github/workflows/lean.yml`) runs its textual checks on every
+  PR that touches a triggering path — it scans the whole repository, not just your
+  diff — so it is the applicable automated check; a green run there is the
+  relevant evidence.
+- **Other non-Lean changes** — a `scripts/check-*.sh` guard, a CI workflow file, or
+  a git hook: these still need verification proportionate to what changed (e.g.
+  actually running the guard script against a case it should catch and a case it
+  should pass, or validating workflow/hook syntax). "Non-Lean" does not mean
+  "no verification needed" — describe what you ran.
 - **Changes touching `.lean`, `lakefile.toml`, or `lean-toolchain`:** build locally
   and report the result. An incremental build is the minimum expected; a full,
   cold build is **not required, but it is not discouraged either** — if you have
@@ -96,9 +107,9 @@ statement card under `docs/statement-cards/`, enforced by
   convention is specific to maintainer-tracked cleanup work; it is optional for a
   fresh external bug report.
 - PR body: `Closes #<issue>` if the PR fully resolves it, `Refs #<issue>` if it is
-  partial. Every PR / handoff should report what `AGENTS.md` asks for: files
-  changed, theorem/def names added, remaining `sorry` (count + locations), new
-  assumptions, and whether the local build passed.
+  partial. Report, for whatever is relevant to your change: files changed,
+  theorem/def names added or renamed, remaining `sorry` (count + locations), new
+  assumptions, and what validation you ran (see "Build-cost policy" above).
 - Use the issue templates under `.github/ISSUE_TEMPLATE/` (bug report,
   theorem-statement concern, build failure); blank issues are also allowed for
   anything that does not fit.
