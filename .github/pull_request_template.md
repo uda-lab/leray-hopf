@@ -32,7 +32,7 @@ Closes #<!-- issue number, or write `Refs #<n>` instead if this PR only partiall
      build as green without having run it (docs/guardrails.md's "Build-first
      rule"). -->
 
-- [ ] Docs/templates-only change (no scripts, workflows, or hooks touched) — no build applicable; the CI `guards` job is the relevant check
+- [ ] Docs/templates-only change (no scripts, workflows, or hooks touched) — no build applicable, but links/cross-references checked and (if an issue template changed) YAML front matter validated to parse; the CI `guards` job checks neither of those and may not even trigger on a Markdown-only diff (see CONTRIBUTING.md), so it is not evidence here
 - [ ] Other non-Lean change (a `scripts/check-*.sh` guard, CI workflow, or git hook) — how you verified it:
 - [ ] `.lean` / `lakefile.toml` / `lean-toolchain` changed — local build result:
 - [ ] Full/cold `lake build`, if run (optional; stronger evidence when you have the resources for it):

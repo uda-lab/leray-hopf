@@ -44,11 +44,17 @@ This repository does not impose a single mandatory build gate on every contribut
 Run whatever validation is proportionate to your change, and report what you ran —
 never report a build as green without having actually run it.
 
-- **Docs/templates-only changes** (like this file): there is nothing to build. The
-  CI `guards` job (`.github/workflows/lean.yml`) runs its textual checks on every
-  PR that touches a triggering path — it scans the whole repository, not just your
-  diff — so it is the applicable automated check; a green run there is the
-  relevant evidence.
+- **Docs/templates-only changes** (like this file): there is nothing to build.
+  That does **not** mean nothing needs checking — verify that markdown links and
+  cross-references resolve, and, for anything under `.github/ISSUE_TEMPLATE/`,
+  that the YAML front matter actually parses. The CI `guards` job
+  (`.github/workflows/lean.yml`) does not check either of those: it only runs the
+  seven Lean-discipline textual scans (`sorry`, axioms, theorem names, release
+  cone, statement cards), so a green `guards` run is not evidence for a
+  docs/template change's correctness. It also does not always run — the
+  workflow's trigger path filter excludes plain Markdown (`!**/*.md`), so a PR
+  touching only `.md` files may not trigger it at all; check the PR's actual
+  checks tab rather than assuming.
 - **Other non-Lean changes** — a `scripts/check-*.sh` guard, a CI workflow file, or
   a git hook: these still need verification proportionate to what changed (e.g.
   actually running the guard script against a case it should catch and a case it

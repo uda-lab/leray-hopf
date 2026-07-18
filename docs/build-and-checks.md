@@ -109,8 +109,11 @@ Auto full builds are **abolished** (GitHub Actions cost).
 - **Release-candidate build attestation** — a separate, persisted evidence record
   for one exact SHA — runs manually via the `release-attestation` workflow (see
   below).
-- **Mandatory build gate** is the **local incremental build**, enforced by the
-  `scripts/hooks/pre-push` git hook.
+- **Mandatory build gate** (for the AI agent team, per `AGENTS.md`) is the
+  **local incremental build**, enforced by the `scripts/hooks/pre-push` git hook.
+  For a human contributor this hook is available and useful but opt-in, not
+  mandatory — see `CONTRIBUTING.md`'s build-cost policy for what is actually
+  expected of that audience.
 
 ### Activating the pre-push hook (once per clone)
 
