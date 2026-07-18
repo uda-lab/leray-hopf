@@ -663,10 +663,6 @@ theorem ballLimits_are_consistent (B : LocalRellichInput) (M : ℝ)
     have hnt : Tendsto (fun n => ‖restrictToBall (k : ℝ) (z (ψ n))‖) atTop (𝓝 ‖g k‖) :=
       (continuous_norm.tendsto (g k)).comp (hg k)
     exact le_of_tendsto' hnt hbound_seq
-  -- (B) Consistency: for `j ≤ k`, the further-restriction of `g k` equals `g j`.
-  have hcons_fr : ∀ (j k : ℕ) (hjk : (j : ℝ) ≤ (k : ℝ)),
-      furtherRestrict (j : ℝ) (k : ℝ) hjk (g k) = g j :=
-    fun j k hjk => ballLimit_furtherRestrict_eq z ψ g hg j k hjk
   -- (C) Consistency at the a.e.-function level: `g j =ᵐ g k` on `B_j` for `j ≤ k`.
   have hcons_ae : ∀ (j k : ℕ), j ≤ k →
       (g j : Domain3 → EuclideanSpace ℝ (Fin 3))
