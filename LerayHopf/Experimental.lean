@@ -12,7 +12,7 @@ cone (the transitive closure of `LerayHopf.lean`) ever picks up a `sorry` from h
 
 - **`LerayHopf.Bochner.TimeSobolevExperimental`** — `w1pTime_continuous_in_H`, the
   Lions–Magenes good-representative embedding, **restricted to `p = q = 2`**
-  (`W^{1,2}(0,T;V) ∩ L^2(0,T;V') ↪ C([0,T];H)`; issue #158). The prior generic-`p,q` form
+  (`{u ∈ L²(0,T;V) : u' ∈ L²(0,T;V')} ↪ C([0,T];H)`; issue #158). The prior generic-`p,q` form
   (`1 ≤ p ∧ 1 ≤ q`) was FALSE — issue #158 gives an explicit weighted-`ℓ²` counterexample at
   `p = q = 1` — so this is not merely a relocation but a statement correction: only the case
   with an actual proof plan (Cauchy–Schwarz on the dual pairing at `L²(V') × L²(V)`) is
