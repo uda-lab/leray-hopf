@@ -68,6 +68,7 @@ construction:
 noncomputable def galerkinTestSpan : Submodule ℝ L2Sigma :=
   Submodule.span ℝ {x : L2Sigma | IsGalerkinTest x}
 
+/-- Every Galerkin test lies in `galerkinTestSpan`. -/
 theorem subset_galerkinTestSpan {x : L2Sigma} (hx : IsGalerkinTest x) :
     x ∈ galerkinTestSpan :=
   Submodule.subset_span hx
@@ -121,15 +122,15 @@ by the proved determined-form construction below. -/
 
 /-! ### ENGINE: analytic core (folded from validated ScratchConv) -/
 
-noncomputable def l2coeff (f : L2C) : ℝ :=
+private noncomputable def l2coeff (f : L2C) : ℝ :=
   (∑' k : Fin 3 → ℤ, ‖mFourierCoeff3 f k‖ ^ 2) ^ ((1:ℝ)/2)
 
-lemma l2coeff_le (f : L2C) : l2coeff f ≤ ‖f‖ := by
+private lemma l2coeff_le (f : L2C) : l2coeff f ≤ ‖f‖ := by
   unfold l2coeff
   rw [← L2C_norm_sq_eq_tsum_coeff_sq, ← Real.rpow_natCast ‖f‖ 2, ← Real.rpow_mul (norm_nonneg _)]
   norm_num
 
-lemma l2coeff_nonneg (f : L2C) : 0 ≤ l2coeff f := by
+private lemma l2coeff_nonneg (f : L2C) : 0 ≤ l2coeff f := by
   unfold l2coeff; positivity
 
 private def shiftEquiv (m : Fin 3 → ℤ) : (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) where
@@ -138,19 +139,19 @@ private def shiftEquiv (m : Fin 3 → ℤ) : (Fin 3 → ℤ) ≃ (Fin 3 → ℤ)
   left_inv k := by funext j; simp [Pi.neg_apply, Pi.sub_apply]
   right_inv l := by funext j; simp [Pi.neg_apply, Pi.sub_apply]
 
-lemma tsum_sq_shift (f : L2C) (m : Fin 3 → ℤ) :
+private lemma tsum_sq_shift (f : L2C) (m : Fin 3 → ℤ) :
     ∑' k : Fin 3 → ℤ, ‖mFourierCoeff3 f (-k - m)‖ ^ 2
       = ∑' l : Fin 3 → ℤ, ‖mFourierCoeff3 f l‖ ^ 2 := by
   rw [← Equiv.tsum_eq (shiftEquiv m) (fun l => ‖mFourierCoeff3 f l‖^2)]
   rfl
 
-lemma summable_sq_shift (f : L2C) (m : Fin 3 → ℤ)
+private lemma summable_sq_shift (f : L2C) (m : Fin 3 → ℤ)
     (h : Summable (fun l : Fin 3 → ℤ => ‖mFourierCoeff3 f l‖ ^ 2)) :
     Summable (fun k : Fin 3 → ℤ => ‖mFourierCoeff3 f (-k - m)‖ ^ 2) := by
   rw [← (shiftEquiv m).summable_iff (f := fun l => ‖mFourierCoeff3 f l‖^2)] at h
   exact h
 
-lemma cs_per_m (fU fV : L2C) (m : Fin 3 → ℤ)
+private lemma cs_per_m (fU fV : L2C) (m : Fin 3 → ℤ)
     (hU : Summable (fun k : Fin 3 → ℤ => ‖mFourierCoeff3 fU k‖ ^ 2))
     (hV : Summable (fun l : Fin 3 → ℤ => ‖mFourierCoeff3 fV l‖ ^ 2)) :
     ∑' k : Fin 3 → ℤ, ‖mFourierCoeff3 fU k‖ * ‖mFourierCoeff3 fV (-k - m)‖
@@ -174,7 +175,7 @@ lemma cs_per_m (fU fV : L2C) (m : Fin 3 → ℤ)
   rw [e1, e2]
 
 
-noncomputable def convSummandW (u v w : L2VF) (i a : Fin 3) (k l : Fin 3 → ℤ) : ℂ :=
+private noncomputable def convSummandW (u v w : L2VF) (i a : Fin 3) (k l : Fin 3 → ℤ) : ℂ :=
   mFourierCoeff3 (L2VF_projComponentC a u) k *
     ((2 * (Real.pi : ℂ) * Complex.I * (-((-(k + l)) a) : ℂ)) *
       (mFourierCoeff3 (L2VF_projComponentC i v) l *
@@ -187,7 +188,7 @@ private def reidxKM : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) × 
   right_inv km := Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
 
 -- Reusable section summability: for fixed m, k ↦ U k * V(-k-m) is summable (CS p=q=2).
-lemma sec_summable (U V : (Fin 3 → ℤ) → ℝ)
+private lemma sec_summable (U V : (Fin 3 → ℤ) → ℝ)
     (hUsq : Summable (fun k => U k ^ 2)) (hVsq : Summable (fun l => V l ^ 2))
     (hUnn : ∀ k, 0 ≤ U k) (hVnn : ∀ l, 0 ≤ V l) (m : Fin 3 → ℤ) :
     Summable (fun k : Fin 3 → ℤ => U k * V (-k - m)) := by
@@ -206,7 +207,7 @@ lemma sec_summable (U V : (Fin 3 → ℤ) → ℝ)
 
 -- Abstract dominating-sum summability (no expensive coercions here)
 set_option maxHeartbeats 1000000 in
-lemma dom_summable (U V Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
+private lemma dom_summable (U V Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
     (hUsq : Summable (fun k => U k ^ 2)) (hVsq : Summable (fun l => V l ^ 2))
     (hUnn : ∀ k, 0 ≤ U k) (hVnn : ∀ l, 0 ≤ V l) (hWnn : ∀ m, 0 ≤ Wc m)
     (hWsupp : ∀ m, m ∉ fourierBox n → Wc m = 0) :
@@ -231,7 +232,7 @@ lemma dom_summable (U V Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
 
 
 set_option maxHeartbeats 1000000 in
-theorem convSummandW_norm_summable (u v : L2VF) (w : L2Sigma) (hw : IsGalerkinTest w) (i a : Fin 3) :
+private theorem convSummandW_norm_summable (u v : L2VF) (w : L2Sigma) (hw : IsGalerkinTest w) (i a : Fin 3) :
     Summable (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
       ‖convSummandW u v (w : L2VF) i a kl.1 kl.2‖) := by
   classical
@@ -294,7 +295,7 @@ theorem convSummandW_norm_summable (u v : L2VF) (w : L2Sigma) (hw : IsGalerkinTe
 
 -- Abstract: the dominating tsum is bounded by (ℓ¹ mass of Wc over box) * l2(U-side) * l2(V-side).
 set_option maxHeartbeats 1000000 in
-lemma dom_tsum_le (fU fV : L2C) (Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
+private lemma dom_tsum_le (fU fV : L2C) (Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
     (hWnn : ∀ m, 0 ≤ Wc m) (hWsupp : ∀ m, m ∉ fourierBox n → Wc m = 0) :
     ∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),
         Wc (-(kl.1 + kl.2)) * (‖mFourierCoeff3 fU kl.1‖ * ‖mFourierCoeff3 fV (-kl.1 - -(kl.1 + kl.2))‖)
@@ -339,14 +340,17 @@ lemma dom_tsum_le (fU fV : L2C) (Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
   refine mul_le_mul_of_nonneg_left ?_ (hWnn m)
   exact cs_per_m fU fV m (Torus.summable_norm_mFourierCoeff3_sq fU) (Torus.summable_norm_mFourierCoeff3_sq fV)
 
--- the bilinear value
+/-- **`convValW`.** The Fourier-tsum realization of the convection value paired against a
+fixed `w`: `convValW u v w := ∑ i a, (∑' (k, l), convSummandW u v w i a k l).re`. This is the
+value `convBLTgalerkin w` reduces to on coerced arguments (`convBLTgalerkin_apply`); its bound
+(`convValW_bound`) supplies the continuity witness for `convBLTw`. -/
 noncomputable def convValW (u v : L2VF) (w : L2Sigma) : ℝ :=
   ∑ i : Fin 3, ∑ a : Fin 3,
     (∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ), convSummandW u v (w : L2VF) i a kl.1 kl.2).re
 
 set_option maxHeartbeats 1000000 in
 -- the C(w)·‖u‖·‖v‖ bound
-theorem convValW_bound (w : L2Sigma) (hw : IsGalerkinTest w) :
+private theorem convValW_bound (w : L2Sigma) (hw : IsGalerkinTest w) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ (u v : L2VF), |convValW u v w| ≤ C * ‖u‖ * ‖v‖ := by
   classical
   obtain ⟨n, hn⟩ := hw
@@ -491,12 +495,12 @@ theorem convValW_bound (w : L2Sigma) (hw : IsGalerkinTest w) :
 
 
 -- coeff linearity helpers (local)
-lemma coeff_proj_add (j : Fin 3) (u u' : L2VF) (k : Fin 3 → ℤ) :
+private lemma coeff_proj_add (j : Fin 3) (u u' : L2VF) (k : Fin 3 → ℤ) :
     mFourierCoeff3 (L2VF_projComponentC j (u + u')) k
       = mFourierCoeff3 (L2VF_projComponentC j u) k + mFourierCoeff3 (L2VF_projComponentC j u') k := by
   rw [map_add]; simp only [mFourierCoeff3, map_add, lp.coeFn_add, Pi.add_apply]
 
-lemma coeff_proj_smul (j : Fin 3) (c : ℝ) (u : L2VF) (k : Fin 3 → ℤ) :
+private lemma coeff_proj_smul (j : Fin 3) (c : ℝ) (u : L2VF) (k : Fin 3 → ℤ) :
     mFourierCoeff3 (L2VF_projComponentC j (c • u)) k
       = (c : ℂ) * mFourierCoeff3 (L2VF_projComponentC j u) k := by
   rw [map_smul, mFourierCoeff3, mFourierCoeff3, RCLike.real_smul_eq_coe_smul (K := ℂ), map_smul,
@@ -504,7 +508,7 @@ lemma coeff_proj_smul (j : Fin 3) (c : ℝ) (u : L2VF) (k : Fin 3 → ℤ) :
   rfl
 
 -- summability of complex summand (from norm-summability)
-lemma convSummandW_summable (u v : L2VF) (w : L2Sigma) (hw : IsGalerkinTest w) (i a : Fin 3) :
+private lemma convSummandW_summable (u v : L2VF) (w : L2Sigma) (hw : IsGalerkinTest w) (i a : Fin 3) :
     Summable (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) => convSummandW u v (w : L2VF) i a kl.1 kl.2) :=
   (convSummandW_norm_summable u v w hw i a).of_norm
 
@@ -530,7 +534,7 @@ private lemma convSummandW_smul_v (w : L2Sigma) (c : ℝ) (u v : L2VF) (i a : Fi
       = (c : ℂ) * convSummandW u v (w:L2VF) i a kl.1 kl.2 := by
   simp only [convSummandW, coeff_proj_smul]; ring
 
-lemma convValW_add_u (w : L2Sigma) (hw : IsGalerkinTest w) (u u' v : L2VF) :
+private lemma convValW_add_u (w : L2Sigma) (hw : IsGalerkinTest w) (u u' v : L2VF) :
     convValW (u + u') v w = convValW u v w + convValW u' v w := by
   unfold convValW
   rw [← Finset.sum_add_distrib]
@@ -542,7 +546,7 @@ lemma convValW_add_u (w : L2Sigma) (hw : IsGalerkinTest w) (u u' v : L2VF) :
   rw [tsum_congr (fun kl => convSummandW_add_u w u u' v i a kl),
     Summable.tsum_add (convSummandW_summable u v w hw i a) (convSummandW_summable u' v w hw i a)]
 
-lemma convValW_smul_u (w : L2Sigma) (c : ℝ) (u v : L2VF) :
+private lemma convValW_smul_u (w : L2Sigma) (c : ℝ) (u v : L2VF) :
     convValW (c • u) v w = c * convValW u v w := by
   unfold convValW
   rw [Finset.mul_sum]
@@ -552,7 +556,7 @@ lemma convValW_smul_u (w : L2Sigma) (c : ℝ) (u v : L2VF) :
   rw [tsum_congr (fun kl => convSummandW_smul_u w c u v i a kl),
     tsum_mul_left, Complex.re_ofReal_mul]
 
-lemma convValW_add_v (w : L2Sigma) (hw : IsGalerkinTest w) (u v v' : L2VF) :
+private lemma convValW_add_v (w : L2Sigma) (hw : IsGalerkinTest w) (u v v' : L2VF) :
     convValW u (v + v') w = convValW u v w + convValW u v' w := by
   unfold convValW
   rw [← Finset.sum_add_distrib]
@@ -564,7 +568,7 @@ lemma convValW_add_v (w : L2Sigma) (hw : IsGalerkinTest w) (u v v' : L2VF) :
   rw [tsum_congr (fun kl => convSummandW_add_v w u v v' i a kl),
     Summable.tsum_add (convSummandW_summable u v w hw i a) (convSummandW_summable u v' w hw i a)]
 
-lemma convValW_smul_v (w : L2Sigma) (c : ℝ) (u v : L2VF) :
+private lemma convValW_smul_v (w : L2Sigma) (c : ℝ) (u v : L2VF) :
     convValW u (c • v) w = c * convValW u v w := by
   unfold convValW
   rw [Finset.mul_sum]
@@ -577,7 +581,7 @@ lemma convValW_smul_v (w : L2Sigma) (c : ℝ) (u v : L2VF) :
 
 
 -- The bilinear LinearMap on L2Sigma (precompose convValW with the L2Sigma ↪ L2VF coercion).
-noncomputable def convBilL2Sigma (w : L2Sigma) (hw : IsGalerkinTest w) :
+private noncomputable def convBilL2Sigma (w : L2Sigma) (hw : IsGalerkinTest w) :
     L2Sigma →ₗ[ℝ] L2Sigma →ₗ[ℝ] ℝ where
   toFun u :=
     { toFun := fun v => convValW (u : L2VF) (v : L2VF) w
@@ -599,7 +603,7 @@ noncomputable def convBilL2Sigma (w : L2Sigma) (hw : IsGalerkinTest w) :
     exact convValW_smul_u w c (u:L2VF) (v:L2VF)
 
 -- The continuous bilinear (the BLT, no extension needed — bounded on all of L²×L²).
-noncomputable def convBLTw (w : L2Sigma) (hw : IsGalerkinTest w) :
+private noncomputable def convBLTw (w : L2Sigma) (hw : IsGalerkinTest w) :
     L2Sigma →L[ℝ] L2Sigma →L[ℝ] ℝ :=
   LinearMap.mkContinuous₂ (convBilL2Sigma w hw) (convValW_bound w hw).choose (by
     intro u v
@@ -608,13 +612,16 @@ noncomputable def convBLTw (w : L2Sigma) (hw : IsGalerkinTest w) :
     exact hb)
 
 @[simp]
-lemma convBLTw_apply (w : L2Sigma) (hw : IsGalerkinTest w) (u v : L2Sigma) :
+private lemma convBLTw_apply (w : L2Sigma) (hw : IsGalerkinTest w) (u v : L2Sigma) :
     convBLTw w hw u v = convValW (u : L2VF) (v : L2VF) w := rfl
 
 
--- IBP on the Fourier side: for div-free u and Galerkin tests v,w, the w-gradient form
--- equals the v-gradient form convFormFourier (the genuine convection value).
 set_option maxHeartbeats 1000000 in
+/-- **IBP bridge.** For divergence-free `u` and Galerkin tests `v, w`, the `w`-slot
+Fourier-tsum value `convValW` agrees with the genuine convection value `convFormFourier`.
+Proved by integration by parts on the Fourier side: the difference between the two Fourier
+summands is a multiple of `∑ₐ kₐ·(mFourierCoeff3 (proj a u) k)`, which vanishes by `u`'s
+divergence-free condition. -/
 theorem convValW_eq_convFormFourier (u : L2Sigma) (v w : L2Sigma)
     (hv : IsGalerkinTest v) (hw : IsGalerkinTest w) :
     convValW (u : L2VF) (v : L2VF) w = convFormFourier u v w := by
@@ -656,8 +663,12 @@ theorem convValW_eq_convFormFourier (u : L2Sigma) (v w : L2Sigma)
   exact (sub_eq_zero.mp hzero).symm
 
 
--- convFormFourier collapses to the finite galerkinConvection on Vₙ.
 set_option maxHeartbeats 1000000 in
+/-- **Galerkin collapse.** When `u, v` already lie in the finite Galerkin space `Vₙ` (are
+fixed by `velocityProjection_n n`) and `v, w` are Galerkin tests, the Fourier-tsum convection
+value `convFormFourier` collapses to the finite double sum `galerkinConvection n u v w`: the
+Fourier coefficients of `u`/`v` vanish outside `fourierBox n`, so the `ℤ³ × ℤ³` `tsum` reduces
+to the box × box finite sum. -/
 theorem convFormFourier_eq_galerkin (n : ℕ) (u v w : L2Sigma)
     (hu : velocityProjection_n n (u : L2VF) = (u : L2VF))
     (hv : velocityProjection_n n (v : L2VF) = (v : L2VF))
@@ -709,7 +720,7 @@ private lemma convSummandW_smul_w (c : ℝ) (u v w : L2VF) (i a : Fin 3) (kl : (
       = (c : ℂ) * convSummandW u v w i a kl.1 kl.2 := by
   simp only [convSummandW, coeff_proj_smul]; ring
 
-lemma convValW_add_w (u v : L2VF) (w w' : L2Sigma) (hw : IsGalerkinTest w) (hw' : IsGalerkinTest w') :
+private lemma convValW_add_w (u v : L2VF) (w w' : L2Sigma) (hw : IsGalerkinTest w) (hw' : IsGalerkinTest w') :
     convValW u v ((w + w' : L2Sigma)) = convValW u v w + convValW u v w' := by
   unfold convValW
   simp only [Submodule.coe_add]
@@ -722,7 +733,7 @@ lemma convValW_add_w (u v : L2VF) (w w' : L2Sigma) (hw : IsGalerkinTest w) (hw' 
   rw [tsum_congr (fun kl => convSummandW_add_w u v (w:L2VF) (w':L2VF) i a kl),
     Summable.tsum_add (convSummandW_summable u v w hw i a) (convSummandW_summable u v w' hw' i a)]
 
-lemma convValW_smul_w (c : ℝ) (u v : L2VF) (w : L2Sigma) :
+private lemma convValW_smul_w (c : ℝ) (u v : L2VF) (w : L2Sigma) :
     convValW u v ((c • w : L2Sigma)) = c * convValW u v w := by
   unfold convValW
   simp only [Submodule.coe_smul]
@@ -737,6 +748,9 @@ lemma convValW_smul_w (c : ℝ) (u v : L2VF) (w : L2Sigma) :
 
 /-! ### CLOSURE: galerkinTestSpan ⊆ IsGalerkinTest -/
 
+/-- If `u` is already fixed by the degree-`n` Fourier projection, it is fixed by any higher-cutoff
+projection `m ≥ n` too: `fourierBox` is monotone in the degree, so the zero-coefficients
+outside `fourierBox n` are still zero outside the larger `fourierBox m`. -/
 lemma velocityProjection_n_eq_of_le {n m : ℕ} (hnm : n ≤ m) (u : L2VF)
     (hu : velocityProjection_n n u = u) : velocityProjection_n m u = u := by
   refine L2VF_ext_componentC_mFourierCoeff (fun j k => ?_)
@@ -748,6 +762,7 @@ lemma velocityProjection_n_eq_of_le {n m : ℕ} (hnm : n ≤ m) (u : L2VF)
     have hkn : k ∉ fourierBox n := fun hh => hk (fourierBox_monotone hnm hh)
     exact (coeff_zero_outside_box n u hu j k hkn).symm
 
+/-- `IsGalerkinTest` is closed under addition. -/
 lemma isGalerkinTest_add {u v : L2Sigma} (hu : IsGalerkinTest u) (hv : IsGalerkinTest v) :
     IsGalerkinTest (u + v) := by
   obtain ⟨n, hn⟩ := hu; obtain ⟨m, hm⟩ := hv
@@ -756,14 +771,18 @@ lemma isGalerkinTest_add {u v : L2Sigma} (hu : IsGalerkinTest u) (hv : IsGalerki
       velocityProjection_n_eq_of_le (le_max_left n m) _ hn,
       velocityProjection_n_eq_of_le (le_max_right n m) _ hm]⟩
 
+/-- `IsGalerkinTest` is closed under scalar multiplication. -/
 lemma isGalerkinTest_smul {u : L2Sigma} (c : ℝ) (hu : IsGalerkinTest u) :
     IsGalerkinTest (c • u) := by
   obtain ⟨n, hn⟩ := hu
   exact ⟨n, by rw [show ((c • u : L2Sigma) : L2VF) = c • (u:L2VF) from rfl, map_smul, hn]⟩
 
+/-- `0` is a Galerkin test. -/
 lemma isGalerkinTest_zero : IsGalerkinTest (0 : L2Sigma) :=
   ⟨0, by rw [show ((0 : L2Sigma) : L2VF) = 0 from rfl, map_zero]⟩
 
+/-- Every element of `galerkinTestSpan` is itself a Galerkin test: the span does not escape
+the predicate, by `Submodule.span_induction` over the three closure lemmas above. -/
 theorem mem_galerkinTestSpan_isTest {s : L2Sigma} (hs : s ∈ galerkinTestSpan) : IsGalerkinTest s :=
   Submodule.span_induction (p := fun x _ => IsGalerkinTest x)
     (fun x hx => hx) isGalerkinTest_zero
@@ -779,6 +798,7 @@ noncomputable def convBLTgalerkin (w : galerkinTestSpan) :
     L2Sigma →L[ℝ] L2Sigma →L[ℝ] ℝ :=
   convBLTw (w : L2Sigma) (mem_galerkinTestSpan_isTest w.2)
 
+/-- `convBLTgalerkin` unfolds to `convValW` on the coerced arguments. -/
 @[simp] theorem convBLTgalerkin_apply (w : galerkinTestSpan) (u v : L2Sigma) :
     convBLTgalerkin w u v = convValW (u : L2VF) (v : L2VF) (w : L2Sigma) := rfl
 
@@ -841,6 +861,8 @@ noncomputable def convFormL2_def (u v w : L2Sigma) : ℝ :=
   LerayHopf.TensorEdgeGluing.convFormL2_def galerkinTestSpan convBLTgalerkinLin
     convBLTgalerkin_overlap u v w
 
+/-- `convFormL2_def` unfolds to `detExtend u (v ⊗ₜ w)` — the defining bridge to the generic
+`TensorEdgeGluing.detExtend` construction. -/
 @[simp]
 theorem convFormL2_def_eq (u v w : L2Sigma) :
     convFormL2_def u v w = detExtend u (v ⊗ₜ[ℝ] w) :=

@@ -125,11 +125,13 @@ Membership: `u ∈ H1Sigma' ↔ (u : L2VF_R3) ∈ H1Sigma_R3`. -/
 noncomputable def H1Sigma' : Submodule ℝ L2Sigma_R3 :=
   Submodule.comap L2Sigma_R3.subtype H1Sigma_R3
 
+/-- `H1Sigma'` membership unfolds to `H1Sigma_R3` membership of the coerced vector field. -/
 @[simp]
 theorem mem_H1Sigma'_iff (u : L2Sigma_R3) :
     u ∈ H1Sigma' ↔ (u : L2VF_R3) ∈ H1Sigma_R3 :=
   Iff.rfl
 
+/-- `H1Sigma'` membership implies `memH1VF_R3` of the coerced vector field. -/
 theorem H1Sigma'_memH1 {u : L2Sigma_R3} (hu : u ∈ H1Sigma') :
     memH1VF_R3 (u : L2VF_R3) :=
   ((mem_H1Sigma'_iff u).mp hu).1
@@ -144,6 +146,7 @@ construction:
 noncomputable def schwartzSpan : Submodule ℝ L2Sigma_R3 :=
   Submodule.span ℝ {x : L2Sigma_R3 | IsSchwartzDivFree_R3 x}
 
+/-- Every Schwartz-div-free element lies in `schwartzSpan`. -/
 theorem subset_schwartzSpan {x : L2Sigma_R3} (hx : IsSchwartzDivFree_R3 x) :
     x ∈ schwartzSpan :=
   Submodule.subset_span hx
@@ -178,6 +181,7 @@ private theorem memH1VF_R3_of_schwartz {u : L2Sigma_R3}
       = (φ : 𝓢'(Domain3, ℂ)) from hcoe]
   exact φ.memSobolev
 
+/-- A Schwartz-div-free element lies in `H1Sigma'` (Schwartz functions are H¹). -/
 theorem schwartz_mem_H1Sigma' {u : L2Sigma_R3} (hu : IsSchwartzDivFree_R3 u) :
     u ∈ H1Sigma' :=
   (mem_H1Sigma'_iff u).mpr ⟨memH1VF_R3_of_schwartz hu, u.2⟩
@@ -682,6 +686,7 @@ noncomputable def convBLTspanLin :
   map_add' := convBLTspan_add
   map_smul' c s := by simpa using convBLTspan_smul c s
 
+/-- `convBLTspanLin` unfolds to `convBLTspan` on the coerced argument. -/
 @[simp]
 theorem convBLTspanLin_apply (s : schwartzSpan) : convBLTspanLin s = convBLTspan s := rfl
 
@@ -793,6 +798,8 @@ noncomputable def detExtend :
 noncomputable def convFormL2_def (u v w : L2Sigma_R3) : ℝ :=
   LerayHopf.TensorEdgeGluing.convFormL2_def schwartzSpan convBLTspanLin convBLTspanLin_overlap u v w
 
+/-- `convFormL2_def` unfolds to `detExtend u (v ⊗ₜ w)` — the defining bridge to the generic
+`TensorEdgeGluing.detExtend` construction. -/
 @[simp]
 theorem convFormL2_def_eq (u v w : L2Sigma_R3) :
     convFormL2_def u v w = detExtend u (v ⊗ₜ[ℝ] w) :=
