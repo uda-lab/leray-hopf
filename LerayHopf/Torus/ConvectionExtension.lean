@@ -205,8 +205,12 @@ private lemma sec_summable (U V : (Fin 3 → ℤ) → ℝ)
   exact Real.summable_mul_of_Lp_Lq_of_nonneg Real.HolderConjugate.two_two
     (fun _ => hUnn _) (fun _ => hVnn _) hU' hV'
 
--- Abstract dominating-sum summability (no expensive coercions here)
 set_option maxHeartbeats 1000000 in
+-- Abstract dominating-sum summability (no expensive coercions here)
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~207 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 private lemma dom_summable (U V Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
     (hUsq : Summable (fun k => U k ^ 2)) (hVsq : Summable (fun l => V l ^ 2))
     (hUnn : ∀ k, 0 ≤ U k) (hVnn : ∀ l, 0 ≤ V l) (hWnn : ∀ m, 0 ≤ Wc m)
@@ -232,6 +236,10 @@ private lemma dom_summable (U V Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
 
 
 set_option maxHeartbeats 1000000 in
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~539 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 private theorem convSummandW_norm_summable (u v : L2VF) (w : L2Sigma) (hw : IsGalerkinTest w) (i a : Fin 3) :
     Summable (fun kl : (Fin 3 → ℤ) × (Fin 3 → ℤ) =>
       ‖convSummandW u v (w : L2VF) i a kl.1 kl.2‖) := by
@@ -293,8 +301,12 @@ private theorem convSummandW_norm_summable (u v : L2VF) (w : L2Sigma) (hw : IsGa
     rw [this]; simp
 
 
--- Abstract: the dominating tsum is bounded by (ℓ¹ mass of Wc over box) * l2(U-side) * l2(V-side).
 set_option maxHeartbeats 1000000 in
+-- Abstract: the dominating tsum is bounded by (ℓ¹ mass of Wc over box) * l2(U-side) * l2(V-side).
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~146 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 private lemma dom_tsum_le (fU fV : L2C) (Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
     (hWnn : ∀ m, 0 ≤ Wc m) (hWsupp : ∀ m, m ∉ fourierBox n → Wc m = 0) :
     ∑' kl : (Fin 3 → ℤ) × (Fin 3 → ℤ),
@@ -350,6 +362,10 @@ noncomputable def convValW (u v : L2VF) (w : L2Sigma) : ℝ :=
 
 set_option maxHeartbeats 1000000 in
 -- the C(w)·‖u‖·‖v‖ bound
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~377 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 private theorem convValW_bound (w : L2Sigma) (hw : IsGalerkinTest w) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ (u v : L2VF), |convValW u v w| ≤ C * ‖u‖ * ‖v‖ := by
   classical
@@ -617,6 +633,10 @@ private lemma convBLTw_apply (w : L2Sigma) (hw : IsGalerkinTest w) (u v : L2Sigm
 
 
 set_option maxHeartbeats 1000000 in
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~712 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- **IBP bridge.** For divergence-free `u` and Galerkin tests `v, w`, the `w`-slot
 Fourier-tsum value `convValW` agrees with the genuine convection value `convFormFourier`.
 Proved by integration by parts on the Fourier side: the difference between the two Fourier
@@ -664,6 +684,10 @@ theorem convValW_eq_convFormFourier (u : L2Sigma) (v w : L2Sigma)
 
 
 set_option maxHeartbeats 1000000 in
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~1262 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- **Galerkin collapse.** When `u, v` already lie in the finite Galerkin space `Vₙ` (are
 fixed by `velocityProjection_n n`) and `v, w` are Galerkin tests, the Fourier-tsum convection
 value `convFormFourier` collapses to the finite double sum `galerkinConvection n u v w`: the

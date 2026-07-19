@@ -124,7 +124,6 @@ theorem uniform_local_time (g : V → V) (hg : ContDiff ℝ 1 g) (R : ℝ) :
       simp only [one_smul, Function.comp_def] at hcomp
       exact hcomp
 
-set_option maxHeartbeats 1600000 in
 /-- Tiling induction: a forward solution exists on `[0, k·δ/2]` for every `k`, given a
 uniform local-existence time `δ` on the a-priori ball around `x₀`. -/
 private theorem solve_exists_on_step (g : V → V)
@@ -207,8 +206,6 @@ private theorem solve_exists_on_step (g : V → V)
         rw [if_neg (not_le.mpr hgt)]
         exact hαsol t htmem
 
-set_option synthInstance.maxHeartbeats 400000 in
-set_option maxHeartbeats 1000000 in
 /-- Splice uniqueness: two local solutions agreeing at one point agree on the whole
 overlap interval. -/
 theorem solution_agree (g : V → V) (hg : ContDiff ℝ 1 g)
@@ -260,7 +257,6 @@ theorem solution_agree (g : V → V) (hg : ContDiff ℝ 1 g)
   · exact hbwd ⟨ht.1, hle⟩
   · exact hfwd ⟨hle, ht.2⟩
 
-set_option maxHeartbeats 800000 in
 /-- **Forward-global existence** for a dissipative `C¹` field on a finite-dimensional real
 inner-product space, by tiling `[0,∞)` with the uniform local-existence time on the
 a-priori ball and gluing by uniqueness. This is the abstract core that both lanes'

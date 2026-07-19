@@ -708,7 +708,6 @@ private theorem divFree_L2test (u : L2VF_R3) (hu : memH1VF_R3 u)
     exact hGzero_schwartz φ
   rw [← hGapply θ]; exact hGzero
 
-set_option maxHeartbeats 1000000 in
 /-- **B6 `convFormH1_antisymm` [must-prove].** `convFormH1` is antisymmetric in slots 2,3:
 
   `convFormH1 u v w hu hv hw = -convFormH1 u w v hu hw hv`

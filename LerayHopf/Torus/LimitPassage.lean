@@ -366,6 +366,10 @@ private theorem stokes_abs_le (n₀ : ℕ) (w : L2VF)
 /-! ### P4: Main theorem — WeakFormNS limit passage -/
 
 set_option maxHeartbeats 1000000 in
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~331 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- **WeakFormNS limit passage on 𝕋³ (conjunct 2).**
 
 The Aubin–Lions limit curve `alPkg.u` satisfies the distributional Navier–Stokes weak

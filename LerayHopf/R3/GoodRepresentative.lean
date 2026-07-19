@@ -86,6 +86,10 @@ private theorem perTest_hasDerivAt_R3 (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
   rwa [hval] at hda
 
 set_option maxHeartbeats 1000000 in
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~2360 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- **Per-Galerkin-test equi-Lipschitz bound** on ℝ³.  For a Galerkin test `w` at level `n₀`,
 and any Galerkin level `n ≥ n₀`, the scalar pairing curve
 `t ↦ ⟪uₙ(t), w⟫` is Lipschitz on `[0,∞)` with constant
@@ -175,6 +179,10 @@ theorem perTest_lipschitz_R3
 /-! ### The weakly-continuous good representative — S5 verbatim -/
 
 set_option maxHeartbeats 1000000 in
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~3526 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- **Master construction: the ∀t-weakly-continuous representative** of the Aubin–Lions
 limit on ℝ³.
 

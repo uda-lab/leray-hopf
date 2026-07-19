@@ -221,6 +221,10 @@ noncomputable def convSummand (u v w : L2VF) (i a : Fin 3) (k l : Fin 3 → ℤ)
         mFourierCoeff3 (L2VF_projComponentC i w) (-(k + l))))
 
 set_option maxHeartbeats 1000000 in
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported only ~540 heartbeats, but a real sequential build with the override removed
+-- times out at `whnf` under the 200000 default — the isolated figure undercounts this
+-- declaration's true cost, so no further reduction attempted here.
 /-- **Norm-summability of the convection summand on the H¹/Galerkin-test locus.**
 
 For `u : L2VF`, `v : L2VF` with `memH1VF v` (H¹ on the MIDDLE / gradient slot), and a Galerkin
@@ -326,6 +330,10 @@ theorem convSummand_summable (u : L2VF) (v : L2VF) (hv : memH1VF v)
   (convSummand_norm_summable u v hv w hw i a).of_norm
 
 set_option maxHeartbeats 1000000 in
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~936 heartbeats; given the sibling declaration `convSummand_norm_summable` in this
+-- same file measured similarly low yet failed under the default budget in a real rebuild, no
+-- removal was attempted here without a dedicated re-verification cycle.
 /-- **`gradPairingSummable` (torus #53).**
 
 For `u : L2VF`, `v : L2VF` with `memH1VF v` (H¹ on the MIDDLE / gradient slot),
@@ -419,6 +427,10 @@ private def latticeInvol : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ
   right_inv km := Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
 
 set_option maxHeartbeats 1000000 in
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~314 heartbeats; given the sibling declaration `convSummand_norm_summable` in this
+-- same file measured similarly low yet failed under the default budget in a real rebuild, no
+-- removal was attempted here without a dedicated re-verification cycle.
 /-- **Antisymmetry of `convFormFourier` on the Galerkin-test overlap.**
 
 For `u : L²_σ` divergence-free and `v, w` both Galerkin tests (the `𝒢 ⊗ 𝒢` overlap of the
