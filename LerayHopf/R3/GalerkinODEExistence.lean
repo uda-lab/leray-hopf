@@ -128,6 +128,8 @@ noncomputable def galerkinSpanToSigma (B : SchwartzGalerkinBasis) (n : ℕ)
     (v : galerkinSpan B n) : L2Sigma_R3 :=
   ⟨(v : L2VF_R3), mem_sigma_of_mem_galerkinSpan B n v⟩
 
+/-- The `L2Sigma_R3`-embedding `galerkinSpanToSigma` is compatible with the underlying
+`L2VF_R3` coercion: coercing the image agrees with coercing the source `V_n` element. -/
 @[simp] theorem galerkinSpanToSigma_coe (B : SchwartzGalerkinBasis) (n : ℕ)
     (v : galerkinSpan B n) :
     ((galerkinSpanToSigma B n v : L2Sigma_R3) : L2VF_R3) = (v : L2VF_R3) := rfl
@@ -437,6 +439,7 @@ noncomputable def galerkinODE_functional
         simp only [RingHom.id_apply, smul_eq_mul]
         ring }
 
+/-- `galerkinODE_functional` unfolds to its defining Stokes/convection pairing formula. -/
 @[simp] theorem galerkinODE_functional_apply
     (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBasis B)) (ν : ℝ) (n : ℕ)
     (u w : galerkinSpan B n) :

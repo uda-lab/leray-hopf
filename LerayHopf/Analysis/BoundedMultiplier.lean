@@ -45,10 +45,14 @@ theorem memLp_mulBdd (m : X → ℝ)
   have h := (Lp.memLp g).smul hmem (p := ⊤) (q := 2) (r := 2)
   exact h
 
+/-- The `L²` class of `x ↦ (m x : ℂ) • g x` for a bounded a.e.-strongly-measurable real
+multiplier `m`, packaged as an `Lp ℂ 2 μ` element via `memLp_mulBdd`. -/
 noncomputable def mulBdd (m : X → ℝ)
     (hmem : MemLp (fun x : X => (m x : ℂ)) ⊤ μ) (g : Lp ℂ 2 μ) : Lp ℂ 2 μ :=
   (memLp_mulBdd μ m hmem g).toLp _
 
+/-- The `Lp`-coercion of `mulBdd m g` agrees a.e. with the pointwise multiplier action
+`x ↦ (m x : ℂ) • g x`. -/
 theorem mulBdd_coeFn (m : X → ℝ)
     (hmem : MemLp (fun x : X => (m x : ℂ)) ⊤ μ) (g : Lp ℂ 2 μ) :
     (mulBdd μ m hmem g : X → ℂ) =ᵐ[μ] fun x => (m x : ℂ) • (g : X → ℂ) x :=

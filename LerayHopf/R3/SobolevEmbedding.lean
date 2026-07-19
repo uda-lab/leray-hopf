@@ -1227,6 +1227,10 @@ directions simultaneously (the `φₙ = 𝓕⁻¹(smulLeftCLM wInv ηₙ)` const
 the gradient convergence `(∂_{m} φₙ).toLp → g` and the identity `∂_m (f : 𝓢') = (g : 𝓢')`
 follow from the same multiplier argument as in `schwartz_h1_gradConv` — the construction of `φₙ`
 never depended on `m`, so the conclusion holds for all `m` uniformly. -/
+/-- **B6 export.** A single Schwartz sequence converges in `L²` to `f ∈ H^{1,2}` and,
+simultaneously for every direction `m`, has directional-derivative sequence converging in `L²`
+to the weak derivative `∂_m f` — the multi-directional strengthening of `schwartz_h1_gradConv`
+(see the section note above for the construction). -/
 theorem schwartz_h1_gradConv_multi (f : L2C_R3)
     (hf : MemSobolev 1 2 (f : 𝓢'(Domain3, ℂ))) :
     ∃ φ : ℕ → SchwartzMap Domain3 ℂ,

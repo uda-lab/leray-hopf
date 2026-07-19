@@ -152,6 +152,15 @@ section AnalyticCores
 
 variable {GT : GelfandTriple} {T : ℝ}
 
+-- TODO (PR-F3 S1): build `uᵋ := ρᵋ ⋆ₜ u` and discharge the four field obligations:
+--   (regularity) `HasCompactSupport.hasDerivAt_convolution_right` + bump `ContDiff`;
+--   (conv_uV)  ε/3 from `MemLp.exists_boundedContinuous_eLpNorm_sub_le` (vector-valued,
+--              `weaklyRegular_volume_restrict_Icc`) + Young `eLpNorm` bound +
+--              `ContDiffBump.convolution_tendsto_right`;
+--   (conv_uV') same `eLpNorm`-convergence on `u'` + weak-derivative commutation
+--              `(ρᵋ ⋆ ιu)' = ρᵋ ⋆ u'` via `isWeakTimeDeriv_comp_clm` / `hToVprimeCLM`.
+--   mathlib has every piece but not the assembled Banach-valued `eLpNorm`-mollification
+--   theorem nor the weak-`V'`-derivative commutation (SPIKE-1 §S1).
 /-- **Analytic core (the SPIKE-1 S1 existence claim).**
 
 This is the single from-scratch pillar: time-mollification of a `W1pTime` curve producing the
@@ -181,15 +190,6 @@ the right object.
 Both missing pieces are the SPIKE-1 "days-to-2-weeks" from-scratch sub-build. They are isolated
 in this single existence lemma; the constructor below wires it into a `TimeMollification`. No
 statement is weakened, no axiom introduced. -/
--- TODO (PR-F3 S1): build `uᵋ := ρᵋ ⋆ₜ u` and discharge the four field obligations:
---   (regularity) `HasCompactSupport.hasDerivAt_convolution_right` + bump `ContDiff`;
---   (conv_uV)  ε/3 from `MemLp.exists_boundedContinuous_eLpNorm_sub_le` (vector-valued,
---              `weaklyRegular_volume_restrict_Icc`) + Young `eLpNorm` bound +
---              `ContDiffBump.convolution_tendsto_right`;
---   (conv_uV') same `eLpNorm`-convergence on `u'` + weak-derivative commutation
---              `(ρᵋ ⋆ ιu)' = ρᵋ ⋆ u'` via `isWeakTimeDeriv_comp_clm` / `hToVprimeCLM`.
---   mathlib has every piece but not the assembled Banach-valued `eLpNorm`-mollification
---   theorem nor the weak-`V'`-derivative commutation (SPIKE-1 §S1).
 theorem timeMollification_exists (GT : GelfandTriple) (T : ℝ)
     (uV : ℝ → GT.V) (W : W1pTime GT 2 2 T uV) :
     Nonempty (TimeMollification GT T uV W) := by

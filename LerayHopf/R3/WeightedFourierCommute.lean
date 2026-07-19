@@ -39,14 +39,17 @@ noncomputable def viscousWeight (ξ : Domain3) : ℝ := (2 * Real.pi) ^ 2 * ‖�
 function on `Domain3`. -/
 noncomputable def sqrtViscousWeight (ξ : Domain3) : ℝ := (2 * Real.pi) * ‖ξ‖
 
+/-- The square-root weight `sqrtViscousWeight` is nonnegative. -/
 theorem sqrtViscousWeight_nonneg (ξ : Domain3) : 0 ≤ sqrtViscousWeight ξ := by
   unfold sqrtViscousWeight
   positivity
 
+/-- Squaring `sqrtViscousWeight` recovers the viscous weight `viscousWeight`. -/
 theorem sqrtViscousWeight_sq (ξ : Domain3) : sqrtViscousWeight ξ ^ 2 = viscousWeight ξ := by
   unfold sqrtViscousWeight viscousWeight
   ring
 
+/-- The square-root weight `sqrtViscousWeight` is continuous. -/
 theorem continuous_sqrtViscousWeight : Continuous sqrtViscousWeight := by
   unfold sqrtViscousWeight
   exact continuous_const.mul continuous_norm
@@ -55,14 +58,18 @@ theorem continuous_sqrtViscousWeight : Continuous sqrtViscousWeight := by
 noncomputable def sqrtViscousWeightTrunc (k : ℕ) (ξ : Domain3) : ℝ :=
   min (sqrtViscousWeight ξ) k
 
+/-- The truncated square-root weight `sqrtViscousWeightTrunc k` is nonnegative. -/
 theorem sqrtViscousWeightTrunc_nonneg (k : ℕ) (ξ : Domain3) : 0 ≤ sqrtViscousWeightTrunc k ξ :=
   le_min (sqrtViscousWeight_nonneg ξ) (Nat.cast_nonneg k)
 
+/-- The truncated square-root weight `sqrtViscousWeightTrunc k` is bounded by `k`. -/
 theorem sqrtViscousWeightTrunc_abs_le (k : ℕ) (ξ : Domain3) :
     |sqrtViscousWeightTrunc k ξ| ≤ k := by
   rw [abs_of_nonneg (sqrtViscousWeightTrunc_nonneg k ξ)]
   exact min_le_right _ _
 
+/-- The truncated square-root weight `sqrtViscousWeightTrunc k` is continuous, as the pointwise
+`min` of two continuous functions. -/
 theorem continuous_sqrtViscousWeightTrunc (k : ℕ) : Continuous (sqrtViscousWeightTrunc k) :=
   continuous_sqrtViscousWeight.min continuous_const
 
@@ -184,11 +191,15 @@ theorem memLp_mulBdd (m : Domain3 → ℝ)
     MemLp (fun ξ => (m ξ : ℂ) • (g : Domain3 → ℂ) ξ) 2 (volume : Measure Domain3) :=
   BoundedMultiplier.memLp_mulBdd (volume : Measure Domain3) m hmem g
 
+/-- `Domain3`-instantiated wrapper around `BoundedMultiplier.mulBdd`: the `L²`-class of
+`ξ ↦ (m ξ : ℂ) • g ξ` for a bounded a.e.-strongly-measurable real multiplier `m`. -/
 noncomputable def mulBdd (m : Domain3 → ℝ)
     (hmem : MemLp (fun ξ : Domain3 => (m ξ : ℂ)) ⊤ (volume : Measure Domain3))
     (g : L2C_R3) : L2C_R3 :=
   BoundedMultiplier.mulBdd (volume : Measure Domain3) m hmem g
 
+/-- The `Lp`-coercion of `mulBdd m g` agrees a.e. with the pointwise multiplier action
+`ξ ↦ (m ξ : ℂ) • g ξ`. -/
 theorem mulBdd_coeFn (m : Domain3 → ℝ)
     (hmem : MemLp (fun ξ : Domain3 => (m ξ : ℂ)) ⊤ (volume : Measure Domain3)) (g : L2C_R3) :
     (mulBdd m hmem g : Domain3 → ℂ)

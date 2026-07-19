@@ -251,13 +251,17 @@ theorem mem_sigma_of_mem_velocitySpan (n : ℕ) (v : velocitySpan n) : (v : L2VF
 noncomputable def velocitySpanToSigma (n : ℕ) (v : velocitySpan n) : L2Sigma :=
   ⟨(v : L2VF), mem_sigma_of_mem_velocitySpan n v⟩
 
+/-- The `L2Sigma`-embedding `velocitySpanToSigma` is compatible with the underlying `L2VF`
+coercion. -/
 @[simp] theorem velocitySpanToSigma_coe (n : ℕ) (v : velocitySpan n) :
     (velocitySpanToSigma n v : L2VF) = (v : L2VF) := rfl
 
+/-- `velocitySpanToSigma` is additive. -/
 theorem velocitySpanToSigma_add (n : ℕ) (v w : velocitySpan n) :
     velocitySpanToSigma n (v + w) = velocitySpanToSigma n v + velocitySpanToSigma n w := by
   apply Subtype.ext; rfl
 
+/-- `velocitySpanToSigma` is `ℝ`-homogeneous. -/
 theorem velocitySpanToSigma_smul (n : ℕ) (c : ℝ) (v : velocitySpan n) :
     velocitySpanToSigma n (c • v) = c • velocitySpanToSigma n v := by
   apply Subtype.ext; rfl

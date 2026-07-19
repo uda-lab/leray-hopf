@@ -45,6 +45,8 @@ No `axiom`/`opaque`/`constant`/`unsafe` in this file.
 noncomputable def cxify (φ : SchwartzMap Domain3 ℝ) : SchwartzMap Domain3 ℂ :=
   φ.postcompCLM (RCLike.ofRealCLM (K := ℂ))
 
+/-- The complexification `cxify φ` evaluates pointwise as the real-to-complex coercion of
+`φ`. -/
 @[simp] theorem cxify_apply (φ : SchwartzMap Domain3 ℝ) (x : Domain3) :
     cxify φ x = ((φ x : ℝ) : ℂ) := by
   simp [cxify, SchwartzMap.postcompCLM_apply]

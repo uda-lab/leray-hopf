@@ -32,6 +32,7 @@ No `axiom`/`opaque`/`constant`/`unsafe` in this file.
 noncomputable def reLp : L2C_R3 →L[ℝ] Lp ℝ 2 (volume : Measure Domain3) :=
   Complex.reCLM.compLpL 2 (volume : Measure Domain3)
 
+/-- The `Lp`-coercion of `reLp f` agrees a.e. with the pointwise real part of `f`. -/
 theorem reLp_coeFn (f : L2C_R3) :
     (reLp f : Domain3 → ℝ) =ᵐ[volume] fun x => (f x).re := by
   filter_upwards [ContinuousLinearMap.coeFn_compLpL Complex.reCLM f] with x hx
@@ -53,6 +54,7 @@ noncomputable def mulRBdd (h : Domain3 → ℝ)
     Lp ℝ 2 (volume : Measure Domain3) :=
   (((Lp.memLp a).smul (p := ⊤) (q := 2) (r := 2) hh)).toLp
 
+/-- The `Lp`-coercion of `mulRBdd h a` agrees a.e. with the pointwise product `h · a`. -/
 theorem mulRBdd_coeFn (h : Domain3 → ℝ)
     (hh : MemLp h ⊤ (volume : Measure Domain3)) (a : Lp ℝ 2 (volume : Measure Domain3)) :
     (mulRBdd h hh a : Domain3 → ℝ) =ᵐ[volume] fun x => h x * a x := by

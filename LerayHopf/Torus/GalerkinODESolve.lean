@@ -256,6 +256,7 @@ noncomputable def galerkinODE_functional
         simp only [RingHom.id_apply, smul_eq_mul]
         ring }
 
+/-- `galerkinODE_functional` unfolds to its defining Stokes/convection pairing formula. -/
 @[simp] theorem galerkinODE_functional_apply (F : Torus3NSForms) (ν : ℝ) (n : ℕ)
     (u w : velocitySpan n) :
     galerkinODE_functional F ν n u w

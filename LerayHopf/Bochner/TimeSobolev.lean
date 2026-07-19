@@ -322,6 +322,8 @@ noncomputable def GelfandTriple.hToVprimeCLM (GT : GelfandTriple) :
   ((ContinuousLinearMap.compL ℝ GT.V GT.H ℝ).flip GT.ι).comp
     (innerSL ℝ : GT.H →L[ℝ] (GT.H →L[ℝ] ℝ))
 
+/-- The bundled continuous linear map `hToVprimeCLM` agrees pointwise with the (unbundled)
+Riesz embedding `hToVprime`. -/
 @[simp] theorem GelfandTriple.hToVprimeCLM_apply (GT : GelfandTriple) :
     letI := GT.instNACG_H;
     (h : GT.H) → GT.hToVprimeCLM h = GT.hToVprime h := by
@@ -456,11 +458,12 @@ definition (per the Gelfand-triple discipline: the primary object lives in `V'`;
 **Proved** (sorry-free). Route: post-compose with `hToVprimeCLM`; `MemLp` carried
 by `comp_memLp'`; weak-derivative identity transported by `isWeakTimeDeriv_comp_clm`;
 both interval-integrability obligations discharged by `intervalIntegrable_smul_of_integrableOn_Icc`
-using `MemLp.integrable` under the `1 ≤ p` / `1 ≤ q` guards. -/
--- Domain-of-definition guard: `W^{1,p}(0,T;·)` requires `1 ≤ p`; the V′-valued IBP identity
--- in `weakDeriv` is ill-defined without L¹ control (`MemLp _ p` on a finite measure only implies
--- integrability when `1 ≤ p`). Same for `q`. These are NOT proof-strengthening hypotheses but
--- honest domain restrictions stating where the Lions–Magenes space lives.
+using `MemLp.integrable` under the `1 ≤ p` / `1 ≤ q` guards.
+
+Domain-of-definition guard: `W^{1,p}(0,T;·)` requires `1 ≤ p`; the V′-valued IBP identity
+in `weakDeriv` is ill-defined without L¹ control (`MemLp _ p` on a finite measure only implies
+integrability when `1 ≤ p`). Same for `q`. These are NOT proof-strengthening hypotheses but
+honest domain restrictions stating where the Lions–Magenes space lives. -/
 theorem W1pTime.ofHValuedDeriv (GT : GelfandTriple) {p q : ℝ≥0∞} {T : ℝ}
     {uV : ℝ → GT.V}
     (u'H : letI := GT.instNACG_H; ℝ → GT.H)

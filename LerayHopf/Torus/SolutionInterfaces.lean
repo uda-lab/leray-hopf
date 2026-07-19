@@ -267,18 +267,23 @@ present `torusDomain.stokes`/`F.core.b` rather than `stokesTestPairing`/`F.b`; t
 lemmas let downstream `rw`/`linarith` sites that pattern-match the concrete forms normalize
 via `simp only [...]`.  (Not `@[simp]`-tagged to avoid perturbing green proofs.) -/
 
+/-- `torusDomain`'s `stokes` field reduces to the concrete `stokesTestPairing`. -/
 theorem torusDomain_stokes (u w : L2VF) :
     torusDomain.stokes u w = stokesTestPairing u w := rfl
 
+/-- `torusDomain`'s `dissip` field reduces to the concrete `viscousFormSq`. -/
 theorem torusDomain_dissip (μ : ℝ) (u : L2VF) :
     torusDomain.dissip μ u = viscousFormSq μ u := rfl
 
+/-- `torusDomain`'s `regMem` field reduces to the concrete `memH1VF`. -/
 theorem torusDomain_regMem (u : L2VF) :
     torusDomain.regMem u = memH1VF u := rfl
 
+/-- `torusDomain`'s `regIntegrand` field reduces to the concrete `h1EnergySq`. -/
 theorem torusDomain_regIntegrand (μ : ℝ) (u : L2VF) :
     torusDomain.regIntegrand μ u = h1EnergySq u := rfl
 
+/-- `Torus3NSForms.core`'s `b` field reduces to the concrete convection form `F.b`. -/
 theorem Torus3NSForms.core_b (F : Torus3NSForms) (u v w : L2Sigma) :
     (F.core).b u v w = F.b u v w := rfl
 

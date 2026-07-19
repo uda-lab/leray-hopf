@@ -599,6 +599,9 @@ private theorem span_curlSchwartzL2_le_L2Sigma :
   rintro x ⟨ψ, rfl⟩
   exact curlSchwartzL2_mem_sigma ψ
 
+/-- Given curl-Schwartz density (`CurlSchwartzDense`), every `u ∈ L2Sigma_R3` is a limit of a
+sequence of divergence-free Schwartz test fields — i.e. `IsSchwartzDivFree_R3` is dense in
+`L2Sigma_R3`, transported from the curl-Schwartz span's closure via `IsSchwartzComp`. -/
 theorem schwartzDivFree_dense_of_curlDense
     (h : CurlSchwartzDense) (u : L2Sigma_R3) :
     ∃ s : ℕ → L2Sigma_R3, (∀ n, IsSchwartzDivFree_R3 (s n)) ∧

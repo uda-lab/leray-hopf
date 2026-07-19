@@ -1266,6 +1266,7 @@ noncomputable def ballMassSqrt (R : ℝ) : ℝ :=
   (measureUnivNNReal ((volume : Measure Domain3).restrict
     (Metric.closedBall (0 : Domain3) R)) : ℝ) ^ ((2 : ℝ)⁻¹)
 
+/-- The ball-mass factor `ballMassSqrt R` is nonnegative, as a square root of a measure. -/
 theorem ballMassSqrt_nonneg (R : ℝ) : 0 ≤ ballMassSqrt R := by
   unfold ballMassSqrt
   positivity
