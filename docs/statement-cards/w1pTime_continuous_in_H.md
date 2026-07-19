@@ -27,17 +27,22 @@ source for the exact elaborated form.)
 Lions–Magenes good-representative embedding, `{u ∈ L²(0,T;V) : u' ∈ L²(0,T;V')} ↪ C([0,T];H)`, for a
 Gelfand (evolution) triple `V ↪ H ↪ V'`. Standard reference: J.-L. Lions & E. Magenes,
 *Non-Homogeneous Boundary Value Problems and Applications, Vol. I* (Springer, 1972), and
-R. Temam, *Navier–Stokes Equations: Theory and Numerical Analysis* (AMS Chelsea, 2001 reprint),
-Chapter III, §1: Lemma III.1.2 gives the energy/continuity identity used for the good
-representative, and §III.1.4 is the proof of continuity and uniqueness. In particular, “1.4” is
-a subsection locator, not a theorem number.
+R. Temam, *On the Theory and Numerical Analysis of the Navier–Stokes Equations*, Université
+Paris XI, No. 64, 1973, Chapter III, Lemma 1.2, p. 205.
+
+Lemma III.1.2's conclusion is **strictly stronger** than this declaration: it gives both the
+continuous `H`-valued representative and the distributional energy identity (1.68) for that
+representative. `w1pTime_continuous_in_H` must not be identified with Lemma III.1.2 — the Lean
+declaration claims only the continuous-representative part; the energy identity (1.68) is not
+formalized here, and no explicit initial-value estimate appears in the lemma's displayed claim.
 
 **No exact literature pin had been recorded for the former generic `p, q` form** — this is
 exactly the gap issue #158 identifies as antipattern #1 (named-theorem anchoring): the repo had
 cited "Lions–Magenes" by name without checking the source against the exact exponent hypotheses
-the cited theorem needs. The corrected `p = q = 2` case is pinned here to Temam’s
-Lemma III.1.2 / §III.1.4. A generic-`p,q` reintroduction MUST NOT ship without first pinning an
-exact edition/theorem-number citation for that generality (see "Required before widening" below).
+the cited theorem needs. The corrected `p = q = 2` case is pinned here to Temam's
+Chapter III, Lemma 1.2, p. 205 (1973). A generic-`p,q` reintroduction MUST NOT ship without first
+pinning an exact edition/theorem-number citation for that generality (see "Required before
+widening" below).
 
 ## Hypothesis mapping
 
