@@ -24,19 +24,19 @@ source for the exact elaborated form.)
 
 ## Literature reference
 
-Lions–Magenes good-representative embedding, `W^{1,2}(0,T;V) ∩ L^2(0,T;V') ↪ C([0,T];H)`, for a
+Lions–Magenes good-representative embedding, `{u ∈ L²(0,T;V) : u' ∈ L²(0,T;V')} ↪ C([0,T];H)`, for a
 Gelfand (evolution) triple `V ↪ H ↪ V'`. Standard reference: J.-L. Lions & E. Magenes,
 *Non-Homogeneous Boundary Value Problems and Applications, Vol. I* (Springer, 1972), and
 R. Temam, *Navier–Stokes Equations: Theory and Numerical Analysis* (AMS Chelsea, 2001 reprint),
-Chapter III, Theorem 1.4 (the `p = q = 2` case; frequently cited by its Temam location for
-Navier–Stokes applications).
+Chapter III, §1: Lemma III.1.2 gives the energy/continuity identity used for the good
+representative, and §III.1.4 is the proof of continuity and uniqueness. In particular, “1.4” is
+a subsection locator, not a theorem number.
 
-**No exact page/theorem-number pin recorded at merge time for the general `p, q` form** — this
-is exactly the gap issue #158 identifies as antipattern #1 (named-theorem anchoring): the repo
-had cited "Lions–Magenes" by name without checking the source against the exact exponent
-hypotheses the cited theorem needs. The `p = q = 2` case pinned here is standard enough (single
-Hölder step, self-contained) that this card states it directly rather than deferring to an
-unverified page citation; a generic-`p,q` reintroduction MUST NOT ship without first pinning an
+**No exact literature pin had been recorded for the former generic `p, q` form** — this is
+exactly the gap issue #158 identifies as antipattern #1 (named-theorem anchoring): the repo had
+cited "Lions–Magenes" by name without checking the source against the exact exponent hypotheses
+the cited theorem needs. The corrected `p = q = 2` case is pinned here to Temam’s
+Lemma III.1.2 / §III.1.4. A generic-`p,q` reintroduction MUST NOT ship without first pinning an
 exact edition/theorem-number citation for that generality (see "Required before widening" below).
 
 ## Hypothesis mapping
