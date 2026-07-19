@@ -739,6 +739,10 @@ ball-splittable by the limit-passage layer.  Built by density extension of the S
 agreement using joint `L²`-continuity of both sides. -/
 
 set_option maxHeartbeats 1000000 in
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~1634 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- `F.b (·) (·) w` is jointly `L²`-continuous at a fixed Schwartz `w` — from the bilinear bound
 `b_bound` (`|F.b u v w| ≤ Cb·‖u‖·‖v‖`) together with bilinearity (`b_add`, `b_smul`).  Proved by
 the standard bounded-bilinear ⇒ continuous estimate on the difference
@@ -820,6 +824,10 @@ theorem fb_continuous_fixedTest {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊)
     _ = ε := one_mul ε
 
 set_option maxHeartbeats 1600000 in
+-- kept at the original 1600000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~2755 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- The Schwartz-pair agreement: for Schwartz-div-free `f', g'`, `F.b f' g' w` equals the
 antisymmetric integral.  `b_galerkin` rewrites `F.b` to `convIntegralSchwartz`, then
 `convIntegralSchwartz_divFree_eq` gives the IBP'd integral, which matches `antisymmIntegral`'s
@@ -857,6 +865,10 @@ theorem fb_eq_antisymmIntegral_schwartz {𝔊 : R3GalerkinScheme} (F : R3NSForms
   ring
 
 set_option maxHeartbeats 800000 in
+-- kept at the original 800000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~2752 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- **Step 1 (conjunct-2 atom b): the integral representation `F.b f g w = antisymmIntegral`.**
 Density extension of `fb_eq_antisymmIntegral_schwartz` using joint `L²`-continuity of both sides
 (`fb_continuous_fixedTest`; `antisymmIntegral_continuous`). -/
@@ -936,6 +948,10 @@ private theorem normSq_mulBddR_CF (φ : Domain3 → ℝ)
 -- imported public versions directly.
 
 set_option maxHeartbeats 800000 in
+-- kept at the original 800000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~2165 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- **Key convergence lemma.** Schwartz φ, component `j`, sequence `fn : ℕ → L2VF_R3`
 with uniform bound `‖fn n‖ ≤ M` and per-ball convergence `restrictToBall k (fn n) → 0`
 for every `k : ℕ`. Then `‖mulBddR (⇑φs) hφ (L2VF_projComponent_R3 j (fn n))‖ → 0`.
@@ -1125,6 +1141,10 @@ private theorem mulBddR_self_adjoint (h : Domain3 → ℝ) (hh : MemLp h ⊤ (vo
   ring
 
 set_option maxHeartbeats 800000 in
+-- kept at the original 800000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~1876 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- **Per-ball convergence of F.b (atom b of WeakFormNS passage).**
 
 For a Schwartz-div-free test `w` with witnesses `ψw`, if `uₙ → u` in L²(B_R) for every

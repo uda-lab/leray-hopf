@@ -355,7 +355,6 @@ private theorem reflect_fourier_schwartzC_eq_conj (φ : SchwartzMap Domain3 ℝ)
   rfl
 
 
-set_option maxHeartbeats 1000000 in
 /-- **(P1) Lp-level Hermitian reflection.**  For a real `a : Lp ℝ 2`, the reflection of the
 Fourier transform of its complexification equals the conjugation of that Fourier transform,
 as elements of `L2C_R3`.  Density extension of `reflect_fourier_schwartzC_eq_conj` over the

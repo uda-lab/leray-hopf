@@ -259,6 +259,10 @@ private theorem restrictToBall_sub_norm_mono (R k : ℝ) (hRk : R ≤ k) (w w' :
   exact (Lp.memLp (restrictToBall k w - restrictToBall k w')).2.ne
 
 set_option maxHeartbeats 1000000 in
+-- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~4002 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- **`galerkin_weakLimit_R3` — Measurable weak limit in `L2Sigma_R3` from per-ball a.e.-t
 convergence.**  [#47: converted from `axiom` to `theorem`]
 

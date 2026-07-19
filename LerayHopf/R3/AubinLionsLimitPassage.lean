@@ -320,7 +320,6 @@ private theorem weakFormNS_integrand_continuousOn_R3
   exact (hinner.neg.mul hψC1.continuous_deriv_one.continuousOn).add
     (hψC1.continuous.continuousOn.mul ((continuousOn_const.mul hstokes).add hb))
 
-set_option maxHeartbeats 800000 in
 /-- **Per-level WeakFormNS identity.**  For a Galerkin level `n` and a test `w` fixed by `𝔊.P n`,
 the level-`n` approximant integrand integrates to `0` over `[0,T]`.
 
@@ -525,6 +524,11 @@ private theorem weakFormNS_galerkinTest_uniform_dominator
       _ = D := by rw [hD]
 
 set_option maxHeartbeats 1600000 in
+-- kept at the original 1600000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported only ~1348 heartbeats, but a real sequential build with the override removed
+-- times out at `whnf` under the 200000 default — the isolated figure undercounts this
+-- declaration's true cost (likely elaboration deferred outside the measured span), so no
+-- further reduction attempted here.
 /-- **W1: weak identity for the Aubin–Lions limit against a FIXED Galerkin test** (n→∞).
 
 For a test `w` that is already a Galerkin test of the scheme `𝔊` (i.e. `𝔊.P N w = w` for
@@ -1399,6 +1403,11 @@ theorem weakFormNS_limit_passage
 /-! ### Tier C — combination: spatial + time ⇒ `AubinLionsPackage_R3` (the centerpiece) -/
 
 set_option maxHeartbeats 800000 in
+-- kept at the original 800000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~187346 heartbeats (close to the 200000 default already), but sibling declarations
+-- in this same file with comparably low isolated measurements failed under the default budget
+-- in a real rebuild — no reduction from the original value was attempted without a dedicated
+-- re-verification cycle for this specific declaration.
 /-- **Aubin–Lions package on ℝ³ from the isolated time-compactness input (CLOSED).**
 
 Produces `aubin_lions_R3`'s conclusion (`AubinLionsPackage_R3`), conditional on P3's local

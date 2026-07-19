@@ -759,6 +759,10 @@ private theorem conj_cross_sum_eq (ξ : Domain3) (a ŵ : Fin 3 → ℂ) :
   ring
 
 set_option maxHeartbeats 1600000 in
+-- kept at the original 1600000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported only ~4339 heartbeats, but a real sequential build with the override removed
+-- times out at `whnf` under the 200000 default — the isolated figure undercounts this
+-- declaration's true cost, so no further reduction attempted here.
 /-- **Longitudinality of `ŵ` from orthogonality to all curls.**  If `w` is orthogonal to every
 curl `curlSchwartzL2 ψ`, then its complex Fourier transform `ŵ` is longitudinal a.e.: the cross
 field `ŵ × ξ` vanishes, here the `k`-th component

@@ -647,6 +647,10 @@ private theorem convBLTspan_eq_fixedTest
   rfl
 
 set_option maxHeartbeats 4000000 in
+-- kept at the original 4000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~6012 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- `convBLTspan` is additive in `s`. -/
 private theorem convBLTspan_add (s s' : schwartzSpan) :
     convBLTspan (s + s') = convBLTspan s + convBLTspan s' := by
@@ -665,6 +669,10 @@ private theorem convBLTspan_add (s s' : schwartzSpan) :
       (memH1VF_R3_of_mem_schwartzSpan s.2) (memH1VF_R3_of_mem_schwartzSpan s'.2)]
 
 set_option maxHeartbeats 4000000 in
+-- kept at the original 4000000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported ~5264 heartbeats, but sibling declarations elsewhere in this file family with
+-- comparably low isolated measurements failed under the default budget in a real rebuild — no
+-- reduction from the original value was attempted without a dedicated re-verification cycle.
 /-- `convBLTspan` is homogeneous in `s`. -/
 private theorem convBLTspan_smul (c : ℝ) (s : schwartzSpan) :
     convBLTspan (c • s) = c • convBLTspan s := by

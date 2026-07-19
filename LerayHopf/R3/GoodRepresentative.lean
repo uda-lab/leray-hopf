@@ -35,6 +35,7 @@ No new axioms.  All four scaffold `sorry` (PR-5) are discharged: the proofs are 
 import LerayHopf.Bochner.WeakLimitToolkit
 import LerayHopf.R3.AubinLionsLimitPassage
 import LerayHopf.R3.GalerkinTrilinearBound
+import Mathlib.Util.CountHeartbeats
 
 namespace LerayHopf
 
@@ -85,7 +86,7 @@ private theorem perTest_hasDerivAt_R3 (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
     linarith
   rwa [hval] at hda
 
-set_option maxHeartbeats 1000000 in
+#count_heartbeats in
 /-- **Per-Galerkin-test equi-Lipschitz bound** on ℝ³.  For a Galerkin test `w` at level `n₀`,
 and any Galerkin level `n ≥ n₀`, the scalar pairing curve
 `t ↦ ⟪uₙ(t), w⟫` is Lipschitz on `[0,∞)` with constant
@@ -174,7 +175,7 @@ theorem perTest_lipschitz_R3
 
 /-! ### The weakly-continuous good representative — S5 verbatim -/
 
-set_option maxHeartbeats 1000000 in
+#count_heartbeats in
 /-- **Master construction: the ∀t-weakly-continuous representative** of the Aubin–Lions
 limit on ℝ³.
 

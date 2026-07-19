@@ -1313,6 +1313,10 @@ theorem dist_restrictToBall_le_of_ae_bound (R c : ℝ) (hc : 0 ≤ c) (u v : L2V
 /-! ### FK step 2 — Arzelà–Ascoli ⇒ total boundedness in L²(ball) -/
 
 set_option maxHeartbeats 1600000 in
+-- kept at the original 1600000 (issue #152): isolated `#count_heartbeats in` measurement
+-- reported only ~1629 heartbeats, but a real sequential build with the override removed
+-- times out at `whnf` under the 200000 default — the isolated figure undercounts this
+-- declaration's true cost, so no further reduction attempted here.
 /-- **Abstract Arzelà–Ascoli + sup→L² transfer.**  Let `Φ f` be a representative function for the
 L²(B_R)-class `restrictToBall R (ρf f)` (`hΦae`).  If the family `{Φ f : f ∈ S}` is uniformly
 bounded (`hB`) and uniformly equicontinuous (`hequi`) on the compact ball `B_R`, then the image

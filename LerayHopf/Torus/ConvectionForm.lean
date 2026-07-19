@@ -401,7 +401,6 @@ theorem galerkinConvection_bound (n : ℕ) (w : L2VF)
 
 /-! ### Level stability of `galerkinConvection` (independence of the box once it bounds supports) -/
 
-set_option maxHeartbeats 1000000 in
 /-- **Level stability (monotone step).**  If all three slots lie in `Vₘ`
 (`velocityProjection_n m · = ·`) and `m ≤ n`, then truncating at the larger box `n` gives the
 same value as truncating at `m`:
