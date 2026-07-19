@@ -67,6 +67,8 @@ No `axiom`/`opaque`/`constant`/`unsafe` in this file.
 noncomputable def schwartzC (f : SchwartzMap Domain3 ℝ) : SchwartzMap Domain3 ℂ :=
   f.postcompCLM (RCLike.ofRealCLM (K := ℂ))
 
+/-- The complexification `schwartzC f` evaluates pointwise as the real-to-complex coercion of
+`f`. -/
 theorem schwartzC_apply (f : SchwartzMap Domain3 ℝ) (x : Domain3) :
     schwartzC f x = (f x : ℂ) := rfl
 

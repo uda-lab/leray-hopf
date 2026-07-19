@@ -117,13 +117,15 @@ noncomputable def galerkinSpan (B : SchwartzGalerkinBasis) (n : ℕ) :
 /-! ### S2 — finite dimensionality -/
 
 -- Proof sketch: `FiniteDimensional.span_of_finite (Set.finite_range _)`.
+/-- The prefix span `galerkinSpan B n`, being spanned by a finite generating set, is
+finite-dimensional (S2). -/
 instance galerkinSpan_finiteDimensional (B : SchwartzGalerkinBasis) (n : ℕ) :
     FiniteDimensional ℝ (galerkinSpan B n) :=
   FiniteDimensional.span_of_finite ℝ (Set.finite_range _)
 
--- Gating note G1: a finite-dimensional subspace is complete, hence has an orthogonal
--- projection.  This explicit helper guarantees `galerkinP` (S4) typechecks even if the
--- `HasOrthogonalProjection` instance does not synthesize transitively from S2.
+/-- A finite-dimensional subspace is complete, hence has an orthogonal projection (Gating
+note G1). This explicit instance guarantees `galerkinP` (S4) typechecks even if the
+`HasOrthogonalProjection` instance does not synthesize transitively from S2. -/
 instance galerkinSpan_hasOrthogonalProjection (B : SchwartzGalerkinBasis) (n : ℕ) :
     (galerkinSpan B n).HasOrthogonalProjection :=
   inferInstance
@@ -132,6 +134,8 @@ instance galerkinSpan_hasOrthogonalProjection (B : SchwartzGalerkinBasis) (n : �
 
 -- Proof sketch: span is monotone in the generating set; the `Fin n` range is contained
 -- in the `Fin m` range for `n ≤ m`, so `Submodule.span_mono`.
+/-- The prefix spans `galerkinSpan B` are monotone in `n` (S3): more generators only grow
+the span. -/
 theorem galerkinSpan_mono (B : SchwartzGalerkinBasis) : Monotone (galerkinSpan B) := by
   intro n m hnm
   refine Submodule.span_mono ?_
@@ -148,6 +152,8 @@ noncomputable def galerkinP (B : SchwartzGalerkinBasis) (n : ℕ) :
 /-! ### D1 — non-expansiveness (field `norm_le`) -/
 
 -- Proof sketch: exact `Submodule.norm_starProjection_apply_le`.
+/-- The Galerkin projector `galerkinP B n` is non-expansive (D1, field `norm_le`): it never
+increases the `L²` norm. -/
 theorem galerkinP_norm_le (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF_R3) :
     ‖galerkinP B n u‖ ≤ ‖u‖ :=
   Submodule.norm_starProjection_apply_le _ u
@@ -156,6 +162,7 @@ theorem galerkinP_norm_le (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF_R3) :
 
 -- Proof sketch: from `Submodule.isIdempotentElem_starProjection`
 -- (`IsIdempotentElem f` ↔ `f ∘ f = f`); apply at `u`.
+/-- The Galerkin projector `galerkinP B n` is idempotent (D2, field `idem`). -/
 theorem galerkinP_idem (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF_R3) :
     galerkinP B n (galerkinP B n u) = galerkinP B n u := by
   have h := (galerkinSpan B n).isIdempotentElem_starProjection
@@ -164,6 +171,8 @@ theorem galerkinP_idem (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF_R3) :
 /-! ### D3 — range lies in the span (helper for D4 and D6) -/
 
 -- Proof sketch: `Submodule.starProjection_apply_mem`.
+/-- The Galerkin projector `galerkinP B n` lands in the prefix span `galerkinSpan B n` (D3,
+used to derive D4 and D6). -/
 theorem galerkinP_mem_span (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF_R3) :
     galerkinP B n u ∈ galerkinSpan B n :=
   Submodule.starProjection_apply_mem _ u
@@ -176,6 +185,8 @@ theorem galerkinP_mem_span (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF_R3) :
 -- The hypothesis `hu` is not actually needed (range ⊆ span ⊆ Σ regardless), but it
 -- is part of the `R3GalerkinScheme.preserves_sigma` field signature, so keep it for the
 -- assembly statement and discard it in the proof.
+/-- The Galerkin projector `galerkinP B n` preserves the divergence-free subspace `L2Sigma_R3`
+(D4, field `preserves_sigma`). -/
 theorem galerkinP_preserves_sigma (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF_R3)
     (hu : u ∈ L2Sigma_R3) : galerkinP B n u ∈ L2Sigma_R3 := by
   have hspan : galerkinSpan B n ≤ L2Sigma_R3 := by
@@ -193,6 +204,9 @@ theorem galerkinP_preserves_sigma (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2V
 -- See gating note G2 in the header: the restricted `hu : u ∈ L2Sigma_R3` form is the
 -- honest statement; the unrestricted `∀ u : L2VF_R3` field is too strong for a div-free
 -- basis and is intentionally NOT claimed here.
+/-- The Galerkin projectors converge strongly to the identity on `L2Sigma_R3` (D5, field
+`tendsto_id`, honest restricted form — see gating note G2: the unrestricted `∀ u : L2VF_R3`
+statement is too strong for a divergence-free basis and is intentionally not claimed). -/
 theorem galerkinP_tendsto_id (B : SchwartzGalerkinBasis) (u : L2VF_R3)
     (hu : u ∈ L2Sigma_R3) :
     Filter.Tendsto (fun n => galerkinP B n u) Filter.atTop (𝓝 u) := by
@@ -276,6 +290,9 @@ private theorem hasSchwartzComponents_of_basis (B : SchwartzGalerkinBasis) (k : 
 --    `hasSchwartzComponents_add`, `hasSchwartzComponents_smul`.
 -- No vector-valued Schwartz construction is needed: the proof stays at the
 -- `L2VF_projComponent_R3 j (·) = (·).toLp` level throughout.
+/-- The image of the Galerkin projector `galerkinP B n` has Schwartz component representatives
+in every coordinate (D6, field `range_schwartz`) — inherited from the basis vectors via
+`Submodule.span_induction`. -/
 theorem galerkinP_range_schwartz (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF_R3) :
     ∃ ψ : Fin 3 → SchwartzMap Domain3 ℝ,
       ∀ j : Fin 3,

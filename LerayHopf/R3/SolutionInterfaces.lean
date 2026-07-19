@@ -425,18 +425,23 @@ def R3NSForms.core {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊) :
 ℝ³ functionals, so downstream `rw`/`linarith` sites that pattern-match the concrete forms
 keep working after the abbrev/extends rewiring.  (Not `@[simp]`-tagged.) -/
 
+/-- `r3Domain 𝔊`'s `stokes` field reduces to the concrete `stokesTestPairing_R3`. -/
 theorem r3Domain_stokes (𝔊 : R3GalerkinScheme) (u w : L2VF_R3) :
     (r3Domain 𝔊).stokes u w = stokesTestPairing_R3 u w := rfl
 
+/-- `r3Domain 𝔊`'s `dissip` field reduces to the concrete `viscousFormSq_R3`. -/
 theorem r3Domain_dissip (𝔊 : R3GalerkinScheme) (μ : ℝ) (u : L2VF_R3) :
     (r3Domain 𝔊).dissip μ u = viscousFormSq_R3 μ u := rfl
 
+/-- `r3Domain 𝔊`'s `regMem` field reduces to the concrete `memH1VF_R3`. -/
 theorem r3Domain_regMem (𝔊 : R3GalerkinScheme) (u : L2VF_R3) :
     (r3Domain 𝔊).regMem u = memH1VF_R3 u := rfl
 
+/-- `r3Domain 𝔊`'s `regIntegrand` field reduces to the concrete `viscousFormSq_R3`. -/
 theorem r3Domain_regIntegrand (𝔊 : R3GalerkinScheme) (μ : ℝ) (u : L2VF_R3) :
     (r3Domain 𝔊).regIntegrand μ u = viscousFormSq_R3 μ u := rfl
 
+/-- `R3NSForms.core`'s `b` field reduces to the concrete convection form `F.b`. -/
 theorem R3NSForms.core_b {𝔊 : R3GalerkinScheme} (F : R3NSForms 𝔊) (u v w : L2Sigma_R3) :
     (F.core).b u v w = F.b u v w := rfl
 

@@ -344,6 +344,8 @@ P0.8 and P0.16 (unqualified calls: same-gate freeze placeholders, per anti-shado
 rule 2); all previously-merged production calls are `_root_`-qualified.  It verifies
 ALL FIVE `AubinLionsPackage` field shapes against the real construction. -/
 
+/-- Assembles an `AubinLionsPackage` (all five fields) for a Galerkin solution family on the
+torus, from mode-wise compactness — the axiom-deletion replacement for `axiom aubin_lions`. -/
 noncomputable def torusAubinLionsPackage_of_galSeq
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma)

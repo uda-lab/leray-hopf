@@ -618,6 +618,7 @@ private theorem psiD_edge2_value (u v : X) (s : EdgeSpan) :
 noncomputable def convFormL2_def (u v w : X) : ℝ :=
   detExtend EdgeSpan BLTLin BLT_overlap u (v ⊗ₜ[ℝ] w)
 
+/-- `convFormL2_def` unfolds to its defining tensor-edge-extension formula. -/
 @[simp]
 theorem convFormL2_def_eq (u v w : X) :
     convFormL2_def EdgeSpan BLTLin BLT_overlap u v w

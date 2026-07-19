@@ -24,6 +24,9 @@ namespace LerayHopf
 `stokesTestPairing u w` is the mode sum `∑_j ∑'_k (2π)²|k|² Re(û_j(k)·conj(ŵ_j(k)))`;
 for a Galerkin test `w` the `k`-sum is a finite `fourierBox` sum (`coeff_zero_outside_box`),
 so finite Cauchy–Schwarz gives the `C(w)·‖u‖` bound. -/
+/-- For a Galerkin test `w`, the Stokes test pairing `stokesTestPairing u w` is bounded by
+`C·‖u‖` for some `C` depending only on `w` — the `k`-sum collapses to the finite `fourierBox`
+window of `w`, then finite Cauchy–Schwarz gives the bound. -/
 theorem stokesTestPairing_bound_of_galerkinTest (w : L2Sigma) (hw : IsGalerkinTest w) :
     ∃ C : ℝ, ∀ u : L2VF, |stokesTestPairing u (w : L2VF)| ≤ C * ‖u‖ := by
   obtain ⟨n₀, hn₀⟩ := hw
@@ -78,6 +81,8 @@ theorem stokesTestPairing_bound_of_galerkinTest (w : L2Sigma) (hw : IsGalerkinTe
 
 A countable family of Galerkin tests that finitely spans each finite-dimensional
 `velocitySpan N`; density in `L2Sigma` follows from `velocityProjection_n_tendsto`. -/
+/-- There is a countable family of Galerkin tests that finitely spans every finite-dimensional
+`velocitySpan N` — density in `L2Sigma` then follows from `velocityProjection_n_tendsto`. -/
 theorem exists_galerkin_test_family :
     ∃ w : ℕ → L2Sigma,
       (∀ m, IsGalerkinTest (w m)) ∧
