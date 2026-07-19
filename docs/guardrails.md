@@ -114,6 +114,17 @@ why it matters, and what to do instead. CI enforces the mechanical ones
 
 ## Build-first rule
 
-- **What:** `lake build` must pass before and after a change; never report success otherwise.
-- **Why:** A red build invalidates every other claim in the report.
-- **Instead:** Run `scripts/agent-preflight.sh`; fix or revert until green, then report status honestly.
+- **What:** If a change touches `.lean`, `lakefile.toml`, or `lean-toolchain`,
+  `lake build` (an incremental build at minimum) must pass before and after the
+  change; never report a build as green without having run it. A change that
+  touches none of those files has no Lean build to check — verify what is
+  actually applicable instead (e.g. for docs/templates, that links resolve and
+  any YAML front matter parses).
+- **Why:** A red build invalidates every other claim in the report; an
+  unrun-but-claimed build is worse, since it hides that nothing was checked.
+- **Instead:** The AI agent team runs `bash scripts/agent-preflight.sh` for this
+  (see `AGENTS.md`) — that script and the mandate to run it are agent-team
+  tooling, not imposed on other contributors. Anyone building locally can run
+  `lake build` directly; see `docs/build-and-checks.md` for how, and
+  `CONTRIBUTING.md` for what a human contributor is actually expected to run and
+  report.

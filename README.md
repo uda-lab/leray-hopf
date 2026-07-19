@@ -183,6 +183,13 @@ namespace reachable from the release import cone (`scripts/check-release-cone.sh
 #147, #151). The full build plus the live axiom pin described above run manually via
 `workflow_dispatch`.
 
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the build-cost policy, the
+statement-changing PR review requirement, and issue/PR conventions.
+[`SECURITY.md`](SECURITY.md) covers soundness issues, guard bypasses, and
+supply-chain concerns.
+
 ## License and citation
 
 Copyright 2026 Tomoki Uda.
