@@ -44,7 +44,7 @@ exact edition/theorem-number citation for that generality (see "Required before 
 | Lean hypothesis | Role |
 |---|---|
 | `GT : GelfandTriple` | supplies `V`, `H`, `V'`, the embedding `ι : V →L[ℝ] H`, and the induced `hToVprime : H →L[ℝ] V'` making `V ↪ H ↪ V'` a genuine evolution triple. |
-| `hT : 0 < T` | nonempty time interval; needed for `ContinuousOn` on `Set.Icc 0 T` to be non-vacuous. |
+| `hT : 0 < T` | not needed for `Set.Icc 0 T` nonemptiness (that holds for any `T ≥ 0`); it gives the open interval `Set.Ioo 0 T` positive length, which the weak-time-derivative apparatus (test functions with `tsupport ψ ⊆ Set.Ioo 0 T`, du Bois-Reymond bump construction) requires. |
 | `uV : ℝ → GT.V` | the `V`-valued curve whose `H`-representative is sought. |
 | `W : W1pTime GT 2 2 T uV` | packages `uV ∈ L²(0,T;V)` **and** its weak time derivative `u' ∈ L²(0,T;V')`, at the fixed exponent pair `2, 2`. |
 

@@ -43,7 +43,7 @@ open MeasureTheory Filter Topology
 open scoped ENNReal
 
 /-- **Lions–Magenes good-representative embedding, `p = q = 2` case (issue #158).**
-A `W^{1,2}(0,T;V) ∩ L^2(0,T;V')` element has a representative that is continuous into `H`:
+A `{u ∈ L²(0,T;V) : u' ∈ L²(0,T;V')}` element has a representative that is continuous into `H`:
 there is `ũ : ℝ → H`, continuous on `[0,T]`, agreeing a.e. with the `H`-valued image curve
 `t ↦ ι (uV t)`.
 
@@ -64,7 +64,7 @@ theorem w1pTime_continuous_in_H (GT : GelfandTriple) {T : ℝ} (hT : 0 < T)
     letI := GT.instNACG_H; letI := GT.instIPS_H;
     ∃ ũ : ℝ → GT.H, ContinuousOn ũ (Set.Icc 0 T) ∧
       ũ =ᵐ[volume.restrict (Set.Icc 0 T)] (fun t => GT.ι (uV t)) := by
-  -- TODO: Lions–Magenes embedding `W^{1,2}(0,T;V) ∩ L^2(0,T;V') ↪ C([0,T];H)`.
+  -- TODO: Lions–Magenes embedding `{u ∈ L²(0,T;V) : u' ∈ L²(0,T;V')} ↪ C([0,T];H)`.
   -- Missing mathlib pillar: vector-valued time-Sobolev / Bochner-time good-representative
   -- theory (the same pillar behind axiom `galerkin_limit_passage*`). MONTHS-CLASS residual,
   -- deferred (D1 embedding); see the file docstring "Status" section.
