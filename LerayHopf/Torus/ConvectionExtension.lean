@@ -748,7 +748,7 @@ private lemma convValW_smul_w (c : ℝ) (u v : L2VF) (w : L2Sigma) :
 
 /-! ### CLOSURE: galerkinTestSpan ⊆ IsGalerkinTest -/
 
-/-- If `u` is already fixed by the degree-`n` Fourier projection, it is fixed by any coarser
+/-- If `u` is already fixed by the degree-`n` Fourier projection, it is fixed by any higher-cutoff
 projection `m ≥ n` too: `fourierBox` is monotone in the degree, so the zero-coefficients
 outside `fourierBox n` are still zero outside the larger `fourierBox m`. -/
 lemma velocityProjection_n_eq_of_le {n m : ℕ} (hnm : n ≤ m) (u : L2VF)
