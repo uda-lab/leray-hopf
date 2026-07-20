@@ -80,6 +80,13 @@ jobs:
         with:
           use-mathlib-cache: true
 
+      - name: Build Experimental opt-in module (required by check-axioms-live)
+        id: build_experimental
+        continue-on-error: true
+        run: |
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake build LerayHopf.Experimental 2>&1 | tee logs/build-experimental.log
+
       - name: Guardrail — no unmarked sorry
         id: guard_sorry
         continue-on-error: true
@@ -126,6 +133,7 @@ jobs:
 
           declare -A OUTCOME=(
             [build]="${{ steps.build.outcome }}"
+            [build-experimental]="${{ steps.build_experimental.outcome }}"
             [check-no-sorry.sh]="${{ steps.guard_sorry.outcome }}"
             [check-no-axiom.sh]="${{ steps.guard_axiom.outcome }}"
             [check-theorem-names.sh]="${{ steps.guard_names.outcome }}"
@@ -152,6 +160,7 @@ jobs:
             echo "| Step | Result |"
             echo "|---|---|"
             echo "| full \`lake build\` (mathlib-cache-first) | ${OUTCOME[build]} |"
+            echo "| \`lake build LerayHopf.Experimental\` (opt-in module, required by check-axioms-live.sh) | ${OUTCOME[build-experimental]} |"
             echo "| \`scripts/check-no-sorry.sh\` | ${OUTCOME[check-no-sorry.sh]} |"
             echo "| \`scripts/check-no-axiom.sh\` | ${OUTCOME[check-no-axiom.sh]} |"
             echo "| \`scripts/check-theorem-names.sh\` | ${OUTCOME[check-theorem-names.sh]} |"
@@ -196,6 +205,7 @@ jobs:
           FAILED=0
           for outcome in \
             "${{ steps.build.outcome }}" \
+            "${{ steps.build_experimental.outcome }}" \
             "${{ steps.guard_sorry.outcome }}" \
             "${{ steps.guard_axiom.outcome }}" \
             "${{ steps.guard_names.outcome }}" \
