@@ -33,8 +33,9 @@ Helmholtz/curl density (Fourier route), the Mazur weak-limit closure, and the
 determined-form convection extensions — is **proved sorry-free**, not assumed.
 (The `LerayHopf.Experimental` opt-in, outside both cones, still carries residual
 `sorry`s — see [`docs/STATUS.md`](STATUS.md).) The current project-axiom frontier
-(𝕋³ = 0, ℝ³ = 0) is pinned by `scripts/check-axioms-live.sh`, a CI gate that runs
-`#print axioms` and fails on any unexpected or missing axiom, or any `sorryAx`.
+(𝕋³ = 0, ℝ³ = 0) is pinned by `scripts/check-axioms-live.sh`, a guard script run in
+manually triggered GitHub Actions workflows; it runs `#print axioms` and fails on
+any unexpected or missing axiom, or any `sorryAx`.
 
 > **Honest scope.** The 𝕋³ and ℝ³ capstones are both **unconditional / kernel-only**.
 > The limit-passage and compactness layers used by the capstones are proved theorems,
