@@ -171,3 +171,27 @@ The job summary and artifact are bounded by GitHub's run/artifact retention wind
 stored forever. For a commit that is being cut as an actual public release, additionally
 attach the attestation Markdown file as an asset on the corresponding GitHub Release —
 Release assets do not expire.
+
+## README Star History embed (issue #189)
+
+The README's [Star History](../README.md#star-history) chart is [Star History](https://www.star-history.com/)'s
+standard authenticated embed: a `sealed_token` query parameter on the
+`api.star-history.com/chart` URL, generated from a fine-grained GitHub personal access
+token scoped to `uda-lab/leray-hopf` only, read-only, no write/admin permissions. The
+sealed token is Star History's public-safe embed value (not the raw PAT) and is safe to
+commit to a public README; the raw PAT itself is never committed anywhere.
+
+If the chart stops rendering (expired token, revoked token, or a Star History service
+change):
+
+1. Sign in at [star-history.com](https://www.star-history.com/) and follow the
+   [authenticated embed guide](https://www.star-history.com/blog/how-to-use-github-star-history/)
+   to regenerate the embed for `uda-lab/leray-hopf`, creating a new fine-grained PAT
+   scoped the same way (this repository only, read-only) if the old one expired.
+2. Replace the `sealed_token` value in all three `srcset`/`src` URLs in the README's
+   Star History section with the newly generated one. Do not commit the raw PAT itself.
+3. Re-run the anonymous-render check before merging:
+   `curl -s -o /dev/null -w '%{http_code}' "<img src URL>"` should print `200`.
+
+If Star History is unavailable for an extended period, remove the embed rather than
+leave a broken image in the README.

@@ -96,6 +96,23 @@ sorry/axiom status), the CI policy, and how to reproduce a release attestation, 
 [`docs/build-and-checks.md`](docs/build-and-checks.md) and
 [`docs/claims-and-scope.md`](docs/claims-and-scope.md).
 
+## Community interest
+
+Star count is a public-visibility / dissemination signal only — it does not measure
+mathematical quality, proof correctness, or research value; see
+[Verification status](#verification-status) and
+[`docs/claims-and-scope.md`](docs/claims-and-scope.md) for that.
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=uda-lab%2Fleray-hopf&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=uda-lab/leray-hopf&type=date&theme=dark&legend=top-left&sealed_token=seblTJCpa7k-WwWrbWgEIEcfB7J8ZiCwjxREO4qohU0rD65saqGYQJIVkXGjXTtu7E6rBeWSoLwCjFiCdMLs1XiPeYYnIjDcsUpyvM9KXZSjIxqCX5D5jngEDa25wroBaFIgnv8hY75VJLwU-swtQAnAvrGMmjYKIlJW0wOBpLuSRw6Aa1--x4mqRdoG" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=uda-lab/leray-hopf&type=date&legend=top-left&sealed_token=seblTJCpa7k-WwWrbWgEIEcfB7J8ZiCwjxREO4qohU0rD65saqGYQJIVkXGjXTtu7E6rBeWSoLwCjFiCdMLs1XiPeYYnIjDcsUpyvM9KXZSjIxqCX5D5jngEDa25wroBaFIgnv8hY75VJLwU-swtQAnAvrGMmjYKIlJW0wOBpLuSRw6Aa1--x4mqRdoG" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=uda-lab/leray-hopf&type=date&legend=top-left&sealed_token=seblTJCpa7k-WwWrbWgEIEcfB7J8ZiCwjxREO4qohU0rD65saqGYQJIVkXGjXTtu7E6rBeWSoLwCjFiCdMLs1XiPeYYnIjDcsUpyvM9KXZSjIxqCX5D5jngEDa25wroBaFIgnv8hY75VJLwU-swtQAnAvrGMmjYKIlJW0wOBpLuSRw6Aa1--x4mqRdoG" />
+ </picture>
+</a>
+
 ## Documentation, contributing, citation, license
 
 - [`docs/architecture.md`](docs/architecture.md) — module map.
@@ -103,7 +120,7 @@ sorry/axiom status), the CI policy, and how to reproduce a release attestation, 
   import guide.
 - [`docs/STATUS.md`](docs/STATUS.md) — axiom/`sorry` ledger and integrity backstop.
 - [`docs/build-and-checks.md`](docs/build-and-checks.md) — build, discipline checks,
-  and CI policy.
+  CI policy, and the Star History embed's token-rotation runbook.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — build-cost policy, statement-changing PR
   review requirement, and issue/PR conventions.
 - [`SECURITY.md`](SECURITY.md) — soundness issues, guard bypasses, and supply-chain
