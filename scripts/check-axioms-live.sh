@@ -96,12 +96,28 @@ echo "==> Running live #print axioms pin..."
 # Run print_axioms.lean and capture output.
 # flock is used if available to avoid OOM from concurrent builds.
 if command -v flock >/dev/null 2>&1; then
-  OUTPUT="$(flock /tmp/lean-build.lock lake env lean "scripts/print_axioms.lean" 2>&1)"
+  LEAN_CMD=(flock /tmp/lean-build.lock lake env lean "scripts/print_axioms.lean")
 else
-  OUTPUT="$(lake env lean "scripts/print_axioms.lean" 2>&1)"
+  LEAN_CMD=(lake env lean "scripts/print_axioms.lean")
 fi
 
+# Disable errexit around the capture so a nonzero exit is diagnosed loudly
+# instead of aborting the script before $OUTPUT is ever echoed (this is
+# exactly the failure mode that made release-attestation run 29712522859
+# fail with no visible error text — see issue #185).
+set +e
+OUTPUT="$("${LEAN_CMD[@]}" 2>&1)"
+LEAN_STATUS=$?
+set -e
+
 echo "$OUTPUT"
+
+if [ "$LEAN_STATUS" -ne 0 ]; then
+  echo "ERROR: 'lake env lean scripts/print_axioms.lean' failed with exit $LEAN_STATUS." >&2
+  echo "  print_axioms.lean imports LerayHopf.Experimental, which is NOT a default lake target." >&2
+  echo "  Build it first: lake build LerayHopf.Experimental" >&2
+  exit 1
+fi
 
 FAIL=0
 
