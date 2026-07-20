@@ -187,10 +187,11 @@ itself create a tag or Release. Adopting a candidate SHA as a release is an owne
 decision, so for now this is a manual step the owner (or someone acting under explicit
 owner authorization) performs after reviewing a successful run: create an annotated tag
 pointing at the attested SHA, create a GitHub Release (pre-release before a first stable
-tag), and attach the five files above plus checksums. A future iteration may add an
-explicit `workflow_dispatch` input (e.g. `publish_release_assets=true` plus a tag name) so
-an owner-triggered run can create a draft/pre-release directly — if added, it must still
-fail closed on tag/SHA mismatch and must never overwrite an existing Release.
+tag), and attach the five files listed above (the checksum file is one of them). A future
+iteration may add an explicit `workflow_dispatch` input (e.g. `publish_release_assets=true`
+plus a tag name) so an owner-triggered run can create a draft/pre-release directly — if
+added, it must still fail closed on tag/SHA mismatch and must never overwrite an existing
+Release.
 
 ## README Star History embed (issue #189)
 
