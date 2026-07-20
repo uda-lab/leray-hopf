@@ -98,11 +98,11 @@ sorry/axiom status), the CI policy, and how to reproduce a release attestation, 
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=uda-lab%2Fleray-hopf&amp;type=date&amp;legend=top-left">
+<a href="https://www.star-history.com/?repos=uda-lab/leray-hopf&amp;type=date&amp;legend=top-left">
  <picture>
    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=uda-lab/leray-hopf&amp;type=date&amp;theme=dark&amp;legend=top-left&amp;sealed_token=seblTJCpa7k-WwWrbWgEIEcfB7J8ZiCwjxREO4qohU0rD65saqGYQJIVkXGjXTtu7E6rBeWSoLwCjFiCdMLs1XiPeYYnIjDcsUpyvM9KXZSjIxqCX5D5jngEDa25wroBaFIgnv8hY75VJLwU-swtQAnAvrGMmjYKIlJW0wOBpLuSRw6Aa1--x4mqRdoG" />
    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=uda-lab/leray-hopf&amp;type=date&amp;legend=top-left&amp;sealed_token=seblTJCpa7k-WwWrbWgEIEcfB7J8ZiCwjxREO4qohU0rD65saqGYQJIVkXGjXTtu7E6rBeWSoLwCjFiCdMLs1XiPeYYnIjDcsUpyvM9KXZSjIxqCX5D5jngEDa25wroBaFIgnv8hY75VJLwU-swtQAnAvrGMmjYKIlJW0wOBpLuSRw6Aa1--x4mqRdoG" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=uda-lab/leray-hopf&amp;type=date&amp;legend=top-left&amp;sealed_token=seblTJCpa7k-WwWrbWgEIEcfB7J8ZiCwjxREO4qohU0rD65saqGYQJIVkXGjXTtu7E6rBeWSoLwCjFiCdMLs1XiPeYYnIjDcsUpyvM9KXZSjIxqCX5D5jngEDa25wroBaFIgnv8hY75VJLwU-swtQAnAvrGMmjYKIlJW0wOBpLuSRw6Aa1--x4mqRdoG" />
+   <img alt="Star History chart for uda-lab/leray-hopf" src="https://api.star-history.com/chart?repos=uda-lab/leray-hopf&amp;type=date&amp;legend=top-left&amp;sealed_token=seblTJCpa7k-WwWrbWgEIEcfB7J8ZiCwjxREO4qohU0rD65saqGYQJIVkXGjXTtu7E6rBeWSoLwCjFiCdMLs1XiPeYYnIjDcsUpyvM9KXZSjIxqCX5D5jngEDa25wroBaFIgnv8hY75VJLwU-swtQAnAvrGMmjYKIlJW0wOBpLuSRw6Aa1--x4mqRdoG" />
  </picture>
 </a>
 
