@@ -36,8 +36,12 @@ npm run build # writes ../../docs/assets/code-loc-treemap.svg and .json
 repository root, then `tools/code-treemap/generate-code-loc-treemap.mjs` to lay out and
 render the treemap with `d3-hierarchy`'s `treemapSquarify`. The companion
 `docs/assets/code-loc-treemap.json` records the exact per-file `{path, code, comment,
-blank}` data, the cloc version, and the commit the figure was generated from; the same
-metadata is also embedded in the SVG's `<metadata>` element.
+blank}` data, the cloc version, and a `sourceDigest` — a sha256 hash computed only from
+that per-file data, not from `git rev-parse HEAD` — so re-running the command against
+the same Lean source tree reproduces the same digest regardless of which commit is
+checked out or how many times the artifact itself has since been committed; the same
+summary metadata (without the per-file list) is also embedded in the SVG's `<metadata>`
+element.
 
 This is a manually-updated snapshot, not a per-commit CI artifact — see
 `tools/code-treemap/package.json` for the pinned tool versions and

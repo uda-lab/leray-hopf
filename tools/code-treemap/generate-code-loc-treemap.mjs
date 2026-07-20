@@ -2,27 +2,30 @@
 // Deterministic static SVG treemap generator for LerayHopf/ Lean source code LOC.
 //
 // Usage:
-//   node generate-code-loc-treemap.mjs <cloc-by-file-json> <output.svg> [output.json] [commit-sha]
+//   node generate-code-loc-treemap.mjs <cloc-by-file-json> <output.svg> [output.json]
 //
 // Input is the output of `cloc --by-file --json --quiet LerayHopf.lean LerayHopf`
 // run from the repository root (see tools/code-treemap/package.json "measure" script).
 //
-// No Date.now()/Math.random() is used anywhere below: layout, color, and label
-// choices are a pure function of the input JSON (plus the optional commit SHA,
-// which is itself derived from repository state, not wall-clock time), so the
-// same input always produces a byte-identical SVG.
+// No Date.now()/Math.random()/git-HEAD is used anywhere below: layout, color,
+// label, and the embedded "sourceDigest" are a pure function of the measured
+// per-file {path, code, comment, blank} data, so the same Lean source tree
+// always produces a byte-identical SVG — independent of which commit you
+// happen to have checked out when you run this. (An earlier version embedded
+// `git rev-parse HEAD` instead; that is circular for a *committed* generated
+// artifact — committing the SVG advances HEAD past whatever was embedded in
+// it, so the artifact could never reproduce itself byte-for-byte at its own
+// commit. See PR #193 review discussion.)
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { execFileSync } from "node:child_process";
+import { dirname } from "node:path";
+import { createHash } from "node:crypto";
 import { hierarchy, treemap, treemapSquarify } from "d3-hierarchy";
 
-const [, , inputPath, outputSvgPath, outputJsonPathArg, commitShaArg] = process.argv;
+const [, , inputPath, outputSvgPath, outputJsonPathArg] = process.argv;
 
 if (!inputPath || !outputSvgPath) {
-  console.error(
-    "Usage: node generate-code-loc-treemap.mjs <cloc-by-file-json> <output.svg> [output.json] [commit-sha]"
-  );
+  console.error("Usage: node generate-code-loc-treemap.mjs <cloc-by-file-json> <output.svg> [output.json]");
   process.exit(1);
 }
 
@@ -168,14 +171,14 @@ parts.push(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}" font-family="Helvetica, Arial, sans-serif">`
 );
 
-let commitSha = commitShaArg;
-if (!commitSha) {
-  try {
-    commitSha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: process.cwd() }).toString().trim();
-  } catch {
-    commitSha = "unknown";
-  }
-}
+// A stable identifier for "which Lean source tree was measured", computed only
+// from the measured data itself (not from git state) — so it is reproducible by
+// re-running the documented command against the same source tree, regardless of
+// which commit happens to be checked out or how many times the artifact has been
+// committed/rebased since.
+const sourceDigest = createHash("sha256")
+  .update(JSON.stringify(files.map((f) => [f.path, f.code, f.comment, f.blank])))
+  .digest("hex");
 
 const totalCode = files.reduce((s, f) => s + f.code, 0);
 // Summary only in the SVG's <metadata> — the per-file breakdown already lives in
@@ -185,7 +188,7 @@ const summaryMetadata = {
   generator: "tools/code-treemap/generate-code-loc-treemap.mjs",
   measurementMethod: "cloc --by-file --json --quiet LerayHopf.lean LerayHopf",
   clocVersion,
-  generatingCommit: commitSha,
+  sourceDigest: `sha256:${sourceDigest}`,
   fileCount: files.length,
   totalCodeLoc: totalCode,
   perFileDataFile: "docs/assets/code-loc-treemap.json",
@@ -203,7 +206,7 @@ parts.push(
 parts.push(
   `<text x="${WIDTH - MARGIN}" y="${MARGIN + 22}" font-size="12" fill="#555555" text-anchor="end">${esc(
     files.length
-  )} files, ${esc(totalCode)} code LOC (cloc ${esc(clocVersion)}, commit ${esc(commitSha.slice(0, 12))})</text>`
+  )} files, ${esc(totalCode)} code LOC (cloc ${esc(clocVersion)}, source ${esc(sourceDigest.slice(0, 12))})</text>`
 );
 
 const treemapTop = MARGIN + TITLE_H;
@@ -292,7 +295,7 @@ const fullMetadata = {
   generator: summaryMetadata.generator,
   measurementMethod: summaryMetadata.measurementMethod,
   clocVersion: summaryMetadata.clocVersion,
-  generatingCommit: summaryMetadata.generatingCommit,
+  sourceDigest: summaryMetadata.sourceDigest,
   fileCount: summaryMetadata.fileCount,
   totalCodeLoc: summaryMetadata.totalCodeLoc,
   files: files.map((f) => ({ path: f.path, code: f.code, comment: f.comment, blank: f.blank })),

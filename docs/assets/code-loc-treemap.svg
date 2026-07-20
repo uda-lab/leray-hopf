@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1424 892" font-family="Helvetica, Arial, sans-serif">
-<metadata>{&quot;generator&quot;:&quot;tools/code-treemap/generate-code-loc-treemap.mjs&quot;,&quot;measurementMethod&quot;:&quot;cloc --by-file --json --quiet LerayHopf.lean LerayHopf&quot;,&quot;clocVersion&quot;:&quot;2.06&quot;,&quot;generatingCommit&quot;:&quot;78662328f74fad049b3a795a17c257af3850c3e7&quot;,&quot;fileCount&quot;:97,&quot;totalCodeLoc&quot;:25451,&quot;perFileDataFile&quot;:&quot;docs/assets/code-loc-treemap.json&quot;}</metadata>
+<metadata>{&quot;generator&quot;:&quot;tools/code-treemap/generate-code-loc-treemap.mjs&quot;,&quot;measurementMethod&quot;:&quot;cloc --by-file --json --quiet LerayHopf.lean LerayHopf&quot;,&quot;clocVersion&quot;:&quot;2.06&quot;,&quot;sourceDigest&quot;:&quot;sha256:680a1127d1c2cb1499e482e28643952e44a807b1f55dcfd0f32587d81dfe2cb1&quot;,&quot;fileCount&quot;:97,&quot;totalCodeLoc&quot;:25451,&quot;perFileDataFile&quot;:&quot;docs/assets/code-loc-treemap.json&quot;}</metadata>
 <title>Lean source code LOC treemap — LerayHopf/</title>
 <rect x="0" y="0" width="1424" height="892" fill="#ffffff"/>
 <text x="12" y="34" font-size="20" font-weight="bold" fill="#111111">Lean source code LOC treemap — LerayHopf/</text>
-<text x="1412" y="34" font-size="12" fill="#555555" text-anchor="end">97 files, 25451 code LOC (cloc 2.06, commit 78662328f74f)</text>
+<text x="1412" y="34" font-size="12" fill="#555555" text-anchor="end">97 files, 25451 code LOC (cloc 2.06, source 680a1127d1c2)</text>
 <g transform="translate(12, 46)">
 <rect x="3" y="3" width="812" height="754" fill="none" stroke="#333333" stroke-width="1.5"/>
 <text x="7" y="16" font-size="12" font-weight="bold" fill="#222222">R3/</text>

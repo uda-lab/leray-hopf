@@ -2,7 +2,7 @@
   "generator": "tools/code-treemap/generate-code-loc-treemap.mjs",
   "measurementMethod": "cloc --by-file --json --quiet LerayHopf.lean LerayHopf",
   "clocVersion": "2.06",
-  "generatingCommit": "78662328f74fad049b3a795a17c257af3850c3e7",
+  "sourceDigest": "sha256:680a1127d1c2cb1499e482e28643952e44a807b1f55dcfd0f32587d81dfe2cb1",
   "fileCount": 97,
   "totalCodeLoc": 25451,
   "files": [
