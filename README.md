@@ -101,9 +101,7 @@ sorry/axiom status), the CI policy, and how to reproduce a release attestation, 
 The area of each rectangle is proportional to the number of non-comment,
 non-blank lines (code LOC) in the corresponding Lean source file, covering
 [`LerayHopf.lean`](LerayHopf.lean) and every file under [`LerayHopf/`](LerayHopf/);
-color marks the top-level module a file belongs to. **This figure does not
-represent proof difficulty, mathematical importance, or code quality** — it is a
-visualization of physical source size only.
+color marks the top-level module a file belongs to.
 
 [![Lean source code treemap](docs/assets/code-loc-treemap.svg)](docs/assets/code-loc-treemap.svg)
 
