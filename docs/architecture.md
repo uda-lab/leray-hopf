@@ -32,6 +32,13 @@ npm install   # installs the pinned cloc + d3-hierarchy versions, isolated from 
 npm run build # writes ../../docs/assets/code-loc-treemap.svg and .json
 ```
 
+`tools/code-treemap`'s `cloc` devDependency (the [AlDanial/cloc](https://github.com/AlDanial/cloc)
+release published to npm) is GPL-2.0-licensed. It runs as an unmodified, separate
+command-line tool invoked as a subprocess during measurement only — it is not linked
+into, vendored into, or distributed as part of the repository's own Apache-2.0-licensed
+code (Lean sources or otherwise); nothing from `cloc` ships in `docs/assets/code-loc-treemap.svg`
+beyond the plain LOC counts it reports.
+
 `npm run build` runs `cloc --by-file --json --quiet LerayHopf.lean LerayHopf` from the
 repository root, then `tools/code-treemap/generate-code-loc-treemap.mjs` to lay out and
 render the treemap with `d3-hierarchy`'s `treemapSquarify`. The companion

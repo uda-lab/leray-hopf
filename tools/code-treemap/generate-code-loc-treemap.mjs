@@ -191,7 +191,9 @@ const summaryMetadata = {
   sourceDigest: `sha256:${sourceDigest}`,
   fileCount: files.length,
   totalCodeLoc: totalCode,
-  perFileDataFile: "docs/assets/code-loc-treemap.json",
+  // Reflect the actual output path this run was invoked with, not a hard-coded
+  // guess — stays correct if the caller passes a custom [output.json].
+  perFileDataFile: outputJsonPath,
 };
 parts.push(`<metadata>${esc(JSON.stringify(summaryMetadata))}</metadata>`);
 parts.push(`<title>Lean source code LOC treemap — LerayHopf/</title>`);
