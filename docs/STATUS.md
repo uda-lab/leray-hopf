@@ -17,6 +17,30 @@
 > Milestone-table and ledger rows below are historical (dated by their PR/issue refs);
 > where a row's axiom count conflicts with this banner, the banner wins.
 
+## Repository hygiene
+
+- The `LerayHopf/` import DAG has **zero dead files**: every `.lean` file under
+  `LerayHopf/` is reachable via at least one `import` statement.
+- Doc-string coverage on public declarations is high throughout the tree.
+- Exactly **6** remaining `sorry`s, every one same-line `-- ALLOW_SORRY:`-marked, none
+  reachable from either capstone, and none reachable from `import LerayHopf` at all
+  (see [`docs/claims-and-scope.md`](claims-and-scope.md)'s "Import guide"; enforced by
+  `scripts/check-release-cone.sh`, which also enforces that the release cone is
+  axiom-free and free of placeholder namespaces). All six are Lions–Magenes-class
+  Bochner-time walls, gathered behind the explicit opt-in `LerayHopf.Experimental`:
+  `Bochner/TimeSobolevExperimental.lean:71`, `Bochner/TimeSobolevAC.lean:322`,
+  `Bochner/TimeMollification.lean:196`,
+  `Bochner/TimeMollifierInterval.lean:297,466,601`. Verify with
+  `grep -rn 'sorry -- ALLOW_SORRY' LerayHopf/`.
+- Every one of those 6 has a **statement card** under `docs/statement-cards/` (exact
+  type, literature reference, hypothesis mapping, consumer/special case, boundary-case
+  checklist); see [`docs/statement-gates.md`](statement-gates.md) for the process and
+  [`docs/postmortems/2026-07-w1ptime-false-statement.md`](postmortems/2026-07-w1ptime-false-statement.md)
+  for the incident that motivated it (`w1pTime_continuous_in_H` carried a false
+  generic-exponent claim, unproved, before it was corrected).
+  `scripts/check-statement-cards.sh` enforces card coverage and pins
+  `w1pTime_continuous_in_H` at its corrected `p = q = 2` signature in CI.
+
 Running ledger for the autonomous build of Leray–Hopf weak existence on the real
 3-torus. This file is the **integrity backstop and final report**: every `sorry` and
 every `axiom` in the Lean sources is listed here with a reason, a reference, and a

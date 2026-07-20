@@ -2,6 +2,7 @@
 
 A one-page module map of the ~95-file `LerayHopf/` tree, grouped by layer. For the
 mathematical narrative see `docs/archive/REPORT.md` (historical) / `docs/formalization-review-ja.md`;
+for the exact capstone claims see [`docs/claims-and-scope.md`](claims-and-scope.md);
 for the axiom ledger see `HANDOFF.md` / `docs/STATUS.md`.
 
 ## Shared abstract layer (top-level, domain-neutral)
@@ -175,3 +176,10 @@ of placeholder namespaces**, statically enforced by `scripts/check-release-cone.
 still-incomplete Bochner modules are NOT among these remaining files — they live behind the
 explicit opt-in `LerayHopf.Experimental` instead (see the Bochner section above).
 See the module docstring in `LerayHopf.lean` for the full import list and layering rationale.
+
+## History and provenance
+
+Both capstones are long past the design-and-roadmap stage; the following documents are
+kept for provenance, not as current guidance: [`docs/archive/milestone.md`](archive/milestone.md),
+[`docs/archive/leray_hopf_lean_mvp_plan.md`](archive/leray_hopf_lean_mvp_plan.md),
+[`docs/archive/ROADMAP.md`](archive/ROADMAP.md), [`docs/archive/REPORT.md`](archive/REPORT.md).
