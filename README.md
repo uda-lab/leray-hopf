@@ -1,4 +1,4 @@
-# leray-hopf
+# Leray–Hopf weak existence in Lean
 
 [![Release-candidate build attestation](https://github.com/uda-lab/leray-hopf/actions/workflows/release-attestation.yml/badge.svg?event=workflow_dispatch)](https://github.com/uda-lab/leray-hopf/actions/workflows/release-attestation.yml)
 
@@ -11,8 +11,9 @@ incompressible Navier–Stokes equations, on the periodic 3-torus 𝕋³ and on 
 space ℝ³. Two capstone existence theorems are proved and machine-checked, and both
 are **kernel-only**: `#print axioms` returns only the standard kernel axioms
 (`propext`, `Classical.choice`, `Quot.sound`), with zero project axioms and no
-`sorryAx`. This repository does **not** claim regularity, uniqueness, or
-non-uniqueness of the solutions it constructs.
+`sorryAx`. This repository does **not** claim smoothness or higher regularity
+beyond the stated energy-class properties, nor uniqueness or non-uniqueness of the
+solutions it constructs.
 
 **Start here:** [**uda-lab.github.io/leray-hopf-notes**](https://uda-lab.github.io/leray-hopf-notes/)
 is an interactive, browsable companion to this repository — it presents the Lean
@@ -61,7 +62,9 @@ guarantees — and, just as importantly, what it does not — is
   assumption on ℝ³.
 - **Separated-variable weak formulation**: test functions are `ψ(t)·w(x)`, not a
   general space-time test function.
-- **Regularity, uniqueness, and non-uniqueness are not claimed.**
+- **No smoothness or higher regularity beyond the stated energy-class
+  properties** (a.e.-in-time H¹ membership plus integrable viscous dissipation);
+  **uniqueness and non-uniqueness are not claimed.**
 - **`LerayHopf.Experimental`** isolates incomplete, opt-in additional work; it is not
   reachable from the release surface below and not needed by either capstone.
 

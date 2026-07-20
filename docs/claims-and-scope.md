@@ -26,11 +26,13 @@ theorem exists_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
       Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)
 ```
 
-Everything else in the Galerkin construction — the functional-analytic backbone, the
-finite-dimensional ODE solver, spatial Rellich–Kondrachov compactness, the
-Aubin–Lions-in-time diagonalization, Helmholtz/curl density (Fourier route), the
-Mazur weak-limit closure, and the determined-form convection extensions — is
-**proved sorry-free**, not assumed. The current project-axiom frontier
+Every component in the transitive dependency cones of the two capstones — the
+functional-analytic backbone, the finite-dimensional ODE solver, spatial
+Rellich–Kondrachov compactness, the Aubin–Lions-in-time diagonalization,
+Helmholtz/curl density (Fourier route), the Mazur weak-limit closure, and the
+determined-form convection extensions — is **proved sorry-free**, not assumed.
+(The `LerayHopf.Experimental` opt-in, outside both cones, still carries residual
+`sorry`s — see [`docs/STATUS.md`](STATUS.md).) The current project-axiom frontier
 (𝕋³ = 0, ℝ³ = 0) is pinned by `scripts/check-axioms-live.sh`, a CI gate that runs
 `#print axioms` and fails on any unexpected or missing axiom, or any `sorryAx`.
 
@@ -39,9 +41,12 @@ Mazur weak-limit closure, and the determined-form convection extensions — is
 > not project axioms. The convection forms are proof-carrying total trilinear
 > extensions pinned to the genuine Schwartz/Galerkin test-class forms, with
 > fixed-test continuity; they are not claims of a canonical continuous convection
-> operator on all pure `L² × L² × L²` triples. No regularity, uniqueness, or
-> non-uniqueness claim is made. Residual marked `sorry` declarations outside the two
-> capstone cones are tracked in [`docs/STATUS.md`](STATUS.md).
+> operator on all pure `L² × L² × L²` triples. No smoothness or higher regularity
+> beyond the stated energy-class properties (a.e.-in-time H¹ membership plus
+> integrable viscous dissipation; see the claims table below) is claimed, and
+> neither uniqueness nor non-uniqueness is claimed. Residual marked `sorry`
+> declarations outside the two capstone cones are tracked in
+> [`docs/STATUS.md`](STATUS.md).
 
 Public summaries should cite the proof-carrying `LerayHopfSolutionFull` /
 `LerayHopfSolutionFull_R3` structures and the capstones above — **not** a paraphrase
