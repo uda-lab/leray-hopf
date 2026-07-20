@@ -169,17 +169,19 @@ unattested (though still covered by the local pre-push build gate and, on PRs, t
 
 The job summary and artifact are bounded by GitHub's run/artifact retention window, not
 stored forever. For a commit that is being cut as an actual public release, additionally
-attach the attestation Markdown file as an asset on the corresponding GitHub Release —
-Release assets do not expire.
+attach the attestation Markdown file as an asset on the corresponding GitHub Release — the
+workflow artifacts and logs are retention-limited, but Release assets are not subject to
+that Actions retention deadline (a maintainer can still delete a Release or its assets,
+same as any other repository content).
 
 **Example:** the
 [`v0.1.0-rc1` Release](https://github.com/uda-lab/leray-hopf/releases/tag/v0.1.0-rc1)
-durably archives the evidence for attested SHA `7c15710a7b9068a2aa105fc7c11b432e7685b7b5`
+archives the evidence for attested SHA `7c15710a7b9068a2aa105fc7c11b432e7685b7b5`
 (run [29714844283](https://github.com/uda-lab/leray-hopf/actions/runs/29714844283)):
 `attestation.md`, the full artifact zip (guard logs included), the complete raw workflow
 run log, a machine-readable `release-provenance.json`, and a `SHA256SUMS` file making all
-of the above mutually verifiable. This copy survives independently of the workflow run's
-own artifact-retention window. As with the badge above, this certifies exactly that SHA,
+of the above mutually verifiable. This copy is not subject to the workflow run's own
+artifact-retention window. As with the badge above, this certifies exactly that SHA,
 not the branch HEAD at any later time.
 
 Publishing a Release like this is not automatic — the workflow succeeding does not by
