@@ -9,13 +9,14 @@ for the axiom ledger see `HANDOFF.md` / `docs/STATUS.md`.
 
 ![Lean source code treemap](assets/code-loc-treemap.svg)
 
-Each rectangle is a Lean file under `LerayHopf/`; its area is proportional to
-**code LOC** — physical lines minus blank lines and comment lines, as reported by
-[`cloc`](https://github.com/AlDanial/cloc). Color marks the top-level module a file
-belongs to (`Torus/`, `R3/`, `Bochner/`, `Analysis/`, `Galerkin/`, or a root-level
-shared module directly under `LerayHopf/`, including `LerayHopf.lean` itself); the
-same directory always maps to the same color. Hovering a rectangle shows the full
-path and the code/comment/blank line breakdown.
+Each rectangle is a Lean file — `LerayHopf.lean` itself, plus every file under
+`LerayHopf/`; its area is proportional to **code LOC** — physical lines minus blank
+lines and comment lines, as reported by [`cloc`](https://github.com/AlDanial/cloc).
+Color marks the top-level module a file belongs to (`Torus/`, `R3/`, `Bochner/`,
+`Analysis/`, `Galerkin/`, or the root-level group covering `LerayHopf.lean` and the
+shared modules directly under `LerayHopf/`); the same group always maps to the same
+color. Hovering a rectangle shows the full path and the code/comment/blank line
+breakdown.
 
 **This figure represents physical source size only.** It does not measure proof
 difficulty, mathematical importance, or code quality, and it carries no weighting by

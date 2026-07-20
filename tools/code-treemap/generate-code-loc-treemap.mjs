@@ -26,7 +26,15 @@ if (!inputPath || !outputSvgPath) {
   process.exit(1);
 }
 
-const outputJsonPath = outputJsonPathArg ?? outputSvgPath.replace(/\.svg$/, ".json");
+if (!outputSvgPath.endsWith(".svg")) {
+  console.error(`<output.svg> must end in ".svg" (got "${outputSvgPath}") — refusing to guess a JSON sibling path.`);
+  process.exit(1);
+}
+const outputJsonPath = outputJsonPathArg ?? outputSvgPath.slice(0, -".svg".length) + ".json";
+if (outputJsonPath === outputSvgPath) {
+  console.error(`Refusing to run: output.json ("${outputJsonPath}") equals output.svg — this would overwrite the SVG.`);
+  process.exit(1);
+}
 
 // --- 1. Load and validate cloc output -------------------------------------
 
@@ -170,16 +178,19 @@ if (!commitSha) {
 }
 
 const totalCode = files.reduce((s, f) => s + f.code, 0);
-const metadata = {
+// Summary only in the SVG's <metadata> — the per-file breakdown already lives in
+// the companion JSON (outputJsonPath) and each leaf's own <title>; duplicating the
+// full file list here would bloat the SVG and noise every regen diff.
+const summaryMetadata = {
   generator: "tools/code-treemap/generate-code-loc-treemap.mjs",
   measurementMethod: "cloc --by-file --json --quiet LerayHopf.lean LerayHopf",
   clocVersion,
   generatingCommit: commitSha,
   fileCount: files.length,
   totalCodeLoc: totalCode,
-  files: files.map((f) => ({ path: f.path, code: f.code, comment: f.comment, blank: f.blank })),
+  perFileDataFile: "docs/assets/code-loc-treemap.json",
 };
-parts.push(`<metadata>${esc(JSON.stringify(metadata))}</metadata>`);
+parts.push(`<metadata>${esc(JSON.stringify(summaryMetadata))}</metadata>`);
 parts.push(`<title>Lean source code LOC treemap — LerayHopf/</title>`);
 
 // background
@@ -277,7 +288,17 @@ parts.push(`</svg>\n`);
 mkdirSync(dirname(outputSvgPath), { recursive: true });
 writeFileSync(outputSvgPath, parts.join("\n"));
 
+const fullMetadata = {
+  generator: summaryMetadata.generator,
+  measurementMethod: summaryMetadata.measurementMethod,
+  clocVersion: summaryMetadata.clocVersion,
+  generatingCommit: summaryMetadata.generatingCommit,
+  fileCount: summaryMetadata.fileCount,
+  totalCodeLoc: summaryMetadata.totalCodeLoc,
+  files: files.map((f) => ({ path: f.path, code: f.code, comment: f.comment, blank: f.blank })),
+};
+
 mkdirSync(dirname(outputJsonPath), { recursive: true });
-writeFileSync(outputJsonPath, JSON.stringify(metadata, null, 2) + "\n");
+writeFileSync(outputJsonPath, JSON.stringify(fullMetadata, null, 2) + "\n");
 
 console.log(`Wrote ${outputSvgPath} and ${outputJsonPath} (${files.length} files, ${totalCode} code LOC).`);
