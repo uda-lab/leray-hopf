@@ -191,7 +191,13 @@ change):
 2. Replace the `sealed_token` value in all three `srcset`/`src` URLs in the README's
    Star History section with the newly generated one. Do not commit the raw PAT itself.
 3. Re-run the anonymous-render check before merging:
-   `curl -s -o /dev/null -w '%{http_code}' "<img src URL>"` should print `200`.
+   ```bash
+   curl -s -o /dev/null -w '%{http_code}' \
+     "https://api.star-history.com/chart?repos=uda-lab/leray-hopf&type=date&legend=top-left&sealed_token=<YOUR_SEALED_TOKEN>"
+   ```
+   should print `200`. Use the raw `&` separator shown above, not the README's HTML-escaped
+   `&amp;` — a shell/`curl` command line is not HTML, and `&amp;` there is a literal string,
+   not a separator, so a copy-paste straight from the README markup will not work.
 
 If Star History is unavailable for an extended period, remove the embed rather than
 leave a broken image in the README.
