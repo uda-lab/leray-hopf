@@ -96,6 +96,18 @@ sorry/axiom status), the CI policy, and how to reproduce a release attestation, 
 [`docs/build-and-checks.md`](docs/build-and-checks.md) and
 [`docs/claims-and-scope.md`](docs/claims-and-scope.md).
 
+## Repository map
+
+The area of each rectangle is proportional to the number of non-comment,
+non-blank lines (code LOC) in the corresponding Lean source file, covering
+[`LerayHopf.lean`](LerayHopf.lean) and every file under [`LerayHopf/`](LerayHopf/);
+color marks the top-level module a file belongs to.
+
+[![Lean source code treemap](docs/assets/code-loc-treemap.svg)](docs/assets/code-loc-treemap.svg)
+
+See [`docs/architecture.md`](docs/architecture.md#visual-overview-code-loc-treemap)
+for the full-size figure, the measurement method, and how to regenerate it.
+
 ## Star History
 
 <a href="https://www.star-history.com/?repos=uda-lab/leray-hopf&amp;type=date&amp;legend=top-left">

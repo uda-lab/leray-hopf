@@ -1,0 +1,18 @@
+{
+  "name": "code-treemap",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Deterministic static SVG treemap generator for LerayHopf/ Lean source code LOC. Isolated from the Lake package.",
+  "type": "module",
+  "scripts": {
+    "measure": "mkdir -p build && cd ../.. && tools/code-treemap/node_modules/.bin/cloc --by-file --json --quiet LerayHopf.lean LerayHopf > tools/code-treemap/build/code-loc.json",
+    "generate": "cd ../.. && node tools/code-treemap/generate-code-loc-treemap.mjs tools/code-treemap/build/code-loc.json docs/assets/code-loc-treemap.svg",
+    "build": "npm run measure && npm run generate"
+  },
+  "dependencies": {
+    "d3-hierarchy": "3.1.2"
+  },
+  "devDependencies": {
+    "cloc": "2.6.0-cloc"
+  }
+}
