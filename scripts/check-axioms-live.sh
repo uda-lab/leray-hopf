@@ -113,7 +113,7 @@ set -e
 echo "$OUTPUT"
 
 if [ "$LEAN_STATUS" -ne 0 ]; then
-  echo "ERROR: 'lake env lean scripts/print_axioms.lean' failed with exit $LEAN_STATUS." >&2
+  echo "ERROR: '$(printf '%q ' "${LEAN_CMD[@]}")' failed with exit $LEAN_STATUS." >&2
   echo "  print_axioms.lean imports LerayHopf.Experimental, which is NOT a default lake target." >&2
   echo "  Build it first: lake build LerayHopf.Experimental" >&2
   exit 1
