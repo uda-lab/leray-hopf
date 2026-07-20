@@ -78,6 +78,12 @@ version of every bullet above.
 - Build/toolchain-exact verification of a specific release-candidate commit is done by
   manual attestation (the badge above); see
   [`docs/build-and-checks.md`](docs/build-and-checks.md).
+- The badge and its underlying workflow artifact expire; for durable, permanently
+  retained copies of that evidence, see the
+  [Release assets](https://github.com/uda-lab/leray-hopf/releases) (e.g.
+  [`v0.1.0-rc1`](https://github.com/uda-lab/leray-hopf/releases/tag/v0.1.0-rc1)), which
+  certify one exact SHA and do not expire — see "Durability caveat" in
+  [`docs/build-and-checks.md`](docs/build-and-checks.md#durability-caveat).
 - Incomplete additional work is isolated behind the explicit opt-in
   `import LerayHopf.Experimental`, never pulled in by `import LerayHopf`.
 
