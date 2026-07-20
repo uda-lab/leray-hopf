@@ -1,0 +1,592 @@
+{
+  "generator": "tools/code-treemap/generate-code-loc-treemap.mjs",
+  "measurementMethod": "cloc --by-file --json --quiet LerayHopf.lean LerayHopf",
+  "clocVersion": "2.06",
+  "generatingCommit": "3e0ecab48adac4fc482175790b3bf6a7341c0a76",
+  "fileCount": 97,
+  "totalCodeLoc": 25451,
+  "files": [
+    {
+      "path": "LerayHopf.lean",
+      "code": 55,
+      "comment": 96,
+      "blank": 27
+    },
+    {
+      "path": "LerayHopf/Analysis/BilinearExtension.lean",
+      "code": 143,
+      "comment": 52,
+      "blank": 33
+    },
+    {
+      "path": "LerayHopf/Analysis/BoundedMultiplier.lean",
+      "code": 111,
+      "comment": 36,
+      "blank": 19
+    },
+    {
+      "path": "LerayHopf/Analysis/FourierParseval.lean",
+      "code": 417,
+      "comment": 184,
+      "blank": 54
+    },
+    {
+      "path": "LerayHopf/Analysis/LpInterpolation.lean",
+      "code": 50,
+      "comment": 48,
+      "blank": 20
+    },
+    {
+      "path": "LerayHopf/Analysis/PlancherelKernels.lean",
+      "code": 250,
+      "comment": 91,
+      "blank": 26
+    },
+    {
+      "path": "LerayHopf/Analysis/RealComplexLpBridge.lean",
+      "code": 78,
+      "comment": 30,
+      "blank": 20
+    },
+    {
+      "path": "LerayHopf/Analysis/SpectralWeakGradient.lean",
+      "code": 161,
+      "comment": 82,
+      "blank": 26
+    },
+    {
+      "path": "LerayHopf/Analysis/TensorEdgeGluing.lean",
+      "code": 443,
+      "comment": 131,
+      "blank": 106
+    },
+    {
+      "path": "LerayHopf/Analysis/TensorIntersection.lean",
+      "code": 58,
+      "comment": 57,
+      "blank": 22
+    },
+    {
+      "path": "LerayHopf/Analysis/WeakLeibniz.lean",
+      "code": 606,
+      "comment": 139,
+      "blank": 40
+    },
+    {
+      "path": "LerayHopf/BlowupLowerBound.lean",
+      "code": 18,
+      "comment": 16,
+      "blank": 7
+    },
+    {
+      "path": "LerayHopf/Bochner/GelfandTriple.lean",
+      "code": 66,
+      "comment": 144,
+      "blank": 28
+    },
+    {
+      "path": "LerayHopf/Bochner/ScalarEquicontinuity.lean",
+      "code": 115,
+      "comment": 58,
+      "blank": 14
+    },
+    {
+      "path": "LerayHopf/Bochner/StepFunctionCompactness.lean",
+      "code": 170,
+      "comment": 101,
+      "blank": 34
+    },
+    {
+      "path": "LerayHopf/Bochner/TimeConvolution.lean",
+      "code": 78,
+      "comment": 112,
+      "blank": 34
+    },
+    {
+      "path": "LerayHopf/Bochner/TimeMollification.lean",
+      "code": 45,
+      "comment": 137,
+      "blank": 38
+    },
+    {
+      "path": "LerayHopf/Bochner/TimeMollifierInterval.lean",
+      "code": 290,
+      "comment": 248,
+      "blank": 67
+    },
+    {
+      "path": "LerayHopf/Bochner/TimeSobolev.lean",
+      "code": 266,
+      "comment": 294,
+      "blank": 72
+    },
+    {
+      "path": "LerayHopf/Bochner/TimeSobolevAC.lean",
+      "code": 286,
+      "comment": 77,
+      "blank": 28
+    },
+    {
+      "path": "LerayHopf/Bochner/TimeSobolevExperimental.lean",
+      "code": 12,
+      "comment": 47,
+      "blank": 14
+    },
+    {
+      "path": "LerayHopf/Bochner/WeakLimitToolkit.lean",
+      "code": 250,
+      "comment": 41,
+      "blank": 23
+    },
+    {
+      "path": "LerayHopf/Core.lean",
+      "code": 17,
+      "comment": 30,
+      "blank": 16
+    },
+    {
+      "path": "LerayHopf/EnergyEstimate.lean",
+      "code": 106,
+      "comment": 155,
+      "blank": 51
+    },
+    {
+      "path": "LerayHopf/EnergySkeleton.lean",
+      "code": 18,
+      "comment": 20,
+      "blank": 8
+    },
+    {
+      "path": "LerayHopf/EvolutionTriple.lean",
+      "code": 36,
+      "comment": 70,
+      "blank": 29
+    },
+    {
+      "path": "LerayHopf/Experimental.lean",
+      "code": 4,
+      "comment": 43,
+      "blank": 8
+    },
+    {
+      "path": "LerayHopf/Galerkin/DissipativeODE.lean",
+      "code": 286,
+      "comment": 38,
+      "blank": 17
+    },
+    {
+      "path": "LerayHopf/Galerkin/Domain.lean",
+      "code": 45,
+      "comment": 67,
+      "blank": 17
+    },
+    {
+      "path": "LerayHopf/Galerkin/QuadraticField.lean",
+      "code": 159,
+      "comment": 79,
+      "blank": 40
+    },
+    {
+      "path": "LerayHopf/Galerkin/SolutionBundles.lean",
+      "code": 55,
+      "comment": 54,
+      "blank": 15
+    },
+    {
+      "path": "LerayHopf/R3/ArzelaAscoliTime.lean",
+      "code": 647,
+      "comment": 263,
+      "blank": 54
+    },
+    {
+      "path": "LerayHopf/R3/AubinLionsAssembly.lean",
+      "code": 27,
+      "comment": 61,
+      "blank": 17
+    },
+    {
+      "path": "LerayHopf/R3/AubinLionsLimitPassage.lean",
+      "code": 1137,
+      "comment": 347,
+      "blank": 64
+    },
+    {
+      "path": "LerayHopf/R3/ConvectionExtension.lean",
+      "code": 559,
+      "comment": 293,
+      "blank": 126
+    },
+    {
+      "path": "LerayHopf/R3/ConvectionForm.lean",
+      "code": 704,
+      "comment": 507,
+      "blank": 104
+    },
+    {
+      "path": "LerayHopf/R3/ConvectionOperator.lean",
+      "code": 280,
+      "comment": 95,
+      "blank": 35
+    },
+    {
+      "path": "LerayHopf/R3/CurlDensity.lean",
+      "code": 595,
+      "comment": 317,
+      "blank": 77
+    },
+    {
+      "path": "LerayHopf/R3/CurlDensityCapstone.lean",
+      "code": 10,
+      "comment": 60,
+      "blank": 20
+    },
+    {
+      "path": "LerayHopf/R3/CurlDensityH1.lean",
+      "code": 431,
+      "comment": 98,
+      "blank": 44
+    },
+    {
+      "path": "LerayHopf/R3/CurlSchwartzConstruction.lean",
+      "code": 86,
+      "comment": 64,
+      "blank": 28
+    },
+    {
+      "path": "LerayHopf/R3/DivergenceFree.lean",
+      "code": 51,
+      "comment": 115,
+      "blank": 41
+    },
+    {
+      "path": "LerayHopf/R3/Domain.lean",
+      "code": 20,
+      "comment": 37,
+      "blank": 22
+    },
+    {
+      "path": "LerayHopf/R3/EnergyClassConvection.lean",
+      "code": 546,
+      "comment": 273,
+      "blank": 85
+    },
+    {
+      "path": "LerayHopf/R3/EnergyWeakLsc.lean",
+      "code": 743,
+      "comment": 272,
+      "blank": 65
+    },
+    {
+      "path": "LerayHopf/R3/FourierL2.lean",
+      "code": 220,
+      "comment": 159,
+      "blank": 74
+    },
+    {
+      "path": "LerayHopf/R3/FrechetKolmogorov.lean",
+      "code": 1059,
+      "comment": 555,
+      "blank": 127
+    },
+    {
+      "path": "LerayHopf/R3/GalerkinBasisH1.lean",
+      "code": 165,
+      "comment": 70,
+      "blank": 25
+    },
+    {
+      "path": "LerayHopf/R3/GalerkinCurveBounds.lean",
+      "code": 227,
+      "comment": 144,
+      "blank": 46
+    },
+    {
+      "path": "LerayHopf/R3/GalerkinODE.lean",
+      "code": 192,
+      "comment": 140,
+      "blank": 43
+    },
+    {
+      "path": "LerayHopf/R3/GalerkinODECapstone.lean",
+      "code": 27,
+      "comment": 73,
+      "blank": 18
+    },
+    {
+      "path": "LerayHopf/R3/GalerkinODEExistence.lean",
+      "code": 385,
+      "comment": 216,
+      "blank": 65
+    },
+    {
+      "path": "LerayHopf/R3/GalerkinODESolve.lean",
+      "code": 116,
+      "comment": 125,
+      "blank": 43
+    },
+    {
+      "path": "LerayHopf/R3/GalerkinScheme.lean",
+      "code": 153,
+      "comment": 184,
+      "blank": 52
+    },
+    {
+      "path": "LerayHopf/R3/GalerkinTimeModulus.lean",
+      "code": 684,
+      "comment": 121,
+      "blank": 36
+    },
+    {
+      "path": "LerayHopf/R3/GalerkinTrilinearBound.lean",
+      "code": 671,
+      "comment": 155,
+      "blank": 54
+    },
+    {
+      "path": "LerayHopf/R3/GoodRepresentative.lean",
+      "code": 416,
+      "comment": 89,
+      "blank": 27
+    },
+    {
+      "path": "LerayHopf/R3/H1SigmaDensity.lean",
+      "code": 12,
+      "comment": 28,
+      "blank": 11
+    },
+    {
+      "path": "LerayHopf/R3/LimitPassage.lean",
+      "code": 292,
+      "comment": 87,
+      "blank": 19
+    },
+    {
+      "path": "LerayHopf/R3/Regularity.lean",
+      "code": 70,
+      "comment": 118,
+      "blank": 49
+    },
+    {
+      "path": "LerayHopf/R3/RellichBall.lean",
+      "code": 349,
+      "comment": 245,
+      "blank": 56
+    },
+    {
+      "path": "LerayHopf/R3/SchwartzDivFreeBasis.lean",
+      "code": 170,
+      "comment": 125,
+      "blank": 38
+    },
+    {
+      "path": "LerayHopf/R3/SobolevEmbedding.lean",
+      "code": 851,
+      "comment": 373,
+      "blank": 114
+    },
+    {
+      "path": "LerayHopf/R3/SolutionInterfaces.lean",
+      "code": 151,
+      "comment": 439,
+      "blank": 104
+    },
+    {
+      "path": "LerayHopf/R3/SpacetimePrecompact.lean",
+      "code": 330,
+      "comment": 109,
+      "blank": 33
+    },
+    {
+      "path": "LerayHopf/R3/SpatialCompactness.lean",
+      "code": 947,
+      "comment": 253,
+      "blank": 69
+    },
+    {
+      "path": "LerayHopf/R3/SteklovAverages.lean",
+      "code": 573,
+      "comment": 315,
+      "blank": 68
+    },
+    {
+      "path": "LerayHopf/R3/StokesFourier.lean",
+      "code": 143,
+      "comment": 69,
+      "blank": 18
+    },
+    {
+      "path": "LerayHopf/R3/TrilinearEstimate.lean",
+      "code": 641,
+      "comment": 145,
+      "blank": 56
+    },
+    {
+      "path": "LerayHopf/R3/WeightedFourierCommute.lean",
+      "code": 160,
+      "comment": 67,
+      "blank": 40
+    },
+    {
+      "path": "LerayHopf/R3Capstone.lean",
+      "code": 1,
+      "comment": 43,
+      "blank": 10
+    },
+    {
+      "path": "LerayHopf/Torus/AubinLionsAssembly.lean",
+      "code": 301,
+      "comment": 65,
+      "blank": 19
+    },
+    {
+      "path": "LerayHopf/Torus/Basic.lean",
+      "code": 8,
+      "comment": 14,
+      "blank": 9
+    },
+    {
+      "path": "LerayHopf/Torus/Capstone.lean",
+      "code": 3,
+      "comment": 25,
+      "blank": 7
+    },
+    {
+      "path": "LerayHopf/Torus/ConvectionExtension.lean",
+      "code": 700,
+      "comment": 207,
+      "blank": 112
+    },
+    {
+      "path": "LerayHopf/Torus/ConvectionForm.lean",
+      "code": 328,
+      "comment": 273,
+      "blank": 63
+    },
+    {
+      "path": "LerayHopf/Torus/DivergenceFree.lean",
+      "code": 53,
+      "comment": 64,
+      "blank": 31
+    },
+    {
+      "path": "LerayHopf/Torus/Domain.lean",
+      "code": 18,
+      "comment": 39,
+      "blank": 18
+    },
+    {
+      "path": "LerayHopf/Torus/EnergyConvection.lean",
+      "code": 303,
+      "comment": 183,
+      "blank": 63
+    },
+    {
+      "path": "LerayHopf/Torus/FunctionSpaces.lean",
+      "code": 29,
+      "comment": 51,
+      "blank": 27
+    },
+    {
+      "path": "LerayHopf/Torus/GalerkinODECapstone.lean",
+      "code": 41,
+      "comment": 78,
+      "blank": 21
+    },
+    {
+      "path": "LerayHopf/Torus/GalerkinODESolve.lean",
+      "code": 577,
+      "comment": 170,
+      "blank": 72
+    },
+    {
+      "path": "LerayHopf/Torus/GalerkinProjection.lean",
+      "code": 96,
+      "comment": 102,
+      "blank": 43
+    },
+    {
+      "path": "LerayHopf/Torus/GalerkinScheme.lean",
+      "code": 134,
+      "comment": 101,
+      "blank": 41
+    },
+    {
+      "path": "LerayHopf/Torus/H1Sigma.lean",
+      "code": 86,
+      "comment": 63,
+      "blank": 31
+    },
+    {
+      "path": "LerayHopf/Torus/Leray.lean",
+      "code": 51,
+      "comment": 75,
+      "blank": 43
+    },
+    {
+      "path": "LerayHopf/Torus/LimitPassage.lean",
+      "code": 642,
+      "comment": 116,
+      "blank": 32
+    },
+    {
+      "path": "LerayHopf/Torus/ModeCompactness.lean",
+      "code": 435,
+      "comment": 93,
+      "blank": 21
+    },
+    {
+      "path": "LerayHopf/Torus/ModeTail.lean",
+      "code": 296,
+      "comment": 55,
+      "blank": 14
+    },
+    {
+      "path": "LerayHopf/Torus/ProjectionAdjoint.lean",
+      "code": 79,
+      "comment": 46,
+      "blank": 21
+    },
+    {
+      "path": "LerayHopf/Torus/RellichEmbedding.lean",
+      "code": 165,
+      "comment": 146,
+      "blank": 35
+    },
+    {
+      "path": "LerayHopf/Torus/SobolevTorus.lean",
+      "code": 17,
+      "comment": 27,
+      "blank": 16
+    },
+    {
+      "path": "LerayHopf/Torus/SolutionInterfaces.lean",
+      "code": 109,
+      "comment": 260,
+      "blank": 78
+    },
+    {
+      "path": "LerayHopf/Torus/TestFamily.lean",
+      "code": 90,
+      "comment": 36,
+      "blank": 11
+    },
+    {
+      "path": "LerayHopf/Torus/TraceEnergy.lean",
+      "code": 952,
+      "comment": 196,
+      "blank": 60
+    },
+    {
+      "path": "LerayHopf/Torus/VelocityGalerkin.lean",
+      "code": 168,
+      "comment": 135,
+      "blank": 61
+    },
+    {
+      "path": "LerayHopf/Torus/ViscousLimit.lean",
+      "code": 235,
+      "comment": 93,
+      "blank": 21
+    }
+  ]
+}

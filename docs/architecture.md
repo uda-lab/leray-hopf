@@ -5,6 +5,43 @@ mathematical narrative see `docs/archive/REPORT.md` (historical) / `docs/formali
 for the exact capstone claims see [`docs/claims-and-scope.md`](claims-and-scope.md);
 for the axiom ledger see `HANDOFF.md` / `docs/STATUS.md`.
 
+## Visual overview: code LOC treemap
+
+![Lean source code treemap](assets/code-loc-treemap.svg)
+
+Each rectangle is a Lean file under `LerayHopf/`; its area is proportional to
+**code LOC** — physical lines minus blank lines and comment lines, as reported by
+[`cloc`](https://github.com/AlDanial/cloc). Color marks the top-level module a file
+belongs to (`Torus/`, `R3/`, `Bochner/`, `Analysis/`, `Galerkin/`, or a root-level
+shared module directly under `LerayHopf/`, including `LerayHopf.lean` itself); the
+same directory always maps to the same color. Hovering a rectangle shows the full
+path and the code/comment/blank line breakdown.
+
+**This figure represents physical source size only.** It does not measure proof
+difficulty, mathematical importance, or code quality, and it carries no weighting by
+theorem/lemma count. Comment-heavy files (e.g. ones with long docstrings) are not
+inflated: comment and blank lines are excluded from the area.
+
+The SVG is static (no JavaScript) and reproducible: given the same Lean source tree,
+regenerating it produces a byte-identical file. To regenerate:
+
+```bash
+cd tools/code-treemap
+npm install   # installs the pinned cloc + d3-hierarchy versions, isolated from the Lake package
+npm run build # writes ../../docs/assets/code-loc-treemap.svg and .json
+```
+
+`npm run build` runs `cloc --by-file --json --quiet LerayHopf.lean LerayHopf` from the
+repository root, then `tools/code-treemap/generate-code-loc-treemap.mjs` to lay out and
+render the treemap with `d3-hierarchy`'s `treemapSquarify`. The companion
+`docs/assets/code-loc-treemap.json` records the exact per-file `{path, code, comment,
+blank}` data, the cloc version, and the commit the figure was generated from; the same
+metadata is also embedded in the SVG's `<metadata>` element.
+
+This is a manually-updated snapshot, not a per-commit CI artifact — see
+`tools/code-treemap/package.json` for the pinned tool versions and
+[issue #191](https://github.com/uda-lab/leray-hopf/issues/191) for the update policy.
+
 ## Shared abstract layer (top-level, domain-neutral)
 
 Reused unmodified by both 𝕋³ and ℝ³ — the key structural payoff of the design.
