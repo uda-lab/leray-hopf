@@ -158,6 +158,7 @@ theorem norm_timeMollifier_smul_translate {ρ : ℝ → ℝ} (hρ : IsTimeMollif
     ‖ρ h • timeTranslateL2 h g‖ = ρ h * ‖g‖ := by
   rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (hρ.nonneg h), timeTranslateL2_norm]
 
+omit [CompleteSpace E] in
 /-- **The whole-line `eLpNorm` Young bound (PROVED, sorry-free).**
 
 `‖ρ ⋆ₜ g‖ ≤ ‖g‖` for a unit-mass mollifier `ρ`. This is the entire norm content of Young's

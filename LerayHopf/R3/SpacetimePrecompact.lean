@@ -133,7 +133,7 @@ continuous on `[0, T]`; a continuous curve into a normed space is `MemLp 2` on a
 interval. -/
 theorem restrictToBall_comp_curve_memLp
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3) (n : ℕ)
+    (ν : ℝ) (_hν : 0 < ν) (T : ℝ) (_hT : 0 < T) (u₀ : L2Sigma_R3) (n : ℕ)
     (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) (k : ℕ) :
     MemLp (fun t => restrictToBall k ((gs.u t : L2VF_R3))) 2
       (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) := by
@@ -446,7 +446,7 @@ theorem galerkin_spacetime_precompact_of_goodSampling
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (ψ : ℕ → ℕ) (hψ : StrictMono ψ) (k : ℕ) :
+    (ψ : ℕ → ℕ) (_hψ : StrictMono ψ) (k : ℕ) :
     ∃ (ρ : ℕ → ℕ) (g_k : ℝ → L2ballR3 k), StrictMono ρ ∧
       AEStronglyMeasurable g_k (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
       Filter.Tendsto

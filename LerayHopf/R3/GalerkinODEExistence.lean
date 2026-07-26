@@ -580,7 +580,7 @@ where R-repr (weak-form ⇄ vector-field) is discharged into the weak form.
 A `noncomputable def` (not `theorem`): `GalerkinODEInput` is a data-carrying structure in
 `Type`, not a `Prop` (mirrors `galerkinSolutionData_R3_of_input` in `GalerkinODE.lean`). -/
 noncomputable def galerkinODEInput_of_globalCurve
-    (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBasis B)) (ν : ℝ) (hν : 0 < ν)
+    (B : SchwartzGalerkinBasis) (F : R3NSForms (schemeOfBasis B)) (ν : ℝ) (_hν : 0 < ν)
     (u₀ : L2Sigma_R3) (n : ℕ) (G : FinDimGlobalODE B F ν u₀ n) :
     GalerkinODEInput (schemeOfBasis B) F ν u₀ n := by
   -- The Galerkin curve transported into `L2Sigma_R3`.

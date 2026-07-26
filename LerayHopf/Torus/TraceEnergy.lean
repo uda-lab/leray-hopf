@@ -355,7 +355,7 @@ private theorem perTest_lipschitz (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) 
 /-- **A.e.-strong subsequence:** the eLpNorm strong convergence of the Aubin–Lions package
 yields a further subsequence whose curves converge strongly in `L2VF` at a.e. `t ∈ [0, T]`
 (`tendstoInMeasure_of_tendsto_eLpNorm` + `TendstoInMeasure.exists_seq_tendsto_ae`). -/
-private theorem exists_ae_strong_subseq (F : Torus3NSForms) (ν : ℝ) (T : ℝ) (hT : 0 < T)
+private theorem exists_ae_strong_subseq (F : Torus3NSForms) (ν : ℝ) (T : ℝ) (_hT : 0 < T)
     (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
     (alPkg : AubinLionsPackage F ν T u₀ galSeq) :
     ∃ ρ : ℕ → ℕ, StrictMono ρ ∧
@@ -1099,7 +1099,7 @@ The capstone discharges `hInt` from the energy-class conjunct (4) via a.e.-invar
 Setup + three named steps (`kineticEnergy_liminf_le_of_weakTendsto`,
 `dissipation_liminf_le_of_aeTendsto`, `energyBudget_liminf_assembly`) + assembly. -/
 private theorem energy_ineq_of_representative (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
-    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
+    (T : ℝ) (_hT : 0 < T) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
     (alPkg : AubinLionsPackage F ν T u₀ galSeq)
     (v : Time → L2Sigma) (ρ : ℕ → ℕ)

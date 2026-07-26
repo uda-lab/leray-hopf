@@ -233,7 +233,7 @@ theorem integral_tail_sq_limit_le
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
     (φ : ℕ → ℕ) (u : Time → L2Sigma)
-    (hub : ∀ t ∈ Icc (0 : ℝ) T, ‖(u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖)
+    (_hub : ∀ t ∈ Icc (0 : ℝ) T, ‖(u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖)
     (hmeas : AEStronglyMeasurable (fun t => (u t : L2VF))
       (volume.restrict (Icc (0 : ℝ) T)))
     (hweak : ∀ t ∈ Icc (0 : ℝ) T, ∀ z : L2Sigma,

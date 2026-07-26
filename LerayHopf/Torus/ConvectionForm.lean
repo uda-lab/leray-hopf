@@ -347,10 +347,10 @@ of norms (`norm_sum_le`), it suffices to bound each summand norm:
    ≤ (‖projₐ‖·‖u‖)·‖2πi lₐ‖·(‖projᵢ‖·‖v‖)·‖ŵ_i(-(k+l))‖`,
 using `norm_mFourierCoeff3_le` (single coefficient ≤ L² norm) and `‖proj_j x‖ ≤ ‖proj_j‖·‖x‖`
 (`ContinuousLinearMap.le_opNorm`).  Summing the `‖u‖·‖v‖`-free factors over the finite box
-gives the constant `C`.  The hypothesis `hw` (finite support of `w`) is not needed for the
+gives the constant `C`.  The hypothesis `_hw` (finite support of `w`) is not needed for the
 bound — the constant uses the actual coefficients `‖ŵ_i(-(k+l))‖` directly. -/
 theorem galerkinConvection_bound (n : ℕ) (w : L2VF)
-    (hw : velocityProjection_n n w = w) :
+    (_hw : velocityProjection_n n w = w) :
     ∃ C : ℝ, ∀ (u v : L2VF), |galerkinConvection n u v w| ≤ C * ‖u‖ * ‖v‖ := by
   -- The `‖u‖·‖v‖`-free per-summand factor.
   classical

@@ -182,13 +182,13 @@ theorem galerkinP_mem_span (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF_R3) :
 -- Proof sketch: `galerkinP B n u ∈ galerkinSpan B n` (D3); and
 -- `galerkinSpan B n ≤ L2Sigma_R3` because all generators `B.e k ∈ L2Sigma_R3`
 -- (`B.e_mem_sigma`) and `L2Sigma_R3` is a submodule, so `Submodule.span_le.mpr`.
--- The hypothesis `hu` is not actually needed (range ⊆ span ⊆ Σ regardless), but it
+-- The hypothesis `_hu` is not actually needed (range ⊆ span ⊆ Σ regardless), but it
 -- is part of the `R3GalerkinScheme.preserves_sigma` field signature, so keep it for the
--- assembly statement and discard it in the proof.
+-- assembly statement (underscore-named since the proof discards it).
 /-- The Galerkin projector `galerkinP B n` preserves the divergence-free subspace `L2Sigma_R3`
 (D4, field `preserves_sigma`). -/
 theorem galerkinP_preserves_sigma (B : SchwartzGalerkinBasis) (n : ℕ) (u : L2VF_R3)
-    (hu : u ∈ L2Sigma_R3) : galerkinP B n u ∈ L2Sigma_R3 := by
+    (_hu : u ∈ L2Sigma_R3) : galerkinP B n u ∈ L2Sigma_R3 := by
   have hspan : galerkinSpan B n ≤ L2Sigma_R3 := by
     refine Submodule.span_le.mpr ?_
     rintro x ⟨k, rfl⟩

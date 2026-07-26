@@ -291,7 +291,7 @@ theorem galerkin_energy_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
 `∫₀ᵀ viscousFormSq_R3 ν (u t) dt ≤ ½‖u₀‖²`.  Since `viscousFormSq_R3` already carries the
 `ν` factor (`= ν · ‖∇u‖²`), this RHS is `ν`-independent. -/
 theorem galerkin_reg_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma_R3) (n : ℕ) (I : GalerkinODEInput 𝔊 F ν u₀ n)
+    (ν : ℝ) (_hν : 0 < ν) (u₀ : L2Sigma_R3) (n : ℕ) (I : GalerkinODEInput 𝔊 F ν u₀ n)
     (T : ℝ) (hT : 0 < T) :
     ∫ t in (0 : ℝ)..T, viscousFormSq_R3 ν (I.u t : L2VF_R3) ≤
     (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2 := by

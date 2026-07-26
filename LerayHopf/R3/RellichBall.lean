@@ -184,7 +184,8 @@ structure FrechetKolmogorovInput where
   precompact_of_uniform_modulus :
     ∀ (R C : ℝ) (S : Set (L2ballR3 R))
       (rep : L2ballR3 R → L2VF_R3)
-      (hrep : ∀ f ∈ S, restrictToBall R (rep f) = f),
+      -- interface condition kept in the contract: `rep` is a section of `restrictToBall`
+      (_hrep : ∀ f ∈ S, restrictToBall R (rep f) = f),
     (∀ f ∈ S, ‖f‖ ≤ C) →
     (∀ f ∈ S, ‖rep f‖ ≤ C) →
     (∀ ε > 0, ∃ δ > 0, ∀ f ∈ S, ∀ h : Domain3, ‖h‖ < δ →

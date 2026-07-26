@@ -143,7 +143,7 @@ theorem setIntegral_normSq_eq_dist_sq_restrictToBall (R : ℝ) (u v : L2VF_R3) :
 /-- **D1.** From the isolated per-ball precompactness, any admissible sequence has a
 subsequence whose ball-restrictions converge in L²(B_R). -/
 theorem exists_subseq_tendsto_on_ball (B : LocalRellichInput) (M R : ℝ)
-    (z : ℕ → L2VF_R3) (φ : ℕ → ℕ) (hφ : StrictMono φ)
+    (z : ℕ → L2VF_R3) (φ : ℕ → ℕ) (_hφ : StrictMono φ)
     (hmem : ∀ n, z n ∈ L2Sigma_R3) (hH1 : ∀ n, memH1VF_R3 (z n))
     (hbd : ∀ n, ‖z n‖ ≤ M) (hvf : ∀ n, viscousFormSq_R3 1 (z n) ≤ M ^ 2) :
     ∃ (ρ : ℕ → ℕ) (g : L2ballR3 R), StrictMono ρ ∧
@@ -641,11 +641,11 @@ private theorem ballLimit_ae_eq_of_le
 /-- **D3a.** The per-ball limits from D2 are mutually consistent: the limit on B_k agrees
 a.e. on B_j (j ≤ k) with the limit on B_j (both are L² limits of the same subsequence's
 restrictions, and restriction B_k → B_j is continuous). Used to assemble a single global g. -/
-theorem ballLimits_are_consistent (B : LocalRellichInput) (M : ℝ)
+theorem ballLimits_are_consistent (_B : LocalRellichInput) (M : ℝ)
     (z : ℕ → L2VF_R3)
-    (hmem : ∀ n, z n ∈ L2Sigma_R3) (hH1 : ∀ n, memH1VF_R3 (z n))
-    (hbd : ∀ n, ‖z n‖ ≤ M) (hvf : ∀ n, viscousFormSq_R3 1 (z n) ≤ M ^ 2)
-    (ψ : ℕ → ℕ) (hψ : StrictMono ψ)
+    (_hmem : ∀ n, z n ∈ L2Sigma_R3) (_hH1 : ∀ n, memH1VF_R3 (z n))
+    (hbd : ∀ n, ‖z n‖ ≤ M) (_hvf : ∀ n, viscousFormSq_R3 1 (z n) ≤ M ^ 2)
+    (ψ : ℕ → ℕ) (_hψ : StrictMono ψ)
     (g : ∀ k : ℕ, L2ballR3 (k : ℝ))
     (hg : ∀ k : ℕ, Tendsto (fun n => restrictToBall (k : ℝ) (z (ψ n))) atTop (𝓝 (g k))) :
     ∃ g₀ : Domain3 → EuclideanSpace ℝ (Fin 3), MemLp g₀ 2 (volume : Measure Domain3) ∧
@@ -1103,11 +1103,11 @@ theorem tendsto_norm_tailVF_zero (v : L2VF_R3) :
   simpa [Function.comp_def] using this
 
 /-- **D3b.** The assembled global limit `g` lies in `L2Sigma_R3` (weakly divergence-free). -/
-theorem ballLimit_global_mem_L2Sigma (B : LocalRellichInput) (M : ℝ)
+theorem ballLimit_global_mem_L2Sigma (_B : LocalRellichInput) (M : ℝ)
     (z : ℕ → L2VF_R3)
-    (hmem : ∀ n, z n ∈ L2Sigma_R3) (hH1 : ∀ n, memH1VF_R3 (z n))
-    (hbd : ∀ n, ‖z n‖ ≤ M) (hvf : ∀ n, viscousFormSq_R3 1 (z n) ≤ M ^ 2)
-    (ψ : ℕ → ℕ) (hψ : StrictMono ψ) (g : L2VF_R3)
+    (hmem : ∀ n, z n ∈ L2Sigma_R3) (_hH1 : ∀ n, memH1VF_R3 (z n))
+    (hbd : ∀ n, ‖z n‖ ≤ M) (_hvf : ∀ n, viscousFormSq_R3 1 (z n) ≤ M ^ 2)
+    (ψ : ℕ → ℕ) (_hψ : StrictMono ψ) (g : L2VF_R3)
     (hg : ∀ R : ℝ, Tendsto (fun n => restrictToBall R (z (ψ n))) atTop
       (𝓝 (restrictToBall R g))) :
     g ∈ L2Sigma_R3 := by

@@ -84,11 +84,11 @@ private theorem psi_T_of_tsupport_Ioo {ψ : ℝ → ℝ} {T : ℝ} (_hT : 0 < T)
 **Proof:** ODE at each `t ≥ 0` (after projection promotion) × ψ, integrated.
 IBP eliminates the time-derivative term using `ψ(0) = ψ(T) = 0`. -/
 private theorem galerkin_weakFormNS_zero
-    (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
+    (F : Torus3NSForms) (ν : ℝ) (_hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    (ψ : ℝ → ℝ) (hψcs : HasCompactSupport ψ) (hψsupp : tsupport ψ ⊆ Set.Ioo 0 T)
+    (ψ : ℝ → ℝ) (_hψcs : HasCompactSupport ψ) (hψsupp : tsupport ψ ⊆ Set.Ioo 0 T)
     (hψC1 : ContDiff ℝ 1 ψ)
-    (w : L2Sigma) (hw : IsGalerkinTest w)
+    (w : L2Sigma) (_hw : IsGalerkinTest w)
     (n₀ : ℕ) (hn₀ : velocityProjection_n n₀ (w : L2VF) = (w : L2VF))
     (n : ℕ) (hn : n₀ ≤ n) :
     ∫ t in (0 : ℝ)..T,

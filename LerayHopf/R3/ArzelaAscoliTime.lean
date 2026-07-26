@@ -284,8 +284,8 @@ This route does NOT use `L2VF_R3_weakSeqCompact_closedBall` (that axiom is DELET
 theorem galerkin_weakLimit_R3
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, Galerkin.SolutionData (r3Domain 𝔊) F.core ν u₀ n) (φ : ℕ → ℕ)
-    (hφ : StrictMono φ)
-    (T : ℝ) (hT : 0 < T)
+    (_hφ : StrictMono φ)
+    (T : ℝ) (_hT : 0 < T)
     -- Hypothesis: for each integer radius k, there EXISTS a measurable per-ball limit g_k such
     -- that the Galerkin subsequence converges to g_k a.e. in t.
     -- This is WEAKER than the prior every-t version: matches what diag_ae_subseq delivers.
@@ -937,7 +937,7 @@ theorem u_lim_aestronglyMeasurable
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (B : LocalRellichInput) :
+    (_B : LocalRellichInput) :
     ∃ (φ : ℕ → ℕ) (u : Time → L2Sigma_R3),
       StrictMono φ ∧
       AEStronglyMeasurable (fun t => (u t : L2VF_R3))

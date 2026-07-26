@@ -1200,7 +1200,7 @@ to the weak derivative `∂_m (f : 𝓢')`. Derived from the `m`-uniform engine
 theorem schwartz_h1_gradConv (f : L2C_R3) (m : Domain3)
     (hf : MemSobolev 1 2 (f : 𝓢'(Domain3, ℂ))) :
     ∃ (g : L2C_R3)
-      (hg : (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ)))
+      (_hg : (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ)))
       (φ : ℕ → SchwartzMap Domain3 ℂ),
       Filter.Tendsto (fun n => (φ n).toLp 2 (volume : Measure Domain3))
           Filter.atTop (nhds f) ∧
@@ -1237,7 +1237,7 @@ theorem schwartz_h1_gradConv_multi (f : L2C_R3)
       Filter.Tendsto (fun n => (φ n).toLp 2 (volume : Measure Domain3))
           Filter.atTop (nhds f) ∧
       ∀ m : Domain3, ∃ (g : L2C_R3)
-          (hg : (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ))),
+          (_hg : (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ))),
         Filter.Tendsto
           (fun n => (∂_{m} (φ n)).toLp 2 (volume : Measure Domain3))
           Filter.atTop (nhds g) := by

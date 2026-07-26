@@ -612,7 +612,7 @@ Chain (per truncation `k`): push `uₙ ⇀ u` through the bounded CLM `mulBdd_k 
 norm-weak-lsc, square, bound by the approximant integrand (truncated ≤ full, `H¹`); then take the
 supremum over `k` (MCT) to recover the full lower Lebesgue integrand of the limit. -/
 private theorem viscousLintegrand_le_liminf_of_weak (j : Fin 3)
-    (un : ℕ → L2VF_R3) (u : L2VF_R3) (M : ℝ) (hM0 : 0 ≤ M)
+    (un : ℕ → L2VF_R3) (u : L2VF_R3) (M : ℝ) (_hM0 : 0 ≤ M)
     (hbd : ∀ n, ‖un n‖ ≤ M) (hH1 : ∀ n, memH1VF_R3 (un n))
     (hweak : Tendsto (fun n => toWeakSpace ℝ L2VF_R3 (un n)) atTop
       (nhds (toWeakSpace ℝ L2VF_R3 u))) :

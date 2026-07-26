@@ -222,7 +222,7 @@ theorem exists_weak_limit_curve
     (v : ℕ → ℝ → L2Sigma)
     (hb : ∀ n t, t ∈ Icc (0 : ℝ) T → ‖(v n t : L2VF)‖ ≤ M)
     (hcont : ∀ n, ContinuousOn (fun t => (v n t : L2VF)) (Icc (0 : ℝ) T))
-    (w : ℕ → L2Sigma) (hwtest : ∀ m, IsGalerkinTest (w m))
+    (w : ℕ → L2Sigma) (_hwtest : ∀ m, IsGalerkinTest (w m))
     (hspan : ∀ N : ℕ, ∃ s : Finset ℕ,
       velocitySpan N ≤ Submodule.span ℝ ((fun m => ((w m : L2Sigma) : L2VF)) '' ↑s))
     (g : ℕ → ℝ → ℝ)

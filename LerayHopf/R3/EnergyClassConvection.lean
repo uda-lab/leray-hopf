@@ -222,7 +222,7 @@ The sign matches `convIntegralSchwartz` (positive sum), agreeing with `convFormS
 Schwartz triples (B5). The integrability of each summand is B3b.
 The definition is noncomputable (Bochner integral). -/
 noncomputable def convFormH1 (u v w : L2VF_R3)
-    (hu : memH1VF_R3 u) (hv : memH1VF_R3 v) (hw : memH1VF_R3 w) : ℝ :=
+    (_hu : memH1VF_R3 u) (hv : memH1VF_R3 v) (_hw : memH1VF_R3 w) : ℝ :=
   ∑ i : Fin 3, ∑ a : Fin 3,
     ∫ x : Domain3,
       (L2VF_projComponentC_R3 a u x).re *
@@ -499,8 +499,8 @@ so that `convFormH1 u v w = -∑_{i,a} ∫ (∂ₐuₐ · vᵢ · wᵢ) - ∑_{i
 After IBP, the div-free condition kills the first sum via B6b. -/
 theorem convFormH1_ibp (u v w : L2VF_R3)
     (hu : memH1VF_R3 u) (hv : memH1VF_R3 v) (hw : memH1VF_R3 w)
-    (hu_sigma : (u : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
-    (hw_sigma : (w : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)) :
+    (_hu_sigma : (u : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (_hw_sigma : (w : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)) :
     convFormH1 u v w hu hv hw =
     -(∑ i : Fin 3, ∑ a : Fin 3,
       ∫ x : Domain3,
@@ -728,7 +728,7 @@ for `u, v, w ∈ H1Sigma_R3` with `u, v, w ∈ L2Sigma_R3`.
 theorem convFormH1_antisymm (u v w : L2VF_R3)
     (hu : memH1VF_R3 u) (hv : memH1VF_R3 v) (hw : memH1VF_R3 w)
     (hu_sigma : (u : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
-    (hv_sigma : (v : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+    (_hv_sigma : (v : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
     (hw_sigma : (w : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)) :
     convFormH1 u v w hu hv hw = -convFormH1 u w v hu hw hv := by
   classical
@@ -793,8 +793,8 @@ theorem convFormH1_bound_Schwartz (w : L2VF_R3)
     (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) :
     ∃ C_w : ℝ, 0 ≤ C_w ∧
       ∀ (u v : L2VF_R3) (hu : memH1VF_R3 u) (hv : memH1VF_R3 v)
-        (hu_sigma : (u : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
-        (hv_sigma : (v : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
+        (_hu_sigma : (u : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+        (_hv_sigma : (v : L2VF_R3) ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
         |convFormH1 u v w hu hv hw_H1| ≤ C_w * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖ := by
   classical
   -- `w` is Schwartz: `wᵢ.re = ψᵢ` a.e. for Schwartz `ψ`.

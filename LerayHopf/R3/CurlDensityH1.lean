@@ -116,7 +116,7 @@ private theorem crossHatOf_apply (wh : Fin 3 → SchwartzMap Domain3 ℂ) (k : F
   simp [smul_eq_mul]
 
 /-- The regularized potential symbol `ψ̂_k = symbolMul · (ξ × ŵ)_k` as a Schwartz map. -/
-private noncomputable def symbolHatOf (a : ℝ) (ha : 0 < a) (wh : Fin 3 → SchwartzMap Domain3 ℂ)
+private noncomputable def symbolHatOf (a : ℝ) (_ha : 0 < a) (wh : Fin 3 → SchwartzMap Domain3 ℂ)
     (k : Fin 3) : SchwartzMap Domain3 ℂ :=
   SchwartzMap.smulLeftCLM ℂ (symbolMul a) (crossHatOf wh k)
 
@@ -130,7 +130,7 @@ private theorem symbolHatOf_apply (a : ℝ) (ha : 0 < a) (wh : Fin 3 → Schwart
 
 /-- The Yukawa-regularized **real** vector potential `ψ_k = Re(𝓕⁻ ψ̂_k)`. -/
 private noncomputable def potOf (a : ℝ) (ha : 0 < a) (wh : Fin 3 → SchwartzMap Domain3 ℂ)
-    (hHerm : ∀ b : Fin 3, ∀ v : Domain3, wh b (-v) = (starRingEnd ℂ) (wh b v))
+    (_hHerm : ∀ b : Fin 3, ∀ v : Domain3, wh b (-v) = (starRingEnd ℂ) (wh b v))
     (k : Fin 3) : SchwartzMap Domain3 ℝ :=
   (𝓕⁻ (symbolHatOf a ha wh k)).postcompCLM (RCLike.reCLM (K := ℂ))
 

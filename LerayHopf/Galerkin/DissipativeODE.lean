@@ -39,6 +39,7 @@ open Metric Set
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [FiniteDimensional ℝ V]
 
+omit [FiniteDimensional ℝ V] in
 /-- Energy derivative along a solution of `c' = g c`: `d/dt ½‖c t‖² = ⟪c t, g (c t)⟫`. -/
 theorem energy_hasDerivAt_of_solution (g : V → V) (c : ℝ → V) (t : ℝ)
     (hc : HasDerivAt c (g (c t)) t) :
@@ -57,6 +58,7 @@ theorem energy_hasDerivAt_of_solution (g : V → V) (c : ℝ → V) (t : ℝ)
   rw [← hval]
   exact hinner.const_mul (1 / 2 : ℝ)
 
+omit [FiniteDimensional ℝ V] in
 /-- A-priori bound: any forward solution of a dissipative field stays in the initial ball. -/
 theorem norm_le_of_forwardSolution_of_dissipative (g : V → V)
     (hdiss : ∀ v : V, inner (𝕜 := ℝ) v (g v) ≤ (0 : ℝ))
@@ -124,6 +126,7 @@ theorem uniform_local_time (g : V → V) (hg : ContDiff ℝ 1 g) (R : ℝ) :
       simp only [one_smul, Function.comp_def] at hcomp
       exact hcomp
 
+omit [FiniteDimensional ℝ V] in
 /-- Tiling induction: a forward solution exists on `[0, k·δ/2]` for every `k`, given a
 uniform local-existence time `δ` on the a-priori ball around `x₀`. -/
 private theorem solve_exists_on_step (g : V → V)
@@ -209,7 +212,7 @@ private theorem solve_exists_on_step (g : V → V)
 /-- Splice uniqueness: two local solutions agreeing at one point agree on the whole
 overlap interval. -/
 theorem solution_agree (g : V → V) (hg : ContDiff ℝ 1 g)
-    (α β : ℝ → V) {a b t₀ : ℝ} (hab : a ≤ b) (ht₀ : t₀ ∈ Set.Icc a b)
+    (α β : ℝ → V) {a b t₀ : ℝ} (_hab : a ≤ b) (ht₀ : t₀ ∈ Set.Icc a b)
     (hαβ : α t₀ = β t₀)
     (hα : ∀ t ∈ Set.Icc a b, HasDerivAt α (g (α t)) t)
     (hβ : ∀ t ∈ Set.Icc a b, HasDerivAt β (g (β t)) t) :
