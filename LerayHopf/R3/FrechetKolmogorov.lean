@@ -1550,7 +1550,7 @@ theorem convolution_l2_tendsto_uniform (R C r₀ : ℝ) (S : Set (L2ballR3 R))
     (rep : L2ballR3 R → L2VF_R3)
     (hrep : ∀ f ∈ S, restrictToBall R (rep f) = f)
     (hr₀ : 0 < r₀)
-    (hbd : ∀ f ∈ S, ‖f‖ ≤ C)
+    (_hbd : ∀ f ∈ S, ‖f‖ ≤ C)
     (hbdEnl : ∀ f ∈ S, ‖restrictToBall (R + r₀) (rep f)‖ ≤ C)
     (hmod : ∀ ε > 0, ∃ δ > 0, ∀ f ∈ S, ∀ h : Domain3, ‖h‖ < δ →
         ‖translate_L2VF h (rep f) - rep f‖ < ε)

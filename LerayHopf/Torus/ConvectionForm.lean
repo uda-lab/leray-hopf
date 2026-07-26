@@ -286,7 +286,7 @@ theorem galerkinConvection_antisymm (n : ℕ) (u : L2Sigma) (v w : L2VF)
       refine (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
       intro l hl hlC
       have : -(k + l) ∉ fourierBox n := by
-        simp only [hCset, Finset.mem_filter, not_and] at hlC; exact hlC hl
+        simp only [Finset.mem_filter, not_and] at hlC; exact hlC hl
       rw [hWsupp i _ this]; ring
     have hQrestr : ∑ l ∈ fourierBox n,
           U a k * (c * (l a : ℂ) * (W i l * V i (-(k + l)))) =
@@ -294,7 +294,7 @@ theorem galerkinConvection_antisymm (n : ℕ) (u : L2Sigma) (v w : L2VF)
       refine (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
       intro l hl hlC
       have : -(k + l) ∉ fourierBox n := by
-        simp only [hCset, Finset.mem_filter, not_and] at hlC; exact hlC hl
+        simp only [Finset.mem_filter, not_and] at hlC; exact hlC hl
       rw [hVsupp i _ this]; ring
     -- Reindex the `Q`-sum over `Cset k` by the involution `σ_k`.
     have hQrei : ∑ l ∈ Cset k, U a k * (c * (l a : ℂ) * (W i l * V i (-(k + l)))) =
@@ -309,7 +309,7 @@ theorem galerkinConvection_antisymm (n : ℕ) (u : L2Sigma) (v w : L2VF)
     rw [hPrestr, hQrestr, hQrei, ← Finset.sum_add_distrib]
     refine Finset.sum_congr rfl fun l _ => ?_
     have hka : ((-(k + l)) a : ℂ) = -(k a : ℂ) - (l a : ℂ) := by
-      simp [Pi.neg_apply, Pi.add_apply]; push_cast; ring
+      simp [Pi.neg_apply, Pi.add_apply]; ring
     rw [hka]; ring
   -- Now sum over `a` and kill via divergence-freeness.
   rw [key]
@@ -347,10 +347,10 @@ of norms (`norm_sum_le`), it suffices to bound each summand norm:
    ≤ (‖projₐ‖·‖u‖)·‖2πi lₐ‖·(‖projᵢ‖·‖v‖)·‖ŵ_i(-(k+l))‖`,
 using `norm_mFourierCoeff3_le` (single coefficient ≤ L² norm) and `‖proj_j x‖ ≤ ‖proj_j‖·‖x‖`
 (`ContinuousLinearMap.le_opNorm`).  Summing the `‖u‖·‖v‖`-free factors over the finite box
-gives the constant `C`.  The hypothesis `hw` (finite support of `w`) is not needed for the
+gives the constant `C`.  The hypothesis `_hw` (finite support of `w`) is not needed for the
 bound — the constant uses the actual coefficients `‖ŵ_i(-(k+l))‖` directly. -/
 theorem galerkinConvection_bound (n : ℕ) (w : L2VF)
-    (hw : velocityProjection_n n w = w) :
+    (_hw : velocityProjection_n n w = w) :
     ∃ C : ℝ, ∀ (u v : L2VF), |galerkinConvection n u v w| ≤ C * ‖u‖ * ‖v‖ := by
   -- The `‖u‖·‖v‖`-free per-summand factor.
   classical

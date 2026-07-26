@@ -63,7 +63,7 @@ Generic (no Galerkin context).  Route (plan §3 D1): min-value ≤ average, via
 (`intervalIntegral.integral_mono_on`) against the constant `f τ_min`. -/
 theorem exists_goodSample {f : ℝ → ℝ} {a b : ℝ} (hab : a < b)
     (hf : ContinuousOn f (Set.Icc a b))
-    (hnn : ∀ σ ∈ Set.Icc a b, 0 ≤ f σ) :
+    (_hnn : ∀ σ ∈ Set.Icc a b, 0 ≤ f σ) :
     ∃ τ ∈ Set.Icc a b, f τ ≤ (b - a)⁻¹ * ∫ σ in a..b, f σ := by
   have hne : (Set.Icc a b).Nonempty := Set.nonempty_Icc.mpr hab.le
   obtain ⟨τ, hτ, hmin⟩ := isCompact_Icc.exists_isMinOn hne hf

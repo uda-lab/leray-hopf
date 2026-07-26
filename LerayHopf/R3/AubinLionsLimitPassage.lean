@@ -548,7 +548,7 @@ theorem weakFormNS_galerkinTest_limit
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
     (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
     (w : L2Sigma_R3) (hw : IsGalerkinTest_R3 𝔊 w)
-    (ψ : Time → ℝ) (hψcs : HasCompactSupport ψ)
+    (ψ : Time → ℝ) (_hψcs : HasCompactSupport ψ)
     (hψsupp : tsupport ψ ⊆ Set.Ioo 0 T) (hψC1 : ContDiff ℝ 1 ψ) :
     ∫ t in (0 : ℝ)..T,
       (-(inner (𝕜 := ℝ) ((alPkg.u t : L2VF_R3)) (w : L2VF_R3)) * deriv ψ t +
@@ -996,7 +996,7 @@ private theorem weakFormNS_limit_G_integrable
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
     (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
     (ψ : ℝ → ℝ) (hψC1 : ContDiff ℝ 1 ψ)
-    (M Mψ Mψ' : ℝ) (hMψ0 : 0 ≤ Mψ) (hMψ'0 : 0 ≤ Mψ')
+    (M Mψ Mψ' : ℝ) (_hMψ0 : 0 ≤ Mψ) (hMψ'0 : 0 ≤ Mψ')
     (hMψ : ∀ t ∈ Set.Icc (0 : ℝ) T, ‖ψ t‖ ≤ Mψ)
     (hMψ' : ∀ t ∈ Set.Icc (0 : ℝ) T, ‖deriv ψ t‖ ≤ Mψ')
     (hu_meas : AEStronglyMeasurable (fun t => (alPkg.u t : L2VF_R3)) (restrictAvgMeasure T))

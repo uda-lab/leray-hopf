@@ -170,7 +170,7 @@ Proof route for lean-prover:
 3. Apply `Real.sqrt_le_sqrt` and `Real.sqrt_sq` to pass from `‖f - P_N f‖^2` to `‖f - P_N f‖`.
 Key mathlib lemmas: `L2C_norm_sub_fourierProjection_sq` (L2), `H1_tail_bound` (L3),
 `Real.sqrt_le_sqrt`, `Real.sqrt_sq_eq_abs`, `exists_nat_gt`. -/
-theorem H1_ball_uniform_L2_approx (M : ℝ) (hM0 : 0 ≤ M) (ε : ℝ) (hε : 0 < ε) :
+theorem H1_ball_uniform_L2_approx (M : ℝ) (_hM0 : 0 ≤ M) (ε : ℝ) (hε : 0 < ε) :
     ∃ N : ℕ, ∀ f : L2C,
       memH1Torus f →
       (∑' k : Fin 3 → ℤ, (1 + ∑ i : Fin 3, (k i : ℝ) ^ 2) * ‖mFourierCoeff3 f k‖ ^ 2 ≤ M ^ 2) →

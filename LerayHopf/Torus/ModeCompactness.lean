@@ -76,7 +76,7 @@ theorem galerkin_test_pairing_lipschitz
     have hda := (gs.u_hasDeriv r hr).inner (𝕜 := ℝ) (hasDerivAt_const r (w : L2VF))
     simp only [inner_zero_right, zero_add] at hda
     have hode := gs.u_ode r hr w hwn.symm
-    simp only [torusDomain_stokes, Torus3NSForms.core_b] at hode
+    simp only [Torus3NSForms.core_b] at hode
     have hval : inner (𝕜 := ℝ) (deriv (fun s' => (gs.u s' : L2VF)) r) (w : L2VF)
         = -(ν * stokesTestPairing (gs.u r : L2VF) (w : L2VF) + F.b (gs.u r) (gs.u r) w) := by
       linarith
@@ -222,7 +222,7 @@ theorem exists_weak_limit_curve
     (v : ℕ → ℝ → L2Sigma)
     (hb : ∀ n t, t ∈ Icc (0 : ℝ) T → ‖(v n t : L2VF)‖ ≤ M)
     (hcont : ∀ n, ContinuousOn (fun t => (v n t : L2VF)) (Icc (0 : ℝ) T))
-    (w : ℕ → L2Sigma) (hwtest : ∀ m, IsGalerkinTest (w m))
+    (w : ℕ → L2Sigma) (_hwtest : ∀ m, IsGalerkinTest (w m))
     (hspan : ∀ N : ℕ, ∃ s : Finset ℕ,
       velocitySpan N ≤ Submodule.span ℝ ((fun m => ((w m : L2Sigma) : L2VF)) '' ↑s))
     (g : ℕ → ℝ → ℝ)

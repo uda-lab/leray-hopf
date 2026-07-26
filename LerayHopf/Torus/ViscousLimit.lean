@@ -227,7 +227,7 @@ theorem torus_energyClass_of_aubinLions (F : Torus3NSForms) (ν : ℝ) (hν : 0 
           ‖mFourierCoeff3 (L2VF_projComponentC p.1 (alPkg.u t : L2VF)) p.2‖ ^ 2)) :=
       fun t => rfl
     simp_rw [hVEeq]
-    exact AEMeasurable.ennreal_tsum hFpaem
+    exact AEMeasurable.tsum hFpaem
   -- ══════════════════════════════════════════════════════════════
   -- Step 3: Fatou – bound lintegral of viscousEnn on limit
   -- ══════════════════════════════════════════════════════════════

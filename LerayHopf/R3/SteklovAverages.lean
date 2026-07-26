@@ -165,7 +165,7 @@ private theorem norm_integral_sq_le_length_mul_integral_normSq
     hpq hfnorm_memLp hone_memLp
   -- Simplify the Hölder bound: `∫ ‖f‖·‖1‖ = ∫ ‖f‖`, and `‖1‖^(2:ℝ) = 1`.
   simp only [Real.norm_eq_abs, abs_of_nonneg (norm_nonneg _), abs_one, mul_one,
-    Real.one_rpow, one_pow, Real.rpow_two] at hholder
+    one_pow, Real.rpow_two] at hholder
   -- Rewrite the set integrals over `μ` as interval integrals (`μ = volume.restrict (Ioc a b)`).
   have hμ_to_interval : ∀ g : ℝ → ℝ, ∫ s, g s ∂μ = ∫ s in a..b, g s := by
     intro g
@@ -431,7 +431,7 @@ private theorem clampedAvg_approx (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     exact hmod t s htIcc hsIcc habs
   · -- backward branch: window `[t−δ, t] ⊆ [0,T]` (since `t > T−δ ≥ δ` as `2δ ≤ T`)
     rw [if_neg hcase]
-    have hδt : δ ≤ t := by push_neg at hcase; linarith
+    have hδt : δ ≤ t := by push Not at hcase; linarith
     refine steklovAvgBack_approx 𝔊 F ν u₀ n gs hδ hδt (fun s hs => ?_)
     rw [Set.uIoc_of_le (by linarith : t - δ ≤ t)] at hs
     have hsIcc : s ∈ Set.Icc (0 : ℝ) T := ⟨by linarith [hs.1], by linarith [hs.2]⟩
@@ -448,7 +448,7 @@ the finite window `[0,T]` is `≤ ε · T^{1/2}`.  This is the raw↔avg term of
 private theorem eLpNorm_raw_sub_clampedAvg_le (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (u₀ : L2Sigma_R3) (n : ℕ)
     (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n) {δ T ε : ℝ} (R : ℝ) (hδ : 0 < δ) (hδT : 2 * δ ≤ T)
-    (hε : 0 ≤ ε)
+    (_hε : 0 ≤ ε)
     (hmod : ∀ s s' : ℝ, s ∈ Set.Icc (0 : ℝ) T → s' ∈ Set.Icc (0 : ℝ) T → |s - s'| ≤ δ →
       ‖((gs.u s) : L2VF_R3) - ((gs.u s') : L2VF_R3)‖ ≤ ε) :
     MeasureTheory.eLpNorm

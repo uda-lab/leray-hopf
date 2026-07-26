@@ -220,7 +220,7 @@ theorem torus_galerkin_energy_identity (F : Torus3NSForms) (ν : ℝ) (u₀ : L2
       funext r; ring
     -- Identify the derivative value via the ODE at test `w := uₙ(s)`.
     have hode := gs.u_ode s hs0 (gs.u s) (gs.u_inVn s)
-    simp only [torusDomain_stokes, Torus3NSForms.core_b] at hode
+    simp only [Torus3NSForms.core_b] at hode
     have hb := F.b_self_zero (gs.u s)
     have hdiag : stokesTestPairing (gs.u s : L2VF) (gs.u s : L2VF)
         = viscousFormSq 1 (gs.u s : L2VF) := Torus.stokesTestPairing_diag _
@@ -277,7 +277,7 @@ private theorem perTest_hasDerivAt (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigm
   have hda := (gs.u_hasDeriv t ht).inner (𝕜 := ℝ) (hasDerivAt_const t (w : L2VF))
   simp only [inner_zero_right, zero_add] at hda
   have hode := gs.u_ode t ht w hwn.symm
-  simp only [torusDomain_stokes, Torus3NSForms.core_b] at hode
+  simp only [Torus3NSForms.core_b] at hode
   have hval : inner (𝕜 := ℝ) (deriv (fun s => (gs.u s : L2VF)) t) (w : L2VF)
       = -(ν * stokesTestPairing (gs.u t : L2VF) (w : L2VF) + F.b (gs.u t) (gs.u t) w) := by
     linarith
@@ -355,7 +355,7 @@ private theorem perTest_lipschitz (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) 
 /-- **A.e.-strong subsequence:** the eLpNorm strong convergence of the Aubin–Lions package
 yields a further subsequence whose curves converge strongly in `L2VF` at a.e. `t ∈ [0, T]`
 (`tendstoInMeasure_of_tendsto_eLpNorm` + `TendstoInMeasure.exists_seq_tendsto_ae`). -/
-private theorem exists_ae_strong_subseq (F : Torus3NSForms) (ν : ℝ) (T : ℝ) (hT : 0 < T)
+private theorem exists_ae_strong_subseq (F : Torus3NSForms) (ν : ℝ) (T : ℝ) (_hT : 0 < T)
     (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
     (alPkg : AubinLionsPackage F ν T u₀ galSeq) :
     ∃ ρ : ℕ → ℕ, StrictMono ρ ∧
@@ -469,7 +469,7 @@ private theorem weakLimit_of_allDirections_cauchySeq
       ∀ z : L2VF, Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z)
         atTop (𝓝 (inner (𝕜 := ℝ) y z)) := fun t ht =>
   exists_weak_limit_in_submodule L2Sigma (fun k => ((galSeq (alPkg.φ (ρ k))).u t : L2VF))
-    (fun k => SetLike.coe_mem _) ‖(u₀ : L2VF)‖ (fun k => hbd k t ht) (hCauchy_all t ht)
+    (fun _k => SetLike.coe_mem _) ‖(u₀ : L2VF)‖ (fun k => hbd k t ht) (hCauchy_all t ht)
 
 /-- **Master construction: the weakly-continuous representative** of the Aubin–Lions limit.
 
@@ -782,7 +782,7 @@ theorem ofReal_viscousFormSq_le (ν : ℝ) (hν : 0 ≤ ν) (u : L2VF) :
     have hmul : ν * ∑' k, g j k = ∑' k, ν * g j k := tsum_mul_left.symm
     rw [hmul, ENNReal.ofReal_tsum_of_nonneg (fun k => mul_nonneg hν (hg0 j k)) hs']
   · rw [tsum_eq_zero_of_not_summable hs, mul_zero, ENNReal.ofReal_zero]
-    exact zero_le'
+    exact zero_le
 
 /-- For a band-limited field the honest ENNReal sum EQUALS `ofReal` of the real viscous
 form: both collapse to the same finite `fourierBox` sum. -/
@@ -1099,7 +1099,7 @@ The capstone discharges `hInt` from the energy-class conjunct (4) via a.e.-invar
 Setup + three named steps (`kineticEnergy_liminf_le_of_weakTendsto`,
 `dissipation_liminf_le_of_aeTendsto`, `energyBudget_liminf_assembly`) + assembly. -/
 private theorem energy_ineq_of_representative (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
-    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
+    (T : ℝ) (_hT : 0 < T) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
     (alPkg : AubinLionsPackage F ν T u₀ galSeq)
     (v : Time → L2Sigma) (ρ : ℕ → ℕ)

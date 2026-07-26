@@ -158,6 +158,12 @@ theorem norm_timeMollifier_smul_translate {ρ : ℝ → ℝ} (hρ : IsTimeMollif
     ‖ρ h • timeTranslateL2 h g‖ = ρ h * ‖g‖ := by
   rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (hρ.nonneg h), timeTranslateL2_norm]
 
+-- `CompleteSpace E` is a *semantic* guard here, not a proof dependency: without it the
+-- Bochner integral defining `timeConvL2` collapses to junk-`0`, making the bound vacuous.
+-- We `omit` the auto-included section variable (whose only effect would be an
+-- `unusedSectionVars` warning) and re-add it as an explicit binder so it stays in the
+-- public type in the same position, without a linter suppression.
+omit [CompleteSpace E] in
 /-- **The whole-line `eLpNorm` Young bound (PROVED, sorry-free).**
 
 `‖ρ ⋆ₜ g‖ ≤ ‖g‖` for a unit-mass mollifier `ρ`. This is the entire norm content of Young's
@@ -168,7 +174,7 @@ convolution inequality `‖ρ ⋆ g‖₂ ≤ ‖ρ‖₁ · ‖g‖₂` with `�
 This is the time-line, `E`-abstract transport of `FrechetKolmogorov.convL2_norm_le` (the
 whole-space spatial model). It is the foundational reusable piece of the S1 build: the same
 bound serves the `L²(0,T;V)` and `L²(0,T;V')` convergences once the interval layer lands. -/
-theorem timeConvL2_norm_le {ρ : ℝ → ℝ} (hρ : IsTimeMollifier ρ)
+theorem timeConvL2_norm_le [CompleteSpace E] {ρ : ℝ → ℝ} (hρ : IsTimeMollifier ρ)
     (g : Lp E 2 (volume : Measure ℝ)) :
     ‖timeConvL2 ρ g‖ ≤ ‖g‖ := by
   have hle : ‖timeConvL2 ρ g‖

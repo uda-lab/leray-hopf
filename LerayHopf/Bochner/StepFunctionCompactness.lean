@@ -123,7 +123,7 @@ private theorem stepCurve_stronglyMeasurable (T : ℝ) {m : ℕ} (hm : 0 < m) (y
 /-- **A2.** A step curve is in `L²(0,T; X)`: it takes finitely many values on the finite
 measure space `volume.restrict (Icc 0 T)`, hence is (strongly measurable and) `MemLp` at
 exponent `2`. -/
-theorem stepCurve_memLp (T : ℝ) (hT : 0 < T) (m : ℕ) (hm : 0 < m) (y : Fin m → X) :
+theorem stepCurve_memLp (T : ℝ) (_hT : 0 < T) (m : ℕ) (hm : 0 < m) (y : Fin m → X) :
     MemLp (stepCurve T m y) 2 (volume.restrict (Set.Icc (0 : ℝ) T)) := by
   haveI : IsFiniteMeasure (volume.restrict (Set.Icc (0 : ℝ) T)) :=
     ⟨by rw [Measure.restrict_apply_univ]; exact measure_Icc_lt_top⟩

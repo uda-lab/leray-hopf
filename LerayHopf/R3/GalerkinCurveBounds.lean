@@ -328,7 +328,7 @@ private theorem galerkinCurve_halfNormSq_hasDerivAt (gs : GalerkinSolutionData_R
   -- the ODE tested at `w := gs.u t` (admissible by `u_inVn`), convection killed by
   -- `b_self_zero`, stokes term collapsed to the dissipation on the diagonal
   have hode := gs.u_ode t ht (gs.u t) (gs.u_inVn t)
-  simp only [r3Domain_stokes, R3NSForms.core_b] at hode
+  simp only [R3NSForms.core_b] at hode
   rw [R3NSForms.b_self_zero F (gs.u t), add_zero, stokesTestPairing_R3_diag_local] at hode
   -- derivative of `s ↦ ⟪u s, u s⟫`
   have hinner :

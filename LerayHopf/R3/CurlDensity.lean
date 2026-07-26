@@ -179,7 +179,7 @@ private theorem fourier_schwartzC_curl_apply
   rw [SchwartzMap.sub_apply,
     fourier_schwartzC_lineDeriv_apply, fourier_schwartzC_lineDeriv_apply]
   -- rewrite the inner products `⟪ξ, e_a⟫ = ξ a`
-  simp only [EuclideanSpace.inner_single_right, map_one, mul_one, RCLike.conj_to_real]
+  simp only [EuclideanSpace.inner_single_right, RCLike.conj_to_real]
   simp only [crossWithIξ]
   push_cast
   ring

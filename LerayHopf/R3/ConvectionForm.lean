@@ -716,7 +716,7 @@ private theorem antisymmIntegral_continuous (ψw : Fin 3 → SchwartzMap Domain3
         (EuclideanSpace.single a (1 : ℝ) : Domain3) (ψw i)) x) ⊤ (volume : Measure Domain3)) :
     Continuous (fun p : L2VF_R3 × L2VF_R3 => antisymmIntegral ψw hbdd p.1 p.2) := by
   unfold antisymmIntegral
-  refine continuous_neg.comp (continuous_finset_sum _ (fun i _ => continuous_finset_sum _
+  refine continuous_neg.comp (continuous_finsetSum _ (fun i _ => continuous_finsetSum _
     (fun a _ => ?_)))
   -- `(f,g) ↦ ⟪comp_a f, mulBddR (∂ψw) (comp_i g)⟫` : inner of two continuous maps.
   refine continuous_inner.comp (Continuous.prodMk ?_ ?_)

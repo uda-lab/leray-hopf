@@ -202,8 +202,8 @@ theorem convFormH1_bound_slot2_schwartz
     (hw_sch : IsSchwartzDivFree_R3 ⟨w, hw_sigma⟩) :
     ∃ C_w : ℝ, 0 ≤ C_w ∧
       ∀ (u v : L2VF_R3) (hu : memH1VF_R3 u) (hv : memH1VF_R3 v)
-        (hu_sigma : u ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
-        (hv_sigma : v ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
+        (_hu_sigma : u ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+        (_hv_sigma : v ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
         |convFormH1 u w v hu hw_H1 hv| ≤ C_w * ‖u‖ * ‖v‖ := by
   obtain ⟨C_w, hC_nonneg, hbound⟩ :=
     convFormH1_bound_Schwartz w hw_H1 hw_sigma hw_sch
@@ -308,8 +308,8 @@ private theorem innerLin_bound
     (w : L2VF_R3) (hw_H1 : memH1VF_R3 w)
     {C_w : ℝ}
     (hbound : ∀ (u v : L2VF_R3) (hu : memH1VF_R3 u) (hv : memH1VF_R3 v)
-      (hu_sigma : u ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
-      (hv_sigma : v ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
+      (_hu_sigma : u ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+      (_hv_sigma : v ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
       |convFormH1 u v w hu hv hw_H1| ≤ C_w * ‖u‖ * ‖v‖)
     (u v : H1Sigma') :
     |innerLin w hw_H1 u v| ≤ C_w * ‖u‖ * ‖v‖ := by
@@ -350,13 +350,13 @@ private theorem extendOfNorm_eH1_smul
   refine LinearMap.extendOfNorm_unique denseRange_eH1 (|c| * C)
     (fun x => ?_) (c • f.extendOfNorm eH1) ?_
   · calc ‖(c • f) x‖ = |c| * ‖f x‖ := by
-            simp [LinearMap.smul_apply, norm_smul, Real.norm_eq_abs]
+            simp [LinearMap.smul_apply, Real.norm_eq_abs]
       _ ≤ |c| * (C * ‖eH1 x‖) := by
             apply mul_le_mul_of_nonneg_left (hf x) (abs_nonneg c)
       _ = |c| * C * ‖eH1 x‖ := by ring
   · refine LinearMap.ext (fun x => ?_)
     simp only [LinearMap.comp_apply, ContinuousLinearMap.coe_coe,
-      ContinuousLinearMap.smul_apply, LinearMap.smul_apply, Pi.smul_apply,
+      ContinuousLinearMap.smul_apply, LinearMap.smul_apply,
       LinearMap.extendOfNorm_eq denseRange_eH1 ⟨C, hf⟩ x, smul_eq_mul]
 
 /-- The chosen B7 constant for the fixed Schwartz `w`. -/
@@ -502,8 +502,8 @@ theorem convFormH1_bound_span {s : L2Sigma_R3} (hs : s ∈ schwartzSpan) :
     ∃ C : ℝ, 0 ≤ C ∧
       ∀ (hsH1 : memH1VF_R3 (s : L2VF_R3))
         (u v : L2VF_R3) (hu : memH1VF_R3 u) (hv : memH1VF_R3 v)
-        (hu_sigma : u ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
-        (hv_sigma : v ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
+        (_hu_sigma : u ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+        (_hv_sigma : v ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
         |convFormH1 u v (s : L2VF_R3) hu hv hsH1| ≤ C * ‖u‖ * ‖v‖ := by
   -- Predicate for span induction.
   set P : (x : L2Sigma_R3) → Prop := fun x =>
@@ -529,7 +529,7 @@ theorem convFormH1_bound_span {s : L2Sigma_R3} (hs : s ∈ schwartzSpan) :
       rw [zero_mul] at hsmul
       rw [show convFormH1 u v ((0 : L2Sigma_R3) : L2VF_R3) hu hv hxH1
           = convFormH1 u v ((0 : ℝ) • (0 : L2VF_R3)) hu hv
-              (memH1VF_R3_smul (0 : ℝ) memH1VF_R3_zero) from by congr 1 <;> simp]
+              (memH1VF_R3_smul (0 : ℝ) memH1VF_R3_zero) from by (congr 1; simp)]
       exact hsmul
     rw [hval]; simp
   · -- add
@@ -544,7 +544,7 @@ theorem convFormH1_bound_span {s : L2Sigma_R3} (hs : s ∈ schwartzSpan) :
         simp
       rw [show convFormH1 u v ((x + y : L2Sigma_R3) : L2VF_R3) hu hv hxyH1
           = convFormH1 u v ((x : L2VF_R3) + (y : L2VF_R3)) hu hv
-              (memH1VF_R3_add hxH1 hyH1) from by congr 1 <;> simp,
+              (memH1VF_R3_add hxH1 hyH1) from by congr 1,
         convFormH1_add_3 u v (x : L2VF_R3) (y : L2VF_R3) hu hv hxH1 hyH1]
     rw [hsplit]
     calc |convFormH1 u v (x : L2VF_R3) hu hv hxH1 + convFormH1 u v (y : L2VF_R3) hu hv hyH1|
@@ -561,7 +561,7 @@ theorem convFormH1_bound_span {s : L2Sigma_R3} (hs : s ∈ schwartzSpan) :
         = a * convFormH1 u v (x : L2VF_R3) hu hv hxH1 := by
       rw [show convFormH1 u v ((a • x : L2Sigma_R3) : L2VF_R3) hu hv haxH1
           = convFormH1 u v (a • (x : L2VF_R3)) hu hv
-              (memH1VF_R3_smul a hxH1) from by congr 1 <;> simp,
+              (memH1VF_R3_smul a hxH1) from by congr 1,
         convFormH1_smul_3 a u v (x : L2VF_R3) hu hv hxH1]
     rw [hsmul, abs_mul]
     calc |a| * |convFormH1 u v (x : L2VF_R3) hu hv hxH1|
@@ -590,8 +590,8 @@ private theorem convFormH1_eq_of_third_eq (u v w w' : L2VF_R3)
 private theorem convBLTspan_bound_spec {s : L2Sigma_R3} (hs : s ∈ schwartzSpan) :
     0 ≤ (convFormH1_bound_span hs).choose ∧
       ∀ (u v : L2VF_R3) (hu : memH1VF_R3 u) (hv : memH1VF_R3 v)
-        (hu_sigma : u ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
-        (hv_sigma : v ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
+        (_hu_sigma : u ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3))
+        (_hv_sigma : v ∈ (L2Sigma_R3 : Submodule ℝ L2VF_R3)),
         |convFormH1 u v (s : L2VF_R3) hu hv (memH1VF_R3_of_mem_schwartzSpan hs)|
           ≤ (convFormH1_bound_span hs).choose * ‖u‖ * ‖v‖ := by
   refine ⟨(convFormH1_bound_span hs).choose_spec.1, fun u v hu hv hu_sigma hv_sigma => ?_⟩
