@@ -7,14 +7,18 @@ set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)" || exit 1
 cd "$ROOT" || exit 1
 
-# Environment hygiene: when git invokes this hook from a *linked worktree* it exports an
-# absolute GIT_DIR (=<main>/.git/worktrees/<lane>) plus friends. `lake` inherits them, so
-# every git subprocess it spawns inside .lake/packages/mathlib queries THIS repo instead
-# of the mathlib package repo — lake then sees a "changed URL", deletes the ~6.3G prebuilt
-# mathlib package and re-clones (which itself fails on the leaked GIT_DIR). Unset them now,
-# after $ROOT is resolved: the rest of the hook rediscovers the repo from $ROOT (correct for
-# both main clone and worktree), and lake's subprocesses resolve their own repos. (#196)
-unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX
+# Environment hygiene: when git invokes this hook from a *linked worktree* it exports the
+# invoking repo's local env vars (GIT_DIR/GIT_COMMON_DIR/GIT_WORK_TREE/…), absolute and
+# pointing at THIS repo. `lake` inherits them, so every git subprocess it spawns inside
+# .lake/packages/mathlib queries THIS repo instead of the mathlib package repo — lake then
+# sees a "changed URL", deletes the ~6.3G prebuilt mathlib package and re-clones (which
+# itself fails on the leaked dir). Clear the complete repo-local set (git's own recommended
+# way to operate in a foreign repo — git-scm hooks docs) now, after $ROOT is resolved: the
+# rest of the hook rediscovers the repo from $ROOT (correct for both main clone and
+# worktree), and lake's subprocesses resolve their own repos. GIT_COMMON_DIR in particular
+# leaks the origin URL identically, so a partial list is insufficient. (#196; PR #197 review.)
+# shellcheck disable=SC2046  # deliberate word-split: unset each name git reports
+unset $(git rev-parse --local-env-vars)
 
 # Serialized incremental build. flock(1) is util-linux and absent on macOS (#118),
 # so fall back to the same kernel flock(2) via perl there (macOS ships /usr/bin/perl;
