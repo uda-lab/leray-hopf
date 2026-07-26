@@ -148,7 +148,7 @@ private theorem component_gradSq_eq (v : L2VF_R3) (i : Fin 3) (ψi : SchwartzMap
         rw [norm_mul, Complex.norm_I, mul_one, Complex.norm_real, Real.norm_eq_abs,
           abs_of_nonneg (by positivity)]
       rw [hI]
-    rw [← integral_finset_sum _ (fun a _ => hintP a)]
+    rw [← integral_finsetSum _ (fun a _ => hintP a)]
     refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
     have hnorm : ‖ξ‖ ^ 2 = ∑ a : Fin 3, (ξ a) ^ 2 := by
       rw [EuclideanSpace.norm_eq, Real.sq_sqrt (by positivity)]
@@ -247,7 +247,7 @@ theorem eLpNorm_six_le_of_schwartzRep :
   rw [h6eq]
   -- (2) GNS and gradient → sum-of-lineDerivs.
   refine (gns_L6_schwartz φ).trans ?_
-  refine (mul_le_mul_left' (PlancherelKernels.eLpNorm_fderiv_le_sum_lineDeriv φ) _).trans ?_
+  refine (mul_le_mul_right (PlancherelKernels.eLpNorm_fderiv_le_sum_lineDeriv φ) _).trans ?_
   -- (3) Identify each directional `L²` mass with `‖(∂_a ψ i).toLp‖`.
   have hcell : ∀ a : Fin 3,
       eLpNorm (fun x => (lineDerivOpCLM ℝ (SchwartzMap Domain3 ℂ)
@@ -836,7 +836,7 @@ theorem galerkin_pairing_FTC (gs : GalerkinSolutionData_R3 𝔊 F ν u₀ n)
           - F.b (gs.u σ) (gs.u σ) w := by
       rw [inner_zero_right, zero_add, neg_mul]
       have hode := gs.u_ode σ hσ0 w hw
-      simp only [r3Domain_stokes, R3NSForms.core_b] at hode
+      simp only [R3NSForms.core_b] at hode
       linarith [hode]
     rw [hval] at hbase
     exact hbase

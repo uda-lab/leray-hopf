@@ -202,7 +202,7 @@ theorem exists_weak_limit_in_submodule [CompleteSpace E] (K : Submodule ℝ E)
       (Submodule.mem_orthogonal K _).mp hoth (x k) (hxK k)
     have hφ0 : φ (y - K.starProjection y) = 0 := by
       refine tendsto_nhds_unique (hφ (y - K.starProjection y)) ?_
-      simpa [hz] using (tendsto_const_nhds : Tendsto (fun _ : ℕ => (0 : ℝ)) atTop (𝓝 0))
+      simp [hz]
     have h1 : inner (𝕜 := ℝ) y (y - K.starProjection y) = 0 := by rw [hyz]; exact hφ0
     have h2 : inner (𝕜 := ℝ) (K.starProjection y) (y - K.starProjection y) = 0 :=
       (Submodule.mem_orthogonal K _).mp hoth _ hop

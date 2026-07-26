@@ -154,7 +154,7 @@ private theorem symbolHatOf_hermitian (a : ℝ) (ha : 0 < a) (wh : Fin 3 → Sch
   simp only [PiLp.neg_apply]
   rw [hHerm (k + 2) ξ, hHerm (k + 1) ξ]
   push_cast
-  simp only [map_sub, map_mul, Complex.conj_ofReal, map_neg]
+  simp only [map_sub, map_mul, Complex.conj_ofReal]
   ring
 
 /-- The real potential's complexification equals `𝓕⁻ ψ̂_k` (since `ψ̂_k` is Hermitian). -/
@@ -327,7 +327,7 @@ private theorem tendsto_yukawa_integral (φ : Domain3 → ℝ) (hφ : ∀ ξ, 0 
   have hane : ∀ᵐ ξ ∂(volume : Measure Domain3), ‖ξ‖ ≠ 0 := by
     have hsing : (volume : Measure Domain3) {(0 : Domain3)} = 0 := by simp
     have : ∀ᵐ ξ ∂(volume : Measure Domain3), ξ ≠ 0 := by
-      rw [ae_iff]; simpa using hsing
+      rw [ae_iff]; simp
     filter_upwards [this] with ξ hξ
     simpa using hξ
   have hmeas : ∀ n : ℕ, AEStronglyMeasurable

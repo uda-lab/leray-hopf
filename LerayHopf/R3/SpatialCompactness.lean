@@ -105,7 +105,7 @@ theorem normSq_eq_integral_normSq {μ : Measure Domain3}
     ‖h‖ ^ 2 = ∫ x, ‖(h x : EuclideanSpace ℝ (Fin 3))‖ ^ 2 ∂μ := by
   have hre : ‖h‖ ^ 2 = (inner ℝ h h : ℝ) := by
     have := norm_sq_eq_re_inner (𝕜 := ℝ) h
-    simpa using this
+    simp
   rw [hre, MeasureTheory.L2.inner_def]
   refine integral_congr_ae ?_
   filter_upwards with x
@@ -586,7 +586,7 @@ private theorem measurable_ballClassify : Measurable ballClassify := by
       = Metric.closedBall (0 : Domain3) (k : ℝ)
         \ (⋃ j ∈ Finset.range k, Metric.closedBall (0 : Domain3) (j : ℝ)) := by
     ext x
-    simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_diff, Set.mem_iUnion,
+    simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_sdiff, Set.mem_iUnion,
       Finset.mem_range, not_exists, mem_closedBall_iff_ballClassify_le]
     constructor
     · rintro rfl
@@ -810,7 +810,7 @@ theorem ballLimits_are_consistent (_B : LocalRellichInput) (M : ℝ)
           ∂(volume.restrict (ball k)))
         = eLpNorm (g k : Domain3 → EuclideanSpace ℝ (Fin 3)) 2
             (volume.restrict (ball k)) ^ p2 := by
-      rw [eLpNorm_eq_lintegral_rpow_enorm (by norm_num) (by norm_num), ← hp2,
+      rw [eLpNorm_eq_lintegral_rpow_enorm_toReal (by norm_num) (by norm_num), ← hp2,
         ← ENNReal.rpow_mul]
       rw [show (1 / p2 * p2) = 1 by rw [hp2_eq]; norm_num, ENNReal.rpow_one]
     rw [h3]
@@ -958,7 +958,7 @@ private theorem divTestFunctional_eq_inner (φ : SchwartzMap Domain3 ℝ) (w : L
     rw [sum_inner]
     refine Finset.sum_congr rfl (fun j _ => ?_)
     rw [real_inner_smul_left, EuclideanSpace.inner_single_left, conj_trivial, one_mul]
-  rw [hLHS, hRHS, integral_finset_sum]
+  rw [hLHS, hRHS, integral_finsetSum]
   intro j _
   exact dphi_integrable φ j w
 
@@ -1079,7 +1079,7 @@ theorem tendsto_norm_tailVF_zero (v : L2VF_R3) :
       eLpNorm v 2 (volume.restrict (Metric.closedBall (0 : Domain3) (k : ℝ))ᶜ)
         = (∫⁻ x in (Metric.closedBall (0 : Domain3) (k : ℝ))ᶜ, H x ∂volume) ^ (1 / p2) := by
     intro k
-    rw [eLpNorm_eq_lintegral_rpow_enorm (by norm_num) (by norm_num), ← hp2]
+    rw [eLpNorm_eq_lintegral_rpow_enorm_toReal (by norm_num) (by norm_num), ← hp2]
     congr 1
     refine lintegral_congr_ae (ae_restrict_of_ae hHv)
   -- Convert the ENNReal tail to its `toReal` and conclude the real limit.

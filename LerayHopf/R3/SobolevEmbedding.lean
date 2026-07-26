@@ -432,7 +432,7 @@ theorem gns_L6_schwartz (φ : SchwartzMap Domain3 ℂ) :
     refine (hA2 n).trans ?_
     show C * eLpNorm (fderiv ℝ (g n)) 2 (volume : Measure Domain3)
       ≤ C * (Mg + ENNReal.ofReal (K / (n + 1 : ℝ)) * Mφ)
-    exact mul_le_mul_left' (hgrad n) C
+    exact mul_le_mul_right (hgrad n) C
   -- a.e. (everywhere) convergence gₙ x → φ x.
   have htend : ∀ᵐ x ∂(volume : Measure Domain3),
       Filter.Tendsto (fun n => g n x) Filter.atTop (nhds ((φ : Domain3 → ℂ) x)) := by
@@ -853,7 +853,7 @@ theorem gns_L6_of_memH1_R3
     refine (gns_L6_schwartz (φ n)).trans ?_
     have hgrad := eLpNorm_fderiv_le_weighted (φ n)
     rw [hWeighted n, Real.sqrt_sq (norm_nonneg _)] at hgrad
-    exact mul_le_mul_left' hgrad C
+    exact mul_le_mul_right hgrad C
   -- Step 5: `‖(η n).toLp‖ → ‖f'‖`, hence eventually `eLpNorm (φ n) 6 ≤ Bdd`.
   have hnorm_tend : Filter.Tendsto (fun n => ‖(η n).toLp 2 (volume : Measure Domain3)‖)
       Filter.atTop (nhds ‖f'‖) := (continuous_norm.tendsto f').comp hη
@@ -865,7 +865,7 @@ theorem gns_L6_of_memH1_R3
     filter_upwards [hev] with n hn
     refine (hL6 n).trans ?_
     rw [hBdd]
-    refine mul_le_mul_left' (ENNReal.ofReal_le_ofReal ?_) C
+    refine mul_le_mul_right (ENNReal.ofReal_le_ofReal ?_) C
     have hnn : 0 ≤ ‖(η n).toLp 2 (volume : Measure Domain3)‖ := norm_nonneg _
     nlinarith [Real.pi_pos, hn, hnn]
   -- Step 6: `φ n . toLp → f` in L² (`htoLp`, from the reused value-convergence step above),
@@ -1107,7 +1107,7 @@ private theorem schwartz_gradConv_of_valueConv (f : L2C_R3)
         SchwartzMap.smulLeftCLM_apply_apply hg]
       simp only [smul_eq_mul, Complex.real_smul]; ring
     rw [hpt, hFφ_pt n ξ, h4]
-    simp only [mLD, smul_eq_mul, Complex.real_smul]
+    simp only [mLD, smul_eq_mul]
     push_cast; ring
   -- GRADIENT CONVERGENCE: `(∂_m φ n).toLp → g` via Fourier isometry + continuity of mulBdd.
   have hgradtend : Filter.Tendsto
@@ -1150,7 +1150,7 @@ private theorem schwartz_gradConv_of_valueConv (f : L2C_R3)
         (fun n => ((∂_{m} (φ n)).toLp 2 (volume : Measure Domain3) : 𝓢'(Domain3, ℂ)))
         Filter.atTop (nhds (g : 𝓢'(Domain3, ℂ))) := by
       have := (ι.continuous.tendsto g).comp hgradtend
-      simp only [Function.comp, hι_apply] at this
+      simp only [hι_apply] at this
       exact this
     -- `D (φₙ.toLp) = ∂_m (φₙ.toLp : 𝓢')  →  ∂_m (f : 𝓢') = D f`.
     have hDf : Filter.Tendsto (fun n => D ((φ n).toLp 2 (volume : Measure Domain3)))
@@ -1332,7 +1332,7 @@ theorem memSobolev_of_finite_weightedFourier_R3 (w : L2VF_R3)
   show (SchwartzMap.smulLeftCLM ℂ wPosC φ) ξ • (g : Domain3 → ℂ) ξ
       = (φ ξ) • (f' : Domain3 → ℂ) ξ
   rw [SchwartzMap.smulLeftCLM_apply_apply hasTemperateGrowth_wPosC, hξ]
-  simp only [smul_smul, smul_eq_mul]
+  simp only [smul_eq_mul]
   ring
 
 end LerayHopf

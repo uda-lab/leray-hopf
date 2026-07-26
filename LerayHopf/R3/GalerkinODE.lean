@@ -278,7 +278,7 @@ theorem galerkin_energy_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
         mul_nonneg hν.le (viscousFormSq_R3_nonneg zero_le_one _)
       linarith
   -- `E t ≤ E 0`
-  have h0 : E t ≤ E 0 := hanti (Set.left_mem_Ici) ht ht
+  have h0 : E t ≤ E 0 := hanti (Set.self_mem_Ici) ht ht
   -- `E 0 = ½‖𝔊.P n u₀‖²` via `u_initial`
   have hinit : E 0 = (1 / 2 : ℝ) * ‖𝔊.P n (u₀ : L2VF_R3)‖ ^ 2 := by
     rw [hE]; simp only; rw [I.u_initial]

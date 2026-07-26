@@ -270,8 +270,8 @@ theorem convSummand_norm_summable (u : L2VF) (v : L2VF) (hv : memH1VF v)
       let e : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) × (Fin 3 → ℤ) :=
         { toFun := fun kl => (kl.1, -(kl.1 + kl.2))
           invFun := fun km => (km.1, -(km.1 + km.2))
-          left_inv := fun kl => Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
-          right_inv := fun km => Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply]) }
+          left_inv := fun kl => Prod.ext rfl (by funext j; simp [Pi.neg_apply])
+          right_inv := fun km => Prod.ext rfl (by funext j; simp [Pi.neg_apply]) }
       have hprod : Summable (fun km : (Fin 3 → ℤ) × (Fin 3 → ℤ) => ‖U km.1‖ ^ 2 * ‖Wc km.2‖) :=
         hUsq.mul_of_nonneg hWsumm (fun _ => by positivity) (fun _ => norm_nonneg _)
       refine ((Equiv.summable_iff e).mpr hprod).congr (fun kl => ?_)
@@ -281,8 +281,8 @@ theorem convSummand_norm_summable (u : L2VF) (v : L2VF) (hv : memH1VF v)
       let e : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) × (Fin 3 → ℤ) :=
         { toFun := fun kl => (kl.2, -(kl.1 + kl.2))
           invFun := fun lm => (-(lm.1 + lm.2), lm.1)
-          left_inv := fun kl => Prod.ext (by funext j; simp [Pi.neg_apply, Pi.add_apply]) rfl
-          right_inv := fun lm => Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply]) }
+          left_inv := fun kl => Prod.ext (by funext j; simp [Pi.neg_apply]) rfl
+          right_inv := fun lm => Prod.ext rfl (by funext j; simp [Pi.neg_apply]) }
       -- For the `(lₐ)²‖V l‖²` factor: dominated by the H¹ weight `(∑ⱼ(lⱼ)²)‖V l‖²`.
       have hVa : Summable (fun l : Fin 3 → ℤ => (l a : ℝ) ^ 2 * ‖V l‖ ^ 2) := by
         refine hVw.of_nonneg_of_le (fun l => by positivity) (fun l => ?_)
@@ -423,8 +423,8 @@ reindex is an unconditional `Equiv`. -/
 private def latticeInvol : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) × (Fin 3 → ℤ) where
   toFun kl := (kl.1, -(kl.1 + kl.2))
   invFun km := (km.1, -(km.1 + km.2))
-  left_inv kl := Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
-  right_inv km := Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
+  left_inv kl := Prod.ext rfl (by funext j; simp [Pi.neg_apply])
+  right_inv km := Prod.ext rfl (by funext j; simp [Pi.neg_apply])
 
 set_option maxHeartbeats 1000000 in
 -- kept at the original 1000000 (issue #152): isolated `#count_heartbeats in` measurement
@@ -503,9 +503,9 @@ theorem convFormFourier_antisymm_galerkinTest (u : L2Sigma) (v w : L2Sigma)
     rw [hA'rei a, ← Summable.tsum_add (hsummA a) (hsummA'rei a)]
     refine tsum_congr (fun kl => ?_)
     -- Inner argument `-(k + -(k+l)) = l` (the involution is self-inverse).
-    have harg : -(kl.1 + -(kl.1 + kl.2)) = kl.2 := by funext j; simp [Pi.neg_apply, Pi.add_apply]
+    have harg : -(kl.1 + -(kl.1 + kl.2)) = kl.2 := by funext j; simp [Pi.neg_apply]
     have hka : ((-(kl.1 + kl.2)) a : ℂ) = -(kl.1 a : ℂ) - (kl.2 a : ℂ) := by
-      simp [Pi.neg_apply, Pi.add_apply]; push_cast; ring
+      simp [Pi.neg_apply, Pi.add_apply]; ring
     simp only [convSummand, harg]
     rw [hka]
     ring
@@ -519,9 +519,9 @@ theorem convFormFourier_antisymm_galerkinTest (u : L2Sigma) (v w : L2Sigma)
     intro a
     have hsum := (hsummA a).add (hsummA'rei a)
     refine hsum.congr (fun kl => ?_)
-    have harg : -(kl.1 + -(kl.1 + kl.2)) = kl.2 := by funext j; simp [Pi.neg_apply, Pi.add_apply]
+    have harg : -(kl.1 + -(kl.1 + kl.2)) = kl.2 := by funext j; simp [Pi.neg_apply]
     have hka : ((-(kl.1 + kl.2)) a : ℂ) = -(kl.1 a : ℂ) - (kl.2 a : ℂ) := by
-      simp [Pi.neg_apply, Pi.add_apply]; push_cast; ring
+      simp [Pi.neg_apply, Pi.add_apply]; ring
     simp only [convSummand, harg]
     rw [hka]; ring
   rw [← (hasSum_sum (fun a (_ : a ∈ Finset.univ) => (hGsumm a).hasSum)).tsum_eq]

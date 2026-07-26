@@ -279,7 +279,7 @@ theorem forwardGlobalSolution_exists (g : V → V) (hg : ContDiff ℝ 1 g)
     intro t
     rcases lt_or_ge t 0 with ht0 | ht0
     · have hN1 : (1 : ℝ) ≤ (N t : ℝ) := by
-        rw [hN]; push_cast; have := Nat.zero_le (⌊t / s2⌋₊); push_cast; linarith
+        rw [hN]; push_cast; have := Nat.zero_le (⌊t / s2⌋₊); linarith
       have hpos : (0 : ℝ) < N t * s2 := mul_pos (by linarith) hs2
       linarith
     · have hlt : t / s2 < (⌊t / s2⌋₊ : ℝ) + 1 := Nat.lt_floor_add_one (t / s2)

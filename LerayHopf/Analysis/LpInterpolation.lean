@@ -79,7 +79,7 @@ theorem L2L6_inter_mem_L3 {F : Type*} [NormedAddCommGroup F] (f : Domain3 → F)
   refine ⟨hsm, ?_⟩
   -- `eLpNorm f 3 < ∞` from `(eLpNorm f 3) ^ 2 = eLpNorm (fun x => ‖f x‖ ^ 2) (3/2) < ∞`.
   have hpow : (fun x => ‖f x‖ ^ (2 : ℝ)) = (g * g) := by
-    funext x; simp [hg, Pi.mul_apply, Real.rpow_natCast, sq]
+    funext x; simp [hg, Pi.mul_apply, sq]
   have hkey : eLpNorm (fun x => ‖f x‖ ^ (2 : ℝ)) (3 / 2) (volume : Measure Domain3)
       = eLpNorm f ((3 / 2) * ENNReal.ofReal 2) (volume : Measure Domain3) ^ (2 : ℝ) :=
     eLpNorm_norm_rpow f (by norm_num)

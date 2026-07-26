@@ -76,7 +76,7 @@ theorem galerkin_test_pairing_lipschitz
     have hda := (gs.u_hasDeriv r hr).inner (𝕜 := ℝ) (hasDerivAt_const r (w : L2VF))
     simp only [inner_zero_right, zero_add] at hda
     have hode := gs.u_ode r hr w hwn.symm
-    simp only [torusDomain_stokes, Torus3NSForms.core_b] at hode
+    simp only [Torus3NSForms.core_b] at hode
     have hval : inner (𝕜 := ℝ) (deriv (fun s' => (gs.u s' : L2VF)) r) (w : L2VF)
         = -(ν * stokesTestPairing (gs.u r : L2VF) (w : L2VF) + F.b (gs.u r) (gs.u r) w) := by
       linarith

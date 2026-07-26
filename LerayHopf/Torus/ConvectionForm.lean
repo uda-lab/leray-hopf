@@ -286,7 +286,7 @@ theorem galerkinConvection_antisymm (n : ℕ) (u : L2Sigma) (v w : L2VF)
       refine (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
       intro l hl hlC
       have : -(k + l) ∉ fourierBox n := by
-        simp only [hCset, Finset.mem_filter, not_and] at hlC; exact hlC hl
+        simp only [Finset.mem_filter, not_and] at hlC; exact hlC hl
       rw [hWsupp i _ this]; ring
     have hQrestr : ∑ l ∈ fourierBox n,
           U a k * (c * (l a : ℂ) * (W i l * V i (-(k + l)))) =
@@ -294,7 +294,7 @@ theorem galerkinConvection_antisymm (n : ℕ) (u : L2Sigma) (v w : L2VF)
       refine (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
       intro l hl hlC
       have : -(k + l) ∉ fourierBox n := by
-        simp only [hCset, Finset.mem_filter, not_and] at hlC; exact hlC hl
+        simp only [Finset.mem_filter, not_and] at hlC; exact hlC hl
       rw [hVsupp i _ this]; ring
     -- Reindex the `Q`-sum over `Cset k` by the involution `σ_k`.
     have hQrei : ∑ l ∈ Cset k, U a k * (c * (l a : ℂ) * (W i l * V i (-(k + l)))) =
@@ -309,7 +309,7 @@ theorem galerkinConvection_antisymm (n : ℕ) (u : L2Sigma) (v w : L2VF)
     rw [hPrestr, hQrestr, hQrei, ← Finset.sum_add_distrib]
     refine Finset.sum_congr rfl fun l _ => ?_
     have hka : ((-(k + l)) a : ℂ) = -(k a : ℂ) - (l a : ℂ) := by
-      simp [Pi.neg_apply, Pi.add_apply]; push_cast; ring
+      simp [Pi.neg_apply, Pi.add_apply]; ring
     rw [hka]; ring
   -- Now sum over `a` and kill via divergence-freeness.
   rw [key]

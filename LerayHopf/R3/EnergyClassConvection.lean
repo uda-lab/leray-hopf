@@ -247,7 +247,7 @@ private theorem componentRe_smul_ae (c : ℝ) (u : L2VF_R3) (j : Fin 3) :
   rw [map_smul]
   have h := MeasureTheory.Lp.coeFn_smul c (L2VF_projComponentC_R3 j u)
   filter_upwards [h] with x hx
-  rw [hx]; simp [Complex.real_smul, Complex.re_ofReal_mul]
+  rw [hx]; simp [Complex.real_smul]
 
 /-- A.e. pointwise additivity of the real part of the weak gradient under field addition. -/
 private theorem gradRe_add_ae (v v' : L2VF_R3) (hv : memH1VF_R3 v) (hv' : memH1VF_R3 v')
@@ -267,7 +267,7 @@ private theorem gradRe_smul_ae (c : ℝ) (v : L2VF_R3) (hv : memH1VF_R3 v) (a i 
   have heq := gradComp_of_memH1_smul c v hv a i
   have h := MeasureTheory.Lp.coeFn_smul (c : ℂ) (gradComp_of_memH1 v hv a i)
   filter_upwards [h] with x hx
-  rw [heq, hx]; simp [Complex.re_ofReal_mul]
+  rw [heq, hx]; simp
 
 /-- **Scaffold.** The `∑ i, ∑ a, ∫ Φ` structure common to `convFormH1_add_1/2/3`: if the
 `(i,a)`-integrand `Φ i a` splits a.e. as a sum `Φ₁ i a + Φ₂ i a` of two integrable pieces, the

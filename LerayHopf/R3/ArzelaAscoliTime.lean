@@ -518,7 +518,8 @@ theorem galerkin_weakLimit_R3
     have hbdd_sq : BddAbove (Set.range (fun k => ‖gk k t‖^2)) :=
       ⟨‖(u₀ : L2VF_R3)‖^2, Set.forall_mem_range.mpr
         (fun k => pow_le_pow_left₀ (norm_nonneg _) (hbdd k) 2)⟩
-    obtain ⟨L, hL⟩ := Real.tendsto_of_bddAbove_monotone hbdd_sq hmono_sq
+    obtain ⟨L, hL⟩ : ∃ r : ℝ, Tendsto (fun k => ‖gk k t‖^2) atTop (nhds r) :=
+      ⟨_, tendsto_atTop_ciSup hmono_sq hbdd_sq⟩
     -- Use Metric.cauchySeq_iff': for ε > 0, find N such that ∀ n ≥ N, ‖u n - u N‖ < ε
     rw [Metric.cauchySeq_iff']
     intro ε hε
