@@ -7,18 +7,20 @@ set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)" || exit 1
 cd "$ROOT" || exit 1
 
-# Environment hygiene: when git invokes this hook from a *linked worktree* it exports the
-# invoking repo's local env vars (GIT_DIR/GIT_COMMON_DIR/GIT_WORK_TREE/…), absolute and
-# pointing at THIS repo. `lake` inherits them, so every git subprocess it spawns inside
-# .lake/packages/mathlib queries THIS repo instead of the mathlib package repo — lake then
-# sees a "changed URL", deletes the ~6.3G prebuilt mathlib package and re-clones (which
-# itself fails on the leaked dir). Clear the complete repo-local set (git's own recommended
-# way to operate in a foreign repo — git-scm hooks docs) now, after $ROOT is resolved: the
-# rest of the hook rediscovers the repo from $ROOT (correct for both main clone and
-# worktree), and lake's subprocesses resolve their own repos. GIT_COMMON_DIR in particular
-# leaks the origin URL identically, so a partial list is insufficient. (#196; PR #197 review.)
-# shellcheck disable=SC2046  # deliberate word-split: unset each name git reports
-unset $(git rev-parse --local-env-vars)
+# Git env hygiene (#196, PR #197 review). A linked-worktree push exports the invoking repo's
+# local git env vars (GIT_DIR / GIT_COMMON_DIR / GIT_OBJECT_DIRECTORY / …), absolute and
+# pointing at THIS repo. `lake` would otherwise inherit them, so every git subprocess it
+# spawns inside .lake/packages/mathlib would query THIS repo instead of the mathlib package
+# repo — reading leray-hopf's origin as mathlib's URL, so lake deletes the ~6.3G prebuilt
+# mathlib package and re-clones (which then fails on the leaked dir).
+#
+# We must NOT clear them here, at the top: the changed-file collection below relies on the
+# invoking repo's object access, and GIT_OBJECT_DIRECTORY / GIT_ALTERNATE_OBJECT_DIRECTORIES
+# also appear in `git rev-parse --local-env-vars`; clearing them before the diff would make
+# push-quarantined commits unreadable, silently empty `changed`, and skip the build on a real
+# `.lean` push (a gate bypass). Sanitize at the point of use instead — inside
+# run_build_locked, right before lake runs — so only lake's foreign-repo subprocesses see the
+# cleaned environment while the hook's own git stays bound to the invoking repo.
 
 # Serialized incremental build. flock(1) is util-linux and absent on macOS (#118),
 # so fall back to the same kernel flock(2) via perl there (macOS ships /usr/bin/perl;
@@ -26,6 +28,11 @@ unset $(git rev-parse --local-env-vars)
 # build — no lock files to reclaim, no stale/PID-reuse states, no cleanup traps).
 # The Linux flock path is unchanged.
 run_build_locked() {
+  # Clear the invoking repo's git env (the complete repo-local set git reports) so lake's
+  # git subprocesses resolve THEIR OWN repos — esp. .lake/packages/mathlib — rather than
+  # this one. Done here, not at hook top, so changed-file collection kept full object access.
+  # shellcheck disable=SC2046  # deliberate word-split: unset each name git reports
+  unset $(git rev-parse --local-env-vars)
   if command -v flock >/dev/null 2>&1; then
     flock /tmp/lean-build.lock lake build
   elif command -v perl >/dev/null 2>&1; then
