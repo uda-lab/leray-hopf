@@ -7,6 +7,15 @@ set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)" || exit 1
 cd "$ROOT" || exit 1
 
+# Environment hygiene: when git invokes this hook from a *linked worktree* it exports an
+# absolute GIT_DIR (=<main>/.git/worktrees/<lane>) plus friends. `lake` inherits them, so
+# every git subprocess it spawns inside .lake/packages/mathlib queries THIS repo instead
+# of the mathlib package repo — lake then sees a "changed URL", deletes the ~6.3G prebuilt
+# mathlib package and re-clones (which itself fails on the leaked GIT_DIR). Unset them now,
+# after $ROOT is resolved: the rest of the hook rediscovers the repo from $ROOT (correct for
+# both main clone and worktree), and lake's subprocesses resolve their own repos. (#196)
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX
+
 # Serialized incremental build. flock(1) is util-linux and absent on macOS (#118),
 # so fall back to the same kernel flock(2) via perl there (macOS ships /usr/bin/perl;
 # the exec'd build inherits the locked fd, so the lock lives exactly as long as the
