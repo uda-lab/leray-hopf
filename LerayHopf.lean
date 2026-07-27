@@ -177,5 +177,6 @@ import LerayHopf.Torus.ModeCompactness             -- issue #23: mode-wise extra
 import LerayHopf.Torus.ModeTail                    -- issue #23: mode-wise tail bounds
 import LerayHopf.Torus.AubinLionsAssembly          -- issue #23: aubin_lions replacement assembly
 import LerayHopf.Torus.KappaChainExit              -- issue #201 P2: κ-chain exit gate (P2ExitWitness + torus_kappaChain_exit)
+import LerayHopf.Torus.DiagonalGalerkin            -- issue #202 P3: stage recursion + diagonal weak limit (exists_diagonal_weakly_convergent_galSeq)
 import LerayHopf.R3.GoodRepresentative            -- issue #4 PR-5: R3 weakly-continuous representative (scaffold)
 import LerayHopf.R3.LimitPassage                  -- issue #4 PR-6: galerkin_limit_passage_R3 PROVED (zero project axioms)
