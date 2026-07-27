@@ -350,36 +350,40 @@ noncomputable def torusAubinLionsPackage_of_galSeq
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
     (_spatial : ∀ (M : ℝ) (z : ℕ → L2VF),
       (∀ n, z n ∈ L2Sigma) →
       (∀ n, memH1VF (z n)) →
       (∀ n, h1EnergySq (z n) ≤ M ^ 2) →
       ∃ (ψ : ℕ → ℕ) (g : L2VF), StrictMono ψ ∧ g ∈ L2Sigma ∧
         Filter.Tendsto (fun n => z (ψ n)) Filter.atTop (nhds g)) :
-    AubinLionsPackage F ν T u₀ galSeq := by
+    AubinLionsPackage F ν T u₀ galSeq κ := by
   classical
   -- T-AL-4 capstone (production): the extraction φ, the limit curve u, and the four
-  -- analytic conjuncts.  Type-valued goal ⇒ extract the ∃-witnesses by choice.
-  have H := _root_.LerayHopf.exists_limit_curve_of_galSeq F ν hν T hT u₀ galSeq
+  -- analytic conjuncts, now at the κ-shifted absolute index.  Type-valued goal ⇒
+  -- extract the ∃-witnesses by choice.
+  have H := _root_.LerayHopf.exists_limit_curve_of_galSeq F ν hν T hT u₀ galSeq κ hκ
   obtain ⟨hφ, hweak, hub, hmeas, hD⟩ := H.choose_spec.choose_spec
   -- Fields 1–3 and 5 are direct; field 4 (strong_convergence) is Step F.
   refine ⟨H.choose, hφ, H.choose_spec.choose, ?_, hmeas⟩
-  -- Continuity of the reindexed Galerkin curves (production T-AL-3 export).
+  -- Continuity of the reindexed Galerkin curves at the κ-shifted index (T-AL-3 export).
   have hcont : ∀ n, ContinuousOn
-      (fun t => ((galSeq (H.choose n)).u t : L2VF)) (Icc (0 : ℝ) T) := fun n =>
-    (_root_.LerayHopf.galerkin_u_continuousOn F ν u₀ (H.choose n)
-      (galSeq (H.choose n))).mono Icc_subset_Ici_self
-  -- Step F: split-convergence core (P0.16) → eLpNorm conversion (P0.8).
+      (fun t => ((galSeq (κ (H.choose n))).u t : L2VF)) (Icc (0 : ℝ) T) := fun n =>
+    (_root_.LerayHopf.galerkin_u_continuousOn F ν u₀ (κ (H.choose n))
+      (galSeq (κ (H.choose n)))).mono Icc_subset_Ici_self
+  -- Step F: split-convergence core (P0.16) → eLpNorm conversion (P0.8).  The Bucket-B
+  -- leaf `integral_sq_sub_tendsto_zero_of_galSeq` is unchanged; it is applied here at
+  -- the κ-shifted index by feeding `κ ∘ H.choose` as its extraction argument.
   exact eLpNorm_tendsto_of_integral_sq_tendsto T hT (2 * ‖(u₀ : L2VF)‖)
-    (fun n t => ((galSeq (H.choose n)).u t : L2VF) - (H.choose_spec.choose t : L2VF))
+    (fun n t => ((galSeq (κ (H.choose n))).u t : L2VF) - (H.choose_spec.choose t : L2VF))
     (fun n => ((hcont n).aestronglyMeasurable measurableSet_Icc).sub hmeas)
     (fun n t ht =>
       (norm_sub_le _ _).trans (by
-        have h1 := _root_.LerayHopf.galerkin_u_norm_le F ν u₀ (H.choose n)
-          (galSeq (H.choose n)) t ht.1
+        have h1 := _root_.LerayHopf.galerkin_u_norm_le F ν u₀ (κ (H.choose n))
+          (galSeq (κ (H.choose n))) t ht.1
         have h2 := hub t ht
         linarith))
     (integral_sq_sub_tendsto_zero_of_galSeq F ν hν T hT u₀ galSeq
-      H.choose H.choose_spec.choose hub hmeas hweak hD)
+      (fun n => κ (H.choose n)) H.choose_spec.choose hub hmeas hweak hD)
 
 end LerayHopf

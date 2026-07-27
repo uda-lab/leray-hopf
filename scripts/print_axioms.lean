@@ -39,6 +39,7 @@ import LerayHopf.R3Capstone
 import LerayHopf.Core
 import LerayHopf.Experimental
 import LerayHopf.Galerkin.GlobalContract
+import LerayHopf.Torus.KappaChainExit
 
 #print axioms LerayHopf.exists_lerayHopf_torus3
 #print axioms LerayHopf.exists_lerayHopf_r3
@@ -53,6 +54,9 @@ import LerayHopf.Galerkin.GlobalContract
 #print axioms LerayHopf.Galerkin.GlobalLerayHopfSolution.toSolution_u
 #print axioms LerayHopf.Galerkin.IsLerayHopfOn.mono
 #print axioms LerayHopf.Galerkin.IsLerayHopfOn.congr_Icc
+
+-- P2 (#201) κ-chain exit gate — the compiled acceptance artifact instantiation.
+#print axioms LerayHopf.torus_kappaChain_exit
 
 -- Experimental-module axiom profile (visibility only — see docs/statement-cards/).
 #print axioms LerayHopf.Bochner.w1pTime_continuous_in_H

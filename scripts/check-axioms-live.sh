@@ -289,6 +289,16 @@ assert_axioms "Galerkin.IsLerayHopfOn.congr_Icc" \
   "propext Classical.choice Quot.sound"
 
 # ---------------------------------------------------------------------------
+# Pin 10: P2 (#201) κ-chain exit gate — torus_kappaChain_exit
+#   The compiled acceptance artifact instantiating the P2ExitWitness shape (§5 P2
+#   exit gate). Kernel-only (0 project axioms): the whole torus compactness chain it
+#   assembles is kernel-only, and the extendReindexedFamily embedding adds only
+#   Classical.choice (already in the kernel trio) + galSeq_of_torus (axiom-free).
+# ---------------------------------------------------------------------------
+assert_axioms "torus_kappaChain_exit" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
 # Experimental-module axiom profile (issue #158 "public sorry / scaffold theorem の
 # axiom profile を release tooling で可視化" requirement) — VISIBILITY ONLY, does not
 # affect FAIL. Prints the axiom set of every `sorryAx`-carrying declaration behind the
@@ -333,4 +343,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 9 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only)."
+echo "AXIOM LIVE PIN OK — all 10 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only)."
