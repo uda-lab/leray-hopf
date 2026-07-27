@@ -38,11 +38,21 @@ import LerayHopf.Torus.Capstone
 import LerayHopf.R3Capstone
 import LerayHopf.Core
 import LerayHopf.Experimental
+import LerayHopf.Galerkin.GlobalContract
 
 #print axioms LerayHopf.exists_lerayHopf_torus3
 #print axioms LerayHopf.exists_lerayHopf_r3
 #print axioms LerayHopf.lower_bound_from_inverse_square_lifespan
 #print axioms LerayHopf.localCompactness_R3_of_ballCompact
+
+-- Generic global contract layer (issue #195 P1) — interim live pins for the promoted
+-- module while it has no live-pinned downstream capstone (see the P1→P4 window note in
+-- check-axioms-live.sh and docs/scratch/global-diagonal-campaign.md §10.5 / Q3 ruling).
+#print axioms LerayHopf.Galerkin.nonempty_lerayHopfSolution_iff_exists_isOn
+#print axioms LerayHopf.Galerkin.globalLerayHopfSolution_nonempty_iff
+#print axioms LerayHopf.Galerkin.GlobalLerayHopfSolution.toSolution_u
+#print axioms LerayHopf.Galerkin.IsLerayHopfOn.mono
+#print axioms LerayHopf.Galerkin.IsLerayHopfOn.congr_Icc
 
 -- Experimental-module axiom profile (visibility only — see docs/statement-cards/).
 #print axioms LerayHopf.Bochner.w1pTime_continuous_in_H

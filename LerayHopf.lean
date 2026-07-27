@@ -88,6 +88,7 @@ import LerayHopf.Galerkin.QuadraticField
 -- both SolutionInterfaces route through these as abbrevs/extends).
 import LerayHopf.Galerkin.Domain
 import LerayHopf.Galerkin.SolutionBundles
+import LerayHopf.Galerkin.GlobalContract
 
 -- Torus-layer files not covered by Core, needed to assemble the capstone (sorry-free per
 -- the release-cone guard; axiom-free — the former "sorry-carrying" label was stale since

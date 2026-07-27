@@ -264,6 +264,31 @@ assert_core_clean "lower_bound_from_inverse_square_lifespan"
 assert_core_clean "localCompactness_R3_of_ballCompact"
 
 # ---------------------------------------------------------------------------
+# Pins 5–9: generic global contract layer (issue #195 P1, LerayHopf.Galerkin.*)
+#   Interim kernel-trio pins for the promoted `LerayHopf/Galerkin/GlobalContract.lean`
+#   module (architect Q3 ruling on #200). Until P4's global-capstone live pin lands,
+#   no live-pinned capstone depends on this module, so a stray `sorryAx`/axiom
+#   introduced here between P1 and P4 would be invisible to the existing pins — `sorry`
+#   is a build *warning*, not an error, and the naming gate does not see axioms. These
+#   five close that window; by transitive closure they cover the whole promoted set
+#   (mono → weakFormNS_mono → setIntegral_Ioc_eq_of_tail_zero; congr_Icc →
+#   weakFormNS_congr_Icc; pins 5–7 cover IsLerayHopfOn / ofIsOn / GlobalLerayHopfSolution
+#   / toSolution). The badTail/truncation quartet is deliberately unpinned (illustrative
+#   cross-check layer, consumed by nothing downstream; cone membership suffices). P4's
+#   global-capstone live pin will subsume these and may prune them then.
+# ---------------------------------------------------------------------------
+assert_axioms "Galerkin.nonempty_lerayHopfSolution_iff_exists_isOn" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "Galerkin.globalLerayHopfSolution_nonempty_iff" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "Galerkin.GlobalLerayHopfSolution.toSolution_u" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "Galerkin.IsLerayHopfOn.mono" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "Galerkin.IsLerayHopfOn.congr_Icc" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
 # Experimental-module axiom profile (issue #158 "public sorry / scaffold theorem の
 # axiom profile を release tooling で可視化" requirement) — VISIBILITY ONLY, does not
 # affect FAIL. Prints the axiom set of every `sorryAx`-carrying declaration behind the
@@ -308,4 +333,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY)."
+echo "AXIOM LIVE PIN OK — all 9 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only)."
