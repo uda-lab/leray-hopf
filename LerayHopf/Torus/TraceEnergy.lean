@@ -1176,7 +1176,12 @@ theorem torus_galerkin_limit_passage_of_energyClass
       (nhds (u₀ : L2VF)) ∧
     ((∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF (u t : L2VF)) ∧
     IntervalIntegrable (fun s => viscousFormSq ν (u s : L2VF))
-      MeasureTheory.volume 0 T) := by
+      MeasureTheory.volume 0 T) ∧
+    (∃ ρ : ℕ → ℕ, StrictMono ρ ∧
+      ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
+        Filter.Tendsto
+          (fun k => inner (𝕜 := ℝ) (((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)) z)
+          Filter.atTop (nhds (inner (𝕜 := ℝ) ((u t : L2VF)) z))) := by
   obtain ⟨v, ρ, hρ, hae, hae_strong, hweak, hbd, hv0, hlip⟩ :=
     exists_weak_representative F ν hν T hT u₀ galSeq κ hκ alPkg
   have haeIcc : ∀ᵐ t ∂(volume : Measure ℝ), t ∈ Set.Icc (0 : ℝ) T → v t = alPkg.u t :=
@@ -1190,7 +1195,7 @@ theorem torus_galerkin_limit_passage_of_energyClass
       exact ae_restrict_of_ae_restrict_of_subset Set.Ioc_subset_Icc_self hae
     filter_upwards [h1] with s hs
     rw [hs]
-  refine ⟨v, hae, ?_, ?_, ?_, ?_, hIntv⟩
+  refine ⟨v, hae, ?_, ?_, ?_, ⟨?_, hIntv⟩, ρ, hρ, hweak⟩
   · -- conjunct (2): WeakFormNS transfer through the a.e.-equality
     have hW : WeakFormNS ν T (torus3Evolution F) alPkg.u :=
       torus_weakFormNS_of_strongConvergence F ν hν T hT u₀ galSeq κ hκ alPkg

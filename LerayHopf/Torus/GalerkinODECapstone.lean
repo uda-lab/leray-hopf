@@ -102,7 +102,7 @@ noncomputable def build_galerkin_package_of_galSeq (F : Torus3NSForms) (ν : ℝ
       weak_eq_limit := hspec.2.1
       energy_ineq_limit := hspec.2.2.1
       initial_trace_limit := hspec.2.2.2.1
-      energy_class_limit := hspec.2.2.2.2
+      energy_class_limit := hspec.2.2.2.2.1
       u_aestronglyMeasurable_limit := hmeas }
 
 /-- **Full Galerkin compactness package (issue #24).**  Assembles the proof-carrying
