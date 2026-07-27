@@ -618,8 +618,15 @@ targets=(DiagonalExtraction KappaReindex GlobalContractTorus P2ExitContract)
 # lock-holding lake process — it could remove artifacts that build just produced or
 # is about to consume).  FD 9 keeps the same /tmp/lean-build.lock every other lean
 # build in this container serializes on; it is released when the script exits.
-exec 9>/tmp/lean-build.lock
-flock 9
+# flock is present on this container (util-linux); if absent (non-Linux dev host) we
+# fall back to running without the lock — mirroring agent-preflight.sh's guard — rather
+# than aborting the mandatory preflight in an environment it explicitly supports.
+if command -v flock >/dev/null 2>&1; then
+  exec 9>/tmp/lean-build.lock
+  flock 9
+else
+  echo "WARNING: flock not found; running scratch-pin check without serialization lock." >&2
+fi
 
 # H-1(c) freshness: delete the four modules' build artifacts (.olean/.ilean/.hash/
 # .trace).  Lake cannot serve a stale artifact or replay a cached log for a module
@@ -682,10 +689,20 @@ for d in "${pinned[@]}"; do
   if ! printf '%s\n' "$bracket" | grep -qE '^\[[^][]*\]$'; then
     echo "MALFORMED PIN (bracket did not close on joined line): $d"; fail=1; continue
   fi
-  if printf '%s\n' "$bracket" | sed -E 's/propext|Classical\.choice|Quot\.sound//g' \
-      | grep -qE '[A-Za-z_]'; then
-    echo "PIN VIOLATION: $line"; fail=1
-  fi
+  # Compare each COMPLETE axiom token against the exact kernel trio.  A substring
+  # strip is not fail-closed: a Unicode-only root name (e.g. ω) escapes an ASCII
+  # grep, and a digit-extended name (e.g. Classical.choice2) survives the strip as
+  # bare digits.  Split the bracketed, comma-separated list and match whole tokens.
+  inner="$(printf '%s\n' "$bracket" | sed -E 's/^\[[[:space:]]*//; s/[[:space:]]*\]$//')"
+  IFS=',' read -ra toks <<<"$inner" || true
+  for tok in ${toks[@]+"${toks[@]}"}; do
+    tok="$(printf '%s' "$tok" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+    [ -z "$tok" ] && continue
+    case "$tok" in
+      propext|Classical.choice|Quot.sound) ;;
+      *) echo "PIN VIOLATION: $line"; fail=1; break ;;
+    esac
+  done
 done
 
 # H-1(a): nestedComp_add (declaration 14) is axiom-free — assert its exact output
