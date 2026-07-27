@@ -54,10 +54,20 @@ Fix `F : Torus3NSForms`, `ν > 0`, `u₀ : L2Sigma`, and the base family
 family serves every horizon; `T`-dependence enters only at the compactness layer.
 
 **Step 1 (stages — nested extraction).** By recursion on `m : ℕ` construct per-stage
-extractions `e m : ℕ → ℕ` (strictly monotone) and stage limit curves `U m : Time → L2Sigma`:
-stage `m` applies the κ-generalized `exists_limit_curve_of_galSeq` (P2) at horizon `T = m + 1`
-to the composed family `κ := nestedComp e m = e 0 ∘ ⋯ ∘ e m`, yielding
-`∀ t ∈ Icc 0 (m+1), ∀ z : L2Sigma, ⟪(galSeq (nestedComp e m j)).u t, z⟫ → ⟪U m t, z⟫` (in `j`).
+extractions `e m : ℕ → ℕ` (strictly monotone) and stage limit curves `U m : Time → L2Sigma`,
+with the recursion invariant that the ALREADY-COMPOSED map `nestedComp e m = e 0 ∘ ⋯ ∘ e m`
+carries the stage-`m` convergence (PR #205 review: the theorem's fresh extraction is never
+invoked as its own `κ` — the composed map fed in at each stage contains only extractions from
+EARLIER stages). Stage `0` applies the κ-generalized `exists_limit_curve_of_galSeq` (P2) at
+horizon `T = 1` with `κ := id`; the theorem returns a FRESH strictly monotone extraction `φ`
+and a limit curve, with convergence along `id ∘ φ`; record `e 0 := φ`, `U 0 :=` that curve —
+so convergence holds along `nestedComp e 0 = e 0`. Stage `m + 1` applies the theorem at
+horizon `T = m + 2` with `κ := nestedComp e m` (available by recursion) and again receives a
+FRESH `φ` with convergence along `nestedComp e m ∘ φ`; record `e (m+1) := φ`, so by
+definition `nestedComp e (m+1) = nestedComp e m ∘ e (m+1)` and the invariant re-establishes:
+`∀ t ∈ Icc 0 (m+2), ∀ z : L2Sigma, ⟪(galSeq (nestedComp e (m+1) j)).u t, z⟫ → ⟪U (m+1) t, z⟫`
+(in `j`). This is exactly the stage-hypothesis shape consumed by
+`tendsto_diag_of_tendsto_stage` in Step 2.
 
 **Step 2 (diagonal).** By the abstract diagonal lemma (spike 1, §7):
 `δ k := nestedComp e k k` is strictly monotone and for every `m` there is a strictly monotone
@@ -601,6 +611,14 @@ trap 'rm -f "$log"' EXIT
 
 targets=(DiagonalExtraction KappaReindex GlobalContract GlobalContractTorus P2ExitContract)
 
+# Take the container-wide build lock BEFORE the artifact deletion below and hold it
+# through the build (PR #205 review: deleting outside the lock races a concurrent
+# lock-holding lake process — it could remove artifacts that build just produced or
+# is about to consume).  FD 9 keeps the same /tmp/lean-build.lock every other lean
+# build in this container serializes on; it is released when the script exits.
+exec 9>/tmp/lean-build.lock
+flock 9
+
 # H-1(c) freshness: delete the five modules' build artifacts (.olean/.ilean/.hash/
 # .trace).  Lake cannot serve a stale artifact or replay a cached log for a module
 # whose artifacts are missing — it must genuinely re-elaborate it, and only genuine
@@ -611,7 +629,7 @@ for t in "${targets[@]}"; do
   rm -f ".lake/build/lib/lean/LerayHopf/Scratch/$t".*
 done
 
-flock /tmp/lean-build.lock lake build \
+lake build \
   LerayHopf.Scratch.DiagonalExtraction \
   LerayHopf.Scratch.KappaReindex \
   LerayHopf.Scratch.GlobalContract \
@@ -803,7 +821,10 @@ review") and left exactly one finding, on the evidence checker. Disposition:
     wrap-join heuristic failed) reports `MALFORMED PIN`; both exit non-zero. Nothing
     is silently dropped.
   - **(c) forced-fresh compilation:** the five scratch modules' build artifacts
-    (`.olean/.ilean/.hash/.trace`) are deleted before the build, so lake cannot serve
+    (`.olean/.ilean/.hash/.trace`) are deleted before the build — under the
+    container-wide build lock, which is taken BEFORE the deletion and held through
+    `lake build` (PR #205 review finding: deletion outside the lock races a
+    concurrent lock-holding build) — so lake cannot serve
     a stale artifact or replay a cached log — it must re-elaborate, which is what
     re-runs the `#print axioms` commands. Belt-and-braces, the script then asserts a
     `Built LerayHopf.Scratch.<target>` line per target: lake prints `Replayed` on a
