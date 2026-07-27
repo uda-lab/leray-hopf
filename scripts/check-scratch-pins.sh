@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Fail-closed scratch evidence gate (issue #195; §10.5 of
 # docs/scratch/global-diagonal-campaign.md, pass-3 G-2, hardened at pass-4 H-1,
-# retargeted for the POST-P1 tree by #200): forced-fresh compilation + EXACT
-# 14-declaration pin-set check.  Non-zero exit on build failure, stale/replayed
+# retargeted for the POST-P1 tree by #200; retargeted again for the POST-P3 tree by
+# #202): forced-fresh compilation + EXACT 10-declaration pin-set check.  Non-zero exit
+# on build failure, stale/replayed
 # target, missing or malformed pin, any axiom token outside the kernel trio, or any
 # pin output beyond the enumerated set.
 #
-# The four remaining scratch targets are deliberately OUTSIDE the release cone (not
+# The three remaining scratch targets are deliberately OUTSIDE the release cone (not
 # imported by LerayHopf.lean), so agent-preflight.sh's default build does not rebuild
 # them.  This checker rebuilds them from scratch and asserts their axiom hygiene.  The
 # former GlobalContract (12 pins) was promoted into the release cone by #200 and is now
@@ -25,7 +26,7 @@ export PATH="$HOME/.elan/bin:$PATH"
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 
-targets=(DiagonalExtraction KappaReindex GlobalContractTorus P2ExitContract)
+targets=(KappaReindex GlobalContractTorus P2ExitContract)
 
 # Take the container-wide build lock BEFORE the artifact deletion below and hold it
 # through the build (PR #205 review: deleting outside the lock races a concurrent
@@ -42,18 +43,17 @@ else
   echo "WARNING: flock not found; running scratch-pin check without serialization lock." >&2
 fi
 
-# Freshness: delete the four modules' build artifacts (.olean/.ilean/.hash/.trace).
+# Freshness: delete the three modules' build artifacts (.olean/.ilean/.hash/.trace).
 # Lake cannot serve a stale artifact or replay a cached log for a module whose
 # artifacts are missing — it must genuinely re-elaborate it, and only genuine
 # re-elaboration prints "Built <module>" (a cache hit prints "Replayed <module>")
 # and re-runs the #print axioms commands whose output is parsed below.  Upstream
-# dependencies stay cached, so the cost is exactly the four scratch modules.
+# dependencies stay cached, so the cost is exactly the three scratch modules.
 for t in "${targets[@]}"; do
   rm -f ".lake/build/lib/lean/LerayHopf/Scratch/$t".*
 done
 
 lake build \
-  LerayHopf.Scratch.DiagonalExtraction \
   LerayHopf.Scratch.KappaReindex \
   LerayHopf.Scratch.GlobalContractTorus \
   LerayHopf.Scratch.P2ExitContract >"$log" 2>&1 \
@@ -74,14 +74,10 @@ done
 # fails the gate, never silently dropped.
 joined="$(tr '\n' '@' <"$log" | sed 's/@ / /g' | tr '@' '\n')"
 
-# Exact pin set: the 13 declarations (of 14 total) that must pin to (a subset of) the
+# Exact pin set: the 10 declarations (all of them) that must pin to (a subset of) the
 # kernel trio [propext, Classical.choice, Quot.sound].
-# DiagonalExtraction (3) + KappaReindex (6) + GlobalContractTorus (1) +
-# P2ExitContract (3).
+# KappaReindex (6) + GlobalContractTorus (1) + P2ExitContract (3).
 pinned=(
-  diagExtraction_strictMono
-  exists_diagonal_extraction
-  tendsto_diag_of_tendsto_stage
   exists_galerkin_modewise_extraction_kappa
   reindexed_family_second_extraction
   extendReindexedFamily_apply
@@ -119,17 +115,11 @@ for d in "${pinned[@]}"; do
   done
 done
 
-# nestedComp_add (declaration 14) is axiom-free — assert its exact output POSITIVELY
-# instead of letting it fall out of the 'depends on axioms' grep.
-printf '%s\n' "$joined" \
-  | grep -qF "'LerayHopf.Scratch195.nestedComp_add' does not depend on any axioms" \
-  || { echo "MISSING AXIOM-FREE ASSERTION: nestedComp_add"; fail=1; }
-
-# Exactness (both directions): total #print axioms outputs must be exactly 14 —
+# Exactness (both directions): total #print axioms outputs must be exactly 10 —
 # a pin added to the sources without updating this checker fails the gate too.
 total="$(printf '%s\n' "$joined" \
   | grep -cE "depends on axioms:|does not depend on any axioms" || true)"
-[ "$total" -eq 14 ] || { echo "PIN COUNT MISMATCH: expected 14, observed $total"; fail=1; }
+[ "$total" -eq 10 ] || { echo "PIN COUNT MISMATCH: expected 10, observed $total"; fail=1; }
 
 [ "$fail" -eq 0 ] || exit 1
-echo "SCRATCH PIN CHECK OK (14/14: 13 kernel-trio pins + nestedComp_add axiom-free)"
+echo "SCRATCH PIN CHECK OK (10/10: 10 kernel-trio pins)"

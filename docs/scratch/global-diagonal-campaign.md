@@ -611,7 +611,7 @@ quoted) by any phase that touches the spikes:
 ```sh
 #!/usr/bin/env bash
 # Fail-closed scratch evidence gate (pass-3 G-2, hardened at pass-4 H-1):
-# forced-fresh compilation + EXACT 14-declaration pin-set check.  Non-zero exit on
+# forced-fresh compilation + EXACT 10-declaration pin-set check.  Non-zero exit on
 # build failure, stale/replayed target, missing or malformed pin, any axiom token
 # outside the kernel trio, or any pin output beyond the enumerated set.
 set -euo pipefail
@@ -619,7 +619,7 @@ export PATH="$HOME/.elan/bin:$PATH"
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 
-targets=(DiagonalExtraction KappaReindex GlobalContractTorus P2ExitContract)
+targets=(KappaReindex GlobalContractTorus P2ExitContract)
 
 # Take the container-wide build lock BEFORE the artifact deletion below and hold it
 # through the build (PR #205 review: deleting outside the lock races a concurrent
@@ -636,18 +636,17 @@ else
   echo "WARNING: flock not found; running scratch-pin check without serialization lock." >&2
 fi
 
-# H-1(c) freshness: delete the four modules' build artifacts (.olean/.ilean/.hash/
+# H-1(c) freshness: delete the three modules' build artifacts (.olean/.ilean/.hash/
 # .trace).  Lake cannot serve a stale artifact or replay a cached log for a module
 # whose artifacts are missing — it must genuinely re-elaborate it, and only genuine
 # re-elaboration prints "Built <module>" (a cache hit prints "Replayed <module>")
 # and re-runs the #print axioms commands whose output is parsed below.  Upstream
-# dependencies stay cached, so the cost is exactly the four scratch modules.
+# dependencies stay cached, so the cost is exactly the three scratch modules.
 for t in "${targets[@]}"; do
   rm -f ".lake/build/lib/lean/LerayHopf/Scratch/$t".*
 done
 
 lake build \
-  LerayHopf.Scratch.DiagonalExtraction \
   LerayHopf.Scratch.KappaReindex \
   LerayHopf.Scratch.GlobalContractTorus \
   LerayHopf.Scratch.P2ExitContract >"$log" 2>&1 \
@@ -668,14 +667,10 @@ done
 # MALFORMED and fails the gate, never silently dropped.
 joined="$(tr '\n' '@' <"$log" | sed 's/@ / /g' | tr '@' '\n')"
 
-# H-1(a) exact pin set: the 13 declarations (of 14 total) that must pin to (a
+# H-1(a) exact pin set: the 10 declarations (all of them) that must pin to (a
 # subset of) the kernel trio [propext, Classical.choice, Quot.sound].
-# DiagonalExtraction (3) + KappaReindex (6) +
-# GlobalContractTorus (1) + P2ExitContract (3).
+# KappaReindex (6) + GlobalContractTorus (1) + P2ExitContract (3).
 pinned=(
-  diagExtraction_strictMono
-  exists_diagonal_extraction
-  tendsto_diag_of_tendsto_stage
   exists_galerkin_modewise_extraction_kappa
   reindexed_family_second_extraction
   extendReindexedFamily_apply
@@ -713,20 +708,14 @@ for d in "${pinned[@]}"; do
   done
 done
 
-# H-1(a): nestedComp_add (declaration 14) is axiom-free — assert its exact output
-# POSITIVELY instead of letting it fall out of the 'depends on axioms' grep.
-printf '%s\n' "$joined" \
-  | grep -qF "'LerayHopf.Scratch195.nestedComp_add' does not depend on any axioms" \
-  || { echo "MISSING AXIOM-FREE ASSERTION: nestedComp_add"; fail=1; }
-
 # Exactness (both directions): total #print axioms outputs must be exactly 14 —
 # a pin added to the sources without updating this checker fails the gate too.
 total="$(printf '%s\n' "$joined" \
   | grep -cE "depends on axioms:|does not depend on any axioms" || true)"
-[ "$total" -eq 14 ] || { echo "PIN COUNT MISMATCH: expected 14, observed $total"; fail=1; }
+[ "$total" -eq 10 ] || { echo "PIN COUNT MISMATCH: expected 10, observed $total"; fail=1; }
 
 [ "$fail" -eq 0 ] || exit 1
-echo "SCRATCH PIN CHECK OK (14/14: 13 kernel-trio pins + nestedComp_add axiom-free)"
+echo "SCRATCH PIN CHECK OK (10/10: 10 kernel-trio pins)"
 ```
 
 This gate is reproducible from repo state alone and FAIL-CLOSED (pass-2 F-D + pass-3
@@ -734,10 +723,9 @@ G-2 + pass-4 H-1): the pins are `#print axioms` lines INSIDE the committed spike
 files; the build status is checked directly (no `| tail` pipe to swallow it); the
 compilation is forced fresh (artifact deletion + a positive `Built` assertion per
 target — lake's incremental `Replayed` path cannot satisfy it); the pin check
-enumerates the EXACT 14-declaration set by name (13 kernel-trio pins + a POSITIVE
-assertion of `nestedComp_add`'s axiom-free output), fails on any missing name,
+enumerates the EXACT 10-declaration set by name (10 kernel-trio pins), fails on any missing name,
 unclosed bracket (bad wrap-join), non-kernel axiom token (in particular `sorryAx`),
-or any pin output beyond the enumerated 14. Session logs quoted in reports are
+or any pin output beyond the enumerated 10. Session logs quoted in reports are
 convenience transcripts; the committed files and this script are the source of truth.
 (c) Committing this checker as a repository script wired into preflight/CI is a
 `scripts/` change owned by lean-coder (dispatched as a P1-precursor work item); per
@@ -870,6 +858,8 @@ declarations are covered by release-cone membership plus 5 interim live pins in
 `scripts/check-axioms-live.sh`. Exact-set semantics are unchanged from pass-4; only the
 target/pin enumeration shrank. See the architect ruling on issue #200
 (`gh issue view 200 --comments`).
+
+**P3 (#202) retarget note.** With the abstract diagonal machinery promoted to `LerayHopf/Bochner/DiagonalExtraction.lean` (release cone; MOVE per the P1 GlobalContract precedent — no scratch file imported it), the committed `scripts/check-scratch-pins.sh` and the §10.5 reference script enumerate 3 targets (`KappaReindex`, `GlobalContractTorus`, `P2ExitContract`) and exactly 10 pins, all kernel-trio; `nestedComp_add`'s positive axiom-free assertion is retired with the move. The promoted declarations are covered by release-cone membership plus live pins on `exists_diagonal_weakly_convergent_galSeq` and `LerayHopf.Bochner.exists_diagonal_extraction` in `scripts/check-axioms-live.sh`. Exact-set semantics unchanged. See the architect ruling on issue #202.
 
 **P2 (#201) exit gate SATISFIED (2026-07-28).** Both P3/P4 dispatch conditions are
 met: (i) the production instantiation of the `P2ExitWitness` shape is compiled —
