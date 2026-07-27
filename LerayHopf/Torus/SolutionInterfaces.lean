@@ -340,7 +340,7 @@ tying the A1 → A2 → A3 chain on one sequence.
 The spatial compactness half is NOT in this package — it is supplied as an explicit
 hypothesis to `torusAubinLionsPackage_of_galSeq` and discharged by `rellich_L2Sigma`. -/
 structure AubinLionsPackage (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
-    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) where
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) (κ : ℕ → ℕ) where
   /-- The strictly monotone extraction index. -/
   φ : ℕ → ℕ
   /-- Strict monotonicity of `φ`. -/
@@ -352,11 +352,14 @@ structure AubinLionsPackage (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
   `∫‖·‖²→0` form was "vacuous-shaped" (`integral_undef` collapses non-integrable integrands to
   `0`), so it could not certify genuine L²-in-time convergence / `MemLp` of the limit.  The
   `eLpNorm` form has no junk-`0` collapse and carries exactly the intended content; it
-  strengthens the field's *statement* (the axiom's type) WITHOUT adding any axiom. -/
+  strengthens the field's *statement* (the axiom's type) WITHOUT adding any axiom.
+
+  **P2 (#201) κ-generalization:** the convergence is stated at the κ-shifted absolute index
+  `galSeq (κ (φ n))`; at `κ := id` this is definitionally the pre-P2 field. -/
   strong_convergence :
     Filter.Tendsto
       (fun n => MeasureTheory.eLpNorm
-        (fun t => ((galSeq (φ n)).u t : L2VF) - (u t : L2VF))
+        (fun t => ((galSeq (κ (φ n))).u t : L2VF) - (u t : L2VF))
         2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)))
       Filter.atTop (nhds 0)
   /-- **AE strong measurability of the limit curve** `t ↦ (u t : L2VF)` on `[0,T]`.

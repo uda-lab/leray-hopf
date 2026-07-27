@@ -112,7 +112,7 @@ identity-mode-map instance (every field transfers verbatim), so existing consume
 keep working after the P2 rewiring. -/
 def AubinLionsPackageKappa.ofId {F : Torus3NSForms} {ν T : ℝ} {u₀ : L2Sigma}
     {galSeq : ∀ n, GalerkinSolutionData F ν u₀ n}
-    (p : AubinLionsPackage F ν T u₀ galSeq) :
+    (p : AubinLionsPackage F ν T u₀ galSeq id) :
     AubinLionsPackageKappa F ν T u₀ galSeq id where
   φ := p.φ
   φ_mono := p.φ_mono

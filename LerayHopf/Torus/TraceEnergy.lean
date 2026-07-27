@@ -357,18 +357,19 @@ yields a further subsequence whose curves converge strongly in `L2VF` at a.e. `t
 (`tendstoInMeasure_of_tendsto_eLpNorm` + `TendstoInMeasure.exists_seq_tendsto_ae`). -/
 private theorem exists_ae_strong_subseq (F : Torus3NSForms) (ν : ℝ) (T : ℝ) (_hT : 0 < T)
     (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    (alPkg : AubinLionsPackage F ν T u₀ galSeq) :
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq κ) :
     ∃ ρ : ℕ → ℕ, StrictMono ρ ∧
       ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
-        Tendsto (fun k => ((galSeq (alPkg.φ (ρ k))).u t : L2VF)) atTop
+        Tendsto (fun k => ((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)) atTop
           (𝓝 (alPkg.u t : L2VF)) := by
   set μ : Measure ℝ := volume.restrict (Set.Icc (0 : ℝ) T) with hμ
-  set f : ℕ → ℝ → L2VF := fun N t => ((galSeq (alPkg.φ N)).u t : L2VF) with hfdef
+  set f : ℕ → ℝ → L2VF := fun N t => ((galSeq (κ (alPkg.φ N))).u t : L2VF) with hfdef
   set g : ℝ → L2VF := fun t => (alPkg.u t : L2VF) with hgdef
   have hfm : ∀ N, AEStronglyMeasurable (f N) μ := by
     intro N
     have hcont : ContinuousOn (f N) (Set.Icc 0 T) := fun t ht =>
-      (((galSeq (alPkg.φ N)).u_hasDeriv t ht.1).continuousAt).continuousWithinAt
+      (((galSeq (κ (alPkg.φ N))).u_hasDeriv t ht.1).continuousAt).continuousWithinAt
     rw [hμ]
     exact hcont.aestronglyMeasurable measurableSet_Icc
   have hgm : AEStronglyMeasurable g μ := by
@@ -390,21 +391,22 @@ private theorem exists_ae_strong_subseq (F : Torus3NSForms) (ν : ℝ) (T : ℝ)
 private theorem galerkinTest_cauchySeq_of_aeStrong
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    (alPkg : AubinLionsPackage F ν T u₀ galSeq) (ρ : ℕ → ℕ)
-    (hlevel : ∀ k, k ≤ alPkg.φ (ρ k))
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq κ) (ρ : ℕ → ℕ)
+    (hlevel : ∀ k, k ≤ κ (alPkg.φ (ρ k)))
     (S : Set ℝ) (hS : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), t ∈ S)
-    (hSmem : ∀ s ∈ S, Tendsto (fun k => ((galSeq (alPkg.φ (ρ k))).u s : L2VF)) atTop
+    (hSmem : ∀ s ∈ S, Tendsto (fun k => ((galSeq (κ (alPkg.φ (ρ k)))).u s : L2VF)) atTop
       (𝓝 (alPkg.u s : L2VF))) :
     ∀ (w : L2Sigma), IsGalerkinTest w → ∀ t, t ∈ Set.Icc (0 : ℝ) T →
-      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) (w : L2VF)) := by
-  set c : ℕ → ℝ → L2VF := fun k t => ((galSeq (alPkg.φ (ρ k))).u t : L2VF) with hcdef
+      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)) (w : L2VF)) := by
+  set c : ℕ → ℝ → L2VF := fun k t => ((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF) with hcdef
   intro w hw t ht
   obtain ⟨n₀, hn₀⟩ := hw
   obtain ⟨L, hL0, hLip⟩ := perTest_lipschitz F ν hν u₀ galSeq w n₀ hn₀
   refine cauchySeq_of_equiLipschitz_of_dense (T := T)
     (fun k s => inner (𝕜 := ℝ) (c k s) (w : L2VF)) L hL0 n₀ ?_ S ?_ ?_ ht
   · intro k hk s hsI t' htI'
-    exact hLip (alPkg.φ (ρ k)) (le_trans hk (hlevel k))
+    exact hLip (κ (alPkg.φ (ρ k))) (le_trans hk (hlevel k))
       s (Set.Icc_subset_Ici_self hsI) t' (Set.Icc_subset_Ici_self htI')
   · intro u hu ε hε
     exact exists_mem_of_ae_full hT S hS hu hε
@@ -418,15 +420,15 @@ private theorem galerkinTest_cauchySeq_of_aeStrong
 extends the per-test Cauchy-ness (previous step) to `CauchySeq` against every `z : L2VF`. -/
 private theorem allDirections_cauchySeq_of_galerkinTest
     (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma)
-    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) {T : ℝ}
-    (alPkg : AubinLionsPackage F ν T u₀ galSeq) (ρ : ℕ → ℕ)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) (κ : ℕ → ℕ) (_hκ : StrictMono κ) {T : ℝ}
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq κ) (ρ : ℕ → ℕ)
     (hbd : ∀ k, ∀ t ∈ Set.Icc (0 : ℝ) T,
-      ‖((galSeq (alPkg.φ (ρ k))).u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖)
+      ‖((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖)
     (hCauchy_test : ∀ (w : L2Sigma), IsGalerkinTest w → ∀ t, t ∈ Set.Icc (0 : ℝ) T →
-      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) (w : L2VF))) :
+      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)) (w : L2VF))) :
     ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
-      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z) := by
-  set c : ℕ → ℝ → L2VF := fun k t => ((galSeq (alPkg.φ (ρ k))).u t : L2VF) with hcdef
+      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)) z) := by
+  set c : ℕ → ℝ → L2VF := fun k t => ((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF) with hcdef
   intro t ht z
   -- kill the `L2Sigmaᗮ` part: `⟪cₖ(t), z⟫ = ⟪cₖ(t), Pσ z⟫`
   set zσ : L2VF := L2Sigma.starProjection z with hzσ
@@ -458,17 +460,17 @@ private theorem allDirections_cauchySeq_of_galerkinTest
 submodule `L2Sigma`), specialized to the Galerkin approximant sequence at a fixed `t`. -/
 private theorem weakLimit_of_allDirections_cauchySeq
     (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma)
-    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) {T : ℝ}
-    (alPkg : AubinLionsPackage F ν T u₀ galSeq) (ρ : ℕ → ℕ)
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) (κ : ℕ → ℕ) (_hκ : StrictMono κ) {T : ℝ}
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq κ) (ρ : ℕ → ℕ)
     (hbd : ∀ k, ∀ t ∈ Set.Icc (0 : ℝ) T,
-      ‖((galSeq (alPkg.φ (ρ k))).u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖)
+      ‖((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖)
     (hCauchy_all : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
-      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z)) :
+      CauchySeq (fun k => inner (𝕜 := ℝ) (((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)) z)) :
     ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∃ y : L2VF, y ∈ L2Sigma ∧
       ‖y‖ ≤ ‖(u₀ : L2VF)‖ ∧
-      ∀ z : L2VF, Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z)
+      ∀ z : L2VF, Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)) z)
         atTop (𝓝 (inner (𝕜 := ℝ) y z)) := fun t ht =>
-  exists_weak_limit_in_submodule L2Sigma (fun k => ((galSeq (alPkg.φ (ρ k))).u t : L2VF))
+  exists_weak_limit_in_submodule L2Sigma (fun k => ((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF))
     (fun _k => SetLike.coe_mem _) ‖(u₀ : L2VF)‖ (fun k => hbd k t ht) (hCauchy_all t ht)
 
 /-- **Master construction: the weakly-continuous representative** of the Aubin–Lions limit.
@@ -491,14 +493,15 @@ via the three named steps `galerkinTest_cauchySeq_of_aeStrong`,
 private theorem exists_weak_representative (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    (alPkg : AubinLionsPackage F ν T u₀ galSeq) :
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq κ) :
     ∃ (v : Time → L2Sigma) (ρ : ℕ → ℕ), StrictMono ρ ∧
       (∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), v t = alPkg.u t) ∧
       (∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
-        Tendsto (fun k => ((galSeq (alPkg.φ (ρ k))).u t : L2VF)) atTop
+        Tendsto (fun k => ((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)) atTop
           (𝓝 (alPkg.u t : L2VF))) ∧
       (∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
-        Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z) atTop
+        Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)) z) atTop
           (𝓝 (inner (𝕜 := ℝ) ((v t : L2VF)) z))) ∧
       (∀ t, t ∈ Set.Icc (0 : ℝ) T → ‖(v t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖) ∧
       v 0 = u₀ ∧
@@ -507,11 +510,11 @@ private theorem exists_weak_representative (F : Torus3NSForms) (ν : ℝ) (hν :
           |inner (𝕜 := ℝ) ((v t : L2VF)) (w : L2VF)
             - inner (𝕜 := ℝ) ((v s : L2VF)) (w : L2VF)| ≤ L * |t - s|) := by
   classical
-  obtain ⟨ρ, hρ, hae_strong⟩ := exists_ae_strong_subseq F ν T hT u₀ galSeq alPkg
-  set c : ℕ → ℝ → L2VF := fun k t => ((galSeq (alPkg.φ (ρ k))).u t : L2VF) with hcdef
+  obtain ⟨ρ, hρ, hae_strong⟩ := exists_ae_strong_subseq F ν T hT u₀ galSeq κ hκ alPkg
+  set c : ℕ → ℝ → L2VF := fun k t => ((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF) with hcdef
   -- index growth: the Galerkin level of the k-th curve is ≥ k
-  have hlevel : ∀ k, k ≤ alPkg.φ (ρ k) := fun k =>
-    le_trans hρ.le_apply alPkg.φ_mono.le_apply
+  have hlevel : ∀ k, k ≤ κ (alPkg.φ (ρ k)) := fun k =>
+    le_trans (le_trans hρ.le_apply alPkg.φ_mono.le_apply) hκ.le_apply
   -- uniform H-bound
   have hbd : ∀ k, ∀ t ∈ Set.Icc (0 : ℝ) T, ‖c k t‖ ≤ ‖(u₀ : L2VF)‖ := fun k t ht =>
     torus_galerkin_norm_le_u0 F ν u₀ _ _ t ht.1
@@ -519,11 +522,11 @@ private theorem exists_weak_representative (F : Torus3NSForms) (ν : ℝ) (hν :
   set S : Set ℝ := {t | Tendsto (fun k => c k t) atTop (𝓝 (alPkg.u t : L2VF))} with hSdef
   have hS : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), t ∈ S := hae_strong
   -- three named steps: per-test Cauchy → all-directions Cauchy → Riesz limit
-  have hCauchy_test := galerkinTest_cauchySeq_of_aeStrong F ν hν T hT u₀ galSeq alPkg ρ
+  have hCauchy_test := galerkinTest_cauchySeq_of_aeStrong F ν hν T hT u₀ galSeq κ hκ alPkg ρ
     hlevel S hS (fun s hs => hs)
   have hCauchy_all :=
-    allDirections_cauchySeq_of_galerkinTest F ν u₀ galSeq alPkg ρ hbd hCauchy_test
-  have hex := weakLimit_of_allDirections_cauchySeq F ν u₀ galSeq alPkg ρ hbd hCauchy_all
+    allDirections_cauchySeq_of_galerkinTest F ν u₀ galSeq κ hκ alPkg ρ hbd hCauchy_test
+  have hex := weakLimit_of_allDirections_cauchySeq F ν u₀ galSeq κ hκ alPkg ρ hbd hCauchy_all
   choose! y hyK hybd hyconv using hex
   set v : Time → L2Sigma := fun t =>
     if ht : t ∈ Set.Icc (0 : ℝ) T then ⟨y t, hyK t ht⟩ else alPkg.u t with hvdef
@@ -552,11 +555,11 @@ private theorem exists_weak_representative (F : Torus3NSForms) (ν : ℝ) (hν :
   -- conclusion (v): endpoint pinning `v 0 = u₀`
   have h0Icc : (0 : ℝ) ∈ Set.Icc (0 : ℝ) T := ⟨le_refl 0, hT.le⟩
   have hv0 : v 0 = u₀ := by
-    have hck0 : ∀ k, c k 0 = velocityProjection_n (alPkg.φ (ρ k)) (u₀ : L2VF) := by
+    have hck0 : ∀ k, c k 0 = velocityProjection_n (κ (alPkg.φ (ρ k))) (u₀ : L2VF) := by
       intro k
-      show ((galSeq (alPkg.φ (ρ k))).u 0 : L2VF) = _
-      rw [(galSeq (alPkg.φ (ρ k))).u_initial]
-    have hmono : StrictMono (fun k => alPkg.φ (ρ k)) := alPkg.φ_mono.comp hρ
+      show ((galSeq (κ (alPkg.φ (ρ k)))).u 0 : L2VF) = _
+      rw [(galSeq (κ (alPkg.φ (ρ k)))).u_initial]
+    have hmono : StrictMono (fun k => κ (alPkg.φ (ρ k))) := hκ.comp (alPkg.φ_mono.comp hρ)
     have hP0 : Tendsto (fun k => c k 0) atTop (𝓝 (u₀ : L2VF)) := by
       have h := (velocityProjection_n_tendsto (u₀ : L2VF)).comp hmono.tendsto_atTop
       refine h.congr fun k => ?_
@@ -585,7 +588,7 @@ private theorem exists_weak_representative (F : Torus3NSForms) (ν : ℝ) (hν :
       (hweak t htI (w : L2VF)).sub (hweak s hsI (w : L2VF))
     refine le_of_tendsto h1.abs ?_
     refine Filter.eventually_atTop.mpr ⟨n₀, fun k hk => ?_⟩
-    exact hLip (alPkg.φ (ρ k)) (le_trans hk (hlevel k))
+    exact hLip (κ (alPkg.φ (ρ k))) (le_trans hk (hlevel k))
       s (Set.Icc_subset_Ici_self hsI) t (Set.Icc_subset_Ici_self htI)
   exact ⟨v, ρ, hρ, hae, hae_strong, hweak, fun t ht => (hvcoe t ht) ▸ hybd t ht, hv0, hlip_v⟩
 
@@ -877,15 +880,16 @@ against the uniform Galerkin `H`-bound `torus_galerkin_norm_le_u0`. -/
 private theorem kineticEnergy_liminf_le_of_weakTendsto
     (F : Torus3NSForms) (ν : ℝ) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    {T : ℝ} (alPkg : AubinLionsPackage F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    {T : ℝ} (alPkg : AubinLionsPackage F ν T u₀ galSeq κ)
     (ρ : ℕ → ℕ) (v : Time → L2Sigma) (t : ℝ) (ht0 : 0 ≤ t) (htIcc : t ∈ Set.Icc (0 : ℝ) T)
     (hweak : ∀ s, s ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
-      Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u s : L2VF)) z) atTop
+      Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (κ (alPkg.φ (ρ k)))).u s : L2VF)) z) atTop
         (𝓝 (inner (𝕜 := ℝ) ((v s : L2VF)) z))) :
     (1 / 2 : ℝ) * ‖(v t : L2VF)‖ ^ 2 ≤
-      Filter.liminf (fun k => (1 / 2 : ℝ) * ‖((galSeq (alPkg.φ (ρ k))).u t : L2VF)‖ ^ 2)
+      Filter.liminf (fun k => (1 / 2 : ℝ) * ‖((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)‖ ^ 2)
         atTop := by
-  set c : ℕ → ℝ → L2VF := fun k s => ((galSeq (alPkg.φ (ρ k))).u s : L2VF) with hcdef
+  set c : ℕ → ℝ → L2VF := fun k s => ((galSeq (κ (alPkg.φ (ρ k)))).u s : L2VF) with hcdef
   set a : ℕ → ℝ := fun k => (1 / 2 : ℝ) * ‖c k t‖ ^ 2 with hadef
   have hkin_normSq : ‖(v t : L2VF)‖ ^ 2
       ≤ Filter.liminf (fun k => ‖c k t‖ ^ 2) atTop := by
@@ -917,18 +921,19 @@ private theorem kineticEnergy_liminf_le_of_weakTendsto
 private theorem dissipation_liminf_le_of_aeTendsto
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    {T : ℝ} (alPkg : AubinLionsPackage F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    {T : ℝ} (alPkg : AubinLionsPackage F ν T u₀ galSeq κ)
     (ρ : ℕ → ℕ) (v : Time → L2Sigma) (t : ℝ) (ht0 : 0 ≤ t) (htT : t ≤ T)
     (hae : ∀ᵐ s ∂(volume.restrict (Set.Icc (0 : ℝ) T)), v s = alPkg.u s)
     (hae_strong : ∀ᵐ s ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
-      Tendsto (fun k => ((galSeq (alPkg.φ (ρ k))).u s : L2VF)) atTop
+      Tendsto (fun k => ((galSeq (κ (alPkg.φ (ρ k)))).u s : L2VF)) atTop
         (𝓝 (alPkg.u s : L2VF)))
     (hInt : IntervalIntegrable (fun s => viscousFormSq ν (v s : L2VF)) volume 0 T) :
     ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF)
       ≤ Filter.liminf
-          (fun k => ∫ s in (0 : ℝ)..t, viscousFormSq ν (((galSeq (alPkg.φ (ρ k))).u s : L2VF)))
+          (fun k => ∫ s in (0 : ℝ)..t, viscousFormSq ν (((galSeq (κ (alPkg.φ (ρ k)))).u s : L2VF)))
           atTop := by
-  set c : ℕ → ℝ → L2VF := fun k s => ((galSeq (alPkg.φ (ρ k))).u s : L2VF) with hcdef
+  set c : ℕ → ℝ → L2VF := fun k s => ((galSeq (κ (alPkg.φ (ρ k)))).u s : L2VF) with hcdef
   set b : ℕ → ℝ := fun k => ∫ s in (0 : ℝ)..t, viscousFormSq ν (c k s) with hbdef
   have hb0 : ∀ k, 0 ≤ b k := fun k =>
     intervalIntegral.integral_nonneg ht0 fun s _ => viscousFormSq_nonneg hν.le _
@@ -937,8 +942,8 @@ private theorem dissipation_liminf_le_of_aeTendsto
       (Filter.Eventually.of_forall hb0)
   have hcobdd_b : Filter.IsCoboundedUnder (· ≥ ·) atTop b := by
     have hbE : ∀ k, b k ≤ (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2 := fun k => by
-      have h := torus_galerkin_energy_le F ν u₀ _ (galSeq (alPkg.φ (ρ k))) t ht0
-      have h0 : (0 : ℝ) ≤ (1 / 2 : ℝ) * ‖((galSeq (alPkg.φ (ρ k))).u t : L2VF)‖ ^ 2 := by
+      have h := torus_galerkin_energy_le F ν u₀ _ (galSeq (κ (alPkg.φ (ρ k)))) t ht0
+      have h0 : (0 : ℝ) ≤ (1 / 2 : ℝ) * ‖((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)‖ ^ 2 := by
         positivity
       linarith [h, h0]
     exact (Filter.isBoundedUnder_of_eventually_le (a := (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2)
@@ -974,8 +979,8 @@ private theorem dissipation_liminf_le_of_aeTendsto
     filter_upwards [hae', hstr'] with s hveq hconv
     have hpt : ∀ k, viscousEnn ν (c k s)
         = ENNReal.ofReal (viscousFormSq ν (c k s)) := fun k =>
-      viscousEnn_eq_ofReal_of_bandlimited ν hν.le (alPkg.φ (ρ k)) (c k s)
-        ((galSeq (alPkg.φ (ρ k))).u_inVn s).symm
+      viscousEnn_eq_ofReal_of_bandlimited ν hν.le (κ (alPkg.φ (ρ k))) (c k s)
+        ((galSeq (κ (alPkg.φ (ρ k)))).u_inVn s).symm
     calc ENNReal.ofReal (viscousFormSq ν (v s : L2VF))
         = ENNReal.ofReal (viscousFormSq ν (alPkg.u s : L2VF)) := by rw [hveq]
       _ ≤ viscousEnn ν (alPkg.u s : L2VF) := ofReal_viscousFormSq_le ν hν.le _
@@ -991,7 +996,7 @@ private theorem dissipation_liminf_le_of_aeTendsto
       (volume.restrict (Set.Ioc (0 : ℝ) t)) := by
     intro k
     have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Ioc 0 t) :=
-      (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
+      (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (κ (alPkg.φ (ρ k))))).mono
         fun s hs => hs.1.le
     exact ENNReal.measurable_ofReal.comp_aemeasurable
       (hcont.aemeasurable measurableSet_Ioc)
@@ -1007,7 +1012,7 @@ private theorem dissipation_liminf_le_of_aeTendsto
       ENNReal.ofReal (viscousFormSq ν (c k s)) = ENNReal.ofReal (b k) := by
     intro k
     have hcont : ContinuousOn (fun s => viscousFormSq ν (c k s)) (Set.Icc 0 t) :=
-      (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (alPkg.φ (ρ k)))).mono
+      (galerkin_viscous_continuousOn F ν u₀ _ (galSeq (κ (alPkg.φ (ρ k))))).mono
         fun s hs => hs.1
     have hint : MeasureTheory.IntegrableOn (fun s => viscousFormSq ν (c k s))
         (Set.Ioc 0 t) volume := (hcont.intervalIntegrable_of_Icc ht0).1
@@ -1101,14 +1106,15 @@ Setup + three named steps (`kineticEnergy_liminf_le_of_weakTendsto`,
 private theorem energy_ineq_of_representative (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (_hT : 0 < T) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    (alPkg : AubinLionsPackage F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq κ)
     (v : Time → L2Sigma) (ρ : ℕ → ℕ)
     (hae : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), v t = alPkg.u t)
     (hae_strong : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
-      Tendsto (fun k => ((galSeq (alPkg.φ (ρ k))).u t : L2VF)) atTop
+      Tendsto (fun k => ((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)) atTop
         (𝓝 (alPkg.u t : L2VF)))
     (hweak : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF,
-      Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (alPkg.φ (ρ k))).u t : L2VF)) z) atTop
+      Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)) z) atTop
         (𝓝 (inner (𝕜 := ℝ) ((v t : L2VF)) z)))
     (hInt : IntervalIntegrable (fun s => viscousFormSq ν (v s : L2VF))
       MeasureTheory.volume 0 T) :
@@ -1118,22 +1124,22 @@ private theorem energy_ineq_of_representative (F : Torus3NSForms) (ν : ℝ) (h�
       (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2 := by
   intro t ht0 htT
   have htIcc : t ∈ Set.Icc (0 : ℝ) T := ⟨ht0, htT⟩
-  set c : ℕ → ℝ → L2VF := fun k s => ((galSeq (alPkg.φ (ρ k))).u s : L2VF) with hcdef
+  set c : ℕ → ℝ → L2VF := fun k s => ((galSeq (κ (alPkg.φ (ρ k)))).u s : L2VF) with hcdef
   set E : ℝ := (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2 with hEdef
   set a : ℕ → ℝ := fun k => (1 / 2 : ℝ) * ‖c k t‖ ^ 2 with hadef
   set b : ℕ → ℝ := fun k => ∫ s in (0 : ℝ)..t, viscousFormSq ν (c k s) with hbdef
   -- per-approximant energy inequality
   have hab : ∀ k, a k + b k ≤ E := fun k =>
-    torus_galerkin_energy_le F ν u₀ _ (galSeq (alPkg.φ (ρ k))) t ht0
+    torus_galerkin_energy_le F ν u₀ _ (galSeq (κ (alPkg.φ (ρ k)))) t ht0
   have ha0 : ∀ k, 0 ≤ a k := fun k => by positivity
   have hb0 : ∀ k, 0 ≤ b k := fun k =>
     intervalIntegral.integral_nonneg ht0 fun s _ => viscousFormSq_nonneg hν.le _
   have haE : ∀ k, a k ≤ E := fun k => by linarith [hab k, hb0 k]
   have hbE : ∀ k, b k ≤ E := fun k => by linarith [hab k, ha0 k]
   have hkin : (1 / 2 : ℝ) * ‖(v t : L2VF)‖ ^ 2 ≤ Filter.liminf a atTop :=
-    kineticEnergy_liminf_le_of_weakTendsto F ν u₀ galSeq alPkg ρ v t ht0 htIcc hweak
+    kineticEnergy_liminf_le_of_weakTendsto F ν u₀ galSeq κ hκ alPkg ρ v t ht0 htIcc hweak
   have hdiss : ∫ s in (0 : ℝ)..t, viscousFormSq ν (v s : L2VF) ≤ Filter.liminf b atTop :=
-    dissipation_liminf_le_of_aeTendsto F ν hν u₀ galSeq alPkg ρ v t ht0 htT hae hae_strong hInt
+    dissipation_liminf_le_of_aeTendsto F ν hν u₀ galSeq κ hκ alPkg ρ v t ht0 htT hae hae_strong hInt
   exact energyBudget_liminf_assembly a b E _ _ hab ha0 hb0 haE hbE hkin hdiss
 
 
@@ -1151,7 +1157,8 @@ theorem torus_galerkin_limit_passage_of_energyClass
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    (alPkg : AubinLionsPackage F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq κ)
     (h4 : (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)),
         memH1VF (alPkg.u t : L2VF)) ∧
       IntervalIntegrable (fun s => viscousFormSq ν (alPkg.u s : L2VF))
@@ -1171,7 +1178,7 @@ theorem torus_galerkin_limit_passage_of_energyClass
     IntervalIntegrable (fun s => viscousFormSq ν (u s : L2VF))
       MeasureTheory.volume 0 T) := by
   obtain ⟨v, ρ, hρ, hae, hae_strong, hweak, hbd, hv0, hlip⟩ :=
-    exists_weak_representative F ν hν T hT u₀ galSeq alPkg
+    exists_weak_representative F ν hν T hT u₀ galSeq κ hκ alPkg
   have haeIcc : ∀ᵐ t ∂(volume : Measure ℝ), t ∈ Set.Icc (0 : ℝ) T → v t = alPkg.u t :=
     (ae_restrict_iff' measurableSet_Icc).mp hae
   -- integrable dissipation for the representative, transferred from h4 (a.e.-invariance)
@@ -1186,7 +1193,7 @@ theorem torus_galerkin_limit_passage_of_energyClass
   refine ⟨v, hae, ?_, ?_, ?_, ?_, hIntv⟩
   · -- conjunct (2): WeakFormNS transfer through the a.e.-equality
     have hW : WeakFormNS ν T (torus3Evolution F) alPkg.u :=
-      torus_weakFormNS_of_strongConvergence F ν hν T hT u₀ galSeq alPkg
+      torus_weakFormNS_of_strongConvergence F ν hν T hT u₀ galSeq κ hκ alPkg
     intro ψ hψcs hψsupp hψC1 w hw
     have h := hW ψ hψcs hψsupp hψC1 w hw
     refine Eq.trans (intervalIntegral.integral_congr_ae ?_) h
@@ -1196,7 +1203,7 @@ theorem torus_galerkin_limit_passage_of_energyClass
       exact ⟨hxI.1.le, hxI.2⟩
     rw [hx hxIcc]
   · -- conjunct (1): ∀t energy inequality
-    exact energy_ineq_of_representative F ν hν T hT u₀ galSeq alPkg v ρ
+    exact energy_ineq_of_representative F ν hν T hT u₀ galSeq κ hκ alPkg v ρ
       hae hae_strong hweak hIntv
   · -- conjunct (3): strong initial trace
     exact strong_trace_of_props T hT u₀ v hbd hv0 hlip
