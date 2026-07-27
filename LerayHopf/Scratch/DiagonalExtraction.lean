@@ -118,3 +118,10 @@ theorem tendsto_diag_of_tendsto_stage {α : Type*} {e : ℕ → ℕ → ℕ}
   exact (tendsto_add_atTop_iff_nat m).mp hshift
 
 end LerayHopf.Scratch195
+
+-- Axiom pins (recorded in docs/scratch/global-diagonal-campaign.md §10; expected:
+-- [propext] at most — no sorryAx, no project axioms).
+#print axioms LerayHopf.Scratch195.nestedComp_add
+#print axioms LerayHopf.Scratch195.diagExtraction_strictMono
+#print axioms LerayHopf.Scratch195.exists_diagonal_extraction
+#print axioms LerayHopf.Scratch195.tendsto_diag_of_tendsto_stage

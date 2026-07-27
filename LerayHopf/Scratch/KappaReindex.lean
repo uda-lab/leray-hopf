@@ -15,6 +15,7 @@
 -- indices) applies UNCHANGED — only the index argument moves from `φ n` to `κ (φ n)`.
 -- All declarations below are fully proved (no sorry, no axioms).
 import LerayHopf.Torus.ModeCompactness
+import LerayHopf.Torus.GalerkinODECapstone
 
 open MeasureTheory Filter Topology Set
 
@@ -133,5 +134,112 @@ def AubinLionsPackageKappa.extract {F : Torus3NSForms} {ν T : ℝ} {u₀ : L2Si
   strong_convergence := p.strong_convergence.comp hρ.tendsto_atTop
   u_aestronglyMeasurable := p.u_aestronglyMeasurable
 
+/-! ### Codex-gate remediation (finding 2): the LITERAL dependent family shape
+
+`reindexed_family_second_extraction` above still consumes the base `galSeq` plus a map
+`φ₁`.  The declarations below consume the literal previously-extracted family type
+`∀ k, GalerkinSolutionData F ν u₀ (φ₁ k)` — the exact shape issue #195 names — by
+embedding it into a full base family (off-subsequence indices are filled with the
+canonical axiom-free `galSeq_of_torus` datum, which exists unconditionally because the
+torus Galerkin ODE layer is total) and then reusing the κ-generalized entry point.
+This derives the dependent shape FROM the base+κ design rather than re-proving it,
+which is the design claim of §3 of the campaign doc made compiled. -/
+
+open Classical in
+/-- Embed a dependent reindexed family into a full base family: at `φ₁ k` take the
+given datum, elsewhere the canonical `galSeq_of_torus` datum. -/
+noncomputable def extendReindexedFamily
+    (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma)
+    (φ₁ : ℕ → ℕ) (galSeq₁ : ∀ k, GalerkinSolutionData F ν u₀ (φ₁ k)) :
+    ∀ n, GalerkinSolutionData F ν u₀ n := fun n =>
+  if h : ∃ k, φ₁ k = n then (Classical.choose_spec h) ▸ galSeq₁ (Classical.choose h)
+  else galSeq_of_torus F ν hν u₀ n
+
+/-- On the subsequence, the embedding restores the given data on the nose (needs only
+injectivity of `φ₁`). -/
+theorem extendReindexedFamily_apply
+    (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (u₀ : L2Sigma)
+    (φ₁ : ℕ → ℕ) (hφ₁ : Function.Injective φ₁)
+    (galSeq₁ : ∀ k, GalerkinSolutionData F ν u₀ (φ₁ k)) (k : ℕ) :
+    extendReindexedFamily F ν hν u₀ φ₁ galSeq₁ (φ₁ k) = galSeq₁ k := by
+  have hex : ∃ k', φ₁ k' = φ₁ k := ⟨k, rfl⟩
+  have hkk : Classical.choose hex = k := hφ₁ (Classical.choose_spec hex)
+  simp only [extendReindexedFamily, dif_pos hex]
+  refine eq_of_heq ((eqRec_heq (Classical.choose_spec hex) _).trans ?_)
+  rw [hkk]
+
+/-- **Acceptance criterion, literal shape (codex finding 2):** the mode-wise extraction
+consumes a previously extracted subsequence given as the DEPENDENT family
+`galSeq₁ : ∀ k, GalerkinSolutionData F ν u₀ (φ₁ k)` — no base family in the
+hypotheses.  Conclusion as in `reindexed_family_second_extraction`, now phrased
+against `galSeq₁` itself. -/
+theorem exists_galerkin_modewise_extraction_of_reindexed
+    (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
+    (u₀ : L2Sigma) (φ₁ : ℕ → ℕ) (hφ₁ : StrictMono φ₁)
+    (galSeq₁ : ∀ k, GalerkinSolutionData F ν u₀ (φ₁ k))
+    (w : ℕ → L2Sigma) (hwtest : ∀ m, IsGalerkinTest (w m)) :
+    ∃ φ₂ : ℕ → ℕ, StrictMono φ₂ ∧ StrictMono (φ₁ ∘ φ₂) ∧ ∃ g : ℕ → ℝ → ℝ, ∀ m,
+      TendstoUniformlyOn
+        (fun k t => inner (𝕜 := ℝ) (((galSeq₁ (φ₂ k)).u t : L2VF)) ((w m : L2VF)))
+        (g m) atTop (Icc (0 : ℝ) T) := by
+  classical
+  obtain ⟨φ₂, hφ₂, g, hg⟩ := exists_galerkin_modewise_extraction_kappa F ν hν T hT u₀
+    (extendReindexedFamily F ν hν u₀ φ₁ galSeq₁) φ₁ hφ₁ w hwtest
+  refine ⟨φ₂, hφ₂, hφ₁.comp hφ₂, g, fun m => ?_⟩
+  have hfun : (fun k t => inner (𝕜 := ℝ)
+        (((extendReindexedFamily F ν hν u₀ φ₁ galSeq₁ (φ₁ (φ₂ k))).u t : L2VF))
+        ((w m : L2VF)))
+      = fun k t => inner (𝕜 := ℝ) (((galSeq₁ (φ₂ k)).u t : L2VF)) ((w m : L2VF)) := by
+    funext k t
+    rw [extendReindexedFamily_apply F ν hν u₀ φ₁ hφ₁.injective galSeq₁ (φ₂ k)]
+  exact hfun ▸ hg m
+
+/-! ### Codex-gate remediation (finding 3): effective-map strictness/cofinality
+
+The absolute mode index of the κ-package is `κ (p.φ n)`.  `hκ : StrictMono κ` stays a
+SIDE hypothesis (not a structure field: the `κ = id` instance must remain
+definitionally transparent for existing consumers, and Prop-fields would change the
+constructor arity P2 wants byte-stable).  The lemmas below thread it through
+composition, including through `extract`, so every consumer has the strict/cofinal
+effective map on demand. -/
+
+/-- Effective absolute mode map of a κ-package is strictly monotone. -/
+theorem AubinLionsPackageKappa.effective_strictMono {F : Torus3NSForms} {ν T : ℝ}
+    {u₀ : L2Sigma} {galSeq : ∀ n, GalerkinSolutionData F ν u₀ n} {κ : ℕ → ℕ}
+    (p : AubinLionsPackageKappa F ν T u₀ galSeq κ) (hκ : StrictMono κ) :
+    StrictMono (fun n => κ (p.φ n)) :=
+  hκ.comp p.φ_mono
+
+/-- Effective absolute mode map is cofinal (escapes to `atTop`) — the form in which
+the eventual band-limit cutoffs (`n₀ ≤ κ (φ N)`) are discharged. -/
+theorem AubinLionsPackageKappa.effective_tendsto_atTop {F : Torus3NSForms} {ν T : ℝ}
+    {u₀ : L2Sigma} {galSeq : ∀ n, GalerkinSolutionData F ν u₀ n} {κ : ℕ → ℕ}
+    (p : AubinLionsPackageKappa F ν T u₀ galSeq κ) (hκ : StrictMono κ) :
+    Filter.Tendsto (fun n => κ (p.φ n)) Filter.atTop Filter.atTop :=
+  (p.effective_strictMono hκ).tendsto_atTop
+
+/-- `extract` composes the position map on the nose. -/
+@[simp] theorem AubinLionsPackageKappa.extract_φ {F : Torus3NSForms} {ν T : ℝ}
+    {u₀ : L2Sigma} {galSeq : ∀ n, GalerkinSolutionData F ν u₀ n} {κ : ℕ → ℕ}
+    (p : AubinLionsPackageKappa F ν T u₀ galSeq κ) (ρ : ℕ → ℕ) (hρ : StrictMono ρ) :
+    (p.extract ρ hρ).φ = p.φ ∘ ρ := rfl
+
+/-- Strictness of the effective map survives package-level extraction. -/
+theorem AubinLionsPackageKappa.extract_effective_strictMono {F : Torus3NSForms}
+    {ν T : ℝ} {u₀ : L2Sigma} {galSeq : ∀ n, GalerkinSolutionData F ν u₀ n} {κ : ℕ → ℕ}
+    (p : AubinLionsPackageKappa F ν T u₀ galSeq κ) (hκ : StrictMono κ)
+    (ρ : ℕ → ℕ) (hρ : StrictMono ρ) :
+    StrictMono (fun k => κ ((p.extract ρ hρ).φ k)) :=
+  hκ.comp (p.φ_mono.comp hρ)
+
 end Scratch195
 end LerayHopf
+
+-- Axiom pins (recorded in docs/scratch/global-diagonal-campaign.md §10; expected:
+-- [propext, Classical.choice, Quot.sound] — no sorryAx, no project axioms).
+#print axioms LerayHopf.Scratch195.exists_galerkin_modewise_extraction_kappa
+#print axioms LerayHopf.Scratch195.reindexed_family_second_extraction
+#print axioms LerayHopf.Scratch195.extendReindexedFamily_apply
+#print axioms LerayHopf.Scratch195.exists_galerkin_modewise_extraction_of_reindexed
+#print axioms LerayHopf.Scratch195.AubinLionsPackageKappa.effective_strictMono
+#print axioms LerayHopf.Scratch195.AubinLionsPackageKappa.extract_effective_strictMono
