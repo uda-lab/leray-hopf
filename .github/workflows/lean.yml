@@ -74,3 +74,5 @@ jobs:
         run: bash scripts/check-statement-cards.sh
       - name: Guardrail — axiom live pin
         run: bash scripts/check-axioms-live.sh
+      - name: Guardrail — scratch-evidence pin gate (issue #195 §10.5)
+        run: bash scripts/check-scratch-pins.sh

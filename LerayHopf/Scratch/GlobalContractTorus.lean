@@ -8,7 +8,7 @@
 --
 -- `GlobalTorusCapstoneStatement` is a bare `def : Prop` (proving it IS the campaign,
 -- phases P1–P4); `globalTorusCapstone_implies_finite` is fully proved.
-import LerayHopf.Scratch.GlobalContract
+import LerayHopf.Galerkin.GlobalContract
 import LerayHopf.Torus.SolutionInterfaces
 
 open MeasureTheory Filter Topology Set
@@ -28,7 +28,7 @@ curve serving every horizon. -/
 def GlobalTorusCapstoneStatement : Prop := -- ALLOW_NAME: statement only (bare def : Prop, the unproved P4 campaign target)
   ∀ (u₀ : L2Sigma) (ν : ℝ), 0 < ν →
     ∃ F : Torus3NSForms, ∃ u : Time → L2Sigma, ∀ T : ℝ, 0 < T →
-      IsLerayHopfOn torusDomain F.core ν T u₀ u
+      Galerkin.IsLerayHopfOn torusDomain F.core ν T u₀ u
 
 /-- Sanity direction (proved): the frozen global statement implies the EXISTING
 finite-horizon capstone statement shape (`exists_lerayHopf_torus3`,
@@ -39,7 +39,7 @@ theorem globalTorusCapstone_implies_finite (hG : GlobalTorusCapstoneStatement) :
       ∃ F : Torus3NSForms, Nonempty (LerayHopfSolutionFull F ν T u₀) := by
   intro u₀ ν hν T hT
   obtain ⟨F, u, hu⟩ := hG u₀ ν hν
-  exact ⟨F, ⟨LerayHopfSolution.ofIsOn (hu T hT)⟩⟩
+  exact ⟨F, ⟨Galerkin.LerayHopfSolution.ofIsOn (hu T hT)⟩⟩
 
 end Scratch195
 end LerayHopf
