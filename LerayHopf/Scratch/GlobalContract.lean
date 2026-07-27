@@ -6,22 +6,29 @@
 -- Prop-valued conjunction of the five proof fields of `Galerkin.LerayHopfSolution`),
 -- the round-trip equivalence with `Nonempty (Galerkin.LerayHopfSolution …)`, the
 -- single-curve `GlobalLerayHopfSolution` with its `toSolution`/`toSolution_u` (rfl)
--- no-duplication witnesses, the horizon-restriction lemma `IsLerayHopfOn.mono`, the
--- curve-congruence lemma `IsLerayHopfOn.congr_Icc`, and the frozen torus P4 target
--- `GlobalTorusCapstoneStatement` whose body is LITERALLY `∃ F, ∃ u, ∀ T, 0 < T → …`
--- (stated as a `Prop` definition — proving it IS the campaign; everything else in this
--- file is fully proved).
+-- no-duplication witnesses, the horizon-restriction lemma `IsLerayHopfOn.mono`, and the
+-- curve-congruence lemma `IsLerayHopfOn.congr_Icc`.  (The frozen torus P4 target
+-- `GlobalTorusCapstoneStatement` lives in Scratch/GlobalContractTorus.lean — see the
+-- F-B note below.)
 --
 -- Finding 4: `WeakFormNS.mono`'s truncation step is compiled here WITHOUT any
 -- integrability hypothesis (`setIntegral_Ioc_eq_of_tail_zero`: the integrands are
 -- pointwise-equal indicator functions, so Bochner integrals agree even when both are
 -- junk values), with the non-integrable branch witnessed CONCRETELY
 -- (`badTail_not_integrableOn` + `badTail_truncation`) and the integrable branch
--- cross-checked against interval additivity (`truncation_agrees_with_additivity`).
+-- cross-checked against GENUINE union additivity (`truncation_agrees_with_additivity`
+-- invokes `setIntegral_union`; `truncation_routes_agree` shows both routes emit the
+-- same equation — codex pass-2 finding F-C).
 --
--- All declarations below are fully proved (no sorry, no axioms) except none:
--- `GlobalTorusCapstoneStatement` is a `def : Prop` (a statement, not a claim).
-import LerayHopf.Torus.SolutionInterfaces
+-- Pass-2 finding F-B (import-cone separation): this file now imports ONLY the generic
+-- solution-bundle layer, matching the frozen P1 design target
+-- `LerayHopf/Galerkin/GlobalContract.lean`.  The torus capstone statement lives in
+-- `LerayHopf/Scratch/GlobalContractTorus.lean`, which imports this file plus
+-- `LerayHopf.Torus.SolutionInterfaces` — compiling both proves generic layering and
+-- the torus target are separable exactly as P1 specifies.
+--
+-- All declarations below are fully proved (no sorry, no axioms).
+import LerayHopf.Galerkin.SolutionBundles
 import Mathlib.Analysis.SpecialFunctions.NonIntegrable
 import Mathlib.Analysis.Calculus.Deriv.Support
 
@@ -86,21 +93,42 @@ theorem badTail_truncation :
     ∫ t in Set.Ioc (0 : ℝ) 2, badTail t = ∫ t in Set.Ioc (0 : ℝ) 1, badTail t :=
   setIntegral_Ioc_eq_of_tail_zero one_le_two badTail_tail_zero
 
-/-- Integrable-branch cross-check: when the prefix IS integrable, the same
-truncation identity agrees with the classical union-additivity route
-(`Ioc 0 c = Ioc 0 b ∪ Ioc b c`, tail integral `= 0`).  So
-`setIntegral_Ioc_eq_of_tail_zero` is conservative over the standard argument. -/
+/-- Integrable-branch cross-check via the REAL classical route (codex pass-2 F-C):
+under integrability, `Ioc 0 c = Ioc 0 b ∪ Ioc b c` and `setIntegral_union` give genuine
+union additivity — the first conjunct is proved by ADDITIVITY, not by re-running the
+indicator route — and the tail integral vanishes.  Both `0 ≤ b` (for the union
+decomposition) and integrability (for `setIntegral_union`, restricted to each piece by
+`mono_set`) are genuinely consumed. -/
 theorem truncation_agrees_with_additivity {f : ℝ → ℝ} {b c : ℝ}
-    (_hb : 0 ≤ b) (hbc : b ≤ c)
-    (_hfint : IntegrableOn f (Set.Ioc 0 c) volume)
+    (hb : 0 ≤ b) (hbc : b ≤ c)
+    (hfint : IntegrableOn f (Set.Ioc 0 c) volume)
     (hf : ∀ t, b < t → t ≤ c → f t = 0) :
-    (∫ t in Set.Ioc 0 c, f t) = ∫ t in Set.Ioc 0 b, f t ∧
+    (∫ t in Set.Ioc 0 c, f t) =
+        (∫ t in Set.Ioc 0 b, f t) + (∫ t in Set.Ioc b c, f t) ∧
       (∫ t in Set.Ioc b c, f t) = 0 := by
-  refine ⟨setIntegral_Ioc_eq_of_tail_zero hbc hf, ?_⟩
-  have hzero : EqOn f (fun _ => (0 : ℝ)) (Set.Ioc b c) := fun t ht => hf t ht.1 ht.2
-  calc ∫ t in Set.Ioc b c, f t = ∫ _t in Set.Ioc b c, (0 : ℝ) :=
-        setIntegral_congr_fun measurableSet_Ioc hzero
-    _ = 0 := integral_zero _ _
+  have hunion : Set.Ioc (0 : ℝ) b ∪ Set.Ioc b c = Set.Ioc 0 c :=
+    Set.Ioc_union_Ioc_eq_Ioc hb hbc
+  constructor
+  · rw [← hunion]
+    exact setIntegral_union (Set.Ioc_disjoint_Ioc_of_le le_rfl) measurableSet_Ioc
+      (hfint.mono_set (Set.Ioc_subset_Ioc le_rfl hbc))
+      (hfint.mono_set (Set.Ioc_subset_Ioc hb le_rfl))
+  · have hzero : EqOn f (fun _ => (0 : ℝ)) (Set.Ioc b c) := fun t ht => hf t ht.1 ht.2
+    calc ∫ t in Set.Ioc b c, f t = ∫ _t in Set.Ioc b c, (0 : ℝ) :=
+          setIntegral_congr_fun measurableSet_Ioc hzero
+      _ = 0 := integral_zero _ _
+
+/-- **The two routes agree on the integrable branch**: classical additivity plus the
+vanishing tail yields exactly the equation `setIntegral_Ioc_eq_of_tail_zero` produces
+with no integrability at all — so the indicator route is conservative over the
+standard argument, now as a THEOREM rather than a prose claim. -/
+theorem truncation_routes_agree {f : ℝ → ℝ} {b c : ℝ}
+    (hb : 0 ≤ b) (hbc : b ≤ c)
+    (hfint : IntegrableOn f (Set.Ioc 0 c) volume)
+    (hf : ∀ t, b < t → t ≤ c → f t = 0) :
+    (∫ t in Set.Ioc 0 c, f t) = ∫ t in Set.Ioc 0 b, f t := by
+  obtain ⟨hadd, hzero⟩ := truncation_agrees_with_additivity hb hbc hfint hf
+  rw [hadd, hzero, add_zero]
 
 /-! ### Finding 1 — the global contract, machine-checked
 
@@ -310,31 +338,6 @@ theorem IsLerayHopfOn.congr_Icc {u v : Time → ↥D.σ} (hT : 0 < T)
     filter_upwards [hae] with t heqt
     exact congrArg Subtype.val heqt
 
-/-! ### The frozen torus capstone statements (P4 targets)
-
-`Prop`-valued definitions, NOT theorems: proving them is the campaign (phases P1–P4).
-Stating them here makes the `∃ u, ∀ T > 0` literalness machine-checked, which is what
-the codex gate required of the design phase. -/
-
-/-- **Frozen P4 target** (docs/scratch/global-diagonal-campaign.md §4): the torus
-global capstone.  Note the quantifier prefix: `∃ F, ∃ u, ∀ T` — one form bundle and ONE
-curve serving every horizon. -/
-def GlobalTorusCapstoneStatement : Prop := -- ALLOW_NAME: statement only (bare def : Prop, the unproved P4 campaign target)
-  ∀ (u₀ : L2Sigma) (ν : ℝ), 0 < ν →
-    ∃ F : Torus3NSForms, ∃ u : Time → L2Sigma, ∀ T : ℝ, 0 < T →
-      IsLerayHopfOn torusDomain F.core ν T u₀ u
-
-/-- Sanity direction (proved): the frozen global statement implies the EXISTING
-finite-horizon capstone statement shape (`exists_lerayHopf_torus3`,
-`LerayHopf/Torus/GalerkinODECapstone.lean:133`) at every horizon — so the campaign
-target is genuinely a strengthening, never a side-grade. -/
-theorem globalTorusCapstone_implies_finite (hG : GlobalTorusCapstoneStatement) : -- ALLOW_NAME: reserved term is the hypothesis Prop's name; the implication itself is fully proved below, capstone remains unproved
-    ∀ (u₀ : L2Sigma) (ν : ℝ), 0 < ν → ∀ T : ℝ, 0 < T →
-      ∃ F : Torus3NSForms, Nonempty (LerayHopfSolutionFull F ν T u₀) := by
-  intro u₀ ν hν T hT
-  obtain ⟨F, u, hu⟩ := hG u₀ ν hν
-  exact ⟨F, ⟨LerayHopfSolution.ofIsOn (hu T hT)⟩⟩
-
 end Scratch195
 end LerayHopf
 
@@ -344,6 +347,7 @@ end LerayHopf
 #print axioms LerayHopf.Scratch195.badTail_not_integrableOn
 #print axioms LerayHopf.Scratch195.badTail_truncation
 #print axioms LerayHopf.Scratch195.truncation_agrees_with_additivity
+#print axioms LerayHopf.Scratch195.truncation_routes_agree
 #print axioms LerayHopf.Scratch195.nonempty_lerayHopfSolution_iff_exists_isOn
 #print axioms LerayHopf.Scratch195.globalLerayHopfSolution_nonempty_iff
 #print axioms LerayHopf.Scratch195.GlobalLerayHopfSolution.toSolution_u
@@ -351,4 +355,3 @@ end LerayHopf
 #print axioms LerayHopf.Scratch195.weakFormNS_congr_Icc
 #print axioms LerayHopf.Scratch195.IsLerayHopfOn.mono
 #print axioms LerayHopf.Scratch195.IsLerayHopfOn.congr_Icc
-#print axioms LerayHopf.Scratch195.globalTorusCapstone_implies_finite

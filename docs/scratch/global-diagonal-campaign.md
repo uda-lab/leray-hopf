@@ -1,9 +1,10 @@
 # Global-in-time Leray–Hopf via diagonal extraction — torus-lane campaign (issue #195)
 
 **Author:** lean-architect (fable). **Status:** design + feasibility phase of issue #195.
-**Verdict:** **GO** (§9; conditional on nothing — both spikes compile sorry-free and every
+**Verdict:** **CONDITIONAL-GO** (§9, §11 — all spikes compile sorry-free and every
 conjunct of the final target is traced to an existing interface plus a named, provable
-transfer lemma).
+transfer lemma; P1/P2 dispatch unconditional, P3/P4 conditioned on P2's end-to-end
+κ-chain exit gate, §5 P2 row).
 
 Owner decision (recorded at dispatch): on GO the campaign continues through the **torus
 global capstone**. ℝ³ implementation is out of scope (assessment only, §8).
@@ -311,8 +312,8 @@ Dependencies: P1 ∥ P2 (independent); P3 needs P2; P4 needs P1+P2+P3. One PR pe
 
 | Phase | Sub-issue title (`Parent: #195`) | Content | Files | Coder | Prover | Kill criterion (→ back to architect) |
 |---|---|---|---|---|---|---|
-| **P1** | `[#195-A] Generic global contract layer: IsLerayHopfOn + GlobalLerayHopfSolution + horizon restriction` | §4.1–4.3 verbatim; `WeakFormNS.mono` + `congr_Icc` + `mono` proofs — **all already compiled sorry-free in `LerayHopf/Scratch/GlobalContract.lean` (§10); P1 = namespace move out of `Scratch195` + review**. Also (finding 5): add the `LerayHopf.Scratch` modules (or their production successors) to the preflight build cone — `scripts/agent-preflight.sh` change, lean-coder-owned | new `LerayHopf/Galerkin/GlobalContract.lean` | opus | opus | `WeakFormNS.mono` not closable via the indicator-truncation route after 2 attempts (do NOT add integrability hypotheses — that is a statement change ⇒ architect); risk retired by the compiled spike |
-| **P2** | `[#195-B] κ-generalize the torus compactness chain (mode map through AubinLionsPackage → limit passage)` | thread `(κ, hκ)` per §3 through the 22 declarations; strengthen `torus_galerkin_limit_passage_of_energyClass` to re-export `(ρ, StrictMono ρ, everywhere weak-convergence pin)` (its proof already holds them — pass-through from `exists_weak_representative`); rewire fixed-horizon consumers with `κ := id` | `ModeCompactness, ModeTail, SolutionInterfaces, AubinLionsAssembly, ViscousLimit, TraceEnergy, LimitPassage, GalerkinODECapstone` | opus | opus (bodies are mechanical re-threading) | any statement fails to typecheck as designed, OR >2 proof bodies need non-mechanical re-proving, OR the release capstone's statement would change |
+| **P1** | `[#195-A] Generic global contract layer: IsLerayHopfOn + GlobalLerayHopfSolution + horizon restriction` | §4.1–4.3 verbatim; `WeakFormNS.mono` + `congr_Icc` + `mono` proofs — **all already compiled sorry-free in `LerayHopf/Scratch/GlobalContract.lean` (§10); P1 = move out of `Scratch195` + review** (the generic/torus import-cone split is already proven compiled by the Scratch pair, §10.1 pass-2 note — the generic file moves as-is; the torus capstone `Prop` waits for P4's file). Also (finding 5 + pass-2 F-D): preflight/CI additions, lean-coder-owned — scratch (or successor) build-cone coverage AND automated `#print axioms` pin enforcement (fail on `sorryAx`/project axioms) | new `LerayHopf/Galerkin/GlobalContract.lean` | opus | opus | `WeakFormNS.mono` not closable via the indicator-truncation route after 2 attempts (do NOT add integrability hypotheses — that is a statement change ⇒ architect); risk retired by the compiled spike |
+| **P2** | `[#195-B] κ-generalize the torus compactness chain (mode map through AubinLionsPackage → limit passage)` | thread `(κ, hκ)` per §3 through the 22 declarations; strengthen `torus_galerkin_limit_passage_of_energyClass` to re-export `(ρ, StrictMono ρ, everywhere weak-convergence pin)` (its proof already holds them — pass-through from `exists_weak_representative`); rewire fixed-horizon consumers with `κ := id`. **Exit gate (pass-2 F-A, codex-endorsed condition on the campaign GO):** P2 is complete — and P3/P4 may be dispatched — only when the κ-generalized chain is compiled END-TO-END through Aubin–Lions package construction, energy-class proof, weak-form limit passage, and representative pin, consumed from the previously-extracted (dependent/reindexed) family — with the family-transport equalities proved explicitly, or the base family carried as an explicit parameter (the `extendReindexedFamily` route generalized past the scalar mode-pairing spike) | `ModeCompactness, ModeTail, SolutionInterfaces, AubinLionsAssembly, ViscousLimit, TraceEnergy, LimitPassage, GalerkinODECapstone` | opus | opus (bodies are mechanical re-threading) | any statement fails to typecheck as designed, OR >2 proof bodies need non-mechanical re-proving, OR the release capstone's statement would change, OR the F-A exit gate cannot be reached without a statement change (e.g. limit passage demands index transport the design did not anticipate) |
 | **P3** | `[#195-C] Diagonal machinery: abstract diagonal lemma + stage recursion + diagonal weak limit W` | promote spike 1 to production (new PDE-independent `LerayHopf/Bochner/DiagonalExtraction.lean`, names/statements as in §7 minus scratch prefix); stage recursion (indexed `StageData m` structure + structural recursion, §2 Step 1) and the packaged theorem `exists_diagonal_weakly_convergent_galSeq : ∃ δ, StrictMono δ ∧ ∃ W, ∀ m : ℕ, ∀ t ∈ Icc (0:ℝ) (m+1), ∀ z : L2Sigma, Tendsto (fun k => ⟪(galSeq (δ k)).u t, z⟫) atTop (𝓝 ⟪W t, z⟫)` | above + new `LerayHopf/Torus/DiagonalGalerkin.lean` | opus | **fable** (dependent recursion + coherence) | stage recursion not expressible as designed, or stage-limit coherence fails from `z : L2Sigma` tests alone |
 | **P4** | `[#195-D] Torus global capstone: exists_global_lerayHopf_torus3` | per-horizon runs over `κ := δ`, Step-4 coherence lemma, `congr_Icc`/`mono` assembly, §4.4 capstones, docs (`claims-and-scope.md`, `architecture.md`) | new `LerayHopf/Torus/GlobalCapstone.lean` + docs | opus | **fable** | pin insufficient for some conjunct's transfer (must NOT be patched by weakening — architect) |
 | **P5** | `[#195-E] ℝ³-lane reuse design addendum (assessment only)` | update §8 against post-P4 reality; open/scope R3 sub-issues | docs only | — (architect/planner) | — | n/a |
@@ -375,13 +376,17 @@ stage-refinement conclusion exists, so it is proved from scratch (pure order the
   `effective_tendsto_atTop`, `extract_φ` (rfl), `extract_effective_strictMono`) thread
   strictness/cofinality through composition — §10.3.
 
-### Spike 3 — `LerayHopf/Scratch/GlobalContract.lean` (contract layer + truncation, fully proved)
+### Spike 3 — `LerayHopf/Scratch/GlobalContract.lean` + `GlobalContractTorus.lean` (contract layer + truncation, fully proved)
 
 Added at the codex gate (findings 1 and 4): the entire §4 contract layer machine-checked
 with the transfer lemmas fully proved, plus the no-integrability truncation lemma with
-concrete non-integrable witness and integrable-branch cross-check. Details in §10.1/§10.4.
+concrete non-integrable witness and integrable-branch cross-check (a real
+`setIntegral_union` additivity theorem + route-agreement corollary, pass-2 F-C).
+Split at pass-2 F-B into the generic file (imports only
+`LerayHopf.Galerkin.SolutionBundles` + mathlib) and the torus-side capstone file —
+compiling the P1 import-cone design. Details in §10.1/§10.4.
 
-All three spikes compile sorry-free under the flock'd incremental build (see the task
+All spike files compile sorry-free under the flock'd incremental build (see the task
 report for the exit status; scratch modules are built explicitly — they are not imported
 by the `LerayHopf` root; re-verification commands and axiom-pin expectations in §10.5).
 
@@ -413,7 +418,9 @@ by the `LerayHopf` root; re-verification commands and axiom-pin expectations in 
 
 ## 9. GO/NO-GO verdict
 
-**GO.** Grounds:
+**GO** — refined at the pass-2 codex gate to **CONDITIONAL-GO**: unconditional for
+P1/P2 dispatch, with P3/P4 dispatch conditioned on P2's end-to-end κ-chain exit gate
+(§5 P2 row; disposition in §11). Grounds:
 
 1. **Both issue obstacles are discharged with compiled evidence**, not on paper: the
    abstract diagonal lemma is fully proved (spike 1), and the index-dependence obstacle is
@@ -467,9 +474,26 @@ lemmas are fully proved, not deferred: `weakFormNS_mono`, `weakFormNS_congr_Icc`
 = g.u := rfl`. `globalTorusCapstone_implies_finite` proves in Lean that the frozen P4
 target implies the existing finite-horizon capstone shape at every horizon. The single
 unproved object is `GlobalTorusCapstoneStatement`, a `def : Prop` — the campaign target
-itself, which the gate asked to see stated, not proved. Verdict impact: the
-CONDITIONAL-GO fallback offered by the gate is unnecessary; GO stands unconditioned on
-P1 (P1 is now a namespace move).
+itself, which the gate asked to see stated, not proved. Verdict impact: finding 1's
+CONDITIONAL-GO fallback is unnecessary; the finding-1 obligation is discharged
+unconditioned (P1 is now a move + review; the campaign-level verdict is set in §11).
+
+**Pass-2 F-B (import-cone separation), resolved by compilation:** the scratch contract
+is now TWO files mirroring the frozen P1 design exactly —
+`LerayHopf/Scratch/GlobalContract.lean` (everything generic: `IsLerayHopfOn`, the
+equivalences, `GlobalLerayHopfSolution`, all transfer lemmas, the truncation toolkit)
+imports ONLY `LerayHopf.Galerkin.SolutionBundles` + two mathlib modules — no
+`LerayHopf.Torus.SolutionInterfaces`, no torus-lane instantiation; and
+`LerayHopf/Scratch/GlobalContractTorus.lean` (the frozen P4 capstone `Prop` +
+`globalTorusCapstone_implies_finite`) imports the generic file plus
+`LerayHopf.Torus.SolutionInterfaces`. Both compile, so "a literal namespace move cannot
+preserve both generic layering and the torus target" is answered: P1 moves the generic
+file to `LerayHopf/Galerkin/GlobalContract.lean` with its import cone intact, and the
+torus capstone statement rides with the torus lane (P4's file), exactly as §5 assigns.
+(Note: the generic layer's `Time` abbrev itself lives in `LerayHopf/Torus/Basic.lean`
+and reaches `SolutionBundles` through `EvolutionTriple` — a PRE-EXISTING production
+layering fact, unchanged by this campaign; "generic" here means generic over
+`Galerkin.Domain`, exactly as `Galerkin.LerayHopfSolution` already is.)
 
 ### 10.2 Finding 2 (high) — dependent family shape not consumed; audit prose-only
 
@@ -500,6 +524,21 @@ architect (P2 row, §5: "any statement fails to typecheck as designed, OR >2 pro
 bodies need non-mechanical re-proving"). All three are in place; acceptance of #195's
 criterion is via the compiled dependent-shape theorem, not via the base+κ surrogate.
 
+**Pass-2 F-A (the residual, stated honestly and gated):** codex correctly observes
+that the dependent-family spike proves scalar mode-pairing extraction only — it does
+not compile a κ-version of the Aubin–Lions builder, the energy-class proof, the
+weak-form limit passage, or the representative pin, and the `galSeq_of_torus` filler
+lives downstream (GalerkinODECapstone) of the layers P2 reworks. That residual IS
+phase P2, and the campaign adopts codex's own recommendation rather than pretending
+the spike covers it: the campaign verdict is **CONDITIONAL-GO** with P2 carrying an
+explicit exit gate — end-to-end κ chain compiled through package construction, energy
+class, limit passage, and representative pin, consumed from the dependent/reindexed
+family with transport equalities proved (or the base family as an explicit parameter)
+— and P3/P4 are not dispatched until that gate is green (§5 P2 row; §11). The
+filler-downstream observation also yields a concrete P2 design note: inside P2, the
+embedding is available only ABOVE the ODE layer (which P2 does not modify), or the
+base family is carried as a parameter — both options are recorded in the P2 exit gate.
+
 ### 10.3 Finding 3 (medium) — effective-map strictness/cofinality not carried
 
 **Resolved with compiled evidence, via the composition-lemma option.** New lemmas
@@ -525,7 +564,12 @@ cannot arise because no step ever cases on integrability. Branch evidence: the
 NON-integrable branch is exercised concretely (`badTail := 1/t on (0,1], 0 after`;
 `badTail_not_integrableOn` via `intervalIntegrable_inv_iff`; `badTail_truncation`
 applies the lemma to it), and the integrable branch is cross-checked against the
-classical additivity route (`truncation_agrees_with_additivity`). `weakFormNS_mono`
+classical additivity route — **as a theorem, not prose** (pass-2 F-C):
+`truncation_agrees_with_additivity` proves `∫_{Ioc 0 c} = ∫_{Ioc 0 b} + ∫_{Ioc b c}` by
+genuinely invoking `MeasureTheory.setIntegral_union` on the disjoint decomposition
+`Ioc_union_Ioc_eq_Ioc` (both `0 ≤ b` and integrability are consumed), plus tail `= 0`;
+`truncation_routes_agree` then derives from it exactly the equation the indicator route
+emits, so conservativity-over-classical is itself machine-checked. `weakFormNS_mono`
 then uses exactly this lemma; the integrand vanishes on `(T', T]` term-by-term via
 `image_eq_zero_of_notMem_tsupport` + `deriv_of_notMem_tsupport` (every term carries a
 `ψ t` or `deriv ψ t` factor). No integrability hypothesis was added to any statement.
@@ -545,13 +589,53 @@ export PATH="$HOME/.elan/bin:$PATH"
 flock /tmp/lean-build.lock lake build \
   LerayHopf.Scratch.DiagonalExtraction \
   LerayHopf.Scratch.KappaReindex \
-  LerayHopf.Scratch.GlobalContract 2>&1 | tail -20
+  LerayHopf.Scratch.GlobalContract \
+  LerayHopf.Scratch.GlobalContractTorus 2>&1 | tail -20
 ```
 
 Expected: `Build completed successfully`, and each `#print axioms` info line reporting
 at most `[propext, Classical.choice, Quot.sound]` — never `sorryAx`, never a project
-axiom. (c) P1's task list (§5) now includes adding scratch-cone coverage to
-`scripts/agent-preflight.sh` — a `scripts/` change owned by lean-coder, out of
-architect scope. Recorded pins from the post-remediation build: see the commit message
-of the remediation commit and `/tmp/lh195-build3.log` tail quoted in the B0 final
-report.
+axiom. This command is reproducible from repo state alone (pass-2 F-D): the pins are
+`#print axioms` lines INSIDE the committed spike files, so any rebuild of these targets
+re-emits them; no session-local log file is part of the evidence contract. (Session
+logs quoted in reports — e.g. the pass-2 build and preflight tails — are convenience
+transcripts of running exactly the command above plus `bash scripts/agent-preflight.sh`;
+they are not the source of truth, the committed files and this command are.)
+(c) Automated enforcement of the scratch pins (build-cone coverage AND a pin-checker
+that fails on `sorryAx`/project axioms in the scratch targets' `#print axioms` output)
+is folded into P1's task list (§5) — a `scripts/agent-preflight.sh`/CI change owned by
+lean-coder, out of architect scope.
+
+---
+
+## 11. Codex pass-2 gate disposition (2026-07-28) — final verdict CONDITIONAL-GO
+
+The re-gate (`--effort xhigh`) credited the contract layer, effective-map lemmas, and
+core truncation identity, and raised four findings. Disposition:
+
+- **F-A (high, spike ≠ full κ pipeline)** — accepted, not contested. Adopted codex's
+  own recommendation as the campaign verdict: **CONDITIONAL-GO**, the condition being
+  the P2 exit gate (§5 P2 row: end-to-end κ chain through Aubin–Lions package
+  construction, energy class, limit passage, representative pin, from the
+  dependent/reindexed family; P3/P4 dispatch blocked until green). Honest residual
+  analysis + P2 design notes in §10.2 (pass-2 paragraph). Rationale for not spiking
+  further now: the remaining risk is exactly P2's content; compiling it in scratch
+  would duplicate a production phase inside the design gate at multi-day cost, against
+  an explicitly gated dispatch that produces the same evidence under review and
+  ownership.
+- **F-B (medium, import-cone separability)** — resolved by compilation: the scratch
+  contract split into `Scratch/GlobalContract.lean` (generic-only imports) +
+  `Scratch/GlobalContractTorus.lean` (torus lane); both build green (§10.1 pass-2
+  note). P1's move is now literally file-for-file.
+- **F-C (medium, additivity cross-check was not an additivity proof)** — resolved by
+  proving the real theorem: `truncation_agrees_with_additivity` now invokes
+  `MeasureTheory.setIntegral_union` on `Ioc_union_Ioc_eq_Ioc` (integrability and
+  `0 ≤ b` genuinely consumed), and `truncation_routes_agree` derives the indicator
+  route's exact equation from it (§10.4).
+- **F-D (medium, evidence pointed at a failed /tmp log)** — resolved: §10.5 now
+  declares the committed `#print axioms` lines + the verbatim build command as the
+  sole evidence contract (reproducible from repo state); session logs are demoted to
+  convenience transcripts; automated pin enforcement folded into P1's lean-coder task.
+
+**Verdict line: CONDITIONAL-GO.** P1 and P2 are dispatch-ready now (P1 independent;
+P2 carries the F-A exit gate); P3/P4 wait on P2's gate; P5 unchanged.
