@@ -1,41 +1,32 @@
--- SCRATCH — issue #195 feasibility spike (lean-architect). NOT production code.
--- Codex-gate remediation (findings 1 and 4 of the B0 adversarial review):
---
--- Finding 1: the global contract of docs/scratch/global-diagonal-campaign.md §4 existed
--- only as markdown.  Here every §4 statement is MACHINE-CHECKED: `IsLerayHopfOn` (the
--- Prop-valued conjunction of the five proof fields of `Galerkin.LerayHopfSolution`),
--- the round-trip equivalence with `Nonempty (Galerkin.LerayHopfSolution …)`, the
--- single-curve `GlobalLerayHopfSolution` with its `toSolution`/`toSolution_u` (rfl)
--- no-duplication witnesses, the horizon-restriction lemma `IsLerayHopfOn.mono`, and the
--- curve-congruence lemma `IsLerayHopfOn.congr_Icc`.  (The frozen torus P4 target
--- `GlobalTorusCapstoneStatement` lives in Scratch/GlobalContractTorus.lean — see the
--- F-B note below.)
---
--- Finding 4: `WeakFormNS.mono`'s truncation step is compiled here WITHOUT any
--- integrability hypothesis (`setIntegral_Ioc_eq_of_tail_zero`: the integrands are
--- pointwise-equal indicator functions, so Bochner integrals agree even when both are
--- junk values), with the non-integrable branch witnessed CONCRETELY
--- (`badTail_not_integrableOn` + `badTail_truncation`) and the integrable branch
--- cross-checked against GENUINE union additivity (`truncation_agrees_with_additivity`
--- invokes `setIntegral_union`; `truncation_routes_agree` shows both routes emit the
--- same equation — codex pass-2 finding F-C).
---
--- Pass-2 finding F-B (import-cone separation): this file now imports ONLY the generic
--- solution-bundle layer, matching the frozen P1 design target
--- `LerayHopf/Galerkin/GlobalContract.lean`.  The torus capstone statement lives in
--- `LerayHopf/Scratch/GlobalContractTorus.lean`, which imports this file plus
--- `LerayHopf.Torus.SolutionInterfaces` — compiling both proves generic layering and
--- the torus target are separable exactly as P1 specifies.
---
--- All declarations below are fully proved (no sorry, no axioms).
+/-
+The generic global Leray–Hopf contract layer (issue #195, phase P1).
+
+This module provides the domain-neutral, `Prop`-valued finite-horizon Leray–Hopf
+contract `IsLerayHopfOn` (a field-for-field twin of the five proof fields of
+`Galerkin.LerayHopfSolution`), its round-trip equivalence with
+`Nonempty (Galerkin.LerayHopfSolution …)`, the single-curve global solution
+structure `GlobalLerayHopfSolution` (literal `∃ u, ∀ T > 0, IsLerayHopfOn … u`)
+with its no-curve-duplication witnesses, and the two transfer lemmas — horizon
+restriction (`IsLerayHopfOn.mono`) and curve congruence on `[0, T]`
+(`IsLerayHopfOn.congr_Icc`) — both closed WITHOUT any integrability side condition
+via the indicator-truncation identity `setIntegral_Ioc_eq_of_tail_zero`. The
+truncation toolkit (`badTail*`, `truncation_agrees_with_additivity`,
+`truncation_routes_agree`) records the compiled cross-check that the truncation step
+is sound on both the non-integrable and integrable branches.
+
+Design and provenance: `docs/scratch/global-diagonal-campaign.md` §4. This file was
+promoted verbatim (namespace `LerayHopf.Scratch195` → `LerayHopf.Galerkin`) from the
+codex-gated feasibility spike; statements and proof bodies are byte-identical to the
+spike. Axiom hygiene comes from release-cone membership (imported by `LerayHopf.lean`)
+plus the interim live pins in `scripts/check-axioms-live.sh`.
+-/
 import LerayHopf.Galerkin.SolutionBundles
 import Mathlib.Analysis.SpecialFunctions.NonIntegrable
 import Mathlib.Analysis.Calculus.Deriv.Support
 
 open MeasureTheory Filter Topology Set
 
-namespace LerayHopf
-namespace Scratch195
+namespace LerayHopf.Galerkin
 
 /-! ### Finding 4 — truncation without integrability -/
 
@@ -338,20 +329,4 @@ theorem IsLerayHopfOn.congr_Icc {u v : Time → ↥D.σ} (hT : 0 < T)
     filter_upwards [hae] with t heqt
     exact congrArg Subtype.val heqt
 
-end Scratch195
-end LerayHopf
-
--- Axiom pins (recorded in docs/scratch/global-diagonal-campaign.md §10; expected:
--- [propext, Classical.choice, Quot.sound] — no sorryAx, no project axioms).
-#print axioms LerayHopf.Scratch195.setIntegral_Ioc_eq_of_tail_zero
-#print axioms LerayHopf.Scratch195.badTail_not_integrableOn
-#print axioms LerayHopf.Scratch195.badTail_truncation
-#print axioms LerayHopf.Scratch195.truncation_agrees_with_additivity
-#print axioms LerayHopf.Scratch195.truncation_routes_agree
-#print axioms LerayHopf.Scratch195.nonempty_lerayHopfSolution_iff_exists_isOn
-#print axioms LerayHopf.Scratch195.globalLerayHopfSolution_nonempty_iff
-#print axioms LerayHopf.Scratch195.GlobalLerayHopfSolution.toSolution_u
-#print axioms LerayHopf.Scratch195.weakFormNS_mono
-#print axioms LerayHopf.Scratch195.weakFormNS_congr_Icc
-#print axioms LerayHopf.Scratch195.IsLerayHopfOn.mono
-#print axioms LerayHopf.Scratch195.IsLerayHopfOn.congr_Icc
+end LerayHopf.Galerkin

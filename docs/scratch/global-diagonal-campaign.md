@@ -243,7 +243,7 @@ theorem Galerkin.LerayHopfSolution.isLerayHopfOn (s : LerayHopfSolution D C ν T
     IsLerayHopfOn D C ν T u₀ s.u
 def Galerkin.LerayHopfSolution.ofIsOn (h : IsLerayHopfOn D C ν T u₀ u) :
     LerayHopfSolution D C ν T u₀            -- with @[simp] lemma (ofIsOn h).u = u := rfl
-theorem Galerkin.nonempty_lerayHopfSolution_iff :
+theorem Galerkin.nonempty_lerayHopfSolution_iff_exists_isOn :
     Nonempty (LerayHopfSolution D C ν T u₀) ↔ ∃ u, IsLerayHopfOn D C ν T u₀ u
 ```
 
@@ -259,11 +259,13 @@ theorem Galerkin.IsLerayHopfOn.congr_Icc (hT : 0 < T)
 a horizon-`T'` test's integrand vanishes identically on `(T', T]`
 (`support_deriv_subset`), so the `0..T` and `0..T'` interval integrals agree by
 indicator truncation on `Ioc`. -/
-theorem WeakFormNS.mono {E : DissipativeEvolution} (h : WeakFormNS ν T E u)
+theorem weakFormNS_mono {E : DissipativeEvolution} (h : WeakFormNS ν T E u)
     (hT' : 0 < T') (hle : T' ≤ T) : WeakFormNS ν T' E u
 theorem Galerkin.IsLerayHopfOn.mono (h : IsLerayHopfOn D C ν T u₀ u)
     (hT' : 0 < T') (hle : T' ≤ T) : IsLerayHopfOn D C ν T' u₀ u
 ```
+
+P1 keeps the compiled spike names verbatim. P4 will move `weakFormNS_mono`/`weakFormNS_congr_Icc` into the `WeakFormNS` namespace as `WeakFormNS.mono`/`WeakFormNS.congr_Icc` (dot-notation); all other contract names are final.
 
 ### 4.3 The global structure — literal `∃ u, ∀ T`, no curve duplication
 
@@ -276,11 +278,11 @@ NOT a repackaging of `∀ T > 0, ∃ u_T, …`. -/
 structure Galerkin.GlobalLerayHopfSolution (D : Galerkin.Domain)
     (C : Galerkin.NSFormCore D) (ν : ℝ) (u₀ : ↥D.σ) where
   u : Time → ↥D.σ
-  isLerayHopfOn : ∀ T : ℝ, 0 < T → Galerkin.IsLerayHopfOn D C ν T u₀ u
+  isOn : ∀ T : ℝ, 0 < T → Galerkin.IsLerayHopfOn D C ν T u₀ u
 
 def Galerkin.GlobalLerayHopfSolution.toSolution (g : GlobalLerayHopfSolution D C ν u₀)
     (T : ℝ) (hT : 0 < T) : LerayHopfSolution D C ν T u₀ :=
-  LerayHopfSolution.ofIsOn (g.isLerayHopfOn T hT)
+  LerayHopfSolution.ofIsOn (g.isOn T hT)
 @[simp] theorem Galerkin.GlobalLerayHopfSolution.toSolution_u … :
     (g.toSolution T hT).u = g.u := rfl
 ```
@@ -305,7 +307,7 @@ Statement traps checked (role-contract checklist): forward-time only (all fields
 ∀t-vs-a.e. — energy inequality and trace are ∀t/limit statements exactly as in the
 finite-horizon contract, coherence is pointwise (§2 Step 4), only `energy_class`/AESM are
 intrinsically a.e. (as in the existing contract); no `integral_undef` vacuity introduced —
-`WeakFormNS.mono`'s truncation argument is junk-value-proof (§2 Step 5) and `energy_class`
+`weakFormNS_mono`'s truncation argument is junk-value-proof (§2 Step 5) and `energy_class`
 keeps the integrability conjunct; no hypothesis equivalent to the goal (inputs are the
 already-proved finite-horizon machinery); quantifier order is literally `∃ F ∃ u ∀ T`
 (`F` from `torus3_NSForms_exists` is `T`-independent already today).
@@ -601,7 +603,7 @@ quoted) by any phase that touches the spikes:
 ```sh
 #!/usr/bin/env bash
 # Fail-closed scratch evidence gate (pass-3 G-2, hardened at pass-4 H-1):
-# forced-fresh compilation + EXACT 26-declaration pin-set check.  Non-zero exit on
+# forced-fresh compilation + EXACT 14-declaration pin-set check.  Non-zero exit on
 # build failure, stale/replayed target, missing or malformed pin, any axiom token
 # outside the kernel trio, or any pin output beyond the enumerated set.
 set -euo pipefail
@@ -609,22 +611,29 @@ export PATH="$HOME/.elan/bin:$PATH"
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 
-targets=(DiagonalExtraction KappaReindex GlobalContract GlobalContractTorus P2ExitContract)
+targets=(DiagonalExtraction KappaReindex GlobalContractTorus P2ExitContract)
 
 # Take the container-wide build lock BEFORE the artifact deletion below and hold it
 # through the build (PR #205 review: deleting outside the lock races a concurrent
 # lock-holding lake process — it could remove artifacts that build just produced or
 # is about to consume).  FD 9 keeps the same /tmp/lean-build.lock every other lean
 # build in this container serializes on; it is released when the script exits.
-exec 9>/tmp/lean-build.lock
-flock 9
+# flock is present on this container (util-linux); if absent (non-Linux dev host) we
+# fall back to running without the lock — mirroring agent-preflight.sh's guard — rather
+# than aborting the mandatory preflight in an environment it explicitly supports.
+if command -v flock >/dev/null 2>&1; then
+  exec 9>/tmp/lean-build.lock
+  flock 9
+else
+  echo "WARNING: flock not found; running scratch-pin check without serialization lock." >&2
+fi
 
-# H-1(c) freshness: delete the five modules' build artifacts (.olean/.ilean/.hash/
+# H-1(c) freshness: delete the four modules' build artifacts (.olean/.ilean/.hash/
 # .trace).  Lake cannot serve a stale artifact or replay a cached log for a module
 # whose artifacts are missing — it must genuinely re-elaborate it, and only genuine
 # re-elaboration prints "Built <module>" (a cache hit prints "Replayed <module>")
 # and re-runs the #print axioms commands whose output is parsed below.  Upstream
-# dependencies stay cached, so the cost is exactly the five scratch modules.
+# dependencies stay cached, so the cost is exactly the four scratch modules.
 for t in "${targets[@]}"; do
   rm -f ".lake/build/lib/lean/LerayHopf/Scratch/$t".*
 done
@@ -632,7 +641,6 @@ done
 lake build \
   LerayHopf.Scratch.DiagonalExtraction \
   LerayHopf.Scratch.KappaReindex \
-  LerayHopf.Scratch.GlobalContract \
   LerayHopf.Scratch.GlobalContractTorus \
   LerayHopf.Scratch.P2ExitContract >"$log" 2>&1 \
   || { echo "BUILD FAILED"; tail -40 "$log"; exit 1; }
@@ -652,9 +660,9 @@ done
 # MALFORMED and fails the gate, never silently dropped.
 joined="$(tr '\n' '@' <"$log" | sed 's/@ / /g' | tr '@' '\n')"
 
-# H-1(a) exact pin set: the 25 declarations (of 26 total) that must pin to (a
+# H-1(a) exact pin set: the 13 declarations (of 14 total) that must pin to (a
 # subset of) the kernel trio [propext, Classical.choice, Quot.sound].
-# DiagonalExtraction (3) + KappaReindex (6) + GlobalContract (12) +
+# DiagonalExtraction (3) + KappaReindex (6) +
 # GlobalContractTorus (1) + P2ExitContract (3).
 pinned=(
   diagExtraction_strictMono
@@ -666,18 +674,6 @@ pinned=(
   exists_galerkin_modewise_extraction_of_reindexed
   AubinLionsPackageKappa.effective_strictMono
   AubinLionsPackageKappa.extract_effective_strictMono
-  setIntegral_Ioc_eq_of_tail_zero
-  badTail_not_integrableOn
-  badTail_truncation
-  truncation_agrees_with_additivity
-  truncation_routes_agree
-  nonempty_lerayHopfSolution_iff_exists_isOn
-  globalLerayHopfSolution_nonempty_iff
-  GlobalLerayHopfSolution.toSolution_u
-  weakFormNS_mono
-  weakFormNS_congr_Icc
-  IsLerayHopfOn.mono
-  IsLerayHopfOn.congr_Icc
   globalTorusCapstone_implies_finite
   P2ExitWitness.pin_base
   P2ExitWitness.effective_strictMono
@@ -693,26 +689,36 @@ for d in "${pinned[@]}"; do
   if ! printf '%s\n' "$bracket" | grep -qE '^\[[^][]*\]$'; then
     echo "MALFORMED PIN (bracket did not close on joined line): $d"; fail=1; continue
   fi
-  if printf '%s\n' "$bracket" | sed -E 's/propext|Classical\.choice|Quot\.sound//g' \
-      | grep -qE '[A-Za-z_]'; then
-    echo "PIN VIOLATION: $line"; fail=1
-  fi
+  # Compare each COMPLETE axiom token against the exact kernel trio.  A substring
+  # strip is not fail-closed: a Unicode-only root name (e.g. ω) escapes an ASCII
+  # grep, and a digit-extended name (e.g. Classical.choice2) survives the strip as
+  # bare digits.  Split the bracketed, comma-separated list and match whole tokens.
+  inner="$(printf '%s\n' "$bracket" | sed -E 's/^\[[[:space:]]*//; s/[[:space:]]*\]$//')"
+  IFS=',' read -ra toks <<<"$inner" || true
+  for tok in ${toks[@]+"${toks[@]}"}; do
+    tok="$(printf '%s' "$tok" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+    [ -z "$tok" ] && continue
+    case "$tok" in
+      propext|Classical.choice|Quot.sound) ;;
+      *) echo "PIN VIOLATION: $line"; fail=1; break ;;
+    esac
+  done
 done
 
-# H-1(a): nestedComp_add (declaration 26) is axiom-free — assert its exact output
+# H-1(a): nestedComp_add (declaration 14) is axiom-free — assert its exact output
 # POSITIVELY instead of letting it fall out of the 'depends on axioms' grep.
 printf '%s\n' "$joined" \
   | grep -qF "'LerayHopf.Scratch195.nestedComp_add' does not depend on any axioms" \
   || { echo "MISSING AXIOM-FREE ASSERTION: nestedComp_add"; fail=1; }
 
-# Exactness (both directions): total #print axioms outputs must be exactly 26 —
+# Exactness (both directions): total #print axioms outputs must be exactly 14 —
 # a pin added to the sources without updating this checker fails the gate too.
 total="$(printf '%s\n' "$joined" \
   | grep -cE "depends on axioms:|does not depend on any axioms" || true)"
-[ "$total" -eq 26 ] || { echo "PIN COUNT MISMATCH: expected 26, observed $total"; fail=1; }
+[ "$total" -eq 14 ] || { echo "PIN COUNT MISMATCH: expected 14, observed $total"; fail=1; }
 
 [ "$fail" -eq 0 ] || exit 1
-echo "SCRATCH PIN CHECK OK (26/26: 25 kernel-trio pins + nestedComp_add axiom-free)"
+echo "SCRATCH PIN CHECK OK (14/14: 13 kernel-trio pins + nestedComp_add axiom-free)"
 ```
 
 This gate is reproducible from repo state alone and FAIL-CLOSED (pass-2 F-D + pass-3
@@ -720,10 +726,10 @@ G-2 + pass-4 H-1): the pins are `#print axioms` lines INSIDE the committed spike
 files; the build status is checked directly (no `| tail` pipe to swallow it); the
 compilation is forced fresh (artifact deletion + a positive `Built` assertion per
 target — lake's incremental `Replayed` path cannot satisfy it); the pin check
-enumerates the EXACT 26-declaration set by name (25 kernel-trio pins + a POSITIVE
+enumerates the EXACT 14-declaration set by name (13 kernel-trio pins + a POSITIVE
 assertion of `nestedComp_add`'s axiom-free output), fails on any missing name,
 unclosed bracket (bad wrap-join), non-kernel axiom token (in particular `sorryAx`),
-or any pin output beyond the enumerated 26. Session logs quoted in reports are
+or any pin output beyond the enumerated 14. Session logs quoted in reports are
 convenience transcripts; the committed files and this script are the source of truth.
 (c) Committing this checker as a repository script wired into preflight/CI is a
 `scripts/` change owned by lean-coder (dispatched as a P1-precursor work item); per
@@ -835,10 +841,22 @@ review") and left exactly one finding, on the evidence checker. Disposition:
   The script was extracted from this doc VERBATIM and run green before commit
   (output: `SCRATCH PIN CHECK OK (26/26: 25 kernel-trio pins + nestedComp_add
   axiom-free)`). The committed `scripts/` checker (lean-coder's P1-precursor item,
-  §12 G-2(b)) must carry the same 26-name exact-set semantics; the §5 P2 exit gate's
-  "checker merged and green" condition now means THIS hardened semantics.
+  §12 G-2(b)) must carry the same 26-name exact-set semantics [P1 (#200) update:
+  GlobalContract's 12 pins promoted into the release cone; the scratch set is now 14
+  names (13 kernel-trio + nestedComp_add). Exact-set semantics unchanged.]; the §5 P2
+  exit gate's "checker merged and green" condition now means THIS hardened semantics.
 
 **Verdict line: CONDITIONAL-GO (unchanged).** P1/P2 dispatch-ready; P3/P4 blocked
 until (i) a production instantiation of the `P2ExitWitness` shape is compiled and
 (ii) the committed scratch-pin checker — with the pass-4 exact-pin-set semantics —
 is merged and green.
+
+**P1 (#200) retarget note (2026-07-28).** With GlobalContract promoted to
+`LerayHopf/Galerkin/GlobalContract.lean` (release cone), the committed scratch-pin
+checker `scripts/check-scratch-pins.sh` and the §10.5 reference script now enumerate 4
+targets (`DiagonalExtraction`, `KappaReindex`, `GlobalContractTorus`, `P2ExitContract`)
+and exactly 14 pins (13 kernel-trio + `nestedComp_add` axiom-free); the 12 promoted
+declarations are covered by release-cone membership plus 5 interim live pins in
+`scripts/check-axioms-live.sh`. Exact-set semantics are unchanged from pass-4; only the
+target/pin enumeration shrank. See the architect ruling on issue #200
+(`gh issue view 200 --comments`).

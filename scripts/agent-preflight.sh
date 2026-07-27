@@ -53,4 +53,9 @@ bash scripts/check-statement-cards.sh
 echo "==> scripts/check-axioms-live.sh"
 bash scripts/check-axioms-live.sh
 
+# Invoked UNWRAPPED: check-scratch-pins.sh self-locks on /tmp/lean-build.lock (held
+# through its own build); an outer flock on the same lock would self-deadlock.
+echo "==> scripts/check-scratch-pins.sh"
+bash scripts/check-scratch-pins.sh
+
 echo "PREFLIGHT OK"
