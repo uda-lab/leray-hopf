@@ -590,11 +590,27 @@ quoted) by any phase that touches the spikes:
 
 ```sh
 #!/usr/bin/env bash
-# Fail-closed scratch evidence gate (pass-3 G-2): non-zero exit on build failure OR
-# any axiom pin outside the kernel trio.  No pipe swallows the build status.
+# Fail-closed scratch evidence gate (pass-3 G-2, hardened at pass-4 H-1):
+# forced-fresh compilation + EXACT 26-declaration pin-set check.  Non-zero exit on
+# build failure, stale/replayed target, missing or malformed pin, any axiom token
+# outside the kernel trio, or any pin output beyond the enumerated set.
 set -euo pipefail
 export PATH="$HOME/.elan/bin:$PATH"
 log="$(mktemp)"
+trap 'rm -f "$log"' EXIT
+
+targets=(DiagonalExtraction KappaReindex GlobalContract GlobalContractTorus P2ExitContract)
+
+# H-1(c) freshness: delete the five modules' build artifacts (.olean/.ilean/.hash/
+# .trace).  Lake cannot serve a stale artifact or replay a cached log for a module
+# whose artifacts are missing — it must genuinely re-elaborate it, and only genuine
+# re-elaboration prints "Built <module>" (a cache hit prints "Replayed <module>")
+# and re-runs the #print axioms commands whose output is parsed below.  Upstream
+# dependencies stay cached, so the cost is exactly the five scratch modules.
+for t in "${targets[@]}"; do
+  rm -f ".lake/build/lib/lean/LerayHopf/Scratch/$t".*
+done
+
 flock /tmp/lean-build.lock lake build \
   LerayHopf.Scratch.DiagonalExtraction \
   LerayHopf.Scratch.KappaReindex \
@@ -603,21 +619,93 @@ flock /tmp/lean-build.lock lake build \
   LerayHopf.Scratch.P2ExitContract >"$log" 2>&1 \
   || { echo "BUILD FAILED"; tail -40 "$log"; exit 1; }
 grep -q "Build completed successfully" "$log"
-# Join wrapped info lines, keep only axiom-pin lines, then reject any axiom token
-# other than the kernel trio (in particular sorryAx and any project axiom).
-pins="$(tr '\n' '@' <"$log" | sed 's/@ / /g' | tr '@' '\n' | grep 'depends on axioms')"
-[ -n "$pins" ]  # at least one pin line must exist (else the targets were not checked)
-if printf '%s\n' "$pins" | sed -E 's/propext|Classical\.choice|Quot\.sound//g' \
-    | grep -oE '\[[^]]*\]' | grep -qE '[A-Za-z_]'; then
-  echo "PIN VIOLATION:"; printf '%s\n' "$pins"; exit 1
-fi
-echo "SCRATCH PIN CHECK OK ($(printf '%s\n' "$pins" | wc -l) pinned declarations)"
+
+# H-1(c) assertion: every target was BUILT in this run.  Cannot pass stale: the
+# artifact deletion above forces a rebuild, and a replayed/skipped target would
+# print "Replayed"/nothing instead of "Built" and fail here.
+for t in "${targets[@]}"; do
+  grep -q "Built LerayHopf\.Scratch\.$t" "$log" \
+    || { echo "STALE TARGET: LerayHopf.Scratch.$t was not freshly compiled"; exit 1; }
+done
+
+# Join wrapped info lines (lake wraps long pin lines; continuations start with a
+# space).  H-1(b): the per-declaration parser below is fail-closed against a bad
+# join — a pin whose axiom bracket does not CLOSE on its joined line is reported
+# MALFORMED and fails the gate, never silently dropped.
+joined="$(tr '\n' '@' <"$log" | sed 's/@ / /g' | tr '@' '\n')"
+
+# H-1(a) exact pin set: the 25 declarations (of 26 total) that must pin to (a
+# subset of) the kernel trio [propext, Classical.choice, Quot.sound].
+# DiagonalExtraction (3) + KappaReindex (6) + GlobalContract (12) +
+# GlobalContractTorus (1) + P2ExitContract (3).
+pinned=(
+  diagExtraction_strictMono
+  exists_diagonal_extraction
+  tendsto_diag_of_tendsto_stage
+  exists_galerkin_modewise_extraction_kappa
+  reindexed_family_second_extraction
+  extendReindexedFamily_apply
+  exists_galerkin_modewise_extraction_of_reindexed
+  AubinLionsPackageKappa.effective_strictMono
+  AubinLionsPackageKappa.extract_effective_strictMono
+  setIntegral_Ioc_eq_of_tail_zero
+  badTail_not_integrableOn
+  badTail_truncation
+  truncation_agrees_with_additivity
+  truncation_routes_agree
+  nonempty_lerayHopfSolution_iff_exists_isOn
+  globalLerayHopfSolution_nonempty_iff
+  GlobalLerayHopfSolution.toSolution_u
+  weakFormNS_mono
+  weakFormNS_congr_Icc
+  IsLerayHopfOn.mono
+  IsLerayHopfOn.congr_Icc
+  globalTorusCapstone_implies_finite
+  P2ExitWitness.pin_base
+  P2ExitWitness.effective_strictMono
+  P2ExitWitness.v_aestronglyMeasurable
+)
+
+fail=0
+for d in "${pinned[@]}"; do
+  line="$(printf '%s\n' "$joined" \
+    | grep -F "'LerayHopf.Scratch195.$d' depends on axioms:" || true)"
+  if [ -z "$line" ]; then echo "MISSING PIN: $d"; fail=1; continue; fi
+  bracket="$(printf '%s\n' "$line" | sed -E 's/.*depends on axioms:[[:space:]]*//')"
+  if ! printf '%s\n' "$bracket" | grep -qE '^\[[^][]*\]$'; then
+    echo "MALFORMED PIN (bracket did not close on joined line): $d"; fail=1; continue
+  fi
+  if printf '%s\n' "$bracket" | sed -E 's/propext|Classical\.choice|Quot\.sound//g' \
+      | grep -qE '[A-Za-z_]'; then
+    echo "PIN VIOLATION: $line"; fail=1
+  fi
+done
+
+# H-1(a): nestedComp_add (declaration 26) is axiom-free — assert its exact output
+# POSITIVELY instead of letting it fall out of the 'depends on axioms' grep.
+printf '%s\n' "$joined" \
+  | grep -qF "'LerayHopf.Scratch195.nestedComp_add' does not depend on any axioms" \
+  || { echo "MISSING AXIOM-FREE ASSERTION: nestedComp_add"; fail=1; }
+
+# Exactness (both directions): total #print axioms outputs must be exactly 26 —
+# a pin added to the sources without updating this checker fails the gate too.
+total="$(printf '%s\n' "$joined" \
+  | grep -cE "depends on axioms:|does not depend on any axioms" || true)"
+[ "$total" -eq 26 ] || { echo "PIN COUNT MISMATCH: expected 26, observed $total"; fail=1; }
+
+[ "$fail" -eq 0 ] || exit 1
+echo "SCRATCH PIN CHECK OK (26/26: 25 kernel-trio pins + nestedComp_add axiom-free)"
 ```
 
 This gate is reproducible from repo state alone and FAIL-CLOSED (pass-2 F-D + pass-3
-G-2): the pins are `#print axioms` lines INSIDE the committed spike files, the build
-status is checked directly (no `| tail` pipe to swallow it), and the pin assertion
-exits non-zero on `sorryAx` or any project axiom. Session logs quoted in reports are
+G-2 + pass-4 H-1): the pins are `#print axioms` lines INSIDE the committed spike
+files; the build status is checked directly (no `| tail` pipe to swallow it); the
+compilation is forced fresh (artifact deletion + a positive `Built` assertion per
+target — lake's incremental `Replayed` path cannot satisfy it); the pin check
+enumerates the EXACT 26-declaration set by name (25 kernel-trio pins + a POSITIVE
+assertion of `nestedComp_add`'s axiom-free output), fails on any missing name,
+unclosed bracket (bad wrap-join), non-kernel axiom token (in particular `sorryAx`),
+or any pin output beyond the enumerated 26. Session logs quoted in reports are
 convenience transcripts; the committed files and this script are the source of truth.
 (c) Committing this checker as a repository script wired into preflight/CI is a
 `scripts/` change owned by lean-coder (dispatched as a P1-precursor work item); per
@@ -691,3 +779,45 @@ reasonable; both remaining findings harden the P2 exit gate. Disposition:
 **Verdict line: CONDITIONAL-GO (unchanged).** P1/P2 dispatch-ready; P3/P4 blocked
 until (i) a production instantiation of the `P2ExitWitness` shape is compiled and
 (ii) the committed scratch-pin checker is merged and green.
+
+---
+
+## 13. Codex pass-4 gate disposition (2026-07-28) — checker hardened, verdict unchanged
+
+Pass-4 closed G-1 ("the P2ExitWitness linkage itself passes the focused adversarial
+review") and left exactly one finding, on the evidence checker. Disposition:
+
+- **H-1 (high, checker verified 25-of-26 pins existentially, not the exact set)** —
+  accepted and resolved in the §10.5 script. The 25-vs-26 discrepancy was the known
+  `nestedComp_add` asymmetry: it is axiom-free, so its `#print axioms` line reads
+  "does not depend on any axioms" and fell out of the `depends on axioms` grep — the
+  old `[ -n "$pins" ]` assertion was existential and could not notice a dropped
+  declaration. The hardened script implements all four codex recommendations:
+  - **(a) exact set:** the 26 declaration names are enumerated in the script (25
+    kernel-trio pins + `nestedComp_add`); each of the 25 is looked up BY NAME, and
+    `nestedComp_add`'s axiom-free output is asserted POSITIVELY. A total-count check
+    (`== 26`) also fails the gate on any pin output beyond the enumerated set, so
+    adding a `#print axioms` line to the sources forces a same-commit checker update.
+  - **(b) fail-closed parser:** a per-name lookup that finds no line reports
+    `MISSING PIN`; a joined line whose axiom bracket does not close (i.e. the
+    wrap-join heuristic failed) reports `MALFORMED PIN`; both exit non-zero. Nothing
+    is silently dropped.
+  - **(c) forced-fresh compilation:** the five scratch modules' build artifacts
+    (`.olean/.ilean/.hash/.trace`) are deleted before the build, so lake cannot serve
+    a stale artifact or replay a cached log — it must re-elaborate, which is what
+    re-runs the `#print axioms` commands. Belt-and-braces, the script then asserts a
+    `Built LerayHopf.Scratch.<target>` line per target: lake prints `Replayed` on a
+    cache hit, so an incremental/stale pass cannot satisfy the assertion. Upstream
+    dependencies stay cached (cost = the five modules only).
+  - **(d) hygiene:** `trap 'rm -f "$log"' EXIT`.
+
+  The script was extracted from this doc VERBATIM and run green before commit
+  (output: `SCRATCH PIN CHECK OK (26/26: 25 kernel-trio pins + nestedComp_add
+  axiom-free)`). The committed `scripts/` checker (lean-coder's P1-precursor item,
+  §12 G-2(b)) must carry the same 26-name exact-set semantics; the §5 P2 exit gate's
+  "checker merged and green" condition now means THIS hardened semantics.
+
+**Verdict line: CONDITIONAL-GO (unchanged).** P1/P2 dispatch-ready; P3/P4 blocked
+until (i) a production instantiation of the `P2ExitWitness` shape is compiled and
+(ii) the committed scratch-pin checker — with the pass-4 exact-pin-set semantics —
+is merged and green.
