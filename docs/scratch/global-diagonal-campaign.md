@@ -621,12 +621,12 @@ targets=(DiagonalExtraction KappaReindex GlobalContractTorus P2ExitContract)
 exec 9>/tmp/lean-build.lock
 flock 9
 
-# H-1(c) freshness: delete the five modules' build artifacts (.olean/.ilean/.hash/
+# H-1(c) freshness: delete the four modules' build artifacts (.olean/.ilean/.hash/
 # .trace).  Lake cannot serve a stale artifact or replay a cached log for a module
 # whose artifacts are missing — it must genuinely re-elaborate it, and only genuine
 # re-elaboration prints "Built <module>" (a cache hit prints "Replayed <module>")
 # and re-runs the #print axioms commands whose output is parsed below.  Upstream
-# dependencies stay cached, so the cost is exactly the five scratch modules.
+# dependencies stay cached, so the cost is exactly the four scratch modules.
 for t in "${targets[@]}"; do
   rm -f ".lake/build/lib/lean/LerayHopf/Scratch/$t".*
 done
