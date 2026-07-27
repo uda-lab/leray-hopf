@@ -4,7 +4,9 @@
 **Verdict:** **CONDITIONAL-GO** (§9, §11, §12 — all spikes compile sorry-free and every
 conjunct of the final target is traced to an existing interface plus a named, provable
 transfer lemma; P1/P2 dispatch unconditional, P3/P4 conditioned on the typed
-`P2ExitWitness` instantiation + committed scratch-pin checker, §5 P2 row).
+`P2ExitWitness` instantiation + committed scratch-pin checker, §5 P2 row —
+**condition SATISFIED 2026-07-28** via PR #207, `dev/v0.2.0` @ `ba135aae`; P3/P4
+dispatch unblocked, §13 P2 gate note).
 
 Owner decision (recorded at dispatch): on GO the campaign continues through the **torus
 global capstone**. ℝ³ implementation is out of scope (assessment only, §8).
@@ -130,7 +132,7 @@ torus by `torusDomain_dissip`/`torusDomain_regMem` (`SolutionInterfaces.lean:271
 
 | # | Conjunct (at horizon `T`, curve `W`) | Source at horizon `Tₘ ≥ T` (curve `vₘ`) | Transfer |
 |---|---|---|---|
-| 1 | `WeakFormNS ν T (torusDomain.evolution F.core) W` | limit-passage conjunct (1) for `vₘ` | `congr_Icc` (integrand equality on `uIcc 0 Tₘ`) then `WeakFormNS.mono` (§4.2) |
+| 1 | `WeakFormNS ν T (torusDomain.evolution F.core) W` | limit-passage conjunct (1) for `vₘ` | `congr_Icc` (integrand equality on `uIcc 0 Tₘ`) then `weakFormNS_mono` (§4.2; `WeakFormNS.mono` after the P4 rename) |
 | 2 | `∀ t ∈ [0,T]`, `½‖W t‖² + ∫₀ᵗ viscousFormSq ν (W s) ≤ ½‖u₀‖²` | conjunct (2) for `vₘ` | pointwise eq on `[0,Tₘ]` (norm + `intervalIntegral.integral_congr`); restriction trivial (`T ≤ Tₘ`) |
 | 3 | `Tendsto (W ·) (𝓝[≥] 0) (𝓝 u₀)` (strong trace) | conjunct (3) for `vₘ` | germ transfer: `Icc 0 Tₘ ∈ 𝓝[≥] 0` since `Tₘ > 0`; `T`-free |
 | 4a | `∀ᵐ t ∂(vol.restrict (Icc 0 T)), memH1VF (W t)` | conjunct (4a) for `vₘ` | pointwise eq + `ae_restrict_of_ae_restrict_of_subset` (`Icc 0 T ⊆ Icc 0 Tₘ`) |
@@ -192,7 +194,12 @@ own extraction may then select interleaved indices carrying NO weak-convergence 
 destroying Step 4's coherence. This is why the API generalization is genuinely required
 (confirms the issue's premise).
 
-**Expected diff surface (P2):** the 22 declarations of §1's audit + the structure parameter;
+**Expected diff surface (P2):** the 22 galSeq-mentioning declarations of §1's audit
+partition — per the #201 planner audit, ratified in the architect ruling on issue #201
+(`gh issue view 201 --comments`) — into **15 that gain the `(κ, hκ)` parameters**,
+**6 unchanged leaves** (their statements consume the base sequence directly and apply
+verbatim under reindexing), and **1 rewired in place** (`build_galerkin_package_of_galSeq`:
+exact signature kept, body instantiates `κ := id`); plus the structure parameter;
 inside proof bodies the only edits are `φ n` → `κ (φ n)` at datum-index positions (most are
 `_`-inferred), `hφ.le_apply`-chains gaining one `hκ.le_apply` hop, and `StrictMono`
 compositions. Existing fixed-horizon consumers instantiate `κ := id` (definitionally
@@ -324,8 +331,8 @@ Dependencies: P1 ∥ P2 (independent); P3 needs P2; P4 needs P1+P2+P3. One PR pe
 
 | Phase | Sub-issue title (`Parent: #195`) | Content | Files | Coder | Prover | Kill criterion (→ back to architect) |
 |---|---|---|---|---|---|---|
-| **P1** | `[#195-A] Generic global contract layer: IsLerayHopfOn + GlobalLerayHopfSolution + horizon restriction` | §4.1–4.3 verbatim; `WeakFormNS.mono` + `congr_Icc` + `mono` proofs — **all already compiled sorry-free in `LerayHopf/Scratch/GlobalContract.lean` (§10); P1 = move out of `Scratch195` + review** (the generic/torus import-cone split is already proven compiled by the Scratch pair, §10.1 pass-2 note — the generic file moves as-is; the torus capstone `Prop` waits for P4's file). Also (finding 5 + pass-2 F-D): preflight/CI additions, lean-coder-owned — scratch (or successor) build-cone coverage AND automated `#print axioms` pin enforcement (fail on `sorryAx`/project axioms) | new `LerayHopf/Galerkin/GlobalContract.lean` | opus | opus | `WeakFormNS.mono` not closable via the indicator-truncation route after 2 attempts (do NOT add integrability hypotheses — that is a statement change ⇒ architect); risk retired by the compiled spike |
-| **P2** | `[#195-B] κ-generalize the torus compactness chain (mode map through AubinLionsPackage → limit passage)` | thread `(κ, hκ)` per §3 through the 22 declarations; strengthen `torus_galerkin_limit_passage_of_energyClass` to re-export `(ρ, StrictMono ρ, everywhere weak-convergence pin)` (its proof already holds them — pass-through from `exists_weak_representative`); rewire fixed-horizon consumers with `κ := id`. **Exit gate (pass-2 F-A, hardened at pass-3 G-1 into a typed artifact):** P2 is complete — and P3/P4 may be dispatched — only when a production theorem is compiled instantiating the shape of `LerayHopf.Scratch195.P2ExitWitness` (`LerayHopf/Scratch/P2ExitContract.lean`): `∀ F ν hν T hT u₀ φ₁ (hφ₁ : StrictMono φ₁) galSeq₁, Nonempty (P2ExitWitness F ν T u₀ φ₁ galSeq₁)` — production names may differ, the FIELDS may not lose content. The `transport : ∀ k, base (φ₁ k) = galSeq₁ k` field is mandatory: a base family is admissible ONLY as bound by `transport` to the GIVEN dependent family, every stage (package, energy class, limit passage, pin) is a field over that same family, and the pin is phrased against `galSeq₁` itself — an end-to-end chain over an unlinked fresh/canonical family cannot instantiate the artifact. ADDITIONALLY (pass-3 G-2): the fail-closed scratch-pin checker (§10.5) must be committed (`scripts/`, lean-coder) and green before P3/P4 dispatch | `ModeCompactness, ModeTail, SolutionInterfaces, AubinLionsAssembly, ViscousLimit, TraceEnergy, LimitPassage, GalerkinODECapstone` | opus | opus (bodies are mechanical re-threading) | any statement fails to typecheck as designed, OR >2 proof bodies need non-mechanical re-proving, OR the release capstone's statement would change, OR the F-A exit gate cannot be reached without a statement change (e.g. limit passage demands index transport the design did not anticipate) |
+| **P1** | `[#195-A] Generic global contract layer: IsLerayHopfOn + GlobalLerayHopfSolution + horizon restriction` | §4.1–4.3 verbatim; `weakFormNS_mono` + `congr_Icc` + `mono` proofs — **all already compiled sorry-free in `LerayHopf/Scratch/GlobalContract.lean` (§10); P1 = move out of `Scratch195` + review** (the generic/torus import-cone split is already proven compiled by the Scratch pair, §10.1 pass-2 note — the generic file moves as-is; the torus capstone `Prop` waits for P4's file). Also (finding 5 + pass-2 F-D): preflight/CI additions, lean-coder-owned — scratch (or successor) build-cone coverage AND automated `#print axioms` pin enforcement (fail on `sorryAx`/project axioms) | new `LerayHopf/Galerkin/GlobalContract.lean` | opus | opus | `weakFormNS_mono` not closable via the indicator-truncation route after 2 attempts (do NOT add integrability hypotheses — that is a statement change ⇒ architect); risk retired by the compiled spike |
+| **P2** | `[#195-B] κ-generalize the torus compactness chain (mode map through AubinLionsPackage → limit passage)` | thread `(κ, hκ)` per §3 through the κ-gaining declarations of §3's 15/6/1 partition (#201 audit); strengthen `torus_galerkin_limit_passage_of_energyClass` to re-export `(ρ, StrictMono ρ, everywhere weak-convergence pin)` (its proof already holds them — pass-through from `exists_weak_representative`); rewire fixed-horizon consumers with `κ := id`. **Exit gate (pass-2 F-A, hardened at pass-3 G-1 into a typed artifact):** P2 is complete — and P3/P4 may be dispatched — only when a production theorem is compiled instantiating the shape of `LerayHopf.Scratch195.P2ExitWitness` (`LerayHopf/Scratch/P2ExitContract.lean`): `∀ F ν hν T hT u₀ φ₁ (hφ₁ : StrictMono φ₁) galSeq₁, Nonempty (P2ExitWitness F ν T u₀ φ₁ galSeq₁)` — production names may differ, the FIELDS may not lose content. The `transport : ∀ k, base (φ₁ k) = galSeq₁ k` field is mandatory: a base family is admissible ONLY as bound by `transport` to the GIVEN dependent family, every stage (package, energy class, limit passage, pin) is a field over that same family, and the pin is phrased against `galSeq₁` itself — an end-to-end chain over an unlinked fresh/canonical family cannot instantiate the artifact. ADDITIONALLY (pass-3 G-2): the fail-closed scratch-pin checker (§10.5) must be committed (`scripts/`, lean-coder) and green before P3/P4 dispatch. **[Exit gate SATISFIED 2026-07-28:** P2 merged as PR #207 → `dev/v0.2.0` @ `ba135aae`; production instantiation `LerayHopf.torus_kappaChain_exit` (`LerayHopf/Torus/KappaChainExit.lean`) compiled, guarded by live pin 10 in `scripts/check-axioms-live.sh` — `'LerayHopf.torus_kappaChain_exit' depends on axioms: [propext, Classical.choice, Quot.sound]` — and the committed `scripts/check-scratch-pins.sh` green at 14/14. P3/P4 dispatch unblocked; details in the §13 P2 gate note.**]** | `ModeCompactness, ModeTail, SolutionInterfaces, AubinLionsAssembly, ViscousLimit, TraceEnergy, LimitPassage, GalerkinODECapstone` | opus | opus (bodies are mechanical re-threading) | any statement fails to typecheck as designed, OR >2 proof bodies need non-mechanical re-proving, OR the release capstone's statement would change, OR the F-A exit gate cannot be reached without a statement change (e.g. limit passage demands index transport the design did not anticipate) |
 | **P3** | `[#195-C] Diagonal machinery: abstract diagonal lemma + stage recursion + diagonal weak limit W` | promote spike 1 to production (new PDE-independent `LerayHopf/Bochner/DiagonalExtraction.lean`, names/statements as in §7 minus scratch prefix); stage recursion (indexed `StageData m` structure + structural recursion, §2 Step 1) and the packaged theorem `exists_diagonal_weakly_convergent_galSeq : ∃ δ, StrictMono δ ∧ ∃ W, ∀ m : ℕ, ∀ t ∈ Icc (0:ℝ) (m+1), ∀ z : L2Sigma, Tendsto (fun k => ⟪(galSeq (δ k)).u t, z⟫) atTop (𝓝 ⟪W t, z⟫)` | above + new `LerayHopf/Torus/DiagonalGalerkin.lean` | opus | **fable** (dependent recursion + coherence) | stage recursion not expressible as designed, or stage-limit coherence fails from `z : L2Sigma` tests alone |
 | **P4** | `[#195-D] Torus global capstone: exists_global_lerayHopf_torus3` | per-horizon runs over `κ := δ`, Step-4 coherence lemma, `congr_Icc`/`mono` assembly, §4.4 capstones, docs (`claims-and-scope.md`, `architecture.md`) | new `LerayHopf/Torus/GlobalCapstone.lean` + docs | opus | **fable** | pin insufficient for some conjunct's transfer (must NOT be patched by weakening — architect) |
 | **P5** | `[#195-E] ℝ³-lane reuse design addendum (assessment only)` | update §8 against post-P4 reality; open/scope R3 sub-issues | docs only | — (architect/planner) | — | n/a |
@@ -408,7 +415,8 @@ by the `LerayHopf` root; re-verification commands and axiom-pin expectations in 
 
 - **Reused as-is (no per-lane work):** the abstract diagonal machinery (P3's
   `DiagonalExtraction`, PDE-independent) and the entire generic contract layer (P1:
-  `IsLerayHopfOn`, `WeakFormNS.mono`, `congr_Icc`, `mono`, `GlobalLerayHopfSolution`) — all
+  `IsLerayHopfOn`, `weakFormNS_mono` (`WeakFormNS.mono` after the P4 rename, §4.2),
+  `congr_Icc`, `mono`, `GlobalLerayHopfSolution`) — all
   stated over `Galerkin.Domain`/`DissipativeEvolution`, both lanes instantiate.
 - **Same design, re-threaded per file (P2-analogue):** the R³ compactness chain has the same
   "base `galSeq` + per-datum/cutoff leaves" architecture; `GalerkinSolutionData_R3` is the
@@ -802,7 +810,8 @@ reasonable; both remaining findings harden the P2 exit gate. Disposition:
 
 **Verdict line: CONDITIONAL-GO (unchanged).** P1/P2 dispatch-ready; P3/P4 blocked
 until (i) a production instantiation of the `P2ExitWitness` shape is compiled and
-(ii) the committed scratch-pin checker is merged and green.
+(ii) the committed scratch-pin checker is merged and green. [Gate satisfied
+2026-07-28 — both conditions met; see the §13 P2 gate note.]
 
 ---
 
@@ -849,7 +858,8 @@ review") and left exactly one finding, on the evidence checker. Disposition:
 **Verdict line: CONDITIONAL-GO (unchanged).** P1/P2 dispatch-ready; P3/P4 blocked
 until (i) a production instantiation of the `P2ExitWitness` shape is compiled and
 (ii) the committed scratch-pin checker — with the pass-4 exact-pin-set semantics —
-is merged and green.
+is merged and green. [Gate satisfied 2026-07-28 — both conditions met; see the P2
+gate note below.]
 
 **P1 (#200) retarget note (2026-07-28).** With GlobalContract promoted to
 `LerayHopf/Galerkin/GlobalContract.lean` (release cone), the committed scratch-pin
@@ -860,3 +870,16 @@ declarations are covered by release-cone membership plus 5 interim live pins in
 `scripts/check-axioms-live.sh`. Exact-set semantics are unchanged from pass-4; only the
 target/pin enumeration shrank. See the architect ruling on issue #200
 (`gh issue view 200 --comments`).
+
+**P2 (#201) exit gate SATISFIED (2026-07-28).** Both P3/P4 dispatch conditions are
+met: (i) the production instantiation of the `P2ExitWitness` shape is compiled —
+`LerayHopf.torus_kappaChain_exit` (`LerayHopf/Torus/KappaChainExit.lean`), merged as
+PR #207 → `dev/v0.2.0` @ `ba135aae`, guarded by live pin 10 in
+`scripts/check-axioms-live.sh` (`'LerayHopf.torus_kappaChain_exit' depends on axioms:
+[propext, Classical.choice, Quot.sound]` — kernel trio only, which covers the
+promoted `extendReindexedFamily`/`extendReindexedFamily_apply` transitively); (ii)
+the committed `scripts/check-scratch-pins.sh` (pass-4 exact-pin-set semantics, merged
+as PR #206) is green at 14/14 on the post-P2 tree. **P3 (#202) and P4 (#203) are
+dispatch-unblocked.** `LerayHopf/Scratch/P2ExitContract.lean` is retained unchanged
+as frozen gate evidence; its production twin is `KappaChainExit.lean`, and the two
+are NOT to be kept in sync (cross-reference in the scratch file header).
