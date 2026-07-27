@@ -1,4 +1,6 @@
 -- SCRATCH — issue #195 feasibility spike (lean-architect). NOT production code.
+-- FROZEN gate evidence (P2 exit gate satisfied 2026-07-28, PR #207): the production
+-- twin lives at LerayHopf/Torus/KappaChainExit.lean — do NOT sync edits between the two.
 -- Codex pass-3 finding G-1: the P2 exit gate must be a TYPED acceptance artifact, not
 -- prose with a base-family loophole.  `P2ExitWitness` below is that artifact: the §5 P2
 -- exit gate now reads "a compiled production theorem instantiating this structure's
