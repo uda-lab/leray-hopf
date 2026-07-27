@@ -708,7 +708,7 @@ for d in "${pinned[@]}"; do
   done
 done
 
-# Exactness (both directions): total #print axioms outputs must be exactly 14 —
+# Exactness (both directions): total #print axioms outputs must be exactly 10 —
 # a pin added to the sources without updating this checker fails the gate too.
 total="$(printf '%s\n' "$joined" \
   | grep -cE "depends on axioms:|does not depend on any axioms" || true)"
