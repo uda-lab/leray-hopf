@@ -172,6 +172,7 @@ import LerayHopf.Bochner.TimeConvolution
 import LerayHopf.Bochner.StepFunctionCompactness  -- issue #46 PR-1: generic step-curve Lp compactness (File A)
 import LerayHopf.Bochner.ScalarEquicontinuity     -- issue #23: domain-neutral scalar equicontinuity engine
 import LerayHopf.Bochner.WeakLimitToolkit         -- issue #4 PR-5: generic Hilbert weak-limit toolkit (hoisted from Torus/TraceEnergy)
+import LerayHopf.Bochner.DiagonalExtraction       -- issue #202 P3: abstract diagonal-subsequence machinery (PDE-independent)
 import LerayHopf.Torus.ModeCompactness             -- issue #23: mode-wise extraction (equi-Lipschitz + engine assembly)
 import LerayHopf.Torus.ModeTail                    -- issue #23: mode-wise tail bounds
 import LerayHopf.Torus.AubinLionsAssembly          -- issue #23: aubin_lions replacement assembly
