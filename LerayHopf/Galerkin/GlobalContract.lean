@@ -223,7 +223,7 @@ theorem GlobalLerayHopfSolution.nonempty_solution (g : GlobalLerayHopfSolution D
 A `T'`-test is a `T`-test (`Ioo 0 T' ⊆ Ioo 0 T`), and the integrand carries a factor
 `ψ t` or `deriv ψ t` in every term, so it vanishes identically on `(T', T]`;
 `setIntegral_Ioc_eq_of_tail_zero` then transports the `T`-identity down to `T'`. -/
-theorem weakFormNS_mono {E : DissipativeEvolution} {u : Time → E.H}
+theorem WeakFormNS.mono {E : DissipativeEvolution} {u : Time → E.H}
     (hT' : 0 < T') (hle : T' ≤ T) (h : WeakFormNS ν T E u) : WeakFormNS ν T' E u := by
   letI := E.instNACG
   letI := E.instIPS
@@ -245,7 +245,7 @@ theorem weakFormNS_mono {E : DissipativeEvolution} {u : Time → E.H}
 /-- **`WeakFormNS` depends on the curve only through `[0, T]` values**: the test
 integrand is compared pointwise on `[[0, T]]` (`intervalIntegral.integral_congr`), so
 curves agreeing on `Icc 0 T` satisfy the same weak identity. -/
-theorem weakFormNS_congr_Icc {E : DissipativeEvolution} {u v : Time → E.H}
+theorem WeakFormNS.congr_Icc {E : DissipativeEvolution} {u v : Time → E.H}
     (hT : 0 < T) (huv : ∀ t ∈ Set.Icc (0 : ℝ) T, u t = v t)
     (h : WeakFormNS ν T E u) : WeakFormNS ν T E v := by
   letI := E.instNACG
@@ -267,12 +267,12 @@ theorem weakFormNS_congr_Icc {E : DissipativeEvolution} {u v : Time → E.H}
 /-- **Horizon restriction for the full contract** (`IsLerayHopfOn.mono`): all five
 conjuncts restrict from `[0, T]` to `[0, T'] ⊆ [0, T]`.  No integrability is ADDED
 anywhere (codex focus question (iii)): the weak form restricts by
-`weakFormNS_mono`, the dissipation integrability RESTRICTS (`mono_set`), it is never
+`WeakFormNS.mono`, the dissipation integrability RESTRICTS (`mono_set`), it is never
 assumed afresh. -/
 theorem IsLerayHopfOn.mono {u : Time → ↥D.σ} (hT' : 0 < T') (hle : T' ≤ T)
     (h : IsLerayHopfOn D C ν T u₀ u) : IsLerayHopfOn D C ν T' u₀ u := by
   obtain ⟨hweak, henergy, htrace, ⟨hreg, hdiss⟩, haesm⟩ := h
-  refine ⟨weakFormNS_mono hT' hle hweak,
+  refine ⟨WeakFormNS.mono hT' hle hweak,
     fun t ht0 htT' => henergy t ht0 (htT'.trans hle), htrace, ⟨?_, ?_⟩, ?_⟩
   · exact ae_restrict_of_ae_restrict_of_subset (Set.Icc_subset_Icc le_rfl hle) hreg
   · refine hdiss.mono_set (Set.uIcc_subset_uIcc Set.left_mem_uIcc ?_)
@@ -294,7 +294,7 @@ theorem IsLerayHopfOn.congr_Icc {u v : Time → ↥D.σ} (hT : 0 < T)
   have hae : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), u t = v t := by
     filter_upwards [ae_restrict_mem measurableSet_Icc] with t ht
     exact huv t ht
-  refine ⟨weakFormNS_congr_Icc hT huv hweak, ?_, ?_, ⟨?_, ?_⟩, ?_⟩
+  refine ⟨WeakFormNS.congr_Icc hT huv hweak, ?_, ?_, ⟨?_, ?_⟩, ?_⟩
   · -- energy inequality: rewrite `v` back to `u` at `t` and under the integral
     intro t ht0 htT
     have hcurve : ((v t : D.X)) = ((u t : D.X)) :=

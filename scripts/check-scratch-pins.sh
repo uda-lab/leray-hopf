@@ -2,17 +2,21 @@
 # Fail-closed scratch evidence gate (issue #195; §10.5 of
 # docs/scratch/global-diagonal-campaign.md, pass-3 G-2, hardened at pass-4 H-1,
 # retargeted for the POST-P1 tree by #200; retargeted again for the POST-P3 tree by
-# #202): forced-fresh compilation + EXACT 10-declaration pin-set check.  Non-zero exit
+# #202; retargeted again for the POST-P4 tree by #203): forced-fresh compilation +
+# EXACT 9-declaration pin-set check.  Non-zero exit
 # on build failure, stale/replayed
 # target, missing or malformed pin, any axiom token outside the kernel trio, or any
 # pin output beyond the enumerated set.
 #
-# The three remaining scratch targets are deliberately OUTSIDE the release cone (not
+# The two remaining scratch targets are deliberately OUTSIDE the release cone (not
 # imported by LerayHopf.lean), so agent-preflight.sh's default build does not rebuild
 # them.  This checker rebuilds them from scratch and asserts their axiom hygiene.  The
 # former GlobalContract (12 pins) was promoted into the release cone by #200 and is now
 # covered there (plus the interim live pins in check-axioms-live.sh); it is no longer a
-# scratch target here.
+# scratch target here.  GlobalContractTorus (the P4 feasibility spike) was likewise
+# promoted into the release cone by #203 (LerayHopf.Torus.GlobalCapstone) and DELETED
+# as a scratch module; its single pin (globalTorusCapstone_implies_finite) is now a
+# live pin in check-axioms-live.sh (pin 16).
 #
 # WIRING: invoked UNWRAPPED from agent-preflight.sh and the lean.yml full-build job.
 # It self-locks via `exec 9>/tmp/lean-build.lock; flock 9`; wrapping it in an outer
@@ -26,7 +30,7 @@ export PATH="$HOME/.elan/bin:$PATH"
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 
-targets=(KappaReindex GlobalContractTorus P2ExitContract)
+targets=(KappaReindex P2ExitContract)
 
 # Take the container-wide build lock BEFORE the artifact deletion below and hold it
 # through the build (PR #205 review: deleting outside the lock races a concurrent
@@ -43,19 +47,18 @@ else
   echo "WARNING: flock not found; running scratch-pin check without serialization lock." >&2
 fi
 
-# Freshness: delete the three modules' build artifacts (.olean/.ilean/.hash/.trace).
+# Freshness: delete the two modules' build artifacts (.olean/.ilean/.hash/.trace).
 # Lake cannot serve a stale artifact or replay a cached log for a module whose
 # artifacts are missing — it must genuinely re-elaborate it, and only genuine
 # re-elaboration prints "Built <module>" (a cache hit prints "Replayed <module>")
 # and re-runs the #print axioms commands whose output is parsed below.  Upstream
-# dependencies stay cached, so the cost is exactly the three scratch modules.
+# dependencies stay cached, so the cost is exactly the two scratch modules.
 for t in "${targets[@]}"; do
   rm -f ".lake/build/lib/lean/LerayHopf/Scratch/$t".*
 done
 
 lake build \
   LerayHopf.Scratch.KappaReindex \
-  LerayHopf.Scratch.GlobalContractTorus \
   LerayHopf.Scratch.P2ExitContract >"$log" 2>&1 \
   || { echo "BUILD FAILED"; tail -40 "$log"; exit 1; }
 grep -q "Build completed successfully" "$log"
@@ -74,9 +77,9 @@ done
 # fails the gate, never silently dropped.
 joined="$(tr '\n' '@' <"$log" | sed 's/@ / /g' | tr '@' '\n')"
 
-# Exact pin set: the 10 declarations (all of them) that must pin to (a subset of) the
+# Exact pin set: the 9 declarations (all of them) that must pin to (a subset of) the
 # kernel trio [propext, Classical.choice, Quot.sound].
-# KappaReindex (6) + GlobalContractTorus (1) + P2ExitContract (3).
+# KappaReindex (6) + P2ExitContract (3).
 pinned=(
   exists_galerkin_modewise_extraction_kappa
   reindexed_family_second_extraction
@@ -84,7 +87,6 @@ pinned=(
   exists_galerkin_modewise_extraction_of_reindexed
   AubinLionsPackageKappa.effective_strictMono
   AubinLionsPackageKappa.extract_effective_strictMono
-  globalTorusCapstone_implies_finite
   P2ExitWitness.pin_base
   P2ExitWitness.effective_strictMono
   P2ExitWitness.v_aestronglyMeasurable
@@ -115,11 +117,11 @@ for d in "${pinned[@]}"; do
   done
 done
 
-# Exactness (both directions): total #print axioms outputs must be exactly 10 —
+# Exactness (both directions): total #print axioms outputs must be exactly 9 —
 # a pin added to the sources without updating this checker fails the gate too.
 total="$(printf '%s\n' "$joined" \
   | grep -cE "depends on axioms:|does not depend on any axioms" || true)"
-[ "$total" -eq 10 ] || { echo "PIN COUNT MISMATCH: expected 10, observed $total"; fail=1; }
+[ "$total" -eq 9 ] || { echo "PIN COUNT MISMATCH: expected 9, observed $total"; fail=1; }
 
 [ "$fail" -eq 0 ] || exit 1
-echo "SCRATCH PIN CHECK OK (10/10: 10 kernel-trio pins)"
+echo "SCRATCH PIN CHECK OK (9/9: 9 kernel-trio pins)"

@@ -41,6 +41,7 @@ import LerayHopf.Experimental
 import LerayHopf.Galerkin.GlobalContract
 import LerayHopf.Torus.KappaChainExit
 import LerayHopf.Torus.DiagonalGalerkin
+import LerayHopf.Torus.GlobalCapstone
 
 #print axioms LerayHopf.exists_lerayHopf_torus3
 #print axioms LerayHopf.exists_lerayHopf_r3
@@ -65,6 +66,14 @@ import LerayHopf.Torus.DiagonalGalerkin
 -- #202 §7 addition).
 #print axioms LerayHopf.exists_diagonal_weakly_convergent_galSeq
 #print axioms LerayHopf.Bochner.exists_diagonal_extraction
+
+-- P4 (#203) global torus capstone — the campaign finale (issue #195). These four
+-- append to the interim pins above; with the capstone now in the release cone, the
+-- whole P1→P4 assembly is covered by a live-pinned downstream capstone.
+#print axioms LerayHopf.exists_global_lerayHopf_torus3
+#print axioms LerayHopf.exists_globalLerayHopfSolutionFull_torus3
+#print axioms LerayHopf.globalTorusCapstone
+#print axioms LerayHopf.globalTorusCapstone_implies_finite
 
 -- Experimental-module axiom profile (visibility only — see docs/statement-cards/).
 #print axioms LerayHopf.Bochner.w1pTime_continuous_in_H
