@@ -271,8 +271,8 @@ assert_core_clean "localCompactness_R3_of_ballCompact"
 #   introduced here between P1 and P4 would be invisible to the existing pins — `sorry`
 #   is a build *warning*, not an error, and the naming gate does not see axioms. These
 #   five close that window; by transitive closure they cover the whole promoted set
-#   (mono → weakFormNS_mono → setIntegral_Ioc_eq_of_tail_zero; congr_Icc →
-#   weakFormNS_congr_Icc; pins 5–7 cover IsLerayHopfOn / ofIsOn / GlobalLerayHopfSolution
+#   (mono → WeakFormNS.mono → setIntegral_Ioc_eq_of_tail_zero; congr_Icc →
+#   WeakFormNS.congr_Icc; pins 5–7 cover IsLerayHopfOn / ofIsOn / GlobalLerayHopfSolution
 #   / toSolution). The badTail/truncation quartet is deliberately unpinned (illustrative
 #   cross-check layer, consumed by nothing downstream; cone membership suffices). P4's
 #   global-capstone live pin will subsume these and may prune them then.
