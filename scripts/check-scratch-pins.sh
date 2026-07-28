@@ -4,8 +4,10 @@
 # retargeted for the POST-P1 tree by #200; retargeted again for the POST-P3 tree by
 # #202; retargeted again for the POST-P4 tree by #203; EXTENDED append-only at the
 # #212 B0 gate with the two ℝ³-lane spike modules per the codex statement-gate
-# finding 3 — docs/scratch/r3-global-diagonal-campaign.md §11): forced-fresh
-# compilation + EXACT 14-declaration pin-set check.  Non-zero exit
+# finding 3, and again append-only at the #212 B0 pass-3 remediation with the
+# exact-shape gate module KappaShapeGate per codex pass-3 finding 1 —
+# docs/scratch/r3-global-diagonal-campaign.md §11): forced-fresh
+# compilation + EXACT 18-declaration pin-set check.  Non-zero exit
 # on build failure, stale/replayed
 # target, missing or malformed pin, any axiom token outside the kernel trio, or any
 # pin output beyond the enumerated set.
@@ -32,7 +34,7 @@ export PATH="$HOME/.elan/bin:$PATH"
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 
-targets=(KappaReindex P2ExitContract R3StageCoherence R3KappaSeed)
+targets=(KappaReindex P2ExitContract KappaShapeGate R3StageCoherence R3KappaSeed)
 
 # Take the container-wide build lock BEFORE the artifact deletion below and hold it
 # through the build (PR #205 review: deleting outside the lock races a concurrent
@@ -62,6 +64,7 @@ done
 lake build \
   LerayHopf.Scratch.KappaReindex \
   LerayHopf.Scratch.P2ExitContract \
+  LerayHopf.Scratch.KappaShapeGate \
   LerayHopf.Scratch.R3StageCoherence \
   LerayHopf.Scratch.R3KappaSeed >"$log" 2>&1 \
   || { echo "BUILD FAILED"; tail -40 "$log"; exit 1; }
@@ -81,11 +84,12 @@ done
 # fails the gate, never silently dropped.
 joined="$(tr '\n' '@' <"$log" | sed 's/@ / /g' | tr '@' '\n')"
 
-# Exact pin set: the 14 declarations (all of them) that must pin to (a subset of) the
+# Exact pin set: the 18 declarations (all of them) that must pin to (a subset of) the
 # kernel trio [propext, Classical.choice, Quot.sound].  FULLY-QUALIFIED names — the
-# torus (#195) spikes live in LerayHopf.Scratch195, the ℝ³ (#212) spikes in
-# LerayHopf.Scratch212.
-# KappaReindex (6) + P2ExitContract (3) + R3StageCoherence (3) + R3KappaSeed (2).
+# torus (#195) spikes live in LerayHopf.Scratch195, the ℝ³ (#212) spikes and the
+# exact-shape gate probes in LerayHopf.Scratch212.
+# KappaReindex (6) + P2ExitContract (3) + KappaShapeGate (4) + R3StageCoherence (3)
+# + R3KappaSeed (2).
 pinned=(
   LerayHopf.Scratch195.exists_galerkin_modewise_extraction_kappa
   LerayHopf.Scratch195.reindexed_family_second_extraction
@@ -96,6 +100,10 @@ pinned=(
   LerayHopf.Scratch195.P2ExitWitness.pin_base
   LerayHopf.Scratch195.P2ExitWitness.effective_strictMono
   LerayHopf.Scratch195.P2ExitWitness.v_aestronglyMeasurable
+  LerayHopf.Scratch212.packageShape_strong_convergence_effective
+  LerayHopf.Scratch212.packageShape_effective_strictMono
+  LerayHopf.Scratch212.packageShape_effective_le_apply
+  LerayHopf.Scratch212.witnessShape_pin_dependent_family
   LerayHopf.Scratch212.L2Sigma_R3_eq_of_forall_inner
   LerayHopf.Scratch212.r3_representative_diag_coherence
   LerayHopf.Scratch212.r3_representatives_agree_on_overlap
@@ -128,11 +136,11 @@ for d in "${pinned[@]}"; do
   done
 done
 
-# Exactness (both directions): total #print axioms outputs must be exactly 14 —
+# Exactness (both directions): total #print axioms outputs must be exactly 18 —
 # a pin added to the sources without updating this checker fails the gate too.
 total="$(printf '%s\n' "$joined" \
   | grep -cE "depends on axioms:|does not depend on any axioms" || true)"
-[ "$total" -eq 14 ] || { echo "PIN COUNT MISMATCH: expected 14, observed $total"; fail=1; }
+[ "$total" -eq 18 ] || { echo "PIN COUNT MISMATCH: expected 18, observed $total"; fail=1; }
 
 [ "$fail" -eq 0 ] || exit 1
-echo "SCRATCH PIN CHECK OK (14/14: 14 kernel-trio pins)"
+echo "SCRATCH PIN CHECK OK (18/18: 18 kernel-trio pins)"

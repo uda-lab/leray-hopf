@@ -2,9 +2,9 @@
 
 **Author:** lean-architect (fable). **Status:** B0 design gate, 2026-07-28.
 **Verdict (§9): CONDITIONAL-GO** — P1′/P2′ dispatch-ready; P3′/P4′ dispatch blocked on the
-P2′ typed exit gate (§6, five clauses), mirroring the #195 torus-campaign discipline whose
-condition was met on schedule. Codex adversarial statement gate (xhigh) pass-1 and pass-2
-findings dispositioned in §11.
+P2′ typed exit gate (§6, six clauses), mirroring the #195 torus-campaign discipline whose
+condition was met on schedule. Codex adversarial statement gate (xhigh) pass-1 through
+pass-3 findings dispositioned in §11.
 
 This campaign document is NEW and separate from the frozen torus campaign doc
 (`docs/scratch/global-diagonal-campaign.md`, #195 — COMPLETE, not edited by this lane).
@@ -334,34 +334,83 @@ torus precedent:
      `galSeq₁ : ∀ k, GalerkinSolutionData_R3 𝔊 F ν u₀ (φ₁ k)` with the mandatory
      `transport` field, and its `pin` is stated against `galSeq₁` itself — the torus
      `P2ExitWitness` invariant verbatim.
-- **Coverage of sequence-free consumers (pass-2 finding 1).** `weak_eq`,
-  `energy_ineq`, `initial_trace`, and the energy-class conjuncts mention only the
-  limit curve, so their statements cannot carry the index — the question is whether
-  a HELPER behind them can go stale. It cannot introduce a false premise, by the
-  following exhaustive taxonomy of what any helper in the chain can consume:
+- **Mechanical assertion of the primary invariant — the exact-shape gate (pass-3
+  finding 1).** The invariant above is NOT left as prose: it has a committed,
+  independently executable check. `LerayHopf/Scratch/KappaShapeGate.lean` (compiled
+  and pin-gated AT B0, inside `check-scratch-pins.sh`) re-states each κ-critical
+  declaration surface verbatim — with the mode map `κ` a FREE variable — and proves
+  it by the bare field projection (no `by`, no rewriting). Elaboration succeeds only
+  if the projected field's declared type literally carries `galSeq (κ (φ n))`: for
+  free `κ`, a stale field `galSeq (p.φ n)` does not unify with the probe's
+  `galSeq (κ (p.φ n))`, so a "dummy κ" package (parameter present but unapplied) or
+  any bare-index convergence surface FAILS the probe at compile time. B0 probes
+  (against the compiled scratch model): (a) convergence-field effective typing,
+  (b) effective-map strictness, (c) the effective `le_apply` bound (the category-(iii)
+  coupling below), (d) the witness pin phrased against the dependent family. The P2′
+  production twin `LerayHopf/Scratch/R3ShapeGate.lean` — statements frozen verbatim
+  in §6 clause 6 — applies the same probes to `AubinLionsPackage_R3` (BOTH
+  convergence fields) and `R3KappaChainExitWitness`, and is a mandatory exit-gate
+  clause: the "not negotiable" requirement is thereby checker-enforced, not prose.
+- **Coverage of sequence-free consumers (pass-2 finding 1, taxonomy CORRECTED at
+  pass-3 finding 2).** `weak_eq`, `energy_ineq`, `initial_trace`, and the
+  energy-class conjuncts mention only the limit curve, so their statements cannot
+  carry the index — the question is whether a HELPER behind them can go stale. The
+  pass-2 version claimed a two-category taxonomy was exhaustive; codex pass-3
+  exhibited a third category it omitted. The corrected taxonomy of what any helper
+  in the chain can consume:
   (i) **limit facts** — available exclusively as package fields / sealed-layer
   conclusions / the pin conjunct, all type-guarded at the effective index by the
   primary protection above (a stale limit fact is underivable, not just unproven);
   (ii) **per-datum facts** (`galerkin_norm_le_u0`, curve continuity, ODE identities)
   — index-GENERIC true statements about genuine Galerkin data: applying one at a
-  stale index yields a true-but-useless premise, never a false one. Hence a
-  sequence-free conclusion proved from (i)+(ii) is sound regardless of helper
-  internals; the enforcement is in the TYPES of (i), not in prose.
+  stale index yields a true-but-useless premise, never a false one;
+  (iii) **extraction/map-dependent facts** (the pass-3 category): facts about the
+  extraction map or the MAP/DATA PAIRING — the `hlevel`-style growth bound
+  (`∀ n, n ≤ alPkg.φ n`, used by `GoodRepresentative` to select the per-test
+  Lipschitz/cutoff leaf at the datum index), strictness/cofinality of the
+  extraction, `transport` equalities, package-limit measurability and continuity
+  inputs consumed by the lsc path. These are neither limit facts nor single-datum
+  truths: a stale pairing — a bound derived for the bare `φ` while the data the
+  chain consumes runs at `κ ∘ φ` — stays WELL-TYPED and silently selects the wrong
+  index, so the (i)+(ii) soundness argument does not cover it. **Coupling rule
+  (mandatory, P2′):** every category-(iii) fact is DERIVED from the package's
+  effective-map surface — `AubinLionsPackage_R3.effective_strictMono`, its
+  `tendsto_atTop`/`le_apply` corollaries at the COMPOSED map — never from the bare
+  `φ_mono` field or a free-floating `hφ`; e.g. `GoodRepresentative`'s `hlevel`
+  becomes `∀ n, n ≤ κ (alPkg.φ n)` (shape-gate probe (c) compiles exactly this
+  derivation at B0). Enforcement: the clause-5 audit patterns flag bare-`φ`
+  category-(iii) consumption (below), and the clause-3 smoke/production test
+  exercises a category-(iii) path at `κ := Nat.succ`, not only total-family
+  applications at `alPkg.φ`. Sequence-free conclusions proved from (i)+(ii)+coupled
+  (iii) are sound regardless of helper internals; the enforcement is in the TYPES
+  of (i), the genericity of (ii), and the checked derivation discipline of (iii).
 - **Defense-in-depth (kept, demoted from primary to belt-and-suspenders):**
-  1. **Smoke gate (§6 clause 3).** A production smoke theorem at a genuinely
-     nontrivial seed (`κ := Nat.succ` — StrictMono, provably ≠ `id`) threads the FULL
-     path package construction → every limit-passage consumer → pin re-export →
-     `r3_kappaChain_exit`, then CONSUMES the witness via `transport` down to a pin on
-     `galSeq (w.alPkg.φ k + 1)` — catching at P2′ any statement-level staleness that
-     slipped past the types (e.g. in freshly written intermediate signatures).
-  2. **Automated stale-index audit (§6 clause 5).** `scripts/
-     check-kappa-effective-index.sh`, shipped IN THE P2′ PR: fails closed on any
-     application of a total family at a bare extraction index (`galSeq (alPkg.φ`,
-     `base (alPkg.φ`, `fill (alPkg.φ` and spacing variants) in the κ-generic files;
-     legitimate fixed-horizon `κ := id` sites carry a same-line
+  1. **Smoke gate (§6 clause 3, WIDENED at pass-3 finding 2).** A production smoke
+     theorem at a genuinely nontrivial seed (`κ := Nat.succ` — StrictMono, provably
+     ≠ `id`) threads the FULL path package construction → every limit-passage
+     consumer → pin re-export → `r3_kappaChain_exit`, then CONSUMES the witness via
+     `transport` down to a pin on `galSeq (w.alPkg.φ k + 1)` — catching at P2′ any
+     statement-level staleness that slipped past the types. Widening: the smoke
+     file must ADDITIONALLY exercise a category-(iii) path at the nonidentity seed —
+     apply the production selection helper (the `GoodRepresentative`-side consumer
+     of `hlevel`) with the effective bound `∀ n, n ≤ w.alPkg.φ n + 1` derived from
+     `effective_strictMono`, so the extraction-dependent pairing itself is exercised
+     at `κ ≠ id`, not only total-family applications at `alPkg.φ`.
+  2. **Automated stale-index audit (§6 clause 5, patterns EXTENDED at pass-3
+     finding 2).** `scripts/check-kappa-effective-index.sh`, shipped IN THE P2′ PR:
+     fails closed on (a) any application of a total family at a bare extraction
+     index (`galSeq (alPkg.φ`, `base (alPkg.φ`, `fill (alPkg.φ` and spacing
+     variants) in the κ-generic files, AND (b) bare-`φ` category-(iii) consumption
+     sites in those files: `alPkg.φ_mono` used outside the effective-map composition
+     lemmas, and `≤ alPkg.φ` / `.φ_mono.le_apply`-shaped bounds not phrased at the
+     composed index. Legitimate fixed-horizon `κ := id` sites (and the composition
+     lemmas' own defining uses of `φ_mono`) carry a same-line
      `-- KAPPA_ID_SITE: <reason>` allowlist marker, mirroring the ALLOW_NAME
      mechanism. It is specified now but written in P2′ because its file/pattern
-     surface IS P2′'s diff — there is no κ-threaded code to audit before then.
+     surface IS P2′'s diff — a deferral that is admissible ONLY because the
+     exact-shape gate above exists and runs from B0 (pass-3 overall note); the
+     audit is residual-hygiene on top of a mechanically asserted invariant, not
+     the assertion itself.
 - Why not full κ-compilation at B0 (unchanged): threading the 20-declaration audit
   surface IS phase P2′ (8 files); B0's spike (b) retires the structural risk, the
   type-level invariant + clauses above gate the semantic risk fail-closed before any
@@ -402,8 +451,8 @@ modularity-reviewer, broker codex PR review, §8 evidence; append-only live axio
 
 | Phase | Sub-issue title (`Parent: #212`) | Content | Files | Coder | Prover | Kill criterion (→ back to architect) |
 |---|---|---|---|---|---|---|
-| **P1′** | `[#212-A] ℝ³ global contract instantiation: frozen capstone target + consistency witness` | §2.1 `GlobalR3CapstoneStatement` + `GlobalLerayHopfSolutionFull_R3` + `globalR3Capstone_implies_finite` (verbatim). (The `check-scratch-pins.sh` extension originally slated here was pulled forward into the B0 commit itself — codex finding 3, §11: 4 targets / 14 pins, exact-set semantics unchanged, checker green at B0) | new `LerayHopf/R3/GlobalCapstone.lean` (statement layer only) | opus | opus (one 3-line proof) | `implies_finite` not closable via `ofIsOn` (would mean the contract equivalence broke — architect) |
-| **P2′** | `[#212-B] κ-generalize the ℝ³ compactness chain + pin re-export + typed exit witness` | §1 κ-audit surface: 20 declarations + `AubinLionsPackage_R3` parameter + `build_galerkin_package_R3_of_galSeq` rewired `κ := id`; strengthen `galerkin_limit_passage_R3` conclusion with the §4 pin conjunct; `AubinLionsPackage_R3.effective_strictMono` (§4.1 clause 1); NEW `extendReindexedFamily_R3` (takes an explicit filler family — ℝ³'s total ODE layer is scheme-specific, so the filler is a parameter, not hardwired; deviation from torus noted §6), `R3KappaChainExitWitness`, `r3_kappaChain_exit`, the §4.1 smoke theorem at `κ := Nat.succ`, and the §4.1 stale-index audit script `check-kappa-effective-index.sh`. **Exit gate (§6, FIVE clauses): typed artifact + live pin, exact-hpin coupling, smoke theorem, scratch-pin checker green, stale-index audit green.** P3′/P4′ dispatch blocked until all five green | `ArzelaAscoliTime, SteklovAverages, AubinLionsLimitPassage, SolutionInterfaces, EnergyWeakLsc, GoodRepresentative, LimitPassage, AubinLionsAssembly` + new `LerayHopf/R3/KappaChainExit.lean` | opus | opus (mechanical re-threading; spike (b) covers the only novel layer) | any statement fails to typecheck as designed; >2 proof bodies need non-mechanical re-proving; the release capstone's statement would change; the exit witness cannot be reached without a statement change |
+| **P1′** | `[#212-A] ℝ³ global contract instantiation: frozen capstone target + consistency witness` | §2.1 `GlobalR3CapstoneStatement` + `GlobalLerayHopfSolutionFull_R3` + `globalR3Capstone_implies_finite` (verbatim). (The `check-scratch-pins.sh` extension originally slated here was pulled forward into the B0 commit itself — codex finding 3, §11: 4 targets / 14 pins; extended again at pass-3 with the exact-shape gate module to 5 targets / 18 pins — exact-set semantics unchanged, checker green at B0) | new `LerayHopf/R3/GlobalCapstone.lean` (statement layer only) | opus | opus (one 3-line proof) | `implies_finite` not closable via `ofIsOn` (would mean the contract equivalence broke — architect) |
+| **P2′** | `[#212-B] κ-generalize the ℝ³ compactness chain + pin re-export + typed exit witness` | §1 κ-audit surface: 20 declarations + `AubinLionsPackage_R3` parameter + `build_galerkin_package_R3_of_galSeq` rewired `κ := id`; strengthen `galerkin_limit_passage_R3` conclusion with the §4 pin conjunct; `AubinLionsPackage_R3.effective_strictMono` (§4.1 clause 1); NEW `extendReindexedFamily_R3` (takes an explicit filler family — ℝ³'s total ODE layer is scheme-specific, so the filler is a parameter, not hardwired; deviation from torus noted §6), `R3KappaChainExitWitness`, `r3_kappaChain_exit`, the §4.1 smoke theorem at `κ := Nat.succ` (widened: category-(iii) exercise included), the §4.1 stale-index audit script `check-kappa-effective-index.sh`, and the §6 clause-6 shape-gate twin `LerayHopf/Scratch/R3ShapeGate.lean` (probe statements frozen in §6; appended to `check-scratch-pins.sh`). **Exit gate (§6, SIX clauses): typed artifact + live pin, exact-hpin coupling, widened smoke theorem, scratch-pin checker green, stale-index audit green, production shape gate green.** P3′/P4′ dispatch blocked until all six green | `ArzelaAscoliTime, SteklovAverages, AubinLionsLimitPassage, SolutionInterfaces, EnergyWeakLsc, GoodRepresentative, LimitPassage, AubinLionsAssembly` + new `LerayHopf/R3/KappaChainExit.lean` | opus | opus (mechanical re-threading; spike (b) covers the only novel layer) | any statement fails to typecheck as designed; >2 proof bodies need non-mechanical re-proving; the release capstone's statement would change; the exit witness cannot be reached without a statement change |
 | **P3′** | `[#212-C] ℝ³ stage recursion + diagonal weak limit W` | stage handle `exists_weakLimitCurve_R3_kappa` (§2.2 Step 1, composition of two P2′ outputs); `StageData_R3`, `stageData_R3`, `stageData_R3_comp_eq_nestedComp`, `stageData_R3_diag_tendsto`, `stageData_R3_U_coherent` (promotes spike (a)'s separation lemma to production), `diagWeakLimit_R3`, `exists_diagonal_weakly_convergent_galSeq_R3` (invariant over `z : L2VF_R3` tests, §2.2 Step 2). Reuses `Bochner.DiagonalExtraction` VERBATIM (zero new order theory) | new `LerayHopf/R3/DiagonalGalerkin.lean` | opus | opus — template mirror of merged `Torus/DiagonalGalerkin.lean`; **flagged D4 escalation point**: the `Nat.rec` stage carrier (torus needed fable when the pattern was novel) | stage recursion not expressible as designed; stage-limit coherence fails from `L2Sigma_R3` tests; the stage handle needs data P2′ does not export |
 | **P4′** | `[#212-D] ℝ³ global capstone: exists_global_lerayHopf_r3` | per-horizon exit witnesses at `κ := δ` over `fun k => galSeq (δ k)` (filler `galSeq`, `htest` from `nonempty_schwartzGalerkinBasis_H1`); Step-4 coherence via the compiled spike-(a) lemma shape; `congr_Icc`/`mono` assembly; §2.1 capstones + fold `globalR3Capstone`; live pins (append-only); docs (`claims-and-scope.md`, `architecture.md`, `STATUS.md`) | `LerayHopf/R3/GlobalCapstone.lean` (fills the P1′ file) + docs | opus | opus — node-for-node mirror of merged `Torus/GlobalCapstone.lean` with spike (a) compiled; **flagged D4 escalation point**: Node C coherence assembly | the pin is insufficient for some conjunct's transfer (must NOT be patched by weakening — architect); defeq mismatch `r3Evolution` vs `(r3Domain 𝔊).evolution F.core` that `rfl`-lemmas cannot bridge |
 
@@ -464,7 +513,7 @@ fixed family), so no generality is lost and the `transport` field still makes an
 implementation unrepresentable. `hν` is consumed by the κ-chain builders; `hT` by the
 package; `htest` only by the `WeakFormNS` stage.
 
-**Exit-gate condition (P3′/P4′ dispatch blocker) — five clauses, all mandatory:**
+**Exit-gate condition (P3′/P4′ dispatch blocker) — six clauses, all mandatory:**
 
 1. a production `r3_kappaChain_exit` compiled sorry-free, guarded by a live pin in
    `scripts/check-axioms-live.sh` (append-only);
@@ -475,19 +524,78 @@ package; `htest` only by the `WeakFormNS` stage.
    witness output, not by visual inspection;
 3. the §4.1 smoke theorem at `κ := Nat.succ` compiled sorry-free: full-path threading
    plus witness consumption via `transport`, concluding the base-family pin at the
-   composed effective index `w.alPkg.φ k + 1`;
-4. `scripts/check-scratch-pins.sh` green at the B0-extended enumeration (14 pins,
-   committed with this gate — §11 finding 3);
+   composed effective index `w.alPkg.φ k + 1`, AND (pass-3 widening) the
+   category-(iii) exercise — the production selection helper applied at the
+   nonidentity seed with the effective bound derived from `effective_strictMono`;
+4. `scripts/check-scratch-pins.sh` green at the B0-extended enumeration (18 pins:
+   14 from §11 finding 3 + the 4 shape-gate probes of pass-3 finding 1, both
+   committed at B0);
 5. the §4.1 automated stale-index audit `scripts/check-kappa-effective-index.sh`
    committed in the P2′ PR and green: fails closed on total-family applications at
-   bare extraction indices in the κ-generic files, `-- KAPPA_ID_SITE:` same-line
-   allowlist for legitimate fixed-horizon `κ := id` sites.
+   bare extraction indices AND on bare-`φ` category-(iii) consumption sites
+   (`alPkg.φ_mono`, `≤ alPkg.φ`-shaped bounds) in the κ-generic files,
+   `-- KAPPA_ID_SITE:` same-line allowlist for legitimate fixed-horizon `κ := id`
+   sites;
+6. **the exact-shape gate, production twin (pass-3 finding 1):**
+   `LerayHopf/Scratch/R3ShapeGate.lean` compiled and appended (append-only) to
+   `check-scratch-pins.sh`, with the probe statements below VERBATIM (names may
+   follow the file's convention; the stated types may not change, and every proof
+   term must remain the bare projection / lemma application — no `by`, no
+   rewriting). The mechanism (B0-demonstrated by the committed, green
+   `LerayHopf/Scratch/KappaShapeGate.lean`): `κ` is free in each probe, so the probe
+   elaborates ONLY if the production declaration literally carries the effective
+   index — a dummy-κ or bare-index declaration fails compilation.
+
+   ```lean
+   -- One probe PER convergence field of AubinLionsPackage_R3 (both fields), the
+   -- statement transcribed from the P2′ declaration with datum index galSeq (κ (p.φ n)):
+   theorem r3PackageShape_strong_convergence_effective
+       (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν T : ℝ) (u₀ : L2Sigma_R3)
+       (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) (κ : ℕ → ℕ)
+       (p : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) : ∀ R : ℝ,
+       Filter.Tendsto
+         (fun n => MeasureTheory.eLpNorm
+           (fun t => restrictToBall R ((galSeq (κ (p.φ n))).u t) - restrictToBall R (p.u t))
+           2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)))
+         Filter.atTop (nhds 0) := p.strong_convergence
+
+   theorem r3PackageShape_strong_convergence_ae_effective
+       (…same context…) : ∀ R : ℝ,
+       ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)),
+         Filter.Tendsto (fun n => restrictToBall R ((galSeq (κ (p.φ n))).u t))
+           Filter.atTop (nhds (restrictToBall R (p.u t))) := p.strong_convergence_ae
+
+   theorem r3PackageShape_effective_strictMono
+       (…same context…) (hκ : StrictMono κ) :
+       StrictMono (fun n => κ (p.φ n)) := p.effective_strictMono hκ
+
+   theorem r3PackageShape_effective_le_apply   -- category-(iii) coupling
+       (…same context…) (hκ : StrictMono κ) :
+       ∀ n, n ≤ κ (p.φ n) := fun _ => (p.effective_strictMono hκ).le_apply
+
+   theorem r3WitnessShape_pin_dependent_family
+       (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν T : ℝ) (u₀ : L2Sigma_R3)
+       (φ₁ : ℕ → ℕ) (galSeq₁ : ∀ k, GalerkinSolutionData_R3 𝔊 F ν u₀ (φ₁ k))
+       (w : R3KappaChainExitWitness 𝔊 F ν T u₀ φ₁ galSeq₁) :
+       ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF_R3,
+         Filter.Tendsto
+           (fun k => inner (𝕜 := ℝ) (((galSeq₁ (w.alPkg.φ k)).u t : L2VF_R3)) z)
+           Filter.atTop (nhds (inner (𝕜 := ℝ) ((w.v t : L2VF_R3)) z)) := w.pin
+   ```
+
+   (The transcriptions above use the MERGED field types of `AubinLionsPackage_R3`
+   at `455ca3b` — ball-restricted `eLpNorm` and a.e.-per-ball forms — with the
+   single P2′ change `galSeq (φ n)` ↦ `galSeq (κ (φ n))`; the witness probe has no
+   `ρ`, per the §6 no-sub-extraction simplification. If P2′ must deviate from a
+   stated type for a reason the coder can defend, that is a kill-criterion event —
+   back to the architect, not a silent probe edit.)
 
 Fields may not lose content relative to the shape above; names may differ. The
 structural κ-invariant itself (κ-parameterized package with fields typed at
 `galSeq (κ (φ n))`, dependent `galSeq₁` + `transport` in the witness) is §4.1's
-PRIMARY protection and is not negotiable in P2′ — clauses 3 and 5 are
-defense-in-depth on top of it, not substitutes. P3′ carries
+PRIMARY protection and is not negotiable in P2′ — clause 6 is its MECHANICAL
+assertion (checker-enforced, not prose), and clauses 3 and 5 are defense-in-depth
+on top of it, not substitutes. P3′ carries
 the twin obligation on the OTHER coherence input: the stage handle
 `exists_weakLimitCurve_R3_kappa` must produce the EXACT `hW` hypothesis type of
 spike (a) (diagonal invariant over `L2Sigma_R3`-tests at minimum; the design gives
@@ -504,7 +612,14 @@ LerayHopf.Scratch.R3KappaSeed` → `Build completed successfully (3113 jobs)`, l
 `bash scripts/check-scratch-pins.sh` — the checker enumeration was extended IN THIS
 B0 COMMIT (codex finding 3, §11) to 4 targets / 14 pins with forced-fresh rebuild and
 exact-set fail-closed semantics, so the five new `#print axioms` lines inside the
-committed spike files are CI-enforced from B0 onward, not deferred to P1′.
+committed spike files are CI-enforced from B0 onward, not deferred to P1′. At the
+pass-3 remediation the enumeration was extended again (append-only) to 5 targets /
+18 pins with the exact-shape gate module `LerayHopf/Scratch/KappaShapeGate.lean`
+(§4.1, §6 clause 6): four probes — package convergence-field effective typing,
+effective strictness, effective `le_apply` (category-(iii) coupling), witness pin
+against the dependent family — each proved by the bare projection with `κ` free,
+all kernel-trio (run green: log `/tmp/lh212-pins-check3.log`,
+`SCRATCH PIN CHECK OK (18/18)`).
 
 ### Spike (a) — `LerayHopf/Scratch/R3StageCoherence.lean` (every-t overlap coherence)
 
@@ -648,3 +763,15 @@ remaining findings target the pass-1 F1 disposition (κ semantic protection).
 |---|---|---|---|
 | 2.1 | high | The `Nat.succ` smoke gate covers only the pin projection: witness fields with SEQUENCE-FREE conclusions (`weak_eq`, `energy_ineq`, `initial_trace`, energy-class) can be proved via helpers using stale base indices and stay well-typed; the pass-1 statement-site rules were prose-only, not enforced | **Accepted — coverage argument made type-level, plus an automated audit** (§4.1 rewritten): (a) the exhaustive helper-input taxonomy — every LIMIT fact downstream of the package is a package field / sealed-layer conclusion / pin conjunct, all TYPED at the effective index, so a stale limit is underivable, not just unproven; per-datum facts are index-generic TRUE statements, so a stale application cannot inject a false premise — hence sequence-free conclusions are sound regardless of helper internals; (b) NEW §6 clause 5: `scripts/check-kappa-effective-index.sh` (shipped in the P2′ PR, fail-closed on total-family applications at bare extraction indices, `-- KAPPA_ID_SITE:` allowlist for `κ := id` sites) makes the residual statement-hygiene rule checker-enforced rather than prose. Smoke theorem retained as clause 3 |
 | 2.2 | high | Pass-1 rejection of type-level protection conflated changing the Galerkin DATUM type with parameterizing the PACKAGE / using a dependent family; the merged torus P2 already achieves type-level κ-protection with the datum type unchanged (`AubinLionsPackage … galSeq κ`), which §6's own witness mirrors — the fallback to prose discipline was unjustified | **Accepted — record corrected, design re-based on the torus precedent** (§4.1 rewritten): the PRIMARY protection is now stated as the type-level invariant — `AubinLionsPackage_R3` gains the `κ` structure parameter with convergence fields typed at `galSeq (κ (φ n))` (verified against merged `Torus/SolutionInterfaces.lean:342`), sealed-layer conclusions typed at `κ (φ n)` (spike (b) compiled), dependent `galSeq₁` + mandatory `transport` in the exit witness. What remains rejected is only the narrower move of wrapping `galSeq ∘ κ` in a new datum-carrying type. Smoke theorem and audit script demoted to defense-in-depth (§6 clauses 3/5); §6 now states the structural invariant is non-negotiable in P2′, clauses 3/5 are not substitutes |
+
+### 11.3 Pass 3 (at `6c3e19d`)
+
+Verdict **needs-attention**; overall note: "the κ invariant is clearly specified but
+not mechanically enforced, and §4.1's taxonomy omits extraction-dependent helper
+facts. Deferring the checker is defensible only after an independent exact-shape
+gate exists." Both findings refine the same κ-protection axis.
+
+| # | Sev | Finding (condensed) | Disposition |
+|---|---|---|---|
+| 3.1 | high | None of the exit clauses mechanically asserts the package's effective-index typing: clauses 1–4 check compilation/pins/coupling/smoke, clause 5 is a future grep; "not negotiable" was prose. P2′ could carry a dummy `κ` (parameter unapplied, fields at `galSeq (φ n)`) or hide stale applications behind helpers while satisfying every listed clause | **Accepted — exact-shape gate COMMITTED AT B0, production twin made exit clause 6**: new `LerayHopf/Scratch/KappaShapeGate.lean` (this commit) re-states each κ-critical surface verbatim with `κ` FREE and proves it by bare projection — a dummy-κ/bare-index declaration cannot elaborate (no unifier for free `κ`). Wired into `check-scratch-pins.sh` (5 targets / 18 pins, forced-fresh, green: `/tmp/lh212-pins-check3.log`). §6 gains clause 6: `R3ShapeGate.lean` with the probe statements FROZEN VERBATIM in §6 (both convergence fields of `AubinLionsPackage_R3`, effective strictness, effective `le_apply`, witness pin), proofs required to stay bare projections; deviation = kill-criterion event, not a probe edit. Clause-5 deferral is now backed by the independent gate, per the pass-3 overall note |
+| 3.2 | high | §4.1's "exhaustive" two-category helper taxonomy omits extraction/map-dependent facts: `GoodRepresentative`'s `hlevel : ∀ n, n ≤ alPkg.φ n` selects per-test Lipschitz bounds at the datum index and must be re-coupled to `κ (alPkg.φ n)`; package measurability/continuity feed the lsc path; a stale map/data pairing stays well-typed while `weak_eq`/energy are sequence-free | **Accepted — taxonomy corrected to three categories with a mandatory coupling rule** (§4.1): new category (iii) extraction/map-dependent facts (`hlevel`-style growth bounds, strictness/cofinality, `transport`, measurability/continuity inputs); every such fact must be DERIVED from the package's effective-map surface (`effective_strictMono` + corollaries at the composed map), never from bare `φ_mono`. Shape-gate probe (c) compiles the `hlevel` coupling (`∀ n, n ≤ κ (p.φ n)`) at B0. Enforcement widened: §6 clause 3 smoke must exercise a category-(iii) path at `κ := Nat.succ` (production selection helper with the effective bound); clause 5 audit patterns extended to bare-`φ` category-(iii) consumption (`alPkg.φ_mono`, `≤ alPkg.φ` shapes) outside `KAPPA_ID_SITE` |
