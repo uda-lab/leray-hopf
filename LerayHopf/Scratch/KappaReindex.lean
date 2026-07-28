@@ -236,10 +236,19 @@ end Scratch195
 end LerayHopf
 
 -- Axiom pins (recorded in docs/scratch/global-diagonal-campaign.md §10; expected:
--- [propext, Classical.choice, Quot.sound] — no sorryAx, no project axioms).
+-- at most [propext, Classical.choice, Quot.sound] — no sorryAx, no project axioms).
+-- COMPLETE enumeration of top-level declarations (#212 B0 pass-4 finding 3: the
+-- checker now asserts source-manifest/pin-set equality, so every declaration in this
+-- file must carry a pin).
 #print axioms LerayHopf.Scratch195.exists_galerkin_modewise_extraction_kappa
 #print axioms LerayHopf.Scratch195.reindexed_family_second_extraction
+#print axioms LerayHopf.Scratch195.AubinLionsPackageKappa
+#print axioms LerayHopf.Scratch195.AubinLionsPackageKappa.ofId
+#print axioms LerayHopf.Scratch195.AubinLionsPackageKappa.extract
+#print axioms LerayHopf.Scratch195.extendReindexedFamily
 #print axioms LerayHopf.Scratch195.extendReindexedFamily_apply
 #print axioms LerayHopf.Scratch195.exists_galerkin_modewise_extraction_of_reindexed
 #print axioms LerayHopf.Scratch195.AubinLionsPackageKappa.effective_strictMono
+#print axioms LerayHopf.Scratch195.AubinLionsPackageKappa.effective_tendsto_atTop
+#print axioms LerayHopf.Scratch195.AubinLionsPackageKappa.extract_φ
 #print axioms LerayHopf.Scratch195.AubinLionsPackageKappa.extract_effective_strictMono

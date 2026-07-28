@@ -4,13 +4,17 @@
 # retargeted for the POST-P1 tree by #200; retargeted again for the POST-P3 tree by
 # #202; retargeted again for the POST-P4 tree by #203; EXTENDED append-only at the
 # #212 B0 gate with the two ℝ³-lane spike modules per the codex statement-gate
-# finding 3, and again append-only at the #212 B0 pass-3 remediation with the
-# exact-shape gate module KappaShapeGate per codex pass-3 finding 1 —
+# finding 3; again append-only at the #212 B0 pass-3 remediation with the
+# exact-shape gate module KappaShapeGate per codex pass-3 finding 1; and again at the
+# pass-4 remediation with the full ℝ³ mirror shape gate R3ShapeGate (pass-4 finding 1)
+# and the source-manifest equality check (pass-4 finding 3) —
 # docs/scratch/r3-global-diagonal-campaign.md §11): forced-fresh
-# compilation + EXACT 18-declaration pin-set check.  Non-zero exit
+# compilation + EXACT 41-declaration pin-set check + MANIFEST equality (every
+# top-level declaration in every scratch target MUST carry a #print axioms pin —
+# a new declaration added without a pin fails the gate).  Non-zero exit
 # on build failure, stale/replayed
-# target, missing or malformed pin, any axiom token outside the kernel trio, or any
-# pin output beyond the enumerated set.
+# target, missing or malformed pin, any axiom token outside the kernel trio, any
+# pin output beyond the enumerated set, or any unpinned source declaration.
 #
 # The scratch targets are deliberately OUTSIDE the release cone (not
 # imported by LerayHopf.lean), so agent-preflight.sh's default build does not rebuild
@@ -34,7 +38,7 @@ export PATH="$HOME/.elan/bin:$PATH"
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 
-targets=(KappaReindex P2ExitContract KappaShapeGate R3StageCoherence R3KappaSeed)
+targets=(KappaReindex P2ExitContract KappaShapeGate R3ShapeGate R3StageCoherence R3KappaSeed)
 
 # Take the container-wide build lock BEFORE the artifact deletion below and hold it
 # through the build (PR #205 review: deleting outside the lock races a concurrent
@@ -65,6 +69,7 @@ lake build \
   LerayHopf.Scratch.KappaReindex \
   LerayHopf.Scratch.P2ExitContract \
   LerayHopf.Scratch.KappaShapeGate \
+  LerayHopf.Scratch.R3ShapeGate \
   LerayHopf.Scratch.R3StageCoherence \
   LerayHopf.Scratch.R3KappaSeed >"$log" 2>&1 \
   || { echo "BUILD FAILED"; tail -40 "$log"; exit 1; }
@@ -84,19 +89,28 @@ done
 # fails the gate, never silently dropped.
 joined="$(tr '\n' '@' <"$log" | sed 's/@ / /g' | tr '@' '\n')"
 
-# Exact pin set: the 18 declarations (all of them) that must pin to (a subset of) the
-# kernel trio [propext, Classical.choice, Quot.sound].  FULLY-QUALIFIED names — the
-# torus (#195) spikes live in LerayHopf.Scratch195, the ℝ³ (#212) spikes and the
-# exact-shape gate probes in LerayHopf.Scratch212.
-# KappaReindex (6) + P2ExitContract (3) + KappaShapeGate (4) + R3StageCoherence (3)
-# + R3KappaSeed (2).
+# Exact pin set: the 41 declarations (ALL top-level declarations of every target —
+# pass-4 finding 3: completeness is asserted against a source-derived manifest below)
+# that must pin to (a subset of) the kernel trio [propext, Classical.choice,
+# Quot.sound].  FULLY-QUALIFIED names — the torus (#195) spikes live in
+# LerayHopf.Scratch195, the ℝ³ (#212) spikes and both shape-gate modules in
+# LerayHopf.Scratch212.
+# KappaReindex (12) + P2ExitContract (4) + KappaShapeGate (4) + R3ShapeGate (16)
+# + R3StageCoherence (3) + R3KappaSeed (2).
 pinned=(
   LerayHopf.Scratch195.exists_galerkin_modewise_extraction_kappa
   LerayHopf.Scratch195.reindexed_family_second_extraction
+  LerayHopf.Scratch195.AubinLionsPackageKappa
+  LerayHopf.Scratch195.AubinLionsPackageKappa.ofId
+  LerayHopf.Scratch195.AubinLionsPackageKappa.extract
+  LerayHopf.Scratch195.extendReindexedFamily
   LerayHopf.Scratch195.extendReindexedFamily_apply
   LerayHopf.Scratch195.exists_galerkin_modewise_extraction_of_reindexed
   LerayHopf.Scratch195.AubinLionsPackageKappa.effective_strictMono
+  LerayHopf.Scratch195.AubinLionsPackageKappa.effective_tendsto_atTop
+  LerayHopf.Scratch195.AubinLionsPackageKappa.extract_φ
   LerayHopf.Scratch195.AubinLionsPackageKappa.extract_effective_strictMono
+  LerayHopf.Scratch195.P2ExitWitness
   LerayHopf.Scratch195.P2ExitWitness.pin_base
   LerayHopf.Scratch195.P2ExitWitness.effective_strictMono
   LerayHopf.Scratch195.P2ExitWitness.v_aestronglyMeasurable
@@ -104,6 +118,22 @@ pinned=(
   LerayHopf.Scratch212.packageShape_effective_strictMono
   LerayHopf.Scratch212.packageShape_effective_le_apply
   LerayHopf.Scratch212.witnessShape_pin_dependent_family
+  LerayHopf.Scratch212.AubinLionsPackage_R3
+  LerayHopf.Scratch212.AubinLionsPackage_R3.effective_strictMono
+  LerayHopf.Scratch212.AubinLionsPackage_R3.effective_tendsto_atTop
+  LerayHopf.Scratch212.r3PackageShape_strong_convergence_effective
+  LerayHopf.Scratch212.r3PackageShape_strong_convergence_ae_effective
+  LerayHopf.Scratch212.r3PackageShape_u_aestronglyMeasurable
+  LerayHopf.Scratch212.r3PackageShape_effective_le_apply
+  LerayHopf.Scratch212.R3LimitPassagePinConjunct
+  LerayHopf.Scratch212.r3LimitPassagePinShape_effective
+  LerayHopf.Scratch212.R3KappaChainExitWitness
+  LerayHopf.Scratch212.r3WitnessShape_transport
+  LerayHopf.Scratch212.r3WitnessShape_pin_dependent_family
+  LerayHopf.Scratch212.r3WitnessShape_alPkg_effective_convergence
+  LerayHopf.Scratch212.R3KappaChainExitWitness.effective_strictMono
+  LerayHopf.Scratch212.R3KappaChainExitWitness.pin_base
+  LerayHopf.Scratch212.R3KappaChainExitWitness.alPkg_convergence_dependent_family
   LerayHopf.Scratch212.L2Sigma_R3_eq_of_forall_inner
   LerayHopf.Scratch212.r3_representative_diag_coherence
   LerayHopf.Scratch212.r3_representatives_agree_on_overlap
@@ -111,11 +141,40 @@ pinned=(
   LerayHopf.Scratch212.spacetime_extraction_seeded
 )
 
+# MANIFEST equality (pass-4 finding 3, fail-closed for UNPINNED declarations): derive
+# the set of top-level declarations from the target SOURCES (keyword-led lines only;
+# namespace prefix joined from the file's `namespace` lines) and require exact set
+# equality with the pinned enumeration above.  A theorem/def/structure added to a
+# scratch target without a matching pin line + checker entry fails HERE, before any
+# axiom parsing.  (`example`/`variable`/`open` lines declare nothing pinnable and are
+# intentionally not matched.)
+manifest="$(mktemp)"
+trap 'rm -f "$log" "$manifest"' EXIT
+for t in "${targets[@]}"; do
+  f="LerayHopf/Scratch/$t.lean"
+  ns="$(sed -nE 's/^namespace ([A-Za-z0-9_]+)[[:space:]]*$/\1/p' "$f" | paste -sd. -)"
+  [ -n "$ns" ] || { echo "MANIFEST ERROR: no namespace lines found in $f"; exit 1; }
+  sed -nE 's/^(@\[[^]]*\][[:space:]]*)?(noncomputable[[:space:]]+)?(theorem|lemma|def|abbrev|structure|inductive|instance|opaque|axiom)[[:space:]]+([^ :({⟨\[]+).*/\4/p' "$f" \
+    | sed "s/^/$ns./" >>"$manifest"
+done
+if ! diff <(sort -u "$manifest") <(printf '%s\n' "${pinned[@]}" | sort -u) >/dev/null; then
+  echo "MANIFEST MISMATCH (source declarations vs pinned set):"
+  diff <(sort -u "$manifest") <(printf '%s\n' "${pinned[@]}" | sort -u) || true
+  exit 1
+fi
+
 fail=0
 for d in "${pinned[@]}"; do
   line="$(printf '%s\n' "$joined" \
     | grep -F "'$d' depends on axioms:" || true)"
-  if [ -z "$line" ]; then echo "MISSING PIN: $d"; fail=1; continue; fi
+  if [ -z "$line" ]; then
+    # Structures/defs with no proof content print the axiom-free form; the empty
+    # axiom set is trivially a subset of the kernel trio.
+    if printf '%s\n' "$joined" | grep -qF "'$d' does not depend on any axioms"; then
+      continue
+    fi
+    echo "MISSING PIN: $d"; fail=1; continue
+  fi
   bracket="$(printf '%s\n' "$line" | sed -E 's/.*depends on axioms:[[:space:]]*//')"
   if ! printf '%s\n' "$bracket" | grep -qE '^\[[^][]*\]$'; then
     echo "MALFORMED PIN (bracket did not close on joined line): $d"; fail=1; continue
@@ -136,11 +195,11 @@ for d in "${pinned[@]}"; do
   done
 done
 
-# Exactness (both directions): total #print axioms outputs must be exactly 18 —
+# Exactness (both directions): total #print axioms outputs must be exactly 41 —
 # a pin added to the sources without updating this checker fails the gate too.
 total="$(printf '%s\n' "$joined" \
   | grep -cE "depends on axioms:|does not depend on any axioms" || true)"
-[ "$total" -eq 18 ] || { echo "PIN COUNT MISMATCH: expected 18, observed $total"; fail=1; }
+[ "$total" -eq 41 ] || { echo "PIN COUNT MISMATCH: expected 41, observed $total"; fail=1; }
 
 [ "$fail" -eq 0 ] || exit 1
-echo "SCRATCH PIN CHECK OK (18/18: 18 kernel-trio pins)"
+echo "SCRATCH PIN CHECK OK (41/41: manifest-complete, kernel-trio only)"
