@@ -32,6 +32,15 @@
 --     `spacetime_extraction_seeded_id_recovers_production` — the SEEDED κ-generic
 --     statements instantiated at `κ := id` prove the production conclusions verbatim:
 --     the frozen κ-generalizations are conservative over today's production shapes.
+--   * `diag_ae_subseq_seeded_free_kappa_exact_shape` /
+--     `spacetime_extraction_seeded_free_kappa_exact_shape` — the seeded κ-generic
+--     conclusions RESTATED VERBATIM with κ FREE, proved by direct application of the
+--     seeded theorems at that free `κ`/`hκ` (round-6 finding 2).  The id-coherence
+--     probes above would still elaborate if the seeded statements were ever weakened
+--     to ignore `κ` while keeping an `id`-specializable form; for a FREE `κ`,
+--     `galSeq (φ n)` does not unify with `galSeq (κ (φ n))`, so these two probes fail
+--     to elaborate under any κ-dropping weakening.  Their conclusion texts are the
+--     SAME frozen texts the P2′-only couplings below carry — compiled today.
 --
 -- P2′ RE-POINT LIFECYCLE (§6 clause 6; deviation = kill-criterion event):
 --   * DELETED with the mirror: `ofProduction`, `toProduction`,
@@ -61,6 +70,12 @@
 --         galerkinSpaceTimeExtraction_R3 𝔊 F ν hν T hT u₀ galSeq B κ hκ
 --
 --     (bare applications; only the production argument-list spelling is a P2′ freedom).
+--   * REPLACED at P2′ by the two κ-generic couplings just above (δ, round-6
+--     finding 2): `diag_ae_subseq_seeded_free_kappa_exact_shape` /
+--     `spacetime_extraction_seeded_free_kappa_exact_shape` — conclusion texts frozen
+--     VERBATIM; the only sanctioned change is the proof head swapping from the
+--     scratch seeds to the κ-threaded production declarations (plus the coupling
+--     names above).  Any other edit to those conclusion texts = kill-criterion event.
 -- All declarations below are fully proved (no sorry, no axioms, no `by` beyond
 -- destructuring — every probe is a bare application or field-by-field projection).
 import LerayHopf.R3.LimitPassage
@@ -249,12 +264,57 @@ theorem spacetime_extraction_seeded_id_recovers_production
           (nhds (restrictToBall R (u t : L2VF_R3)))) :=
   spacetime_extraction_seeded 𝔊 F ν hν T hT u₀ galSeq id strictMono_id
 
+/-! ### Seed free-κ statement guards (round-6 finding 2) -/
+
+/-- **Free-κ statement guard, layer 1** — the `diag_ae_subseq_seeded` conclusion
+RESTATED VERBATIM with `κ` FREE, proved by direct application of the seeded theorem
+at that free `κ`/`hκ`.  Unlike the `κ := id` coherence probe above, this one cannot
+survive a κ-dropping weakening of the seed: for free `κ`, a seeded conclusion in
+which the datum index degenerated to `galSeq (φ n)` does not unify with the frozen
+`galSeq (κ (φ n))` here.  At P2′ this probe is REPLACED by
+`r3Production_diag_ae_subseq_kappa_coupling` (frozen text in the header): same
+conclusion text, proof head swapped to the κ-threaded production `diag_ae_subseq`. -/
+theorem diag_ae_subseq_seeded_free_kappa_exact_shape
+    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ) :
+    ∃ (φ : ℕ → ℕ),
+      StrictMono φ ∧
+      ∀ k : ℕ, ∃ g_k : ℝ → L2ballR3 k,
+        AEStronglyMeasurable g_k (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
+        ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
+          Filter.Tendsto
+            (fun n => restrictToBall k ((galSeq (κ (φ n))).u t : L2VF_R3))
+            Filter.atTop (nhds (g_k t)) :=
+  diag_ae_subseq_seeded 𝔊 F ν hν T hT u₀ galSeq κ hκ
+
+/-- **Free-κ statement guard, layer 2** — the `spacetime_extraction_seeded`
+conclusion restated verbatim with `κ` FREE (same mechanism and P2′ replacement rule
+as layer 1, with `r3Production_spacetime_extraction_kappa_coupling`). -/
+theorem spacetime_extraction_seeded_free_kappa_exact_shape
+    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ) :
+    ∃ (φ : ℕ → ℕ) (u : Time → L2Sigma_R3), StrictMono φ ∧
+      AEStronglyMeasurable (fun t => (u t : L2VF_R3))
+        (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
+      (∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
+        Filter.Tendsto
+          (fun n => restrictToBall R ((galSeq (κ (φ n))).u t : L2VF_R3))
+          Filter.atTop (nhds (restrictToBall R (u t : L2VF_R3)))) :=
+  spacetime_extraction_seeded 𝔊 F ν hν T hT u₀ galSeq κ hκ
+
 end Scratch212
 end LerayHopf
 
--- Axiom pins (campaign doc §6 clauses 4/6, §7; enforced by scripts/check-scratch-pins.sh
--- with source-manifest equality — EVERY top-level declaration is pinned; expected: at
--- most [propext, Classical.choice, Quot.sound] — no sorryAx, no project axioms).
+-- Axiom pins (campaign doc §6 clauses 4/6, §7).  HUMAN-VISIBLE EVIDENCE ONLY since
+-- pass-6: the gate no longer parses build-log text — scripts/check-scratch-pins.sh
+-- enforces surface-set equality and the kernel-trio bound for EVERY environment
+-- constant of this module via the elaborated-environment manifest
+-- (scripts/scratch_manifest.lean).  Expected here and there: at most
+-- [propext, Classical.choice, Quot.sound] — no sorryAx, no project axioms.
 #print axioms LerayHopf.Scratch212.AubinLionsPackage_R3.ofProduction
 #print axioms LerayHopf.Scratch212.AubinLionsPackage_R3.toProduction
 #print axioms LerayHopf.Scratch212.r3LimitPassage_production_exact_shape
@@ -264,3 +324,5 @@ end LerayHopf
 #print axioms LerayHopf.Scratch212.r3Production_galerkinSpaceTimeExtraction_exact_shape
 #print axioms LerayHopf.Scratch212.diag_ae_subseq_seeded_id_recovers_production
 #print axioms LerayHopf.Scratch212.spacetime_extraction_seeded_id_recovers_production
+#print axioms LerayHopf.Scratch212.diag_ae_subseq_seeded_free_kappa_exact_shape
+#print axioms LerayHopf.Scratch212.spacetime_extraction_seeded_free_kappa_exact_shape

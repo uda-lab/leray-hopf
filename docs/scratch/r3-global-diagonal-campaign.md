@@ -4,7 +4,7 @@
 **Verdict (§9): CONDITIONAL-GO** — P1′/P2′ dispatch-ready; P3′/P4′ dispatch blocked on the
 P2′ typed exit gate (§6, six clauses), mirroring the #195 torus-campaign discipline whose
 condition was met on schedule. Codex adversarial statement gate (xhigh) pass-1 through
-pass-5 findings dispositioned in §11.
+pass-6 findings dispositioned in §11.
 
 This campaign document is NEW and separate from the frozen torus campaign doc
 (`docs/scratch/global-diagonal-campaign.md`, #195 — COMPLETE, not edited by this lane).
@@ -395,7 +395,17 @@ torus precedent:
   `R3KappaSeed`; and (e) seed↔production id-coherence probes: the frozen κ-generic
   seeded statements instantiated at `κ := id` prove the production conclusions
   VERBATIM (definitional `id`-collapse only), so the P2′ κ-threading is exactly the
-  frozen seed statement, not a redesign. The frozen FULL strengthened limit-passage
+  frozen seed statement, not a redesign; and (f) **free-κ statement guards (pass-6
+  finding 2):** the seeded κ-generic conclusions RESTATED VERBATIM with `κ` FREE
+  (`diag_ae_subseq_seeded_free_kappa_exact_shape`,
+  `spacetime_extraction_seeded_free_kappa_exact_shape`), proved by direct
+  application of the seeded theorems at that free `κ`/`hκ`. The id-coherence probes
+  in (e) would still elaborate if the seeded statements were weakened to ignore `κ`
+  while keeping an `id`-specializable form; for FREE `κ`, a degenerated
+  `galSeq (φ n)` does not unify with the frozen `galSeq (κ (φ n))`, so (f) fails to
+  elaborate under any κ-dropping weakening — and (f)'s conclusion texts are the
+  very texts the §6 clause 6 (γ) P2′ couplings carry, now compiled at B0 instead
+  of frozen by reference only. The frozen FULL strengthened limit-passage
   conclusion (production 5 conjuncts + pin appended) is committed as
   `R3StrengthenedLimitPassageConclusion` in `R3ShapeGate.lean` with a compiled
   pin-projection probe; the P2′ bare-application coupling against it is frozen in
@@ -603,17 +613,25 @@ package; `htest` only by the `WeakFormNS` stage.
    composed effective index `w.alPkg.φ k + 1`, AND (pass-3 widening) the
    category-(iii) exercise — the production selection helper applied at the
    nonidentity seed with the effective bound derived from `effective_strictMono`;
-4. `scripts/check-scratch-pins.sh` green at the B0-extended enumeration (pass-5
-   state: 7 targets / 52 pins — EVERY top-level declaration of every scratch
-   target pinned, with the checker asserting source-manifest/pin-set equality, so
-   an unpinned declaration added to a target fails the gate (pass-4 finding 3),
-   and rejecting outright every source form the manifest extractor cannot see —
-   modifier-prefixed (`private`/`protected`/`scoped`/`local`/`nonrec`/`partial`/
-   `unsafe`), `mutual`, top-level `class`, indented declaration keywords, and
-   dotted/indented/late `namespace` lines or namespace/`end` imbalance (pass-5
-   finding 3: hard rejection instead of regex sophistication — a false positive
-   fails loudly and is fixed by rewording; a false negative cannot occur for
-   rejected forms because they never reach the manifest));
+4. `scripts/check-scratch-pins.sh` green at the B0-extended enumeration (pass-6
+   state: 7 targets / 54 pinned surface declarations, evidenced by the
+   **ELABORATED-ENVIRONMENT manifest** `scripts/scratch_manifest.lean` — the
+   text-scanning manifest and build-log pin parsing of passes 4–5 are RETIRED
+   (pass-6 finding 1: text scanning cannot enumerate an elaborated environment,
+   and the build-log channel was spoofable by command output). The Lean script
+   imports the freshly built targets, enumerates EVERY environment constant of
+   every target module (Unicode names, anonymous instances, macro/mutual/indented
+   forms, compiler-generated companions, internal auxiliaries, and codegen extras
+   are all just constants there), computes each one's axiom closure with
+   `Lean.collectAxioms` — the machinery behind `#print axioms` — and emits a
+   sentinel-delimited machine block that is the checker's ONLY accepted evidence
+   channel. The checker asserts: zero VIOLATION lines (`private`/`axiom`/
+   `opaque`/non-`safe`/initializer declarations are rejected from the environment
+   itself), exact sentinel/count grammar (import-time IO cannot fake a block
+   without tripping the exactly-one-START rule, since the genuine block still
+   prints), surface-class/pin-set equality in BOTH directions, and the
+   kernel-trio bound on every constant of every class — strictly more coverage
+   than the retired per-pin scheme, which never touched internals);
 5. the §4.1 automated stale-index audit `scripts/check-kappa-effective-index.sh`
    committed in the P2′ PR and green: fails closed on total-family applications at
    bare extraction indices AND on bare-`φ` category-(iii) consumption sites
@@ -675,6 +693,17 @@ package; `htest` only by the `WeakFormNS` stage.
    These couplings cannot compile today (production lacks κ and the pin
    conjunct); their failure to compile at P2′ is exactly the drift they exist to
    detect.
+   (δ) **(pass-6 finding 2) the two free-κ statement guards are REPLACED by the
+   (γ) κ-generic couplings:** `diag_ae_subseq_seeded_free_kappa_exact_shape` and
+   `spacetime_extraction_seeded_free_kappa_exact_shape` compile the (γ) coupling
+   conclusion texts TODAY with `κ` free (proof = the `R3KappaSeed` seeds applied
+   at that `κ`); at P2′ the conclusion texts stay frozen VERBATIM and the only
+   sanctioned change is the proof head swapping from the scratch seeds to the
+   κ-threaded production declarations (plus the (γ) coupling names). Any other
+   edit to those conclusion texts is a kill-criterion event. This closes the
+   pass-6 gap that the id-coherence probes alone would tolerate a κ-dropping
+   weakening of the seeds: at free `κ`, a seed conclusion degenerated to
+   `galSeq (φ n)` cannot unify with the frozen `galSeq (κ (φ n))`.
 
 Fields may not lose content relative to the shape above; names may differ. The
 structural κ-invariant itself (κ-parameterized package with fields typed at
@@ -723,7 +752,18 @@ pin-source coupling, and the two seed↔production id-coherence probes; §4.1, �
 clause 6 pass-5 extension), `R3StrengthenedLimitPassageConclusion` + its projection
 probe added to `R3ShapeGate.lean` (16→18), and the source-discipline hard
 rejections added to the checker (pass-5 finding 3). Run green: log
-`/tmp/lh212-pins-check5.log`, `SCRATCH PIN CHECK OK (52/52)`.
+`/tmp/lh212-pins-check5.log`, `SCRATCH PIN CHECK OK (52/52)`. At the pass-6
+remediation the evidence CHANNEL itself was rebuilt: **7 targets / 54 surface
+declarations, environment manifest** — the text/regex manifest and build-log pin
+parsing were retired in favor of `scripts/scratch_manifest.lean` (§6 clause 4:
+elaborated-environment enumeration of every constant of every target — 187
+constants total: 54 surface, plus compiler-generated companions, internal
+auxiliaries, and codegen extras — each axiom-checked via `Lean.collectAxioms`,
+emitted through the sentinel-delimited machine block that is now the checker's
+only accepted evidence), and the two free-κ statement guards were added to
+`R3ProductionCoupling.lean` (9→11; §4.1 item (f), §6 clause 6 (δ)). Run green:
+log `/tmp/lh212-pins-check6.log`,
+`SCRATCH PIN CHECK OK (54/54 surface declarations, env-manifest of 187 constants, kernel-trio only)`.
 
 ### Spike (a) — `LerayHopf/Scratch/R3StageCoherence.lean` (every-t overlap coherence)
 
@@ -902,3 +942,15 @@ compiles BESIDE production but nothing yet APPLIED production — coupling gaps.
 | 5.1 | high | The limit-passage pin probe is not coupled to production: the scratch Prop and probe only unfold a locally declared hypothesis; they never apply `galerkin_limit_passage_R3` or extract its result — production could keep its current five-conjunct conclusion while the probe stays green | **Accepted — production coupling COMMITTED AND CHECKER-WIRED at B0** (this commit): new `LerayHopf/Scratch/R3ProductionCoupling.lean` (§4.1) applies the ACTUAL production declarations today, at the κ-less surface they have at `455ca3b`: `r3LimitPassage_production_exact_shape` (bare application of `galerkin_limit_passage_R3`, current 5-conjunct conclusion verbatim — drift detector until P2′) and `r3LimitPassagePin_production_source` (consumes the actual `exists_weak_representative_R3` — the declaration the limit passage draws its representative from — and PROJECTS its weak-convergence conjunct into the frozen `R3LimitPassagePinConjunct` at `κ := id` through the compiled `ofProduction` bridge; pure destructuring + definitional unfolding, no rewriting). The FULL strengthened conclusion is now frozen and compiled as `R3StrengthenedLimitPassageConclusion` (`R3ShapeGate.lean`: production 5 conjuncts + pin appended) with the compiled projection probe `r3StrengthenedConclusion_projects_pin`; §6 clause 6 (pass-5 extension) freezes the P2′ bare-application coupling `r3LimitPassage_strengthened_production_coupling := galerkin_limit_passage_R3 …` — compilable only once production's conclusion carries the pin, which is exactly the drift it detects. Bidirectional package bridges `ofProduction`/`toProduction` additionally assert mirror↔production field-set/type equality at B0 |
 | 5.2 | high | Layer-1/2 coverage is standalone feasibility code: the seeded theorems are proved from lower-level primitives and never project or apply production `diag_ae_subseq` / `u_lim_aestronglyMeasurable` / `galerkinSpaceTimeExtraction_R3`; a future production layer could stay bare-indexed while pins pass | **Accepted — production-probing added as SEPARATE coverage** (this commit, same module; the stronger today-option since the κ-less production layers exist at `455ca3b`): bare-application exact-shape probes of all three ACTUAL production declarations (conclusions restated verbatim — consumption + drift detection), PLUS seed↔production id-coherence probes (`diag_ae_subseq_seeded_id_recovers_production`, `spacetime_extraction_seeded_id_recovers_production`: the frozen κ-generic seed statements at `κ := id` prove the production conclusions verbatim, definitional `id`-collapse only — the P2′ κ-threading is the frozen seed statement, not a redesign). §6 clause 6 (γ) freezes the P2′ κ-generic couplings (`… := diag_ae_subseq … κ hκ`, `… := galerkinSpaceTimeExtraction_R3 … κ hκ`) and (β) freezes the exact-shape probe statements with the only sanctioned proof change being the `id strictMono_id` arguments |
 | 5.3 | medium | Manifest extraction misses modifier-prefixed and indented declarations (`private`/`protected`/`scoped`/`local`/`nonrec`/`partial`/`class`, mutual/nested-namespace blocks) — such declarations can evade the manifest | **Accepted — hard fail-closed rejection over regex sophistication** (this commit, per the round-5 recommendation's simple option): the checker now REJECTS outright, per target file, (1) modifier-prefixed and `mutual` declarations, (2) top-level `class`, (3) indented declaration keywords, (4) indented/dotted `namespace` lines, `namespace` after the first declaration, and namespace/`end` count imbalance. A false positive fails the gate loudly (reword the line); a false negative cannot occur for rejected forms because they never reach the manifest. Checker at 7 targets / 52 pins, manifest equality intact |
+
+### 11.6 Pass 6 (at `5d30fce`)
+
+Verdict **needs-attention**, 2 high. Finding 1 closed the checker arms race at its
+root (orchestrator concurrence: each round found a new textual evasion because text
+scanning cannot enumerate an elaborated environment; the terminal fix is the
+repo's own `print_axioms.lean` pattern taken to its conclusion).
+
+| # | Sev | Finding (condensed) | Disposition |
+|---|---|---|---|
+| 6.1 | high | Manifest gate still misses valid Lean declaration forms: indented declarations with Unicode names evade the `[A-Za-z_]` anchor, anonymous `instance : …` is ignored by the manifest regex, macro/elab-generated declarations are never inspected, and the axiom parser trusts arbitrary build-log text — tactic/command output could SPOOF pin lines | **Accepted — evidence channel REBUILT as an elaborated-environment manifest** (this commit, codex's own first recommendation): new `scripts/scratch_manifest.lean` imports the freshly built targets, enumerates EVERY environment constant of every target module (`EnvironmentHeader.moduleData` — Unicode names, anonymous instances, and macro-generated declarations are all just constants there), classifies each as pinned surface / compiler-generated child / internal auxiliary / codegen extra, computes every constant's axiom closure via `Lean.collectAxioms` (the `#print axioms` machinery — never a text log), and rejects `private`/`axiom`/`opaque`/non-`safe`/initializer declarations from the environment itself. Output is a sentinel-delimited machine block that `check-scratch-pins.sh` now accepts as its ONLY evidence: exactly-one-START/END grammar + self-reported count (a spoofed block injected by import-time IO duplicates sentinels because the genuine block still prints; initializer aux defs are additionally name-banned), surface = pinned 54 in both directions, kernel-trio bound re-verified shell-side on every DECL line. The pass-4/5 regex manifest, source-discipline greps, and build-log pin parsing are DELETED — total axiom coverage now includes internals and generated companions the per-pin scheme never touched. The `#print axioms` footers in scratch files remain as human-visible evidence but are parsed by nothing |
+| 6.2 | high | Seed-to-production probes do not guard generic κ threading: the id-coherence probes would also pass if the seeded theorems were weakened to ignore κ while keeping the id specialization; the seeded declarations' κ-dependent types are never independently projected with κ FREE | **Accepted — free-κ statement guards added exactly as specified** (this commit): `diag_ae_subseq_seeded_free_kappa_exact_shape` and `spacetime_extraction_seeded_free_kappa_exact_shape` in `R3ProductionCoupling.lean` restate the seeded conclusions VERBATIM with `κ` free (independently frozen text) and prove them by direct application of `diag_ae_subseq_seeded` / `spacetime_extraction_seeded` at that free `κ`/`hκ`; a κ-dropping weakening of the seeds fails to elaborate here because `galSeq (φ n)` does not unify with the frozen `galSeq (κ (φ n))` at free `κ`. Checker-pinned alongside the id-coherence checks (surface 52→54); §4.1 item (f) records the mechanism, §6 clause 6 (δ) the P2′ re-point rule (conclusion texts frozen; only the proof head swaps to the κ-threaded production declarations — these guards become the (γ) couplings) |
