@@ -29,7 +29,11 @@
 #     finding 3 retired mere getUsedConstants occurrence; pass-9 finding 2
 #     extended the pins from the two free-κ guards to the full 11-entry
 #     table, encoding production-head vs seed-head intent; pass-9 finding 3
-#     added exact per-module bijection validation of the axiom entries).  See
+#     added exact per-module bijection validation of the axiom entries;
+#     pass-10 upgraded the destructuring probe's pin from direct reference to
+#     a structural `exists-destruct` check — its proof term must BE an
+#     Exists.casesOn application whose scrutinee is headed by the pinned
+#     production existential, dead mentions rejected).  See
 #     the reader's header for the full trust model and the documented residual
 #     boundary.
 #
@@ -43,8 +47,8 @@
 #     with zero VIOLATION lines (private/axiom/opaque/unsafe/initializer
 #     declarations, any non-kernel-trio axiom, any axiom-entry bijection defect
 #     — duplicate/unknown/missing/count, any coupling probe whose proof term
-#     does not head on / reference its pinned constant, any serializer fixture
-#     that fails to discriminate);
+#     does not head on / structurally destructure its pinned constant, any
+#     serializer fixture that fails to discriminate);
 #   * the TOTAL manifest — every constant of every target: class, name, kind,
 #     sha-256 statement digest, axiom closure, plus the DEPGUARD lines — is
 #     byte-identical to the frozen scripts/scratch-manifest.expected.  Classification labels are
@@ -294,10 +298,12 @@ fi
 # constant as its APPLICATION HEAD; the pin encodes production-head vs
 # seed-head vs constructor-head intent, so a probe silently re-proved from the
 # wrong side fails even with an identical statement digest.  The single
-# `uses`-mode pin is the documented destructuring probe
-# (r3LimitPassagePin_production_source: obtain/exact over the production
-# existential — head is Exists.casesOn, consumption pinned by direct
-# reference).  Also covered by the total-manifest diff; asserted explicitly
+# `exists-destruct` pin (structural since pass-10; the pass-9 direct-reference
+# `uses` mode also accepted dead mentions) is the documented destructuring
+# probe (r3LimitPassagePin_production_source: obtain/exact over the production
+# existential — its proof term must BE an Exists.casesOn application whose
+# SCRUTINEE is headed by exists_weak_representative_R3, with direct reference
+# retained as a secondary guard).  Also covered by the total-manifest diff; asserted explicitly
 # here so a failure names the broken probe.  The sanctioned P2′ re-point
 # (campaign doc §6 clause 6 rule (δ)) rewrites the reader's pin table, these
 # lines, and the expected manifest in the SAME reviewed diff as the probe
@@ -307,7 +313,7 @@ for want in \
   'DEPGUARD|LerayHopf.Scratch212.AubinLionsPackage_R3.ofProduction|LerayHopf.Scratch212.AubinLionsPackage_R3.mk|head' \
   'DEPGUARD|LerayHopf.Scratch212.AubinLionsPackage_R3.toProduction|LerayHopf.AubinLionsPackage_R3.mk|head' \
   'DEPGUARD|LerayHopf.Scratch212.r3LimitPassage_production_exact_shape|LerayHopf.galerkin_limit_passage_R3|head' \
-  'DEPGUARD|LerayHopf.Scratch212.r3LimitPassagePin_production_source|LerayHopf.exists_weak_representative_R3|uses' \
+  'DEPGUARD|LerayHopf.Scratch212.r3LimitPassagePin_production_source|LerayHopf.exists_weak_representative_R3|exists-destruct' \
   'DEPGUARD|LerayHopf.Scratch212.r3Production_diag_ae_subseq_exact_shape|LerayHopf.diag_ae_subseq|head' \
   'DEPGUARD|LerayHopf.Scratch212.r3Production_u_lim_aestronglyMeasurable_exact_shape|LerayHopf.u_lim_aestronglyMeasurable|head' \
   'DEPGUARD|LerayHopf.Scratch212.r3Production_galerkinSpaceTimeExtraction_exact_shape|LerayHopf.galerkinSpaceTimeExtraction_R3|head' \
@@ -319,7 +325,7 @@ for want in \
     || { echo "DEPGUARD MISSING: $want"; exit 1; }
 done
 
-echo "SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of $declared constants byte-pinned, statements sha256-frozen, kernel-trio only; $n_dep/11 coupling value-pins (10 head + 1 uses); collision + serializer fixtures verified)"
+echo "SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of $declared constants byte-pinned, statements sha256-frozen, kernel-trio only; $n_dep/11 coupling value-pins (10 head + 1 exists-destruct); collision + serializer fixtures verified)"
 
 }
 

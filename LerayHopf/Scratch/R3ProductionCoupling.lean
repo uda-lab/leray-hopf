@@ -84,8 +84,12 @@
 --     APPLICATION HEAD (`DEPGUARD|…|head`): the ACTUAL production declarations
 --     for the four exact-shape probes, the SEEDS for the id-coherence and
 --     free-κ probes, the `mk` constructors for the two bridges; the one
---     destructuring proof (`r3LimitPassagePin_production_source`) is pinned by
---     direct reference (`DEPGUARD|…|uses`) to `exists_weak_representative_R3`.
+--     destructuring proof (`r3LimitPassagePin_production_source`) is pinned
+--     structurally (`DEPGUARD|…|exists-destruct`, round-10 finding): its proof
+--     term must BE an `Exists.casesOn` application whose SCRUTINEE is headed
+--     by `exists_weak_representative_R3` (direct reference retained as a
+--     secondary guard), so a dead mention in an unused `let` or dead branch
+--     cannot satisfy the pin.
 --     A probe silently re-proved from the wrong side (e.g. an exact-shape probe
 --     re-proved from a seed at `id`) fails the gate even with an identical
 --     statement digest and axiom closure.  The P2′ re-point must therefore

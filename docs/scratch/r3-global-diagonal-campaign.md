@@ -4,7 +4,7 @@
 **Verdict (§9): CONDITIONAL-GO** — P1′/P2′ dispatch-ready; P3′/P4′ dispatch blocked on the
 P2′ typed exit gate (§6, six clauses), mirroring the #195 torus-campaign discipline whose
 condition was met on schedule. Codex adversarial statement gate (xhigh) pass-1 through
-pass-9 findings dispositioned in §11.
+pass-10 findings dispositioned in §11.
 
 This campaign document is NEW and separate from the frozen torus campaign doc
 (`docs/scratch/global-diagonal-campaign.md`, #195 — COMPLETE, not edited by this lane).
@@ -660,9 +660,13 @@ package; `htest` only by the `WeakFormNS` stage.
    heads for the id-coherence and free-κ probes — the production-vs-seed
    distinction is part of the pin, so a probe re-proved from the wrong side
    fails even with identical digest and axiom closure — `mk` heads for the
-   field-by-field bridges, plus one documented `uses`-mode pin for the
-   destructuring probe `r3LimitPassagePin_production_source` —
-   `DEPGUARD|…|head`/`|uses` lines, clause 6 rule (δ)). The checker snapshots the reader, the
+   field-by-field bridges, plus one structural `exists-destruct` pin for the
+   destructuring probe `r3LimitPassagePin_production_source` (pass-10 finding
+   retired the pass-9 direct-reference `uses` mode, which a dead mention could
+   satisfy: the proof term must BE an `Exists.casesOn` application whose
+   scrutinee is headed by `exists_weak_representative_R3`, direct reference
+   retained as a secondary guard) —
+   `DEPGUARD|…|head`/`|exists-destruct` lines, clause 6 rule (δ)). The checker snapshots the reader, the
    fixture self-test, and the frozen manifest to a private temp dir BEFORE the
    untrusted `lake build` step (build-time elaboration can run arbitrary IO),
    then asserts fail-closed: fresh rebuild of every target; the
@@ -880,6 +884,21 @@ pinning); and the axiom-entry decode now enforces an exact per-module
 bijection against `constNames`. Evidence run: FULL `agent-preflight.sh` green,
 log `/tmp/lh212-preflight9.log`, scratch-gate line
 `SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of 187 constants byte-pinned, statements sha256-frozen, kernel-trio only; 11/11 coupling value-pins (10 head + 1 uses); collision + serializer fixtures verified)`
+then `PREFLIGHT OK`.
+
+**Pass-10 gate hardening (§11.10; single remaining finding, everything else
+confirmed coherent):** the destructuring probe's pin was upgraded from direct
+reference (`uses`) to the structural `exists-destruct` mode — the stripped
+proof term must BE an `Exists.casesOn` application whose SCRUTINEE (the major
+premise, argument index 3 of `Exists.casesOn`, position fixed by the pinned
+head itself) is headed by `exists_weak_representative_R3`, with the
+direct-reference check retained as a secondary guard; a dead mention in an
+unused `let` or dead branch no longer satisfies the pin. Scrutinee shape
+probe-verified against the elaborated olean before pinning (head
+`Exists.casesOn`, 5 arguments, argument 3 headed by the production
+existential). Evidence run: FULL `agent-preflight.sh` green, log
+`/tmp/lh212-preflight10.log`, scratch-gate line
+`SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of 187 constants byte-pinned, statements sha256-frozen, kernel-trio only; 11/11 coupling value-pins (10 head + 1 exists-destruct); collision + serializer fixtures verified)`
 then `PREFLIGHT OK`.
 
 ### Spike (a) — `LerayHopf/Scratch/R3StageCoherence.lean` (every-t overlap coherence)
@@ -1116,3 +1135,14 @@ round 4). All accepted and fixed mechanically on the machinery already in place.
 | 9.1 | high | Hash-consing memoized on `BEq Expr` = `Expr.eqv` (alpha-equivalence, ignoring binder names AND binder info) — a repeated alpha-equivalent subterm reused its first occurrence's index, so a binder rename/annotation change in the later occurrence never reached the stream: distinct types could share a digest, defeating exactly the documented "binder names included, fail-closed" property; recommendation: structural keys (`ExprStructEq`), plus collision fixtures with repeated alpha-equivalent subterms | **Accepted — rekeyed to exact structural equality, with per-run discrimination fixtures** (this commit): the memoization key is now `ExprStructEq` (`Expr.equal`), so only byte-identical subterms share a node index. `GateFixture` gained two pairs (`alphaSame`/`alphaRenamed` — repeated Pi subterm, second occurrence binder-renamed; `binfoBase`/`binfoVariant` — second occurrence explicit→implicit), each pair `Expr.eqv`-equal (the class the retired keying collapsed) yet structurally distinct; the reader asserts BOTH properties per run (`FIXTURE-DIGEST\|…\|eqv-equal-canonical-distinct` lines, grep-pinned by the checker — a fixture that stops discriminating is itself a violation). Measured impact on the real manifest: 0/187 digests changed across the rekeying (no current statement contains distinct-but-alpha-equivalent repeated subterms — olean sharing makes repeated subterms pointer-identical), i.e. the defect was a genuine latent channel, not yet an exploited one |
 | 9.2 | high | Production-coupling probes not value-pinned: depGuards covered only the two free-κ guards — e.g. `r3Production_diag_ae_subseq_exact_shape` could be silently re-proved from `diag_ae_subseq_seeded … id strictMono_id` with identical statement digest and kernel-trio closure, production consumption gone, every gate green; recommendation: proof-value head/dependency checks for EVERY required production-coupling probe, distinguishing production-head from legitimate seed-head (id-coherence) pins | **Accepted — full 11-entry pin table, heads probe-verified before pinning** (this commit): every declaration of `R3ProductionCoupling.lean` is now value-pinned. Production heads: `r3LimitPassage_production_exact_shape`→`galerkin_limit_passage_R3`, `r3Production_diag_ae_subseq_exact_shape`→`diag_ae_subseq`, `r3Production_u_lim_aestronglyMeasurable_exact_shape`→`u_lim_aestronglyMeasurable`, `r3Production_galerkinSpaceTimeExtraction_exact_shape`→`galerkinSpaceTimeExtraction_R3`. Seed heads (the intended sides, per the finding's distinction): both `…_id_recovers_production` probes and both `…_free_kappa_exact_shape` guards → their seeds. Constructor heads: `ofProduction`→mirror `mk`, `toProduction`→production `mk` (field-by-field bridges). One `uses`-mode pin, documented in the reader as the sanctioned exception: `r3LimitPassagePin_production_source` destructures the production existential (`obtain`/`exact` ⇒ stripped head is `Exists.casesOn`), so its production consumption is pinned by direct reference to `exists_weak_representative_R3`. The exploit named in the finding now fails: re-proving an exact-shape probe from a seed at `id` changes its head from the production declaration to the seed and trips `depguard-head-failed` even though digest and axiom closure are unchanged. Rule (δ) extended with the P2′ table lifecycle (deleted probes lose pins; free-κ heads swap to κ-threaded production; exact-shape probes keep production heads, proofs gaining `id strictMono_id` only) |
 | 9.3 | medium | A2's "1:1 coverage" was not actually enforced: decoded entries went into one global NameMap — a duplicate key silently overwrote a closure, an extra/unknown entry was silently ignored, contradicting the documented fail-loud A2 | **Accepted — exact per-module bijection, validated before any manifest line is emitted** (this commit): for each target module the reader now checks, against THAT module's `constNames`: no duplicate entry names (`axentry-duplicate`), no entry naming a non-constant of the module (`axentry-unknown`), no constant without an entry (`axentry-missing`), and entry-count = constant-count (`axentry-count`) — each its own VIOLATION line, all emitted ahead of the DECL block so a bijection defect fails the run regardless of manifest content. A cross-module or duplicate entry can no longer influence which closure a constant reports. ASSUMPTIONS A2 rewritten to state what is now literally checked |
+
+### 11.10 Pass 10 (at `cecc571`)
+
+Verdict **needs-attention** with exactly ONE remaining finding; the pass
+explicitly confirmed everything else coherent ("the 187 DECL entries, 11
+DEPGUARD entries, structural memo key, fixture assertions, and A2 ordering are
+coherent"). Still no mathematical finding since round 4.
+
+| # | Sev | Finding (condensed) | Disposition |
+|---|---|---|---|
+| 10.1 | high | The `uses`-mode depguard accepts dead references: it only tested `getUsedConstants.contains` — a proof could mention `exists_weak_representative_R3` in an unused `let` or dead branch while deriving the result from another proof, preserving the statement digest and the pinned `uses` line; the current proof is honest, but the gate did not enforce that the theorem is the existential scrutinee actually consumed by `Exists.casesOn`; recommendation: a structural `exists-destruct` mode requiring the stripped proof term to be an `Exists.casesOn` application whose SCRUTINEE is headed by `exists_weak_representative_R3`, with direct reference retained as a secondary guard | **Accepted — implemented exactly as recommended** (this commit): mode `exists-destruct` replaces `uses` for `r3LimitPassagePin_production_source`. The check requires (i) stripped head `== Exists.casesOn`, (ii) the scrutinee — argument index 3, after the two implicit parameters and the motive, a position fixed by the toolchain and legitimate to hard-code because the head is simultaneously pinned to exactly `Exists.casesOn` — headed (mdata-only stripping; a lambda is never an `Exists` proof) by `exists_weak_representative_R3`, and (iii) the direct reference retained as the secondary guard. Scrutinee shape probe-verified against the elaborated olean before pinning (5 arguments; argument 3 headed directly by the production existential). Pin line, expected manifest, checker grep + OK line, reader header/mode docs, and the coupling module's (δ) lifecycle note all updated coherently; the dead-mention exploit now trips `depguard-exists-destruct-failed` |

@@ -106,8 +106,11 @@
 --     and free-κ probes (the production/seed distinction is part of the pin:
 --     a probe re-proved from the wrong side fails even with identical
 --     statement digest and axiom closure), the `mk` constructors for the
---     field-by-field bridges — plus one documented `uses`-mode pin for the
---     destructuring probe (see `depGuards`).  At P2′ the sanctioned (δ)
+--     field-by-field bridges — plus one structural `exists-destruct` pin for
+--     the destructuring probe: its proof term must BE an `Exists.casesOn`
+--     application whose SCRUTINEE is headed by the pinned production
+--     existential, so a dead mention cannot satisfy the pin (see
+--     `depGuards`).  At P2′ the sanctioned (δ)
 --     re-point (campaign doc §6 clause 6) rewrites the pin table in the SAME
 --     reviewed diff as the probe changes, together with the checker's DEPGUARD
 --     lines and the expected manifest — the gate is deliberately broken by a
@@ -148,7 +151,7 @@
 --                                                      only for codegen extras;
 --                                                      <axioms> is a comma-joined
 --                                                      list or `-` if empty)
---   DEPGUARD|<decl>|<required>|<head|uses>            (one line per proof-value
+--   DEPGUARD|<decl>|<required>|<head|exists-destruct> (one line per proof-value
 --                                                      pin, fixed 11-entry table)
 --   VIOLATION|<rule>|<detail...>                      (zero lines when clean)
 --   SCRATCH-MANIFEST-END|<decl-count>|<depguard-count>|<OK|FAIL>
@@ -182,12 +185,17 @@ so a probe silently re-proved from the wrong side fails even with an identical
 statement digest and axiom closure), and the two bridges are field-by-field
 `mk` constructions.
 
-Mode `"uses"`: the required constant must occur in the proof term
-(`getUsedConstants` — direct reference).  Sanctioned for EXACTLY ONE pin:
-`r3LimitPassagePin_production_source` destructures the production existential
-(`obtain`/`exact`), so its stripped head is `Exists.casesOn`, not the
-production source; the direct-reference check pins its production consumption
-instead.  Any new `uses`-mode pin needs a documented reason like this one.
+Mode `"exists-destruct"` (round-10 finding; replaces the pass-9 `uses` mode,
+whose bare `getUsedConstants` reference would also have accepted a DEAD
+mention — an unused `let` or dead branch — while the result was derived from
+some other proof): the stripped proof term must BE an `Exists.casesOn`
+application whose SCRUTINEE (the major premise) is itself headed by the
+required constant, so the pinned existential is the value the proof actually
+destructures; the direct-reference check is retained as a secondary guard.
+Sanctioned for EXACTLY ONE pin: `r3LimitPassagePin_production_source`
+destructures the production existential (`obtain`/`exact`), so its stripped
+head is `Exists.casesOn`, not the production source.  Any new
+`exists-destruct` pin needs a documented reason like this one.
 
 At P2′ the sanctioned (δ) re-point (campaign doc §6 clause 6) rewrites this
 table in the SAME reviewed diff as the probe changes: the three probes deleted
@@ -202,7 +210,7 @@ def depGuards : List (Name × Name × String) := [
   (`LerayHopf.Scratch212.r3LimitPassage_production_exact_shape,
    `LerayHopf.galerkin_limit_passage_R3, "head"),
   (`LerayHopf.Scratch212.r3LimitPassagePin_production_source,
-   `LerayHopf.exists_weak_representative_R3, "uses"),
+   `LerayHopf.exists_weak_representative_R3, "exists-destruct"),
   (`LerayHopf.Scratch212.r3Production_diag_ae_subseq_exact_shape,
    `LerayHopf.diag_ae_subseq, "head"),
   (`LerayHopf.Scratch212.r3Production_u_lim_aestronglyMeasurable_exact_shape,
@@ -386,6 +394,14 @@ exposing the term that actually proves the (universally quantified) statement. -
 partial def stripLamsMData : Expr → Expr
   | .lam _ _ b _ => stripLamsMData b
   | .mdata _ b   => stripLamsMData b
+  | e => e
+
+/-- Strip ONLY inert mdata (no binders).  Used on the scrutinee of an
+`exists-destruct` pin: a proof of an `Exists` proposition is never a lambda,
+so stripping binders there would be wrong — only kernel-inert metadata may
+stand between the argument position and the application head. -/
+partial def stripMData : Expr → Expr
+  | .mdata _ b => stripMData b
   | e => e
 
 /-- Field names of a structure, read off the constructor's binder telescope
@@ -612,9 +628,9 @@ def main' : IO Unit := do
     -- term's APPLICATION HEAD once the declaration's own binders (and inert
     -- mdata) are stripped — an unused `let` or dead branch does not pass.
     -- Pass-9 finding 2: the pin table covers EVERY production-coupling probe,
-    -- each naming the production/seed/constructor head its doctrine prescribes;
-    -- `uses` mode (direct proof-term reference) only for the documented
-    -- destructuring probe.
+    -- each naming the production/seed/constructor head its doctrine prescribes.
+    -- Pass-10 finding: the documented destructuring probe is pinned
+    -- structurally (`exists-destruct`), not by mere direct reference.
     let value? := match acc.consts.find? guard with
       | some (.thmInfo v)  => some v.value
       | some (.defnInfo v) => some v.value
@@ -623,7 +639,20 @@ def main' : IO Unit := do
     | some v =>
       let ok := match mode with
         | "head" => (stripLamsMData v).getAppFn.constName? == some required
-        | "uses" => v.getUsedConstants.contains required
+        | "exists-destruct" =>
+          -- The stripped proof term must BE an `Exists.casesOn` application
+          -- whose SCRUTINEE is headed by the required constant.  The scrutinee
+          -- is argument index 3: `Exists.casesOn` takes the two implicit
+          -- parameters and the motive before the major premise — a position
+          -- fixed by the toolchain, legitimate to hard-code because the head
+          -- is simultaneously pinned to exactly this constant.  The
+          -- direct-reference check stays as a secondary guard.
+          let s := stripLamsMData v
+          let args := s.getAppArgs
+          s.getAppFn.constName? == some ``Exists.casesOn
+            && args.size ≥ 4
+            && (stripMData args[3]!).getAppFn.constName? == some required
+            && v.getUsedConstants.contains required
         | _      => false
       if ok then
         IO.println s!"DEPGUARD|{guard}|{required}|{mode}"
