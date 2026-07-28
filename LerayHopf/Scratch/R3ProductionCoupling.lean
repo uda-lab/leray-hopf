@@ -76,6 +76,13 @@
 --     VERBATIM; the only sanctioned change is the proof head swapping from the
 --     scratch seeds to the κ-threaded production declarations (plus the coupling
 --     names above).  Any other edit to those conclusion texts = kill-criterion event.
+--     MACHINE-ENFORCED since pass-7 (round-7 finding 3): the static gate reader
+--     (`scripts/scratch_reader.lean`) requires each guard's PROOF TERM to
+--     reference its seed directly (DEPGUARD), so the P2′ re-point must update,
+--     in the SAME reviewed diff: these proof heads, the reader's `depGuards`
+--     pairs, the checker's DEPGUARD assertion lines, and
+--     `scripts/scratch-manifest.expected` (which also freezes every statement
+--     here by type-hash).  Forgetting any of the four breaks the gate loudly.
 -- All declarations below are fully proved (no sorry, no axioms, no `by` beyond
 -- destructuring — every probe is a bare application or field-by-field projection).
 import LerayHopf.R3.LimitPassage
@@ -311,9 +318,11 @@ end LerayHopf
 
 -- Axiom pins (campaign doc §6 clauses 4/6, §7).  HUMAN-VISIBLE EVIDENCE ONLY since
 -- pass-6: the gate no longer parses build-log text — scripts/check-scratch-pins.sh
--- enforces surface-set equality and the kernel-trio bound for EVERY environment
--- constant of this module via the elaborated-environment manifest
--- (scripts/scratch_manifest.lean).  Expected here and there: at most
+-- enforces the totally pinned manifest (name/kind/statement-hash/axiom closure of
+-- EVERY constant of this module, byte-diffed against
+-- scripts/scratch-manifest.expected) and the kernel-trio bound via the STATIC
+-- olean reader (scripts/scratch_reader.lean, pass-7 — reads the built olean as
+-- data; executes nothing from this module).  Expected here and there: at most
 -- [propext, Classical.choice, Quot.sound] — no sorryAx, no project axioms.
 #print axioms LerayHopf.Scratch212.AubinLionsPackage_R3.ofProduction
 #print axioms LerayHopf.Scratch212.AubinLionsPackage_R3.toProduction

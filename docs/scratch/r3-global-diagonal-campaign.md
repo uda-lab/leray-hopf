@@ -4,7 +4,7 @@
 **Verdict (§9): CONDITIONAL-GO** — P1′/P2′ dispatch-ready; P3′/P4′ dispatch blocked on the
 P2′ typed exit gate (§6, six clauses), mirroring the #195 torus-campaign discipline whose
 condition was met on schedule. Codex adversarial statement gate (xhigh) pass-1 through
-pass-6 findings dispositioned in §11.
+pass-7 findings dispositioned in §11.
 
 This campaign document is NEW and separate from the frozen torus campaign doc
 (`docs/scratch/global-diagonal-campaign.md`, #195 — COMPLETE, not edited by this lane).
@@ -613,25 +613,53 @@ package; `htest` only by the `WeakFormNS` stage.
    composed effective index `w.alPkg.φ k + 1`, AND (pass-3 widening) the
    category-(iii) exercise — the production selection helper applied at the
    nonidentity seed with the effective bound derived from `effective_strictMono`;
-4. `scripts/check-scratch-pins.sh` green at the B0-extended enumeration (pass-6
-   state: 7 targets / 54 pinned surface declarations, evidenced by the
-   **ELABORATED-ENVIRONMENT manifest** `scripts/scratch_manifest.lean` — the
-   text-scanning manifest and build-log pin parsing of passes 4–5 are RETIRED
-   (pass-6 finding 1: text scanning cannot enumerate an elaborated environment,
-   and the build-log channel was spoofable by command output). The Lean script
-   imports the freshly built targets, enumerates EVERY environment constant of
-   every target module (Unicode names, anonymous instances, macro/mutual/indented
-   forms, compiler-generated companions, internal auxiliaries, and codegen extras
-   are all just constants there), computes each one's axiom closure with
-   `Lean.collectAxioms` — the machinery behind `#print axioms` — and emits a
-   sentinel-delimited machine block that is the checker's ONLY accepted evidence
-   channel. The checker asserts: zero VIOLATION lines (`private`/`axiom`/
-   `opaque`/non-`safe`/initializer declarations are rejected from the environment
-   itself), exact sentinel/count grammar (import-time IO cannot fake a block
-   without tripping the exactly-one-START rule, since the genuine block still
-   prints), surface-class/pin-set equality in BOTH directions, and the
-   kernel-trio bound on every constant of every class — strictly more coverage
-   than the retired per-pin scheme, which never touched internals);
+4. `scripts/check-scratch-pins.sh` green at the B0-extended enumeration (pass-7
+   state: 7 targets / 54 pinned surface declarations inside a TOTALLY PINNED
+   187-constant manifest, evidenced by the **STATIC OLEAN READER**
+   `scripts/scratch_reader.lean`). The evidence-channel lineage, each step closing
+   the previous step's execution surface: text/regex manifest + build-log pin
+   parsing (passes 4–5, RETIRED at pass-6 — text scanning cannot enumerate an
+   elaborated environment, and the build-log channel was spoofable); the
+   elaborated-environment manifest `scripts/scratch_manifest.lean` (pass-6,
+   RETIRED at pass-7 — importing a target EXECUTES it: a target-registered
+   command elaborator or `initialize` block runs inside the manifest process and
+   could fake the evidence block, codex pass-7 finding 2). The pass-7 reader
+   imports ONLY `Lean` and reads the target `.olean` files as DATA
+   (`Lean.readModuleData`): zero elaboration of target code, zero initializer
+   execution, zero imported syntax/command extensions — no target-authored code
+   executes anywhere in the evidence path. Its evidence sources are all
+   compiler-written olean data: `ModuleData.constNames`/`constants` (a
+   declaration cannot exist without appearing there, whatever its spelling —
+   Unicode names, anonymous instances, macro-generated forms included), the
+   toolchain's own precomputed per-declaration axiom closures
+   (`exportedAxiomsExt` entries, the exact data behind `#print axioms`; 1:1 with
+   `constNames`, a missing entry is a violation), exact generated-name
+   provenance (`projectionFnInfoExt`/`auxRecExt` entries), per-declaration
+   STATEMENT type-hashes, and the free-κ guards' proof-term dependencies
+   (DEPGUARD lines, clause 6 rule (δ)). The checker snapshots the reader, the
+   fixture self-test, and the frozen manifest to a private temp dir BEFORE the
+   untrusted `lake build` step (build-time elaboration can run arbitrary IO),
+   then asserts fail-closed: fresh rebuild of every target; the
+   collision-fixture self-test (`LerayHopf/Scratch/GateFixture.lean`: compiled
+   hand-written declarations with generated-/internal-looking names —
+   `P.ibelow`, `C.mk.noConfusionType`, `P.proof_1` — are enumerated by the
+   static channel; the def-companion suffixes are reserved names and cannot be
+   collision-declared at all, verified negatively); zero VIOLATION lines
+   (`private`/`axiom`/`opaque`/unsafe/initializer declarations, non-trio axioms,
+   missing axiom entries, broken depguards); exact sentinel/count grammar; the
+   TOTAL manifest — every constant of every target: class, name, kind, type
+   hash, axiom closure, plus both DEPGUARD lines — byte-identical to the frozen
+   `scripts/scratch-manifest.expected` (pass-7 finding 1: classification labels
+   are display-only; a smuggled declaration is a NEW line and fails the diff
+   whatever label it gets, so lexical label collisions are moot); redundantly,
+   surface-class = pinned 54 in both directions and the kernel-trio bound
+   re-verified shell-side on every DECL line. Statement freezing is now
+   mechanical (a type edit re-hashes and fails the byte-diff), not just
+   probe-mediated. Residual trust boundary, documented in the reader header:
+   build-time same-user filesystem malice from reviewed scratch sources
+   (post-snapshot daemon races) is out of the gate's scope — every scratch
+   source line is in the reviewed diff, and lakefile + pinned toolchain are
+   repo-owned trusted inputs;
 5. the §4.1 automated stale-index audit `scripts/check-kappa-effective-index.sh`
    committed in the P2′ PR and green: fails closed on total-family applications at
    bare extraction indices AND on bare-`φ` category-(iii) consumption sites
@@ -704,6 +732,17 @@ package; `htest` only by the `WeakFormNS` stage.
    pass-6 gap that the id-coherence probes alone would tolerate a κ-dropping
    weakening of the seeds: at free `κ`, a seed conclusion degenerated to
    `galSeq (φ n)` cannot unify with the frozen `galSeq (κ (φ n))`.
+   **Machine-enforced since pass-7 (finding 3):** the static reader's DEPGUARD
+   check requires each guard's elaborated proof term to reference its seeded
+   theorem directly (`scripts/scratch_reader.lean` `depGuards` pairs, asserted
+   again by name in `check-scratch-pins.sh` and frozen in
+   `scripts/scratch-manifest.expected`) — a guard re-proved from anything other
+   than its seed fails the gate even with identical statement text. The P2′
+   re-point therefore MUST update, in the SAME reviewed diff: the guards' proof
+   heads, the reader's `depGuards` pairs (seed → κ-threaded production
+   declaration), the checker's two DEPGUARD assertion lines, and the expected
+   manifest. A re-point that forgets any of the four breaks the gate loudly —
+   by design, not by accident.
 
 Fields may not lose content relative to the shape above; names may differ. The
 structural κ-invariant itself (κ-parameterized package with fields typed at
@@ -764,6 +803,20 @@ only accepted evidence), and the two free-κ statement guards were added to
 `R3ProductionCoupling.lean` (9→11; §4.1 item (f), §6 clause 6 (δ)). Run green:
 log `/tmp/lh212-pins-check6.log`,
 `SCRATCH PIN CHECK OK (54/54 surface declarations, env-manifest of 187 constants, kernel-trio only)`.
+At the pass-7 remediation the evidence channel was rebuilt once more as the
+**STATIC OLEAN READER** (§6 clause 4 pass-7 state): `scripts/scratch_reader.lean`
+imports only `Lean`, reads the target oleans as data (`Lean.readModuleData` — no
+target-authored code executes anywhere in the evidence path), takes axiom
+closures from the toolchain's own precomputed `exportedAxiomsExt` entries,
+freezes every statement by type-hash, and checks the free-κ guards' proof-term
+dependencies (DEPGUARD). The TOTAL 187-constant manifest (+ 2 DEPGUARD lines) is
+byte-pinned in `scripts/scratch-manifest.expected`; the collision fixture
+`LerayHopf/Scratch/GateFixture.lean` + `scripts/scratch_fixture_selftest.lean`
+demonstrate enumeration of hand-written generated-/internal-looking names; the
+checker snapshots all gate inputs before the untrusted build.
+`scripts/scratch_manifest.lean` is DELETED. Run green: log
+`/tmp/lh212-pins-check7.log`,
+`SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of 187 constants byte-pinned, kernel-trio only; 2/2 free-kappa depguards; collision fixture enumerated)`.
 
 ### Spike (a) — `LerayHopf/Scratch/R3StageCoherence.lean` (every-t overlap coherence)
 
@@ -954,3 +1007,20 @@ repo's own `print_axioms.lean` pattern taken to its conclusion).
 |---|---|---|---|
 | 6.1 | high | Manifest gate still misses valid Lean declaration forms: indented declarations with Unicode names evade the `[A-Za-z_]` anchor, anonymous `instance : …` is ignored by the manifest regex, macro/elab-generated declarations are never inspected, and the axiom parser trusts arbitrary build-log text — tactic/command output could SPOOF pin lines | **Accepted — evidence channel REBUILT as an elaborated-environment manifest** (this commit, codex's own first recommendation): new `scripts/scratch_manifest.lean` imports the freshly built targets, enumerates EVERY environment constant of every target module (`EnvironmentHeader.moduleData` — Unicode names, anonymous instances, and macro-generated declarations are all just constants there), classifies each as pinned surface / compiler-generated child / internal auxiliary / codegen extra, computes every constant's axiom closure via `Lean.collectAxioms` (the `#print axioms` machinery — never a text log), and rejects `private`/`axiom`/`opaque`/non-`safe`/initializer declarations from the environment itself. Output is a sentinel-delimited machine block that `check-scratch-pins.sh` now accepts as its ONLY evidence: exactly-one-START/END grammar + self-reported count (a spoofed block injected by import-time IO duplicates sentinels because the genuine block still prints; initializer aux defs are additionally name-banned), surface = pinned 54 in both directions, kernel-trio bound re-verified shell-side on every DECL line. The pass-4/5 regex manifest, source-discipline greps, and build-log pin parsing are DELETED — total axiom coverage now includes internals and generated companions the per-pin scheme never touched. The `#print axioms` footers in scratch files remain as human-visible evidence but are parsed by nothing |
 | 6.2 | high | Seed-to-production probes do not guard generic κ threading: the id-coherence probes would also pass if the seeded theorems were weakened to ignore κ while keeping the id specialization; the seeded declarations' κ-dependent types are never independently projected with κ FREE | **Accepted — free-κ statement guards added exactly as specified** (this commit): `diag_ae_subseq_seeded_free_kappa_exact_shape` and `spacetime_extraction_seeded_free_kappa_exact_shape` in `R3ProductionCoupling.lean` restate the seeded conclusions VERBATIM with `κ` free (independently frozen text) and prove them by direct application of `diag_ae_subseq_seeded` / `spacetime_extraction_seeded` at that free `κ`/`hκ`; a κ-dropping weakening of the seeds fails to elaborate here because `galSeq (φ n)` does not unify with the frozen `galSeq (κ (φ n))` at free `κ`. Checker-pinned alongside the id-coherence checks (surface 52→54); §4.1 item (f) records the mechanism, §6 clause 6 (δ) the P2′ re-point rule (conclusion texts frozen; only the proof head swaps to the κ-threaded production declarations — these guards become the (γ) couplings) |
+
+### 11.7 Pass 7 (at `fdd435e`)
+
+Verdict **needs-attention**, 2 high + 1 medium — all three on the gate
+infrastructure, none on the mathematical design (no design finding since round 4;
+rounds 5–7 are exclusively fail-closed hardening of the evidence channel, which
+this campaign made a B0 deliverable in its own right). All three findings are
+closed by ONE mechanism (orchestrator concurrence: the static reader is the
+terminal move for this axis): the evidence process no longer executes any
+target-authored code, pins the total manifest rather than a classified subset,
+and reads proof-term dependencies directly.
+
+| # | Sev | Finding (condensed) | Disposition |
+|---|---|---|---|
+| 7.1 | high | Hand-written declarations can escape surface pinning: `Name.isInternalDetail` is lexical and suffix classification relies only on parent kind — a user theorem named `Parent.eq_def` or `Ctor.inj` gets labeled internal/child and dodges the 54-name equality; recommendation: compiler provenance or exact generated-name metadata, default every unproven constant to surface, add collision fixtures | **Accepted — TOTAL manifest pinning makes labels display-only** (this commit): the gate no longer decides anything by classification. Every constant of every target — surface, child, internal, codegen alike — is one frozen line (class, name, kind, statement type-hash, axiom closure) in `scripts/scratch-manifest.expected`, byte-compared on every run; a collision-named declaration is a NEW constant, hence a new line, hence a diff failure WHATEVER label it gets ("default to surface" is subsumed: every class is pinned). Exact compiler provenance is now used where the olean provides it (`projectionFnInfoExt`, `auxRecExt` entries; kernel `ctorInfo`/`recInfo` kinds). Collision fixtures added as recommended: `LerayHopf/Scratch/GateFixture.lean` compiles hand-written `Probe.ibelow`, `Probe.mk.noConfusionType`, `Probe.proof_1` (the classes the retired classifier mislabeled) and `scripts/scratch_fixture_selftest.lean` asserts, per run, that the static channel enumerates them; the def-companion suffixes (`eq_def`/`eq_unfold`/`congr_simp`) were verified NON-declarable (reserved names — that collision class is closed by the elaborator itself, recorded as a negative fixture) |
+| 7.2 | high | Imported extensions can prevent genuine manifest execution: `lake env lean` elaborates the manifest's `#eval` AFTER importing the targets — a target could register a command elaborator that fakes the block and returns success, or an initializer printing fake evidence and exiting 0 before the genuine command runs | **Accepted — trusted STATIC reader, exactly as recommended** (this commit): `scripts/scratch_reader.lean` imports only `Lean` and loads the target `.olean` files as data via `Lean.readModuleData` — pure deserialization; no initializer execution, no imported command/syntax extensions, no elaboration of target code anywhere in the evidence path. Axiom closures are not recomputed but read from the toolchain's own `exportedAxiomsExt` entries (the precomputed per-declaration data behind `#print axioms`, 1:1 with `constNames`; a missing entry fails closed). The build-then-read ordering is hardened too: the checker snapshots the reader, the fixture self-test, and the expected manifest to a private temp dir BEFORE `lake build` (build-time elaboration of scratch sources can run arbitrary IO and could otherwise rewrite the gate artifacts it is about to be judged by), and its bash body is a single `main` invoked with same-line `exit` so a mid-run rewrite of the script file cannot inject into the running shell. Residual boundary documented in the reader header (post-snapshot same-user filesystem races from reviewed sources: out of scope, covered by diff review; lakefile + pinned toolchain trusted). `scripts/scratch_manifest.lean` DELETED |
+| 7.3 | medium | Free-κ proof heads not enforced by the machine gate: the manifest checks only axiom closures — nothing requires each guard's elaborated proof term to depend on `diag_ae_subseq_seeded` / `spacetime_extraction_seeded`; a guard re-proved from elsewhere would pass with identical statement text | **Accepted — DEPGUARD proof-term dependency check** (this commit): the reader hardcodes the two (guard, seed) pairs and requires the seed to occur in the guard's elaborated proof term (`ConstantInfo.value.getUsedConstants` — direct reference, stronger than closure membership), emitting `DEPGUARD\|guard\|seed\|direct` lines that are (a) grammar-checked and asserted by exact line in `check-scratch-pins.sh` and (b) frozen in the expected manifest. §6 clause 6 rule (δ) extended: the sanctioned P2′ re-point must update proof heads, reader `depGuards` pairs, checker assertion lines, and expected manifest in the SAME reviewed diff — forgetting any one breaks the gate loudly. As a free by-product of the same mechanism, every statement is now frozen mechanically by its type-hash in the expected manifest (an edit to ANY pinned statement re-hashes and fails the byte-diff, closing the gap that statement freezes were previously probe-mediated only) |
