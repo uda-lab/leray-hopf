@@ -128,6 +128,8 @@ end LerayHopf
 
 -- Axiom pins (recorded in docs/scratch/global-diagonal-campaign.md §10.5; expected:
 -- at most [propext, Classical.choice, Quot.sound] — no sorryAx, no project axioms).
+-- COMPLETE enumeration of top-level declarations (#212 B0 pass-4 finding 3).
+#print axioms LerayHopf.Scratch195.P2ExitWitness
 #print axioms LerayHopf.Scratch195.P2ExitWitness.pin_base
 #print axioms LerayHopf.Scratch195.P2ExitWitness.effective_strictMono
 #print axioms LerayHopf.Scratch195.P2ExitWitness.v_aestronglyMeasurable
