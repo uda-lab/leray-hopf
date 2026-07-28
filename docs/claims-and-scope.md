@@ -7,7 +7,7 @@ state. For a general-reader overview see [`README.md`](../README.md); for the mo
 layout see [`docs/architecture.md`](architecture.md); for the axiom/`sorry` ledger see
 [`docs/STATUS.md`](STATUS.md).
 
-## The two capstones
+## The capstones
 
 Both are **kernel-only**: `#print axioms` returns only the standard kernel axioms
 `propext` / `Classical.choice` / `Quot.sound`, with **zero project axioms** and
@@ -25,6 +25,18 @@ theorem exists_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
     ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),
       Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)
 ```
+
+```lean
+-- LerayHopf/Torus/GlobalCapstone.lean   (𝕋³, global-in-time — issue #195)
+theorem exists_global_lerayHopf_torus3 (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν) :
+    ∃ F : Torus3NSForms, ∃ u : Time → L2Sigma, ∀ T : ℝ, 0 < T →
+      Galerkin.IsLerayHopfOn torusDomain F.core ν T u₀ u
+```
+
+Kernel-only (pinned by `check-axioms-live.sh`). The single curve `u` satisfies, at
+every `T > 0`, exactly the five proof fields of `LerayHopfSolutionFull` (the
+`IsLerayHopfOn` predicate is their field-for-field twin); coherence across horizons is
+**pointwise** (`u t` is one curve), not an a.e. gluing.
 
 Every component in the transitive dependency cones of the two capstones — the
 functional-analytic backbone, the finite-dimensional ODE solver, spatial
@@ -57,9 +69,17 @@ that claims more than the fields below.
 
 - **No external force.** The weak identity carried by `weak_eq` has no forcing term;
   this is the homogeneous Navier–Stokes equation only.
-- **Finite time horizon, not global-in-time.** `T : ℝ` with `hT : 0 < T` is an input to
-  the capstones: for each such `T` there is a solution on `[0, T]`. This is not a claim
-  of a single solution simultaneously valid on `[0, ∞)`.
+- **Time horizon — 𝕋³ is now global-in-time; ℝ³ remains finite-horizon.** The
+  finite-horizon capstones `exists_lerayHopf_torus3` / `exists_lerayHopf_r3` take
+  `T : ℝ`, `hT : 0 < T` as input: for each such `T` there is a solution on `[0, T]`.
+  **In addition**, the 𝕋³ global capstone `exists_global_lerayHopf_torus3` (issue #195)
+  produces a **single** curve `u : Time → L²_σ` and one form bundle `F` such that the
+  full finite-horizon Leray–Hopf contract holds at **every** `T > 0` simultaneously —
+  global-in-time weak existence on `[0, ∞)` for 𝕋³, not a family of independently chosen
+  finite-horizon witnesses. ℝ³ has no global capstone yet (P5 assessment gate). This is
+  still weak (Leray–Hopf) existence only: **no** uniqueness, **no** non-uniqueness,
+  **no** smoothness or higher regularity beyond the stated energy class, and the energy
+  relation is the **inequality**, not equality.
 - **𝕋³ is the unit torus.** `Torus3 = (AddCircle 1)³` — period **1** in each coordinate
   (not `2π`), with the Fourier basis convention `e^{2πi k·x}`; see
   `LerayHopf/Torus/Domain.lean`. ℝ³ is whole space with no periodicity.
@@ -90,6 +110,7 @@ ranges over the generic `Galerkin.Domain` (`torusDomain` or `r3Domain 𝔊`);
 | `u ∈ C_w([0,T]; L²_σ)` (weak continuity in time) | — **not a field** | **Not claimed as a public guarantee.** Only the one-sided trace at `t = 0` (`initial_trace`) is exposed as a field; general-`t` weak continuity is a deliberate non-inclusion — a definitional choice of this repository's public structure, not a proof gap (see `docs/formalization-review-ja.md` §4.2 for the internal-construction note). |
 | Existence on 𝕋³ | `exists_lerayHopf_torus3` | For every `u₀ ∈ L²_σ`, `ν > 0`, `T > 0`: `∃ F, Nonempty (LerayHopfSolutionFull F ν T u₀)`. |
 | Existence on ℝ³ | `exists_lerayHopf_r3` | For every `u₀ ∈ L²_σ(ℝ³)`, `ν > 0`, `T > 0`: `∃ 𝔊 F, Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)`. |
+| Global-in-time existence on 𝕋³ | `exists_global_lerayHopf_torus3` | For every `u₀, ν>0`: `∃ F, ∃ u, ∀ T>0, IsLerayHopfOn torusDomain F.core ν T u₀ u` — ONE curve valid on every `[0,T]`. Weak existence only; no uniqueness/smoothness. |
 | Galerkin-level approximate solutions exist | `Galerkin.SolutionData` (per `n`) | An **intermediate** structure (per-`n` finite-dimensional Galerkin ODE data with uniform bounds) — not itself the final solution; consumed by `Galerkin.CompactnessPackage` / `exists_lerayHopf_from_package` on the way to `LerayHopfSolution`. |
 
 Nothing above is a smoothness, uniqueness, or non-uniqueness claim.

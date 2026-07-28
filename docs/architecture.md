@@ -134,6 +134,18 @@ Interface + re-export: `SolutionInterfaces.lean` (support layer: `Torus3NSForms`
 `LerayHopfSolutionFull`, assembly helpers — the capstone itself now lives in
 `GalerkinODECapstone.lean`), `Capstone.lean` (re-exports the full chain).
 
+Global-in-time capstone (𝕋³, issue #195): `GlobalCapstone.lean` (**capstone**:
+`exists_global_lerayHopf_torus3`) assembles a single curve `u : Time → L2Sigma` and one
+form bundle `F` for which the finite-horizon Leray–Hopf contract holds at **every**
+`T > 0` — global-in-time weak existence on `[0, ∞)`. It sits downstream of the diagonal-
+extraction chain: `DiagonalGalerkin.lean` (P3 — the diagonal weak-limit curve `W`,
+`exists_diagonal_weakly_convergent_galSeq`), `KappaChainExit.lean` (P2 — per-horizon
+`P2ExitWitness` at mode-map `κ := δ`, `torus_kappaChain_exit`), and the generic
+`LerayHopf/Galerkin/GlobalContract.lean` (P1 — the `Galerkin.IsLerayHopfOn` predicate with
+its `congr_Icc`/`mono` horizon-transfer lemmas). It is downstream of the finite-horizon
+`GalerkinODECapstone.lean` (`exists_lerayHopf_torus3`, unchanged), is part of the release
+cone (`import LerayHopf`), and is kernel-only (pinned by `scripts/check-axioms-live.sh`).
+
 ## ℝ³ lane — `LerayHopf/R3/`
 
 Spatial linear layer (axiom-free, sorry-free): `Domain.lean`, `DivergenceFree.lean`
