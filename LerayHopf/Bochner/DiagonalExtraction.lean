@@ -1,20 +1,27 @@
--- SCRATCH — issue #195 feasibility spike (lean-architect). NOT production code.
--- Abstract, PDE-independent diagonal-subsequence lemma for a nested family of
--- strictly monotone extraction maps.  Fully proved (no sorry, no axioms).
---
--- Campaign role (docs/scratch/global-diagonal-campaign.md, Phase P3): given per-stage
--- extractions `e m` (stage m extracts from the stage-(m-1) family), the composed maps
--- `nestedComp e m = e 0 ∘ e 1 ∘ ⋯ ∘ e m` are the absolute extractions of each stage,
--- and the diagonal `δ k = nestedComp e k k` is a single strictly monotone extraction
--- whose m-shifted tail refines EVERY stage: `δ (m + j) = nestedComp e m (ψ j)` with
--- `ψ` strictly monotone.  Consequently any limit that holds along stage m transfers
--- to the diagonal (`tendsto_diag_of_tendsto_stage`).
+/-
+# LerayHopf.Bochner.DiagonalExtraction — abstract diagonal-subsequence machinery
+
+Abstract, PDE-independent diagonal-subsequence lemma for a nested family of strictly
+monotone extraction maps.  Fully proved (no `sorry`, no project axioms — kernel-trio
+only).  Promoted verbatim from the issue #195 feasibility spike; the mathematics is
+unchanged.
+
+Given per-stage extractions `e m` (stage `m` extracts from the stage-`(m-1)` family),
+the composed maps `nestedComp e m = e 0 ∘ e 1 ∘ ⋯ ∘ e m` are the absolute extractions
+of each stage, and the diagonal `δ k = nestedComp e k k` is a single strictly monotone
+extraction whose `m`-shifted tail refines EVERY stage: `δ (m + j) = nestedComp e m (ψ j)`
+with `ψ` strictly monotone.  Consequently any limit that holds along stage `m` transfers
+to the diagonal (`tendsto_diag_of_tendsto_stage`).
+
+Depends only on mathlib's `Filter.atTop` order machinery — no PDE / analysis imports —
+so it serves as the domain-neutral diagonal engine consumed by `Torus/DiagonalGalerkin.lean`.
+-/
 import Mathlib.Order.Filter.AtTopBot.Basic
 import Mathlib.Order.Filter.AtTopBot.Tendsto
 
 open Filter
 
-namespace LerayHopf.Scratch195
+namespace LerayHopf.Bochner
 
 /-- Composed stage extraction: `nestedComp e m = e 0 ∘ e 1 ∘ ⋯ ∘ e m`.
 `e (m+1)` is the stage-(m+1) extraction *relative to* stage `m`, so the absolute
@@ -117,11 +124,4 @@ theorem tendsto_diag_of_tendsto_stage {α : Type*} {e : ℕ → ℕ → ℕ}
     rw [Nat.add_comm m j]
   exact (tendsto_add_atTop_iff_nat m).mp hshift
 
-end LerayHopf.Scratch195
-
--- Axiom pins (recorded in docs/scratch/global-diagonal-campaign.md §10; expected:
--- [propext] at most — no sorryAx, no project axioms).
-#print axioms LerayHopf.Scratch195.nestedComp_add
-#print axioms LerayHopf.Scratch195.diagExtraction_strictMono
-#print axioms LerayHopf.Scratch195.exists_diagonal_extraction
-#print axioms LerayHopf.Scratch195.tendsto_diag_of_tendsto_stage
+end LerayHopf.Bochner

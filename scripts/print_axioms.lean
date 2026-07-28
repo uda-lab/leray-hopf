@@ -40,6 +40,7 @@ import LerayHopf.Core
 import LerayHopf.Experimental
 import LerayHopf.Galerkin.GlobalContract
 import LerayHopf.Torus.KappaChainExit
+import LerayHopf.Torus.DiagonalGalerkin
 
 #print axioms LerayHopf.exists_lerayHopf_torus3
 #print axioms LerayHopf.exists_lerayHopf_r3
@@ -57,6 +58,13 @@ import LerayHopf.Torus.KappaChainExit
 
 -- P2 (#201) κ-chain exit gate — the compiled acceptance artifact instantiation.
 #print axioms LerayHopf.torus_kappaChain_exit
+
+-- P3 (#202) diagonal machinery — the packaged weak-limit theorem plus the promoted
+-- abstract diagonal API it consumes directly (the latter has no other release-cone
+-- live pin, so it is pinned here to close the P3→P4 sorryAx blind window; architect
+-- #202 §7 addition).
+#print axioms LerayHopf.exists_diagonal_weakly_convergent_galSeq
+#print axioms LerayHopf.Bochner.exists_diagonal_extraction
 
 -- Experimental-module axiom profile (visibility only — see docs/statement-cards/).
 #print axioms LerayHopf.Bochner.w1pTime_continuous_in_H

@@ -172,9 +172,11 @@ import LerayHopf.Bochner.TimeConvolution
 import LerayHopf.Bochner.StepFunctionCompactness  -- issue #46 PR-1: generic step-curve Lp compactness (File A)
 import LerayHopf.Bochner.ScalarEquicontinuity     -- issue #23: domain-neutral scalar equicontinuity engine
 import LerayHopf.Bochner.WeakLimitToolkit         -- issue #4 PR-5: generic Hilbert weak-limit toolkit (hoisted from Torus/TraceEnergy)
+import LerayHopf.Bochner.DiagonalExtraction       -- issue #202 P3: abstract diagonal-subsequence machinery (PDE-independent)
 import LerayHopf.Torus.ModeCompactness             -- issue #23: mode-wise extraction (equi-Lipschitz + engine assembly)
 import LerayHopf.Torus.ModeTail                    -- issue #23: mode-wise tail bounds
 import LerayHopf.Torus.AubinLionsAssembly          -- issue #23: aubin_lions replacement assembly
 import LerayHopf.Torus.KappaChainExit              -- issue #201 P2: κ-chain exit gate (P2ExitWitness + torus_kappaChain_exit)
+import LerayHopf.Torus.DiagonalGalerkin            -- issue #202 P3: stage recursion + diagonal weak limit (exists_diagonal_weakly_convergent_galSeq)
 import LerayHopf.R3.GoodRepresentative            -- issue #4 PR-5: R3 weakly-continuous representative (scaffold)
 import LerayHopf.R3.LimitPassage                  -- issue #4 PR-6: galerkin_limit_passage_R3 PROVED (zero project axioms)

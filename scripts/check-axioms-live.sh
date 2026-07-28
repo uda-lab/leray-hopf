@@ -299,6 +299,24 @@ assert_axioms "torus_kappaChain_exit" \
   "propext Classical.choice Quot.sound"
 
 # ---------------------------------------------------------------------------
+# Pins 11–12: P3 (#202) diagonal machinery
+#   Pin 11: exists_diagonal_weakly_convergent_galSeq — the packaged diagonal weak-limit
+#     theorem (Torus/DiagonalGalerkin.lean). Kernel-only: the base family galSeq is a
+#     parameter (no galSeq_of_torus), and the whole stage recursion + diagonal engine it
+#     assembles is kernel-trio.
+#   Pin 12: Bochner.exists_diagonal_extraction — the promoted abstract diagonal API
+#     (Bochner/DiagonalExtraction.lean). The packaged theorem's witness uses
+#     diagExtraction / diagExtraction_strictMono / tendsto_diag_of_tendsto_stage
+#     DIRECTLY, so this promoted decl sits in the release cone consumed by no live-pinned
+#     capstone yet; pinning it here closes the P3→P4 sorryAx blind window (same doctrine
+#     as the P1 GlobalContract interim pins; architect #202 §7 addition).
+# ---------------------------------------------------------------------------
+assert_axioms "exists_diagonal_weakly_convergent_galSeq" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "Bochner.exists_diagonal_extraction" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
 # Experimental-module axiom profile (issue #158 "public sorry / scaffold theorem の
 # axiom profile を release tooling で可視化" requirement) — VISIBILITY ONLY, does not
 # affect FAIL. Prints the axiom set of every `sorryAx`-carrying declaration behind the
@@ -343,4 +361,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 10 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only)."
+echo "AXIOM LIVE PIN OK — all 12 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only; P3 diagonal packaged theorem + promoted diagonal API kernel-only)."
