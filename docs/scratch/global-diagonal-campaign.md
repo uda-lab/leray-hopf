@@ -1,12 +1,15 @@
 # Global-in-time Leray–Hopf via diagonal extraction — torus-lane campaign (issue #195)
 
-**Author:** lean-architect (fable). **Status:** design + feasibility phase of issue #195.
-**Verdict:** **CONDITIONAL-GO** (§9, §11, §12 — all spikes compile sorry-free and every
-conjunct of the final target is traced to an existing interface plus a named, provable
-transfer lemma; P1/P2 dispatch unconditional, P3/P4 conditioned on the typed
-`P2ExitWitness` instantiation + committed scratch-pin checker, §5 P2 row —
-**condition SATISFIED 2026-07-28** via PR #207, `dev/v0.2.0` @ `ba135aae`; P3/P4
-dispatch unblocked, §13 P2 gate note).
+**Author:** lean-architect (fable). **Status:** **COMPLETE (torus lane), 2026-07-28** —
+all phases P1–P5 delivered.
+**Verdict:** **campaign COMPLETE (torus lane).** The original CONDITIONAL-GO (§9, §11,
+§12, §13) has been fully discharged: every spike compiled sorry-free, every conjunct of
+the final target was traced to an existing interface plus a named transfer lemma and then
+proved, and all phases shipped — P1 (PR #206), P2 (PR #207), P3 (PR #209), P4 (PR #210),
+P5 (this doc PR). The torus global capstone `exists_global_lerayHopf_torus3` is merged in
+the release cone at `dev/v0.2.0` @ `161b921`, kernel-only (16/16 live pins). ℝ³
+implementation remains out of scope (assessment only, §8 final addendum). See §14 for the
+campaign-completion record.
 
 Owner decision (recorded at dispatch): on GO the campaign continues through the **torus
 global capstone**. ℝ³ implementation is out of scope (assessment only, §8).
@@ -132,7 +135,7 @@ torus by `torusDomain_dissip`/`torusDomain_regMem` (`SolutionInterfaces.lean:271
 
 | # | Conjunct (at horizon `T`, curve `W`) | Source at horizon `Tₘ ≥ T` (curve `vₘ`) | Transfer |
 |---|---|---|---|
-| 1 | `WeakFormNS ν T (torusDomain.evolution F.core) W` | limit-passage conjunct (1) for `vₘ` | `congr_Icc` (integrand equality on `uIcc 0 Tₘ`) then `weakFormNS_mono` (§4.2; `WeakFormNS.mono` after the P4 rename) |
+| 1 | `WeakFormNS ν T (torusDomain.evolution F.core) W` | limit-passage conjunct (1) for `vₘ` | `congr_Icc` (integrand equality on `uIcc 0 Tₘ`) then `WeakFormNS.mono` (§4.2; renamed from `weakFormNS_mono` in P4) |
 | 2 | `∀ t ∈ [0,T]`, `½‖W t‖² + ∫₀ᵗ viscousFormSq ν (W s) ≤ ½‖u₀‖²` | conjunct (2) for `vₘ` | pointwise eq on `[0,Tₘ]` (norm + `intervalIntegral.integral_congr`); restriction trivial (`T ≤ Tₘ`) |
 | 3 | `Tendsto (W ·) (𝓝[≥] 0) (𝓝 u₀)` (strong trace) | conjunct (3) for `vₘ` | germ transfer: `Icc 0 Tₘ ∈ 𝓝[≥] 0` since `Tₘ > 0`; `T`-free |
 | 4a | `∀ᵐ t ∂(vol.restrict (Icc 0 T)), memH1VF (W t)` | conjunct (4a) for `vₘ` | pointwise eq + `ae_restrict_of_ae_restrict_of_subset` (`Icc 0 T ⊆ Icc 0 Tₘ`) |
@@ -272,7 +275,7 @@ theorem Galerkin.IsLerayHopfOn.mono (h : IsLerayHopfOn D C ν T u₀ u)
     (hT' : 0 < T') (hle : T' ≤ T) : IsLerayHopfOn D C ν T' u₀ u
 ```
 
-P1 keeps the compiled spike names verbatim. P4 will move `weakFormNS_mono`/`weakFormNS_congr_Icc` into the `WeakFormNS` namespace as `WeakFormNS.mono`/`WeakFormNS.congr_Icc` (dot-notation); all other contract names are final.
+P1 kept the compiled spike names verbatim. P4 moved `weakFormNS_mono`/`weakFormNS_congr_Icc` into the `WeakFormNS` namespace as `WeakFormNS.mono`/`WeakFormNS.congr_Icc` (dot-notation); all other contract names are final.
 
 ### 4.3 The global structure — literal `∃ u, ∀ T`, no curve duplication
 
@@ -411,28 +414,81 @@ by the `LerayHopf` root; re-verification commands and axiom-pin expectations in 
 
 ---
 
-## 8. ℝ³-lane reuse assessment (assessment only; implementation out of scope)
+## 8. ℝ³-lane reuse assessment — P5 final addendum (issue #204; assessment only, implementation out of scope)
 
-- **Reused as-is (no per-lane work):** the abstract diagonal machinery (P3's
-  `DiagonalExtraction`, PDE-independent) and the entire generic contract layer (P1:
-  `IsLerayHopfOn`, `weakFormNS_mono` (`WeakFormNS.mono` after the P4 rename, §4.2),
-  `congr_Icc`, `mono`, `GlobalLerayHopfSolution`) — all
-  stated over `Galerkin.Domain`/`DissipativeEvolution`, both lanes instantiate.
-- **Same design, re-threaded per file (P2-analogue):** the R³ compactness chain has the same
-  "base `galSeq` + per-datum/cutoff leaves" architecture; `GalerkinSolutionData_R3` is the
-  same generic `Galerkin.SolutionData` (issue #112), and the crucial coherence lever exists
-  verbatim: `exists_weak_representative_R3` (`R3/GoodRepresentative.lean:198`) already
-  exports the everywhere weak-convergence pin against all `z : L2VF_R3` (even without a
-  sub-extraction `ρ` — along `alPkg.φ` directly, slightly SIMPLER than the torus). The
-  κ-threading pattern validated by spike 2 transfers mechanically; volume is comparable
-  (R³ chain: `SpaceTimeCompactness`, `GoodRepresentative`, `TraceEnergy_R3`-equivalents).
-- **Genuinely R³-specific residue:** the stage/extraction layer works against R³'s
-  ball-restricted strong convergence (`strong_convergence_ae` per ball radius) instead of
-  the torus mode-wise construction; the stage recursion (P3-analogue) must consume R³'s
-  limit-curve theorem, whose weak-convergence conjunct should be checked for
-  every-`t`-vs-a.e. before committing (kill-criterion analogue of P3).
-- **Estimate:** P1+P3(abstract) amortize fully; the R³ campaign ≈ one P2-sized re-threading
-  PR + one P3/P4-sized assembly PR. Open R3 sub-issues only after P4 lands (P5 gate).
+Written after the torus lane closed (P4 merged, PR #210 @ `161b921`), this is the P5
+deliverable: an honest, post-P4 assessment of which of the campaign's **merged**
+artifacts a future ℝ³ global-in-time lane could reuse, which it could not, and what the
+gate to starting such a lane actually is. It is **assessment only** — no ℝ³ Lean work is
+in #195 scope, and this addendum opens no ℝ³ implementation issue and makes no schedule
+or feasibility commitment.
+
+### 8.1 What transfers to a future ℝ³ global lane
+
+- **The abstract diagonal machinery — reused verbatim, zero per-lane work.**
+  `LerayHopf/Bochner/DiagonalExtraction.lean` (P3, merged PR #209) is pure order theory
+  over `ℕ → ℕ` extraction towers — `nestedComp`, `exists_diagonal_extraction`,
+  `tendsto_diag_of_tendsto_stage` — with **no PDE, domain, or Hilbert-space content
+  whatsoever**. Its `tendsto_diag_of_tendsto_stage` targets an arbitrary filter, so the
+  ℝ³ stage recursion feeds its own stage curves through the identical corollary. This
+  module is domain-independent by construction and needs nothing re-proved.
+
+- **The generic contract layer — reused verbatim, generic over `Galerkin.Domain`.**
+  `LerayHopf/Galerkin/GlobalContract.lean` (P1, merged PR #206) is stated entirely over
+  `Galerkin.Domain` / `DissipativeEvolution`: `Galerkin.IsLerayHopfOn`, the round-trip
+  equivalences, `Galerkin.GlobalLerayHopfSolution` (the literal `∃ u, ∀ T` structure),
+  and the horizon-transfer lemmas `WeakFormNS.mono` / `WeakFormNS.congr_Icc` /
+  `IsLerayHopfOn.mono` / `IsLerayHopfOn.congr_Icc`. The torus capstone instantiates these
+  at `torusDomain`; an ℝ³ capstone instantiates the SAME declarations at `r3Domain 𝔊`
+  with no change — `r3Domain` is already a `Galerkin.Domain` (issue #112). Concretely,
+  the ℝ³ analogue of the P4 assembly (`GlobalCapstone.lean`) would call
+  `IsLerayHopfOn.congr_Icc`/`.mono` unchanged; only the per-horizon witness feeding them
+  is lane-specific.
+
+- **The κ-generalized chain + `P2ExitWitness` pattern — reused as a template, not verbatim.**
+  `Torus/KappaChainExit.lean` (P2, merged PR #207) shows the shape an ℝ³ lane copies: a
+  per-horizon exit witness whose fields are (package construction, energy class, limit
+  passage, everywhere-weak representative pin) over ONE base family bound to the given
+  reindexed family by a mandatory `transport` equality (the `P2ExitWitness` design,
+  frozen in `Scratch/P2ExitContract.lean`). The ℝ³ compactness chain has the same
+  "base `galSeq` + per-datum/cutoff-quantified leaves" architecture
+  (`GalerkinSolutionData_R3` is the same generic `Galerkin.SolutionData`), and the
+  crucial coherence lever exists in ℝ³ verbatim: `exists_weak_representative_R3`
+  (`R3/GoodRepresentative.lean:198`) already exports the everywhere weak-convergence pin
+  against all `z : L2VF_R3` — in fact along `alPkg.φ` directly, without a sub-extraction
+  `ρ`, so slightly SIMPLER than the torus. The κ-threading pattern (base + strictly
+  monotone mode map, subsequent extraction as composition) validated by the campaign's
+  spikes transfers mechanically to the ℝ³ compactness declarations.
+
+### 8.2 What does NOT transfer
+
+- **The torus mode-basis compactness specifics.** `Torus/ModeCompactness.lean`,
+  `Torus/ModeTail.lean`, and the mode-wise extraction/tail machinery are specific to the
+  torus Fourier mode basis and its global (not ball-restricted) strong convergence.
+  `Torus/KappaChainExit.lean`'s *body* is written against those torus interfaces; only
+  its *shape* (the `P2ExitWitness` template) carries over. An ℝ³ lane re-threads κ through
+  its OWN compactness chain, it does not reuse the torus one.
+- **The ℝ³ lane's own compactness route (per the pre-P4 analysis, unchanged).** ℝ³'s
+  stage/extraction layer works against ball-restricted strong convergence
+  (`strong_convergence_ae` per ball radius, `R3/SpacetimePrecompact.lean`,
+  Fréchet–Kolmogorov) rather than the torus mode-wise construction. The ℝ³ stage
+  recursion (the P3-analogue) must consume ℝ³'s own limit-curve theorem, whose
+  weak-convergence conjunct must be checked for every-`t`-vs-a.e. content BEFORE any
+  commitment — this is the exact kill-criterion analogue that guarded torus P3, and it is
+  where an ℝ³ lane could genuinely die.
+
+### 8.3 The honest gate
+
+Reuse amortizes the two domain-neutral layers (P1 contract + P3 abstract diagonal)
+fully, and the κ + `P2ExitWitness` template plus the already-exported ℝ³ pin make the
+per-lane work *structured* rather than exploratory. But **ℝ³ global-in-time existence
+would be its own campaign with its own B0 design gate** — an architect spike stating
+every conjunct of an ℝ³ global target against the real ℝ³ interfaces, an ℝ³ κ-chain exit
+gate, and the every-`t`-vs-a.e. check on ℝ³'s limit curve — not a mechanical port of the
+torus PRs. This addendum makes **no** claim that the ℝ³ lane is feasible on any timeline,
+opens **no** ℝ³ implementation issue, and asserts **no** ℝ³ result. Per the owner
+decision recorded at dispatch, ℝ³ implementation stays out of #195 scope; any ℝ³ lane
+starts only from a fresh design issue and its own GO verdict.
 
 ---
 
@@ -873,3 +929,52 @@ as PR #206) is green at 14/14 on the post-P2 tree. **P3 (#202) and P4 (#203) are
 dispatch-unblocked.** `LerayHopf/Scratch/P2ExitContract.lean` is retained unchanged
 as frozen gate evidence; its production twin is `KappaChainExit.lean`, and the two
 are NOT to be kept in sync (cross-reference in the scratch file header).
+
+---
+
+## 14. Campaign-completion record (2026-07-28)
+
+The issue #195 torus lane is **complete**. All five phases are delivered and merged to
+`dev/v0.2.0`; the torus global-in-time capstone is in the release cone, kernel-only.
+
+**Phase delivery (issue → PR → merge shape).**
+
+| Phase | Sub-issue | PR | Content |
+|---|---|---|---|
+| P1 | #200 | #206 | Generic global contract layer promoted to `LerayHopf/Galerkin/GlobalContract.lean` + committed scratch-pin checker (`scripts/check-scratch-pins.sh`). |
+| P2 | #201 | #207 | κ-generalized torus compactness chain + `torus_kappaChain_exit` / `P2ExitWitness` (`LerayHopf/Torus/KappaChainExit.lean`); P2 exit gate satisfied. |
+| P3 | #202 | #209 | Abstract diagonal machinery promoted to `LerayHopf/Bochner/DiagonalExtraction.lean` + stage recursion / diagonal weak limit `W` (`LerayHopf/Torus/DiagonalGalerkin.lean`). |
+| P4 | #203 | #210 | Torus global capstone `exists_global_lerayHopf_torus3` (`LerayHopf/Torus/GlobalCapstone.lean`). |
+| P5 | #204 | this PR | ℝ³-reuse assessment addendum (§8) + this completion record (docs only). |
+
+**P4 exit (campaign capstone).** PR #210, squash-merge commit
+`161b921c8d0a04ff033b52de633887aba9a1f509` on `dev/v0.2.0`. The frozen §4.4 targets are
+proved and in the release cone: `exists_global_lerayHopf_torus3`,
+`exists_globalLerayHopfSolutionFull_torus3`, and `globalTorusCapstone` (the frozen
+`def : Prop` target, folded), plus the consistency witness
+`globalTorusCapstone_implies_finite`.
+
+**Axiom / checker state at completion.**
+
+- `scripts/check-axioms-live.sh` — **16/16** live pins green, all kernel-trio
+  (`propext`, `Classical.choice`, `Quot.sound`), zero project axioms, no `sorryAx`. The
+  four capstone pins are the last four (pins 13–16):
+  `exists_global_lerayHopf_torus3`, `exists_globalLerayHopfSolutionFull_torus3`,
+  `globalTorusCapstone`, `globalTorusCapstone_implies_finite`. Pins are append-only
+  (issue #203 ruling) — no interim pin was pruned.
+- `scripts/check-scratch-pins.sh` — **9/9** green: 2 remaining scratch targets
+  (`KappaReindex`, `P2ExitContract`), all pins kernel-trio. The promoted P1/P3/P4
+  declarations left the scratch set for release-cone membership plus their own live pins.
+
+**Scope guards honored (§6).** `exists_lerayHopf_torus3` is byte-identical to its
+`v0.1.0-rc1` form; no uniqueness assumed; a single diagonal family runs end-to-end (no
+gluing of independently chosen finite-horizon witnesses); no new axioms, no new NS
+estimates. ℝ³ implementation stayed out of scope — assessed only (§8).
+
+**Frozen artifacts retained.** `LerayHopf/Scratch/P2ExitContract.lean` remains as the
+frozen P2-gate evidence (its production twin is `KappaChainExit.lean`; the two are not
+kept in sync). §§9–13 are frozen pass-gate history and are unchanged by this record.
+
+**Verdict:** issue #195 torus lane **COMPLETE**. The remaining campaign action is
+maintainer disposition of the `dev/v0.2.0 → main` merge and closing #195–#204 (dev-branch
+merges do not auto-close issues).
