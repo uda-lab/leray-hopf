@@ -2,8 +2,9 @@
 
 **Author:** lean-architect (fable). **Status:** B0 design gate, 2026-07-28.
 **Verdict (§9): CONDITIONAL-GO** — P1′/P2′ dispatch-ready; P3′/P4′ dispatch blocked on the
-P2′ typed exit gate (§6), mirroring the #195 torus-campaign discipline whose condition was
-met on schedule.
+P2′ typed exit gate (§6, four clauses), mirroring the #195 torus-campaign discipline whose
+condition was met on schedule. Codex adversarial statement gate (xhigh) pass-1 findings
+dispositioned in §11.
 
 This campaign document is NEW and separate from the frozen torus campaign doc
 (`docs/scratch/global-diagonal-campaign.md`, #195 — COMPLETE, not edited by this lane).
@@ -90,16 +91,24 @@ deepest sealed layers, including the only structurally novel one (the Cantor tow
 
 ### 2.1 Frozen final target (D1; `lean-coder` transcribes verbatim)
 
-**Quantifier-prefix decision: `∃ 𝔊, ∃ F, ∃ u, ∀ T`.** Grounds: (i) the finite-horizon
-capstone binds `𝔊`/`F` existentially per call, so the literal global strengthening keeps
-that prefix and moves ONLY `∀ T` inside — the consistency witness (§2.1 below) then
-recovers the finite-horizon statement shape at every horizon; (ii) one curve `u` under a
-single contract family forces one `𝔊` anyway (`IsLerayHopfOn (r3Domain 𝔊) …` mentions
-`𝔊`); (iii) the construction genuinely fixes the witnesses once —
-`B, htest` from `nonempty_schwartzGalerkinBasis_H1`, `𝔊 := schemeOfBasis B`,
-`F` from `r3_NSForms_exists (schemeOfBasis B)`, `galSeq := galSeq_R3_of_basis B F ν hν u₀`
-— all `T`-free, so no per-`T` re-choice ever occurs (the dossier's "stages must fix `𝔊, F`
-once" requirement).
+**Quantifier-prefix decision: `∃ 𝔊, ∃ F, ∃ u, ∀ T`.** Stated honestly (codex gate
+finding 4, §11): the finite-horizon capstone is `∀ T, ∃ 𝔊 F, Nonempty (…)` — scheme,
+forms, and solution are chosen PER HORIZON. The global target is therefore **not a
+quantifier-only rearrangement**: it carries two ADDITIONAL theorem obligations beyond
+anything the finite theorem provides — (α) **uniform witness selection**: one `𝔊`/`F`
+pair serving every horizon, discharged because the concrete construction is `T`-free
+(`B, htest` from `nonempty_schwartzGalerkinBasis_H1`, `𝔊 := schemeOfBasis B`, `F` from
+`r3_NSForms_exists (schemeOfBasis B)`, `galSeq := galSeq_R3_of_basis B F ν hν u₀` — no
+per-`T` re-choice ever occurs, the dossier's "stages must fix `𝔊, F` once" requirement);
+and (β) **one curve across all horizons**: a single `u` satisfying every horizon's
+contract, discharged by the diagonal extraction + Step-4 representative coherence
+(§2.2), which is the entire mathematical content of P3′/P4′. The consistency witness
+`globalR3Capstone_implies_finite` proves ONLY the easy direction (global ⇒ finite,
+via `ofIsOn`); nothing in this campaign treats it as evidence for the hard one.
+Remaining grounds for the prefix itself: one curve `u` under a single contract family
+forces one `𝔊` anyway (`IsLerayHopfOn (r3Domain 𝔊) …` mentions `𝔊`), and the `∃ 𝔊 F`
+outer prefix is the weakest form making the statement well-formed while keeping the
+finite-horizon release capstone byte-identical.
 
 ```lean
 -- P1′, new file LerayHopf/R3/GlobalCapstone.lean
@@ -249,11 +258,17 @@ uniqueness still hold for the coherence step?
    `GoodRepresentative.lean:206–208`) — strictly more than the `L2Sigma_R3` tests
    separation needs, and along `alPkg.φ` directly (no torus-style sub-extraction `ρ`).
 
-Compiled evidence: spike (a) (`LerayHopf/Scratch/R3StageCoherence.lean`) proves the
-coherence core AND the two-representatives-on-nested-windows overlap form against the real
-ℝ³ types, sorry-free, kernel-trio pins (§7). The residual risk is not mathematical but
-plumbing: the pin must survive the κ-threading and the limit-passage re-export — that is
-the P2′ exit gate (§6).
+Compiled evidence — and its honest scope (codex finding 2, §11): spike (a)
+(`LerayHopf/Scratch/R3StageCoherence.lean`) proves the coherence STEP — the coherence
+core and the two-representatives-on-nested-windows overlap form — against the real ℝ³
+types, sorry-free, kernel-trio pins (§7), with no a.e.-in-time leak. That discharges the
+step **conditionally**: its two hypotheses are exactly the hard outputs still to be
+produced — `hW` (diagonal invariant) is P3′'s stage-handle obligation, and `hpin`
+(everywhere-weak pin against the extracted family) is P2′'s re-export obligation; TODAY
+`galerkin_limit_passage_R3` still drops the pin from its conclusion, and `R3KappaSeed`
+supplies only per-ball a.e.-time convergence at the tower layer. The coherence risk is
+therefore retired as mathematics but NOT yet as a compiled pipeline; §6 gates P3′/P4′
+dispatch on compiled artifacts instantiating the EXACT `hW`/`hpin` types.
 
 What WOULD have killed the lane (checked first, per the issue): an a.e.-in-`t`-only weak
 conjunct in the limit-curve theorem. Verified NOT the case — conjunct 2 of
@@ -284,6 +299,44 @@ byte-identical capstone); downstream `alPkg.φ`-consumers (the 15 audited declar
 gain `(κ, hκ)` with body edits of the four audited shapes only. Effective-map
 strictness/cofinality via the torus finding-3 lemma pattern where needed
 (`hκ.comp alPkg.φ_mono`, `le_apply` chains).
+
+### 4.1 Semantic κ-discipline (codex gate finding 1 disposition — design decision)
+
+Compilation alone does not prove every load-bearing limit uses the reindexed sequence:
+with a TOTAL base family, a stale `galSeq (alPkg.φ n)` where `galSeq (κ (alPkg.φ n))`
+is meant stays well-typed. Two candidate protections were weighed; the architect
+decision is the second:
+
+- **Reindexed-family-type route — REJECTED.** Wrapping `galSeq ∘ κ` in a dedicated
+  type (making raw applications at stale indices untypeable) would fork the datum type
+  consumed by the 20 audited declarations AND the merged release cone, violating the
+  §10 byte-identical-capstone guard, and the protection is partial anyway (any body
+  holding the underlying total family can still apply it at a stale index unless every
+  raw application is sealed — not achievable without rewriting the sealed chain).
+- **Effective-index discipline + end-to-end smoke gate — ADOPTED** (the torus-P2
+  precedent, hardened):
+  1. **Statement-site rule.** The effective index appears in exactly two statement
+     sites — the strengthened `galerkin_limit_passage_R3` pin conjunct (below) and the
+     exit-witness `pin` field (§6). Both MUST be written as the literal composition
+     `κ (alPkg.φ n)` on the base family (resp. against `galSeq₁` itself); P2′ adds the
+     torus-mirror lemma `AubinLionsPackage_R3.effective_strictMono :
+     StrictMono (fun n => κ (φ n))` (scratch twin: `AubinLionsPackageKappa.
+     effective_strictMono`, already pin-gated) so downstream consumers compose
+     through the effective map, never through `φ` alone.
+  2. **Smoke gate (P2′ exit-gate clause, §6).** A production smoke theorem at a
+     **genuinely nontrivial seed** (`κ := Nat.succ` — StrictMono, provably ≠ `id`)
+     threads the FULL path package construction → every limit-passage consumer →
+     pin re-export → `r3_kappaChain_exit`, then CONSUMES the witness: via `transport`
+     it must conclude a pin about `galSeq (w.alPkg.φ k + 1)` — the base family at the
+     composed effective index, in the exact `hpin` shape of spike (a). A stale index
+     anywhere in the statement chain makes this conclusion underivable (the
+     hypotheses only ever supply convergence along the seeded subsequence), so the
+     smoke theorem fails to close — the staleness is caught at P2′, not at P4′.
+  3. Why not full κ-compilation at B0: threading the 20-declaration audit surface IS
+     phase P2′ (8 files); doing it inside B0 would collapse the design gate into the
+     implementation phase. B0's spike (b) retires the structural risk (the only layer
+     with internal extraction machinery); the SEMANTIC risk is what clauses 1–2 gate,
+     fail-closed, before any P3′/P4′ dispatch.
 
 **P2′ additionally strengthens `galerkin_limit_passage_R3`'s conclusion** with the pin
 conjunct its proof already holds:
@@ -320,8 +373,8 @@ modularity-reviewer, broker codex PR review, §8 evidence; append-only live axio
 
 | Phase | Sub-issue title (`Parent: #212`) | Content | Files | Coder | Prover | Kill criterion (→ back to architect) |
 |---|---|---|---|---|---|---|
-| **P1′** | `[#212-A] ℝ³ global contract instantiation: frozen capstone target + consistency witness` | §2.1 `GlobalR3CapstoneStatement` + `GlobalLerayHopfSolutionFull_R3` + `globalR3Capstone_implies_finite` (verbatim); extend `scripts/check-scratch-pins.sh` target/pin enumeration by the two B0 spike modules (`R3StageCoherence` +3 pins, `R3KappaSeed` +2 pins → 4 targets / 14 pins, exact-set semantics unchanged) — lean-coder-owned scripts change | new `LerayHopf/R3/GlobalCapstone.lean` (statement layer only) + `scripts/` | opus | opus (one 3-line proof) | `implies_finite` not closable via `ofIsOn` (would mean the contract equivalence broke — architect) |
-| **P2′** | `[#212-B] κ-generalize the ℝ³ compactness chain + pin re-export + typed exit witness` | §1 κ-audit surface: 20 declarations + `AubinLionsPackage_R3` parameter + `build_galerkin_package_R3_of_galSeq` rewired `κ := id`; strengthen `galerkin_limit_passage_R3` conclusion with the §4 pin conjunct; NEW `extendReindexedFamily_R3` (takes an explicit filler family — ℝ³'s total ODE layer is scheme-specific, so the filler is a parameter, not hardwired; deviation from torus noted §6), `R3KappaChainExitWitness`, `r3_kappaChain_exit`. **Exit gate (§6): typed artifact compiled in production + live pin + `check-scratch-pins.sh` green.** P3′/P4′ dispatch blocked until green | `ArzelaAscoliTime, SteklovAverages, AubinLionsLimitPassage, SolutionInterfaces, EnergyWeakLsc, GoodRepresentative, LimitPassage, AubinLionsAssembly` + new `LerayHopf/R3/KappaChainExit.lean` | opus | opus (mechanical re-threading; spike (b) covers the only novel layer) | any statement fails to typecheck as designed; >2 proof bodies need non-mechanical re-proving; the release capstone's statement would change; the exit witness cannot be reached without a statement change |
+| **P1′** | `[#212-A] ℝ³ global contract instantiation: frozen capstone target + consistency witness` | §2.1 `GlobalR3CapstoneStatement` + `GlobalLerayHopfSolutionFull_R3` + `globalR3Capstone_implies_finite` (verbatim). (The `check-scratch-pins.sh` extension originally slated here was pulled forward into the B0 commit itself — codex finding 3, §11: 4 targets / 14 pins, exact-set semantics unchanged, checker green at B0) | new `LerayHopf/R3/GlobalCapstone.lean` (statement layer only) | opus | opus (one 3-line proof) | `implies_finite` not closable via `ofIsOn` (would mean the contract equivalence broke — architect) |
+| **P2′** | `[#212-B] κ-generalize the ℝ³ compactness chain + pin re-export + typed exit witness` | §1 κ-audit surface: 20 declarations + `AubinLionsPackage_R3` parameter + `build_galerkin_package_R3_of_galSeq` rewired `κ := id`; strengthen `galerkin_limit_passage_R3` conclusion with the §4 pin conjunct; `AubinLionsPackage_R3.effective_strictMono` (§4.1 clause 1); NEW `extendReindexedFamily_R3` (takes an explicit filler family — ℝ³'s total ODE layer is scheme-specific, so the filler is a parameter, not hardwired; deviation from torus noted §6), `R3KappaChainExitWitness`, `r3_kappaChain_exit`, and the §4.1 smoke theorem at `κ := Nat.succ`. **Exit gate (§6, FOUR clauses): typed artifact + live pin, exact-hpin coupling, smoke theorem, checker green.** P3′/P4′ dispatch blocked until all four green | `ArzelaAscoliTime, SteklovAverages, AubinLionsLimitPassage, SolutionInterfaces, EnergyWeakLsc, GoodRepresentative, LimitPassage, AubinLionsAssembly` + new `LerayHopf/R3/KappaChainExit.lean` | opus | opus (mechanical re-threading; spike (b) covers the only novel layer) | any statement fails to typecheck as designed; >2 proof bodies need non-mechanical re-proving; the release capstone's statement would change; the exit witness cannot be reached without a statement change |
 | **P3′** | `[#212-C] ℝ³ stage recursion + diagonal weak limit W` | stage handle `exists_weakLimitCurve_R3_kappa` (§2.2 Step 1, composition of two P2′ outputs); `StageData_R3`, `stageData_R3`, `stageData_R3_comp_eq_nestedComp`, `stageData_R3_diag_tendsto`, `stageData_R3_U_coherent` (promotes spike (a)'s separation lemma to production), `diagWeakLimit_R3`, `exists_diagonal_weakly_convergent_galSeq_R3` (invariant over `z : L2VF_R3` tests, §2.2 Step 2). Reuses `Bochner.DiagonalExtraction` VERBATIM (zero new order theory) | new `LerayHopf/R3/DiagonalGalerkin.lean` | opus | opus — template mirror of merged `Torus/DiagonalGalerkin.lean`; **flagged D4 escalation point**: the `Nat.rec` stage carrier (torus needed fable when the pattern was novel) | stage recursion not expressible as designed; stage-limit coherence fails from `L2Sigma_R3` tests; the stage handle needs data P2′ does not export |
 | **P4′** | `[#212-D] ℝ³ global capstone: exists_global_lerayHopf_r3` | per-horizon exit witnesses at `κ := δ` over `fun k => galSeq (δ k)` (filler `galSeq`, `htest` from `nonempty_schwartzGalerkinBasis_H1`); Step-4 coherence via the compiled spike-(a) lemma shape; `congr_Icc`/`mono` assembly; §2.1 capstones + fold `globalR3Capstone`; live pins (append-only); docs (`claims-and-scope.md`, `architecture.md`, `STATUS.md`) | `LerayHopf/R3/GlobalCapstone.lean` (fills the P1′ file) + docs | opus | opus — node-for-node mirror of merged `Torus/GlobalCapstone.lean` with spike (a) compiled; **flagged D4 escalation point**: Node C coherence assembly | the pin is insufficient for some conjunct's transfer (must NOT be patched by weakening — architect); defeq mismatch `r3Evolution` vs `(r3Domain 𝔊).evolution F.core` that `rfl`-lemmas cannot bridge |
 
@@ -382,10 +435,27 @@ fixed family), so no generality is lost and the `transport` field still makes an
 implementation unrepresentable. `hν` is consumed by the κ-chain builders; `hT` by the
 package; `htest` only by the `WeakFormNS` stage.
 
-**Exit-gate condition (P3′/P4′ dispatch blocker):** a production `r3_kappaChain_exit`
-compiled sorry-free, guarded by a live pin in `scripts/check-axioms-live.sh` (append-only),
-and `scripts/check-scratch-pins.sh` green at the P1′-extended enumeration. Fields may not
-lose content relative to the shape above; names may differ.
+**Exit-gate condition (P3′/P4′ dispatch blocker) — four clauses, all mandatory:**
+
+1. a production `r3_kappaChain_exit` compiled sorry-free, guarded by a live pin in
+   `scripts/check-axioms-live.sh` (append-only);
+2. the witness `pin` field instantiates the EXACT `hpin` hypothesis type of spike (a)'s
+   `r3_representative_diag_coherence` (finding 2, §11): same `∀ t ∈ Icc 0 T, ∀ z :
+   L2VF_R3, Tendsto …` shape, against `galSeq₁` itself along `alPkg.φ` — checked by a
+   compiled coupling lemma applying the spike-(a) statement (promoted in P3′) to the
+   witness output, not by visual inspection;
+3. the §4.1 smoke theorem at `κ := Nat.succ` compiled sorry-free: full-path threading
+   plus witness consumption via `transport`, concluding the base-family pin at the
+   composed effective index `w.alPkg.φ k + 1`;
+4. `scripts/check-scratch-pins.sh` green at the B0-extended enumeration (14 pins,
+   committed with this gate — §11 finding 3).
+
+Fields may not lose content relative to the shape above; names may differ. P3′ carries
+the twin obligation on the OTHER coherence input: the stage handle
+`exists_weakLimitCurve_R3_kappa` must produce the EXACT `hW` hypothesis type of
+spike (a) (diagonal invariant over `L2Sigma_R3`-tests at minimum; the design gives
+`L2VF_R3`), verified the same way — a compiled application of the promoted coherence
+lemma to stage outputs is a P3′ deliverable, not deferred to P4′.
 
 ---
 
@@ -393,9 +463,11 @@ lose content relative to the shape above; names may differ.
 
 Build: `flock /tmp/lean-build.lock lake build LerayHopf.Scratch.R3StageCoherence
 LerayHopf.Scratch.R3KappaSeed` → `Build completed successfully (3113 jobs)`, log
-`/tmp/lh212-spike-build.log`. Re-verification from repo state alone: the same command; the
-pins are `#print axioms` lines INSIDE the committed spike files (evidence contract per
-torus §10.5; the committed checker enumeration extension is P1′'s lean-coder item).
+`/tmp/lh212-spike-build.log`. Re-verification from repo state alone:
+`bash scripts/check-scratch-pins.sh` — the checker enumeration was extended IN THIS
+B0 COMMIT (codex finding 3, §11) to 4 targets / 14 pins with forced-fresh rebuild and
+exact-set fail-closed semantics, so the five new `#print axioms` lines inside the
+committed spike files are CI-enforced from B0 onward, not deferred to P1′.
 
 ### Spike (a) — `LerayHopf/Scratch/R3StageCoherence.lean` (every-t overlap coherence)
 
@@ -471,15 +543,22 @@ the P2′ typed exit gate (§6). Grounds:
    limit-curve pin is ∀t (not a.e.), full-space tests, along `alPkg.φ` directly
    (`GoodRepresentative.lean:206–208`); the a.e. statements are confined to the same two
    places as the torus (representative identification, energy class).
-2. **The one genuinely ℝ³-specific risk — per-ball structure vs full-space coherence — is
-   closed by compiled evidence**, not argument: spike (a) proves the coherence core and
-   the nested-window overlap form against the real interfaces, sorry-free; §3 explains why
-   the per-ball data never reaches the argument.
-3. **The κ-threading risk is retired on the only structurally novel layer**: spike (b)
-   compiles the seeded Cantor tower verbatim-body and its composition into the measurable-
-   limit layer, with `galerkin_weakLimit_R3` and the refine-capable root consumed
-   UNCHANGED. The remaining thread is mechanical (§1 audit, four body-edit shapes) and
-   gated (§6).
+2. **The one genuinely ℝ³-specific risk — per-ball structure vs full-space coherence —
+   is CONDITIONALLY discharged** (downgraded per codex finding 2, §11): spike (a)
+   compiles the coherence STEP against the real interfaces, sorry-free, and §3 explains
+   why the per-ball data never reaches the argument; but its `hW`/`hpin` hypotheses are
+   exactly the outputs P3′ and P2′ must still produce, and `galerkin_limit_passage_R3`
+   today drops the pin. The mathematics of the step is retired; its applicability is
+   gated fail-closed (§6 clauses 2–3 and the P3′ `hW`-coupling deliverable).
+3. **The κ-threading risk is retired on the only STRUCTURALLY novel layer, and the
+   residual semantic risk is gated**: spike (b) compiles the seeded Cantor tower
+   verbatim-body and its composition into the measurable-limit layer, with
+   `galerkin_weakLimit_R3` and the refine-capable root consumed UNCHANGED. Compilation
+   alone cannot exclude stale-index uses in the 20-declaration thread (codex finding 1);
+   §4.1 records the design answer — effective-index statement discipline plus a
+   mandatory nontrivial-κ smoke theorem as §6 exit-gate clause 3 — so ship confidence
+   for P3′/P4′ is claimed only AFTER the full κ-threaded exit path is compiled and
+   gated, never from this B0 commit.
 4. **Every conjunct of the final target is traced** (§2.3) to a merged ℝ³ theorem conjunct
    plus a #195-merged transfer lemma; the only new conjunct content (pin re-export) is
    already held inside the merged proof it is exported from.
@@ -502,3 +581,17 @@ NO-GO triggers routed back here (D3): any P2′/P3′/P4′ kill criterion in §
 - No new `axiom`/`opaque`; kernel-trio pins throughout; append-only live pins.
 - The torus lane and the frozen #195 campaign doc are untouched.
 - All PRs target `dev/v0.2.0`; owner merges dev→main only with both lanes complete.
+
+---
+
+## 11. Codex adversarial statement gate — pass-1 findings and dispositions (B0)
+
+Gate run at the B0 commit (`43f0f9a`), effort xhigh, verdict **needs-attention**
+(4 findings). Dispositions below; the amended sections are marked in place.
+
+| # | Sev | Finding (condensed) | Disposition |
+|---|---|---|---|
+| 1 | high | κ-threading not semantically protected: total base family keeps stale `galSeq (alPkg.φ n)` well-typed; spike validates only tower + measurable-limit layers; package consumers, limit passage, pin re-export, exit witness uncompiled | **Design answer recorded, gate hardened** (new §4.1): reindexed-family-type route rejected with grounds (capstone byte-identity, partial protection); adopted effective-index statement discipline (`AubinLionsPackage_R3.effective_strictMono`, two statement sites written as literal `κ (alPkg.φ n)` compositions) + mandatory production smoke theorem at `κ := Nat.succ` consuming the exit witness through `transport` down to a base-family pin at the composed effective index — now §6 exit-gate clause 3. Full κ-compilation at B0 judged disproportionate (it IS P2′); justification in §4.1(3). P3′/P4′ remain dispatch-blocked until all four §6 clauses are green |
+| 2 | high | Coherence only conditionally proved: spike (a)'s `hW`/`hpin` are exactly the still-unproduced P3′/P2′ outputs; `galerkin_limit_passage_R3` still drops the pin; §9 overclaimed "closed by compiled evidence" | **Accepted, claims downgraded**: §3 closing paragraph and §9 grounds 2–3 rewritten to "conditionally discharged — mathematics retired, pipeline gated"; §6 gains clause 2 (exit-witness pin must instantiate spike (a)'s EXACT `hpin` type via a compiled coupling lemma) and the twin P3′ `hW`-coupling deliverable. P3′/P4′ stay blocked until compiled stage handle + production exit witness instantiate the exact hypothesis types |
+| 3 | medium | Spike evidence outside the enforced gate: `check-scratch-pins.sh` still enumerated only the 2 torus targets / 9 pins; deferring to P1′ left this commit's pins non-fail-closed | **Accepted, done at B0 (this commit)**: checker extended append-only to 4 targets / 14 pins (fully-qualified names — `Scratch195` + `Scratch212` namespaces), forced-fresh rebuild + exact-set semantics unchanged, run green locally (log `/tmp/lh212-pins-check.log`). §5 P1′ row and §7 updated accordingly. (Scripts are lean-coder territory in phase work; this edit was executed at B0 on explicit orchestrator instruction, recorded here) |
+| 4 | medium | Quantifier rationale misstated the strengthening: finite theorem is `∀T ∃𝔊 ∃F Nonempty`; global target ALSO fixes scheme/forms and one curve across horizons — additional obligations, not a rearrangement; `implies_finite` is the easy direction only | **Accepted, reworded** (§2.1): the decision paragraph now states obligations (α) uniform witness selection (discharged by the `T`-free construction) and (β) one curve across all horizons (discharged by diagonal + coherence, the content of P3′/P4′) explicitly, and flags `globalR3Capstone_implies_finite` as the easy direction only |
