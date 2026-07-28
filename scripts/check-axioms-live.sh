@@ -275,7 +275,9 @@ assert_core_clean "localCompactness_R3_of_ballCompact"
 #   WeakFormNS.congr_Icc; pins 5–7 cover IsLerayHopfOn / ofIsOn / GlobalLerayHopfSolution
 #   / toSolution). The badTail/truncation quartet is deliberately unpinned (illustrative
 #   cross-check layer, consumed by nothing downstream; cone membership suffices). P4's
-#   global-capstone live pin will subsume these and may prune them then.
+#   global-capstone live pins (13–16) are APPENDED alongside these, not substituted for
+#   them (append-only doctrine, #203 Q3 ruling: no pruning — subsumption is
+#   route-dependent and each pin costs ~zero).
 # ---------------------------------------------------------------------------
 assert_axioms "Galerkin.nonempty_lerayHopfSolution_iff_exists_isOn" \
   "propext Classical.choice Quot.sound"
