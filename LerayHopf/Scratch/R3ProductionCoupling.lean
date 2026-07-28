@@ -76,13 +76,15 @@
 --     VERBATIM; the only sanctioned change is the proof head swapping from the
 --     scratch seeds to the κ-threaded production declarations (plus the coupling
 --     names above).  Any other edit to those conclusion texts = kill-criterion event.
---     MACHINE-ENFORCED since pass-7 (round-7 finding 3): the static gate reader
---     (`scripts/scratch_reader.lean`) requires each guard's PROOF TERM to
---     reference its seed directly (DEPGUARD), so the P2′ re-point must update,
---     in the SAME reviewed diff: these proof heads, the reader's `depGuards`
---     pairs, the checker's DEPGUARD assertion lines, and
+--     MACHINE-ENFORCED since pass-7 (round-7 finding 3; strengthened at round-8
+--     finding 3): the static gate reader (`scripts/scratch_reader.lean`)
+--     requires each guard's PROOF TERM — hypothesis binders stripped — to have
+--     its seed as the APPLICATION HEAD (DEPGUARD|…|head), so the P2′ re-point
+--     must update, in the SAME reviewed diff: these proof heads, the reader's
+--     `depGuards` pairs, the checker's DEPGUARD assertion lines, and
 --     `scripts/scratch-manifest.expected` (which also freezes every statement
---     here by type-hash).  Forgetting any of the four breaks the gate loudly.
+--     here by sha-256 canonical digest).  Forgetting any of the four breaks the
+--     gate loudly.
 -- All declarations below are fully proved (no sorry, no axioms, no `by` beyond
 -- destructuring — every probe is a bare application or field-by-field projection).
 import LerayHopf.R3.LimitPassage

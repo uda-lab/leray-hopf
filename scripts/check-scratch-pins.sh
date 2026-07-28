@@ -13,14 +13,19 @@
 #     the ELABORATED environment (retired at pass-7 — importing a target EXECUTES
 #     it: initializers and registered command elaborators from a malicious target
 #     would run inside the manifest process and could fake the evidence block);
-#   * pass-7 (current): scripts/scratch_reader.lean imports ONLY `Lean` and reads
-#     the target .olean files as DATA (`Lean.readModuleData`) — no target-authored
-#     code executes anywhere in the evidence path.  Axiom closures come from the
-#     toolchain's own precomputed `exportedAxiomsExt` entries (the data behind
-#     `#print axioms`), statement shapes are frozen via per-declaration type
-#     hashes, and the free-κ guards' proof terms are checked to reference their
-#     seeded theorems (DEPGUARD).  See the reader's header for the full trust
-#     model and the documented residual boundary.
+#   * pass-7, hardened at pass-8 (current): scripts/scratch_reader.lean imports
+#     ONLY `Lean` and reads the target .olean files as DATA
+#     (`Lean.readModuleData`) — no target-authored code executes anywhere in the
+#     evidence path.  Axiom closures come from the toolchain's own precomputed
+#     `exportedAxiomsExt` entries (the data behind `#print axioms`; the single
+#     marked decode is registered in the reader's ASSUMPTIONS A1–A4 — pass-8
+#     finding 1).  Statements are frozen via per-declaration SHA-256 digests
+#     over a canonical hash-consed serialization of levelParams + elaborated
+#     type (pass-8 finding 2 retired the 32-bit-truncating `Expr.hash`), and
+#     each free-κ guard's proof term must have its seeded theorem as the
+#     APPLICATION HEAD (pass-8 finding 3 retired mere getUsedConstants
+#     occurrence).  See the reader's header for the full trust model and the
+#     documented residual boundary.
 #
 # WHAT THIS SCRIPT ASSERTS, FAIL-CLOSED:
 #   * every scratch target was FRESHLY rebuilt in this run (artifacts deleted
@@ -33,8 +38,8 @@
 #     declarations, any non-kernel-trio axiom, any constant missing a
 #     toolchain-computed axiom entry, any free-κ guard not referencing its seed);
 #   * the TOTAL manifest — every constant of every target: class, name, kind,
-#     type hash, axiom closure, plus the DEPGUARD lines — is byte-identical to
-#     the frozen scripts/scratch-manifest.expected.  Classification labels are
+#     sha-256 statement digest, axiom closure, plus the DEPGUARD lines — is
+#     byte-identical to the frozen scripts/scratch-manifest.expected.  Classification labels are
 #     display-only; a smuggled declaration fails this diff WHATEVER label it
 #     gets, because it is a new line (pass-7 finding 1: total pinning, "default
 #     to surface" made moot by pinning every class);
@@ -234,6 +239,19 @@ if ! diff <(printf '%s\n' "$block" | awk -F'|' '$1=="DECL" && $2=="surface" {pri
   exit 1
 fi
 
+# Digest-field sanity, shell-side (defense in depth on top of the byte-diff):
+# every real constant's digest must be exactly 64 lowercase-hex chars; `-` is
+# reserved for codegen extras (which have no ConstantInfo).  length()-based —
+# mawk does not support {n} interval regexes.
+if ! printf '%s\n' "$block" | awk -F'|' '
+  $1=="DECL" {
+    if ($5 == "-") { if ($4 != "codegen") { print "DIGEST VIOLATION: " $3 " has no digest but is " $4; bad = 1 }; next }
+    if (length($5) != 64 || $5 ~ /[^0-9a-f]/) { print "DIGEST VIOLATION: " $3 " malformed digest " $5; bad = 1 }
+  }
+  END { exit bad }'; then
+  exit 1
+fi
+
 # Kernel-trio re-verification, shell-side (defense in depth on top of the
 # Lean-side check): every DECL line's axiom field — surface, child, internal,
 # and codegen constants alike — must be `-` or a comma-joined subset of the trio.
@@ -251,19 +269,22 @@ if ! printf '%s\n' "$block" | awk -F'|' '
   exit 1
 fi
 
-# DEPGUARD (pass-7 finding 3): each free-κ guard's proof term must reference its
-# seeded theorem directly.  Also covered by the total-manifest diff; asserted
-# explicitly here so a failure names the broken guard.  The sanctioned P2′
-# re-point (campaign doc §6 clause 6 rule (δ)) updates the reader's depGuards
-# pairs, these two lines, and the expected manifest in the SAME reviewed diff.
+# DEPGUARD (pass-7 finding 3, head-check per pass-8 finding 3): each free-κ
+# guard's proof term — after stripping the guard's own hypothesis binders and
+# inert mdata — must have the seeded theorem as its APPLICATION HEAD (mere
+# occurrence anywhere in the term no longer counts).  Also covered by the
+# total-manifest diff; asserted explicitly here so a failure names the broken
+# guard.  The sanctioned P2′ re-point (campaign doc §6 clause 6 rule (δ))
+# updates the reader's depGuards pairs, these two lines, and the expected
+# manifest in the SAME reviewed diff.
 for want in \
-  'DEPGUARD|LerayHopf.Scratch212.diag_ae_subseq_seeded_free_kappa_exact_shape|LerayHopf.Scratch212.diag_ae_subseq_seeded|direct' \
-  'DEPGUARD|LerayHopf.Scratch212.spacetime_extraction_seeded_free_kappa_exact_shape|LerayHopf.Scratch212.spacetime_extraction_seeded|direct'; do
+  'DEPGUARD|LerayHopf.Scratch212.diag_ae_subseq_seeded_free_kappa_exact_shape|LerayHopf.Scratch212.diag_ae_subseq_seeded|head' \
+  'DEPGUARD|LerayHopf.Scratch212.spacetime_extraction_seeded_free_kappa_exact_shape|LerayHopf.Scratch212.spacetime_extraction_seeded|head'; do
   printf '%s\n' "$block" | grep -qxF "$want" \
     || { echo "DEPGUARD MISSING: $want"; exit 1; }
 done
 
-echo "SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of $declared constants byte-pinned, kernel-trio only; $n_dep/2 free-kappa depguards; collision fixture enumerated)"
+echo "SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of $declared constants byte-pinned, statements sha256-frozen, kernel-trio only; $n_dep/2 free-kappa head-depguards; collision fixture enumerated)"
 
 }
 

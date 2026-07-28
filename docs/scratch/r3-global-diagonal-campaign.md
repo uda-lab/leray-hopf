@@ -4,7 +4,7 @@
 **Verdict (§9): CONDITIONAL-GO** — P1′/P2′ dispatch-ready; P3′/P4′ dispatch blocked on the
 P2′ typed exit gate (§6, six clauses), mirroring the #195 torus-campaign discipline whose
 condition was met on schedule. Codex adversarial statement gate (xhigh) pass-1 through
-pass-7 findings dispositioned in §11.
+pass-8 findings dispositioned in §11.
 
 This campaign document is NEW and separate from the frozen torus campaign doc
 (`docs/scratch/global-diagonal-campaign.md`, #195 — COMPLETE, not edited by this lane).
@@ -633,10 +633,23 @@ package; `htest` only by the `WeakFormNS` stage.
    Unicode names, anonymous instances, macro-generated forms included), the
    toolchain's own precomputed per-declaration axiom closures
    (`exportedAxiomsExt` entries, the exact data behind `#print axioms`; 1:1 with
-   `constNames`, a missing entry is a violation), exact generated-name
-   provenance (`projectionFnInfoExt`/`auxRecExt` entries), per-declaration
-   STATEMENT type-hashes, and the free-κ guards' proof-term dependencies
-   (DEPGUARD lines, clause 6 rule (δ)). The checker snapshots the reader, the
+   `constNames`, a missing entry is a violation — this decode is the gate's
+   SINGLE trust-extending surface, `ALLOW_AXIOM`-marked and registered as
+   ASSUMPTIONS A1–A4 in the reader header per pass-8 finding 1: layout pinned
+   by the repo toolchain, fail-loud under drift, with the pass-7 display-only
+   `projectionFnInfoExt`/`auxRecExt` decoders REMOVED in favor of cast-free
+   constructor-telescope derivation of projection names), per-declaration
+   STATEMENT DIGESTS — SHA-256 over a canonical hash-consed serialization of
+   `levelParams` + the full elaborated type (pass-8 finding 2 retired the
+   32-bit-truncating `Expr.hash`; the serialization emits every unique subterm
+   once, children by index, so the multi-gigabyte expanded trees of these
+   statements are never materialized; binder names included — fail-closed
+   against renames; `mdata` payloads elided, matching the kernel's inert
+   treatment), and the free-κ guards' proof-term APPLICATION HEADS (pass-8
+   finding 3 retired `getUsedConstants` occurrence, which an unused `let` or
+   dead branch could satisfy: the seed must now be the head of the guard's
+   proof term once its hypothesis binders and inert mdata are stripped —
+   `DEPGUARD|…|head` lines, clause 6 rule (δ)). The checker snapshots the reader, the
    fixture self-test, and the frozen manifest to a private temp dir BEFORE the
    untrusted `lake build` step (build-time elaboration can run arbitrary IO),
    then asserts fail-closed: fresh rebuild of every target; the
@@ -647,15 +660,17 @@ package; `htest` only by the `WeakFormNS` stage.
    collision-declared at all, verified negatively); zero VIOLATION lines
    (`private`/`axiom`/`opaque`/unsafe/initializer declarations, non-trio axioms,
    missing axiom entries, broken depguards); exact sentinel/count grammar; the
-   TOTAL manifest — every constant of every target: class, name, kind, type
-   hash, axiom closure, plus both DEPGUARD lines — byte-identical to the frozen
-   `scripts/scratch-manifest.expected` (pass-7 finding 1: classification labels
-   are display-only; a smuggled declaration is a NEW line and fails the diff
-   whatever label it gets, so lexical label collisions are moot); redundantly,
-   surface-class = pinned 54 in both directions and the kernel-trio bound
-   re-verified shell-side on every DECL line. Statement freezing is now
-   mechanical (a type edit re-hashes and fails the byte-diff), not just
-   probe-mediated. Residual trust boundary, documented in the reader header:
+   TOTAL manifest — every constant of every target: class, name, kind, sha-256
+   statement digest, axiom closure, plus both DEPGUARD lines — byte-identical
+   to the frozen `scripts/scratch-manifest.expected` (pass-7 finding 1:
+   classification labels are display-only; a smuggled declaration is a NEW line
+   and fails the diff whatever label it gets, so lexical label collisions are
+   moot); redundantly, surface-class = pinned 54 in both directions, the
+   kernel-trio bound re-verified shell-side on every DECL line, and every real
+   constant's digest field checked to be 64 lowercase-hex chars. Statement
+   freezing is now mechanical AND collision-resistant (a type edit re-digests
+   and fails the byte-diff), not just probe-mediated. Residual trust boundary,
+   documented in the reader header:
    build-time same-user filesystem malice from reviewed scratch sources
    (post-snapshot daemon races) is out of the gate's scope — every scratch
    source line is in the reviewed diff, and lakefile + pinned toolchain are
@@ -817,6 +832,26 @@ checker snapshots all gate inputs before the untrusted build.
 `scripts/scratch_manifest.lean` is DELETED. Run green: log
 `/tmp/lh212-pins-check7.log`,
 `SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of 187 constants byte-pinned, kernel-trio only; 2/2 free-kappa depguards; collision fixture enumerated)`.
+At the pass-8 remediation the reader itself was brought up to the repository's
+own trust discipline (§11.8): its unsafe surface was MINIMIZED to the single
+load-bearing `exportedAxiomsExt` decode, `ALLOW_AXIOM`-marked and registered as
+ASSUMPTIONS A1–A4 in the reader header (the two display-only extension decoders
+were removed — projection names now derive from constructor binder telescopes,
+pure `ModuleData`; labels verified byte-identical across the swap); the 32-bit
+`Expr.hash` statement freeze was replaced by SHA-256 digests over a canonical
+hash-consed serialization of `levelParams` + elaborated type (per-run
+determinism verified; the expanded trees measure 2.3 GB across the 187
+statements and are never materialized — the serialization is proportional to
+unique subterms and the whole manifest emits in ~7 s); and DEPGUARD was
+strengthened from `getUsedConstants` occurrence to the APPLICATION-HEAD check
+(`DEPGUARD|…|head`). Because pass-8 finding 1 was caught by the repo-wide
+`check-no-axiom.sh` (which the scratch gate alone never runs), the pass-8
+evidence run is the FULL `agent-preflight.sh` — build, no-sorry, no-axiom,
+theorem-names, axioms, release-cone (+ its self-test), statement-cards, live
+pins, scratch pins — not just the scratch checker. Run green: log
+`/tmp/lh212-preflight8.log`, ending
+`SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of 187 constants byte-pinned, statements sha256-frozen, kernel-trio only; 2/2 free-kappa head-depguards; collision fixture enumerated)`
+then `PREFLIGHT OK`.
 
 ### Spike (a) — `LerayHopf/Scratch/R3StageCoherence.lean` (every-t overlap coherence)
 
@@ -1024,3 +1059,19 @@ and reads proof-term dependencies directly.
 | 7.1 | high | Hand-written declarations can escape surface pinning: `Name.isInternalDetail` is lexical and suffix classification relies only on parent kind — a user theorem named `Parent.eq_def` or `Ctor.inj` gets labeled internal/child and dodges the 54-name equality; recommendation: compiler provenance or exact generated-name metadata, default every unproven constant to surface, add collision fixtures | **Accepted — TOTAL manifest pinning makes labels display-only** (this commit): the gate no longer decides anything by classification. Every constant of every target — surface, child, internal, codegen alike — is one frozen line (class, name, kind, statement type-hash, axiom closure) in `scripts/scratch-manifest.expected`, byte-compared on every run; a collision-named declaration is a NEW constant, hence a new line, hence a diff failure WHATEVER label it gets ("default to surface" is subsumed: every class is pinned). Exact compiler provenance is now used where the olean provides it (`projectionFnInfoExt`, `auxRecExt` entries; kernel `ctorInfo`/`recInfo` kinds). Collision fixtures added as recommended: `LerayHopf/Scratch/GateFixture.lean` compiles hand-written `Probe.ibelow`, `Probe.mk.noConfusionType`, `Probe.proof_1` (the classes the retired classifier mislabeled) and `scripts/scratch_fixture_selftest.lean` asserts, per run, that the static channel enumerates them; the def-companion suffixes (`eq_def`/`eq_unfold`/`congr_simp`) were verified NON-declarable (reserved names — that collision class is closed by the elaborator itself, recorded as a negative fixture) |
 | 7.2 | high | Imported extensions can prevent genuine manifest execution: `lake env lean` elaborates the manifest's `#eval` AFTER importing the targets — a target could register a command elaborator that fakes the block and returns success, or an initializer printing fake evidence and exiting 0 before the genuine command runs | **Accepted — trusted STATIC reader, exactly as recommended** (this commit): `scripts/scratch_reader.lean` imports only `Lean` and loads the target `.olean` files as data via `Lean.readModuleData` — pure deserialization; no initializer execution, no imported command/syntax extensions, no elaboration of target code anywhere in the evidence path. Axiom closures are not recomputed but read from the toolchain's own `exportedAxiomsExt` entries (the precomputed per-declaration data behind `#print axioms`, 1:1 with `constNames`; a missing entry fails closed). The build-then-read ordering is hardened too: the checker snapshots the reader, the fixture self-test, and the expected manifest to a private temp dir BEFORE `lake build` (build-time elaboration of scratch sources can run arbitrary IO and could otherwise rewrite the gate artifacts it is about to be judged by), and its bash body is a single `main` invoked with same-line `exit` so a mid-run rewrite of the script file cannot inject into the running shell. Residual boundary documented in the reader header (post-snapshot same-user filesystem races from reviewed sources: out of scope, covered by diff review; lakefile + pinned toolchain trusted). `scripts/scratch_manifest.lean` DELETED |
 | 7.3 | medium | Free-κ proof heads not enforced by the machine gate: the manifest checks only axiom closures — nothing requires each guard's elaborated proof term to depend on `diag_ae_subseq_seeded` / `spacetime_extraction_seeded`; a guard re-proved from elsewhere would pass with identical statement text | **Accepted — DEPGUARD proof-term dependency check** (this commit): the reader hardcodes the two (guard, seed) pairs and requires the seed to occur in the guard's elaborated proof term (`ConstantInfo.value.getUsedConstants` — direct reference, stronger than closure membership), emitting `DEPGUARD\|guard\|seed\|direct` lines that are (a) grammar-checked and asserted by exact line in `check-scratch-pins.sh` and (b) frozen in the expected manifest. §6 clause 6 rule (δ) extended: the sanctioned P2′ re-point must update proof heads, reader `depGuards` pairs, checker assertion lines, and expected manifest in the SAME reviewed diff — forgetting any one breaks the gate loudly. As a free by-product of the same mechanism, every statement is now frozen mechanically by its type-hash in the expected manifest (an edit to ANY pinned statement re-hashes and fails the byte-diff, closing the gap that statement freezes were previously probe-mediated only) |
+
+### 11.8 Pass 8 (at `4a7a7f9`)
+
+Verdict **needs-attention**, 2 high + 1 medium — all three concrete implementation
+defects in the pass-7 gate artifacts themselves (still no mathematical finding
+since round 4). Not boundary disputes: finding 1 meant the repo's own mandatory
+preflight would reject the branch (the pass-7 report had exercised only the
+scratch checker, never the full `agent-preflight.sh` — a real process gap, closed
+below by making the FULL preflight the pass-8 evidence run), and findings 2–3
+meant §11.7's evidence claims overstated what the mechanism enforced.
+
+| # | Sev | Finding (condensed) | Disposition |
+|---|---|---|---|
+| 8.1 | high | The static reader adds six unmarked `unsafe`/`opaque` declarations — `check-no-axiom.sh` matches them, so the mandatory preflight cannot pass; they also rely on unchecked casts from opaque `EnvExtensionEntry` values into private toolchain payload layouts (a real trusted-base expansion); recommendation: typed public decoder if available, else mark each and document the exact pinned-toolchain layout assumption, then rerun the FULL preflight | **Accepted — unsafe surface minimized to ONE decode, marked and registered** (this commit): no typed public decoder exists at `ModuleData` level (extension payloads are serialized as opaque `EnvExtensionEntry` by design), so the load-bearing `exportedAxiomsExt` decode pair carries same-line `ALLOW_AXIOM` markers citing a new ASSUMPTIONS A1–A4 register in the reader header: A1 pins the entry layout (`Name × Array Name`, the type `exportEntriesFnEx` constructs in Lean/Util/CollectAxioms.lean under the repo-pinned v4.31.0-rc2 toolchain — the same cast the toolchain's own import machinery performs); A2 records why drift is fail-loud (1:1 constNames coverage + trio whitelist + total byte-diff — garbage decode cannot pass); A3 records why recomputing closures by walking `ConstantInfo.value` is rejected (name→ConstantInfo over the mathlib-scale import graph is OOM-prohibitive in the 3.4 GiB cgroup, and would reimplement exactly the computation whose exported result this data IS); A4 registers `sha256sum` (coreutils) as digest tool, same trust class as the checker's grep/awk/diff. The four OTHER unsafe/opaque declarations (display-only `projectionFnInfoExt`/`auxRecExt` decoders) were REMOVED outright: projection names now derive from constructor binder telescopes (pure `ModuleData`, cast-free; auxiliary recursors were already covered by the generated-suffix rules) — classification columns verified byte-identical across the swap. FULL `agent-preflight.sh` green is the pass-8 evidence artifact |
+| 8.2 | high | `ConstantInfo.type.hash` is not a sound statement freeze: `Expr.Data.hash` truncates to 32 bits (collisions feasible), determinism ≠ injectivity, `levelParams` omitted — a changed κ-critical statement could pass the byte diff; recommendation: exact canonical serialization / structural equality of full type + universe parameters, or a collision-resistant digest over that serialization | **Accepted — SHA-256 over a canonical hash-consed serialization** (this commit): each DECL line now carries SHA-256 of `LP[levelParams]` + the reader's canonical node stream of the fully elaborated type — every unique subterm emitted exactly once as an indexed node (constants with universe levels, sorts, binder names + binder info, n-ary applications, let/λ/∀ structure, literals, projections), children referenced by first-visit index, so the stream determines the term. Direct full-text serialization was measured and REJECTED: sharing expansion reaches 2.3 GB across the 187 statements (single worst constant 130 MB), so exactness-by-expansion is not implementable in the gate's budget; hash-consing keeps the serialized form proportional to the shared graph (whole manifest ~7 s). Two documented identifications, both safe-direction: binder names are INCLUDED (an α-rename changes the digest — fail-closed, surfaces as a reviewed manifest edit), `mdata` payloads elided (kernel-inert annotations; node presence kept). Free/meta variables in a type are a VIOLATION (kernel types never contain them). Digest determinism verified across runs; shell-side sanity check added (64 lowercase-hex or `-` for codegen extras). The §11.7 "byte-pinned" claim is now true in the intended collision-resistant sense |
+| 8.3 | medium | DEPGUARD proves only syntactic occurrence: `getUsedConstants.contains` is satisfied by an unused `let` binding or unreachable branch; recommendation: require the normalized proof term to have the seed application as its load-bearing head, or pin the complete proof-expression shape | **Accepted — application-head check, exactly as recommended** (this commit): the reader strips the guard's leading λ-binders (its own hypotheses) and inert `mdata` — nothing else — and requires `getAppFn` of the remaining term to be literally the seed constant, emitting `DEPGUARD\|guard\|seed\|head` (marker upgraded from `direct`; expected manifest and the checker's two exact-line assertions updated in the same diff). This matches the guards' authored discipline (§4.1 (f): proofs are bare applications of the seeds at free κ — probe-verified before the rewrite: both stripped proof terms are 10-argument applications headed by their seeds) and closes the unused-`let`/dead-branch channel: a guard whose proof does not USE the seed as its proving term now fails loudly. Rule (δ)'s four-artifact same-diff obligation (§6 clause 6) is unchanged in shape, with the head semantics recorded in the coupling module's header |
