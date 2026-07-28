@@ -317,6 +317,31 @@ assert_axioms "Bochner.exists_diagonal_extraction" \
   "propext Classical.choice Quot.sound"
 
 # ---------------------------------------------------------------------------
+# Pins 13–16: P4 (#203) global torus capstone (LerayHopf.Torus.GlobalCapstone)
+#   The campaign finale (issue #195). These four APPEND to the interim pins 5–12:
+#   with the global capstone now in the release cone, the whole P1→P4 assembly
+#   (generic global contract → κ-chain exit → diagonal machinery → per-horizon
+#   assembly) is covered by a live-pinned downstream capstone, so any stray
+#   sorryAx/axiom introduced anywhere in that chain becomes visible here.
+#   Kernel-only (0 project axioms): the whole torus chain is kernel-only, so the
+#   ∃ F, ∃ u, ∀ T assembly and the def-fold `globalTorusCapstone` inherit exactly
+#   the kernel trio.
+#     Pin 13: exists_global_lerayHopf_torus3 — the ∃ F, ∃ u, ∀ T assembly (§4.4).
+#     Pin 14: exists_globalLerayHopfSolutionFull_torus3 — structure form (§4.4).
+#     Pin 15: globalTorusCapstone — the frozen `def : Prop` target, proved (Q1 fold).
+#     Pin 16: globalTorusCapstone_implies_finite — the sanity direction (promoted
+#       from the deleted scratch spike; formerly a scratch pin, now release-cone).
+# ---------------------------------------------------------------------------
+assert_axioms "exists_global_lerayHopf_torus3" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "exists_globalLerayHopfSolutionFull_torus3" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "globalTorusCapstone" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "globalTorusCapstone_implies_finite" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
 # Experimental-module axiom profile (issue #158 "public sorry / scaffold theorem の
 # axiom profile を release tooling で可視化" requirement) — VISIBILITY ONLY, does not
 # affect FAIL. Prints the axiom set of every `sorryAx`-carrying declaration behind the
@@ -361,4 +386,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 12 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only; P3 diagonal packaged theorem + promoted diagonal API kernel-only)."
+echo "AXIOM LIVE PIN OK — all 16 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only; P3 diagonal packaged theorem + promoted diagonal API kernel-only; P4 global torus capstone — 4 pins kernel-only, the campaign finale)."
