@@ -1,0 +1,504 @@
+# Global-in-time Leray–Hopf on ℝ³ via diagonal extraction — ℝ³-lane campaign (issue #212)
+
+**Author:** lean-architect (fable). **Status:** B0 design gate, 2026-07-28.
+**Verdict (§9): CONDITIONAL-GO** — P1′/P2′ dispatch-ready; P3′/P4′ dispatch blocked on the
+P2′ typed exit gate (§6), mirroring the #195 torus-campaign discipline whose condition was
+met on schedule.
+
+This campaign document is NEW and separate from the frozen torus campaign doc
+(`docs/scratch/global-diagonal-campaign.md`, #195 — COMPLETE, not edited by this lane).
+It follows the same B0 standard: verified interface anchors, conjunct-by-conjunct trace of
+the final target, typed exit gate, phase table with tier assignments and kill criteria,
+compiled sorry-free spikes.
+
+Integration policy (owner directive 2026-07-28, recorded in issue #212): this lane lands on
+`dev/v0.2.0`; the owner merges dev→main only once BOTH lanes are complete.
+
+---
+
+## 1. Verified interface anchors (all re-read in source at commit `455ca3b`)
+
+| Anchor | Location | Role |
+|---|---|---|
+| `Galerkin.SolutionData` | `LerayHopf/Galerkin/SolutionBundles.lean:42` | horizon-free per-`n` datum (`energy_bound : ∀ t, 0 ≤ t → …`) — the forward-global premise, shared with the torus lane |
+| `GalerkinSolutionData_R3` | `LerayHopf/R3/SolutionInterfaces.lean:470` | `extends Galerkin.SolutionData (r3Domain 𝔊) F.core ν u₀ n` + weighted-Fourier enrichment; per-datum leaves apply index-generically |
+| `galSeq_R3_of_basis` | `LerayHopf/R3/GalerkinODECapstone.lean:64` | the axiom-free forward-global base family over the CONCRETE scheme `schemeOfBasis B`; `T`-free |
+| `exists_lerayHopf_r3` | `LerayHopf/R3/GalerkinODECapstone.lean:109` | finite-horizon release capstone — `∃ 𝔊 F, Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)`; **stays byte-identical**. Its witnesses `schemeOfBasis B` (from `nonempty_schwartzGalerkinBasis_H1`) and `F` (from `r3_NSForms_exists`) are `T`-independent — the global lane fixes them ONCE |
+| `AubinLionsPackage_R3` | `LerayHopf/R3/SolutionInterfaces.lean:550` | fields `φ, φ_mono, u, u_aestronglyMeasurable, strong_convergence` (per-`R` `eLpNorm`), `strong_convergence_ae` (per-`R` a.e.-`t`); `galSeq` is a structure parameter — gains the `κ` parameter in P2′ (§4) |
+| `galerkin_spacetime_precompact_of_goodSampling` / `galerkin_spacetime_precompact_R3` | `R3/SpacetimePrecompact.lean:445` / `R3/ArzelaAscoliTime.lean:135` | REFINE-CAPABLE root: takes arbitrary external `ψ : ℕ → ℕ` StrictMono + ball `k`, returns further `ρ`; soundness (subsequence stability of the Aubin–Lions–Simon hypotheses) proved + documented. **No change needed in P2′** |
+| `perBall_ae_subseq` | `R3/ArzelaAscoliTime.lean:783` | refine-capable (external `ψ`); **no change needed** |
+| `diag_ae_subseq` | `R3/ArzelaAscoliTime.lean:839` | per-ball Cantor tower, internally seeded `Φ 0 = id` — κ-threading layer 1 (§4); seed composed by pre-composition (spike (b), compiled) |
+| `galerkin_weakLimit_R3` | `R3/ArzelaAscoliTime.lean:284` | THEOREM (not axiom); extraction-GENERIC (takes arbitrary `φ, hφ`) — **no change needed** (spike (b) layer 2 passes `κ ∘ φ`) |
+| `u_lim_aestronglyMeasurable` | `R3/ArzelaAscoliTime.lean:937` | κ-threading layer 2 |
+| `galerkinSpaceTimeExtraction_R3` | `R3/SteklovAverages.lean:941` | κ-threading layer 3 (pure delegation to layer 2) |
+| `aubinLionsPackage_R3_of_timeCompactness` | `R3/AubinLionsLimitPassage.lean:1436` | κ-threading layer 4 (field assembly; consumes only per-datum leaves `galerkin_norm_le_u0`, curve continuity — index-generic) |
+| `localRellichInput_of_frechetKolmogorov frechetKolmogorov_holds` | applied at `R3/AubinLionsAssembly.lean:79` | the concrete, unconditional, `T`-free spatial input; stages construct packages at every horizon with it |
+| `exists_weak_representative_R3` | `R3/GoodRepresentative.lean:198` | **the coherence lever, verified in source**: conjunct 2 is `∀ t ∈ Icc 0 T, ∀ z : L2VF_R3, ⟪(galSeq (alPkg.φ n)).u t, z⟫ → ⟪v t, z⟫` — pointwise weak convergence at EVERY `t`, tests over the FULL ambient space, along `alPkg.φ` directly (no sub-extraction `ρ` — simpler than the torus). Plus: `v = alPkg.u` a.e. (the only a.e. link), ∀t norm bound `≤ ‖u₀‖`, `v 0 = u₀`, per-Galerkin-test equi-Lipschitz |
+| `inner_tendsto_of_perball` | `R3/EnergyWeakLsc.lean:377` | the per-ball → full-space-weak upgrade (fixed-test ball/tail ε/3 split under the uniform `‖u₀‖` bound) — the reason the per-ball chain still yields full-space pins (§3) |
+| `galerkin_norm_le_u0`, `galerkin_curve_continuous` | `R3/EnergyWeakLsc.lean:62/82` | `T`-independent per-datum leaves (valid on `Ici 0`) — exactly what growing-`T` stage recursion needs; **unchanged in P2′** |
+| `galerkin_limit_passage_R3` | `R3/LimitPassage.lean:322` | 5-conjunct good-representative existential. Its proof HOLDS the ∀t weak pin (`hweak` from `exists_weak_representative_R3`, consumed at `LimitPassage.lean:344`) but **drops it from the conclusion** — P2′ re-exports it (exact torus-P2 situation) |
+| `build_galerkin_package_R3_of_galSeq` | `R3/AubinLionsAssembly.lean:72` | rewired IN PLACE in P2′ (`κ := id`), signature kept — capstone untouched |
+| `r3Domain` / `R3NSForms.core` / `r3Evolution` | `R3/SolutionInterfaces.lean:393/410/456` | `@[reducible]` `Galerkin.Domain` instance; `r3Evolution 𝔊 F` IS `(r3Domain 𝔊).evolution F.core` definitionally; `rfl`-lemmas `r3Domain_dissip`, `r3Domain_regMem` normalize the contract fields |
+| `Galerkin.IsLerayHopfOn`, `.congr_Icc`, `.mono`, `WeakFormNS.mono/.congr_Icc`, `GlobalLerayHopfSolution` | `LerayHopf/Galerkin/GlobalContract.lean` | **verbatim reuse** (#195 P1). `congr_Icc` (`:289`) requires POINTWISE equality on `Icc 0 T` — exactly what §3 supplies |
+| `nestedComp`, `diagExtraction`, `exists_diagonal_extraction`, `tendsto_diag_of_tendsto_stage` | `LerayHopf/Bochner/DiagonalExtraction.lean` | **verbatim reuse** (#195 P3): pure order theory, arbitrary target filter |
+| `nested_extraction_factor` | `R3/SpatialCompactness.lean:162` | public; the tower-factorization workhorse reused by spike (b) |
+| `R3TestApproxH1` / `nonempty_schwartzGalerkinBasis_H1` | `R3/SolutionInterfaces.lean:267` / `R3/GalerkinBasisH1.lean` | `htest`, needed ONLY by the `WeakFormNS` limit passage (per-horizon exit witness), not by the stage recursion; `T`-free, supplied with `B` |
+| Torus templates: `P2ExitWitness`/`torus_kappaChain_exit`, `StageData`/`stageData`/`exists_diagonal_weakly_convergent_galSeq`, `exists_global_lerayHopf_torus3` | `Torus/KappaChainExit.lean:65/110`, `Torus/DiagonalGalerkin.lean`, `Torus/GlobalCapstone.lean:71` | **template-copied** (shape reused, bodies rewritten against ℝ³ interfaces) |
+
+**κ-audit (this lane's analogue of the torus §1 22-declaration audit).** Declarations
+whose signature mentions `AubinLionsPackage_R3` or sits in the sealed extraction chain,
+re-read in source, each classified:
+
+- **Gain `(κ, hκ)` — 20 declarations + 1 structure parameter:**
+  chain wrappers (4): `diag_ae_subseq`, `u_lim_aestronglyMeasurable`,
+  `galerkinSpaceTimeExtraction_R3`, `aubinLionsPackage_R3_of_timeCompactness`;
+  `EnergyWeakLsc` (5): `kineticEnergy_lsc_bound`, `liminf_viscousFormSq_lt_top_ae`
+  (private), `viscousFormSq_aestronglyMeasurable_of_memH1`, `viscous_pointwise_lsc`,
+  `viscous_lsc_under_strongL2`;
+  `AubinLionsLimitPassage` (7): `weakFormNS_galerkinTest_uniform_dominator` (private),
+  `weakFormNS_galerkinTest_limit`, `bForm_galerkin_crude_dominator_bound` (private),
+  `bForm_limit_convection_bound` (private), `weakFormNS_limit_G_integrable` (private),
+  `weakFormNS_limit_diff_bound` (private), `weakFormNS_limit_passage`;
+  `LimitPassage` (2): `energy_ineq_of_representative_R3` (private),
+  `galerkin_limit_passage_R3` (also conclusion-strengthened, §5 P2′);
+  `GoodRepresentative` (1): `exists_weak_representative_R3`;
+  plus the structure parameter on `AubinLionsPackage_R3` (fields reindex
+  `galSeq (φ n)` → `galSeq (κ (φ n))`).
+- **Rewired in place, signature kept — 1:** `build_galerkin_package_R3_of_galSeq`
+  (body instantiates `κ := id`, definitionally transparent; capstone unchanged).
+- **Unchanged leaves:** `galerkin_norm_le_u0`, `galerkin_curve_continuous`,
+  `perTest_lipschitz_R3`, `perTest_hasDerivAt_R3`, `inner_tendsto_of_perball`,
+  `kineticEnergy_lsc_transfer` chain, `strong_trace_of_props_R3`,
+  `galerkin_weakLimit_R3`, `perBall_ae_subseq`,
+  `galerkin_spacetime_precompact_R3`/`_of_goodSampling`, the whole FK/Steklov spatial
+  chain, `exists_lerayHopf_from_package_full_R3`, the capstone.
+
+Index-usage shapes inside the bodies (same four shapes as the torus audit, verified on
+the load-bearing consumers): (a) per-datum applications
+`galerkin_norm_le_u0 … (alPkg.φ n) (galSeq (alPkg.φ n))` (index-generic → `κ (alPkg.φ n)`),
+e.g. `GoodRepresentative.lean:219`, `LimitPassage.lean:81/97/110`,
+`AubinLionsLimitPassage.lean:1503`; (b) growth `n ≤ alPkg.φ n` via `φ_mono.le_apply`
+feeding eventual cutoffs (`hlevel`, `GoodRepresentative.lean:220`, consumed at `:258` as
+`le_trans hn (hlevel n)`) — gains one `hκ.le_apply` hop; (c) `StrictMono` compositions
+(`hκ.comp hφ`); (d) `u_initial`/trace uses along a strictly monotone index sequence.
+All four shapes survive `φ n ↦ κ (φ n)`; spike (b) verifies this end-to-end on the two
+deepest sealed layers, including the only structurally novel one (the Cantor tower).
+
+---
+
+## 2. Mathematical proof outline (ℝ³ lane) and final target
+
+### 2.1 Frozen final target (D1; `lean-coder` transcribes verbatim)
+
+**Quantifier-prefix decision: `∃ 𝔊, ∃ F, ∃ u, ∀ T`.** Grounds: (i) the finite-horizon
+capstone binds `𝔊`/`F` existentially per call, so the literal global strengthening keeps
+that prefix and moves ONLY `∀ T` inside — the consistency witness (§2.1 below) then
+recovers the finite-horizon statement shape at every horizon; (ii) one curve `u` under a
+single contract family forces one `𝔊` anyway (`IsLerayHopfOn (r3Domain 𝔊) …` mentions
+`𝔊`); (iii) the construction genuinely fixes the witnesses once —
+`B, htest` from `nonempty_schwartzGalerkinBasis_H1`, `𝔊 := schemeOfBasis B`,
+`F` from `r3_NSForms_exists (schemeOfBasis B)`, `galSeq := galSeq_R3_of_basis B F ν hν u₀`
+— all `T`-free, so no per-`T` re-choice ever occurs (the dossier's "stages must fix `𝔊, F`
+once" requirement).
+
+```lean
+-- P1′, new file LerayHopf/R3/GlobalCapstone.lean
+def GlobalR3CapstoneStatement : Prop := -- ALLOW_NAME: statement only (bare def : Prop, the frozen P4′ campaign target)
+  ∀ (u₀ : L2Sigma_R3) (ν : ℝ), 0 < ν →
+    ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊), ∃ u : Time → L2Sigma_R3,
+      ∀ T : ℝ, 0 < T → Galerkin.IsLerayHopfOn (r3Domain 𝔊) F.core ν T u₀ u
+
+abbrev GlobalLerayHopfSolutionFull_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (u₀ : L2Sigma_R3) :=
+  Galerkin.GlobalLerayHopfSolution (r3Domain 𝔊) F.core ν u₀
+
+theorem globalR3Capstone_implies_finite (hG : GlobalR3CapstoneStatement) : -- ALLOW_NAME: reserved term is the hypothesis Prop's name; the implication is fully proved
+    ∀ (u₀ : L2Sigma_R3) (ν : ℝ), 0 < ν → ∀ T : ℝ, 0 < T →
+      ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),
+        Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)
+-- proof: Galerkin.LerayHopfSolution.ofIsOn, 3 lines (torus twin at Torus/GlobalCapstone.lean:46)
+
+-- P4′, same file
+theorem exists_global_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν) :
+    ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊), ∃ u : Time → L2Sigma_R3,
+      ∀ T : ℝ, 0 < T → Galerkin.IsLerayHopfOn (r3Domain 𝔊) F.core ν T u₀ u
+
+theorem exists_globalLerayHopfSolutionFull_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν) :
+    ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊),
+      Nonempty (GlobalLerayHopfSolutionFull_R3 𝔊 F ν u₀)
+
+theorem globalR3Capstone : GlobalR3CapstoneStatement := -- ALLOW_NAME: reserved term is the frozen target Prop's name; this declaration is its full proof
+  fun u₀ ν hν => exists_global_lerayHopf_r3 u₀ ν hν
+```
+
+Statement traps checked (role-contract checklist): forward-time only (all contract fields
+`0 ≤ t`-guarded / `Icc`-restricted; the global curve's values below `0` never inspected);
+∀t-vs-a.e. — energy inequality and trace are ∀t/limit statements as in the finite-horizon
+contract, coherence is pointwise (§2.2 Step 4), only `energy_class`/AESM intrinsically
+a.e. (as in the existing contract); no global-in-space compactness or tightness claim
+appears anywhere in the target (the contract's five conjuncts are exactly the merged
+finite-horizon ones); no `integral_undef` vacuity introduced (the transfer lemmas are the
+#195 P1 ones, junk-value-proofed there); no hypothesis equivalent to the goal.
+
+### 2.2 Proof outline (Steps 1–5, mirroring torus §2 with the ℝ³ substitutions)
+
+Fix once: `⟨B, htest⟩` from `nonempty_schwartzGalerkinBasis_H1`, `𝔊 := schemeOfBasis B`,
+`F` from `r3_NSForms_exists 𝔊`, `galSeq := galSeq_R3_of_basis B F ν hν u₀`,
+`Rell := localRellichInput_of_frechetKolmogorov frechetKolmogorov_holds`. Each datum is
+forward-global (`Galerkin.SolutionData` horizon-free bounds); `T` enters only at the
+compactness layer.
+
+**Step 1 (stages — nested extraction).** By recursion on `m` build `StageData_R3 m`:
+per-stage fresh extraction `eStep m`, composed extraction `comp m = nestedComp e m`, stage
+curve `U m`, invariant `∀ t ∈ Icc 0 (m+1), ∀ z : L2VF_R3, ⟪(galSeq (comp m j)).u t, z⟫ →
+⟪U m t, z⟫`. The stage handle (P3′ deliverable, composed from P2′ outputs) is
+
+```
+exists_weakLimitCurve_R3_kappa :
+  ∀ … (κ : ℕ → ℕ) (hκ : StrictMono κ), ∃ φ, StrictMono φ ∧ ∃ U : Time → L2Sigma_R3,
+    ∀ t ∈ Icc 0 T, ∀ z : L2VF_R3, Tendsto (fun n => ⟪(galSeq (κ (φ n))).u t, z⟫) atTop (𝓝 ⟪U t, z⟫)
+```
+
+— body: κ-`aubinLionsPackage_R3_of_timeCompactness` (with `Rell`) then
+κ-`exists_weak_representative_R3`; the returned `φ` is `alPkg.φ` (the pin runs along
+`κ ∘ alPkg.φ` directly — no `ρ`). Stage `0`: `κ := id`, horizon `1`. Stage `m+1`:
+`κ := comp m`, horizon `m+2`; `comp (m+1) := comp m ∘ eStep (m+1)`. Note the stage handle
+needs `Rell` but NOT `htest` (no `WeakFormNS` at stage level). The invariant's test space
+is the FULL `L2VF_R3` — stronger than the torus stage invariant (`L2Sigma` tests), because
+`exists_weak_representative_R3`'s pin is already full-space.
+
+**Step 2 (diagonal).** Verbatim `Bochner.DiagonalExtraction`: `δ k := diagExtraction e k`,
+`tendsto_diag_of_tendsto_stage` transfers each stage invariant to the full diagonal.
+Stage-curve coherence `U a t = U b t` on window overlaps by uniqueness of limits in ℝ per
+test + subspace separation (`L2Sigma_R3_eq_of_forall_inner`, spike (a), compiled).
+`W t := U (Nat.floor (max t 0)) t`.
+
+**Step 3 (per-horizon contracts along the diagonal).** For each `m`, instantiate the P2′
+typed exit witness (§6) at `T := (m:ℝ)+1`, `κ = φ₁ := δ`, family `fun k => galSeq (δ k)`,
+filler `galSeq`, `htest`: obtain `w` with the five contract conjuncts for `w.v` and the pin
+`∀ t ∈ Icc 0 Tₘ, ∀ z : L2VF_R3, ⟪(galSeq₁ (w.alPkg.φ n)).u t, z⟫ → ⟪w.v t, z⟫`, i.e. along
+`δ ∘ w.alPkg.φ` — a sub-extraction of the diagonal. AESM of `w.v` recovered from
+`w.alPkg.u_aestronglyMeasurable` + `w.v_ae` (torus P4 Node B pattern,
+`Torus/GlobalCapstone.lean:88–92`).
+
+**Step 4 (overlap coherence — pointwise, not a.e.).** Spike (a)'s compiled lemma
+`r3_representative_diag_coherence`: the pin sequence is a sub-subsequence of the diagonal;
+for each `z : L2Sigma_R3` the SAME real sequence `⟪(galSeq (δ (σ k))).u t, z⟫` converges to
+both `⟪W t, z⟫` (Step 2 composed with `σ := w.alPkg.φ` monotone) and `⟪w.v t, z⟫` (pin,
+whose `z` ranges over `L2VF_R3 ⊇ L2Sigma_R3`); `tendsto_nhds_unique` +
+`L2Sigma_R3_eq_of_forall_inner` give **`w.v t = W t` for EVERY `t ∈ Icc 0 Tₘ`**. §3 states
+why the per-ball structure does not obstruct this.
+
+**Step 5 (transfer and monotone restriction).** `IsLerayHopfOn.congr_Icc` (pointwise
+hypothesis — supplied by Step 4) moves the horizon-`Tₘ` contract from `w.v` to `W`;
+for arbitrary `T > 0` take `m := ⌊T⌋₊` and restrict by `IsLerayHopfOn.mono`. Both lemmas
+verbatim #195 P1 (`Galerkin/GlobalContract.lean:272/289`); `WeakFormNS`'s evolution
+argument matches definitionally (`r3Evolution 𝔊 F ≡ (r3Domain 𝔊).evolution F.core`,
+`@[reducible]`).
+
+### 2.3 D2 conjunct table — every conjunct of the final target vs its ℝ³ source
+
+Per-`T` content of the target: `Galerkin.IsLerayHopfOn (r3Domain 𝔊) F.core ν T u₀ W` =
+the 5 proof fields of `Galerkin.LerayHopfSolution`, specialized by the `rfl`-lemmas
+`r3Domain_dissip` / `r3Domain_regMem` (`R3/SolutionInterfaces.lean:433/437`):
+
+| # | Conjunct (horizon `T`, curve `W`) | Source at horizon `Tₘ ≥ T` (witness `w`, curve `w.v`) | Transfer |
+|---|---|---|---|
+| 1 | `WeakFormNS ν T ((r3Domain 𝔊).evolution F.core) W` | `w.weak_eq : WeakFormNS ν Tₘ (r3Evolution 𝔊 F) w.v` (from `galerkin_limit_passage_R3` conjunct 2) — evolution defeq | `WeakFormNS.congr_Icc` (pointwise eq, Step 4) then `WeakFormNS.mono` |
+| 2 | `∀ t ∈ [0,T]`, `½‖W t‖² + ∫₀ᵗ viscousFormSq_R3 ν (W s) ≤ ½‖u₀‖²` | `w.energy_ineq` (limit-passage conjunct 3, itself ∀t via `energy_ineq_of_representative_R3` — kinetic lsc + viscous Fatou, `LimitPassage.lean:51`) | pointwise eq on `[0,Tₘ]` (norm + `intervalIntegral.integral_congr`); restriction trivial (`T ≤ Tₘ`), via `congr_Icc`/`mono` |
+| 3 | `Tendsto (W ·) (𝓝[≥] 0) (𝓝 u₀)` | `w.initial_trace` (limit-passage conjunct 4, `strong_trace_of_props_R3` from `v 0 = u₀` + ∀t bound + equi-Lipschitz) | germ transfer inside `congr_Icc` (`0 < Tₘ`); `T`-free |
+| 4a | `∀ᵐ t ∂(vol.restrict (Icc 0 T)), memH1VF_R3 (W t)` | `w.energy_class_v.1` (limit-passage conjunct 5a) | pointwise eq + `ae_restrict_of_ae_restrict_of_subset` |
+| 4b | `IntervalIntegrable (viscousFormSq_R3 ν (W ·)) volume 0 T` | `w.energy_class_v.2` (conjunct 5b) | pointwise eq on `uIoc` + `mono_set` |
+| 5 | `AEStronglyMeasurable (W ·) (vol.restrict (Icc 0 T))` | `w.alPkg.u_aestronglyMeasurable` + a.e. link `w.v_ae` + pointwise eq `W = w.v` on `[0,Tₘ]` | `.congr` + `.mono_measure` (torus P4 Node B verbatim pattern) |
+
+Every source is a MERGED ℝ³ theorem conjunct (re-verified in source at `455ca3b`) except
+the P2′ pin re-export, whose proof already exists inside `galerkin_limit_passage_R3`
+(it binds `hweak` at `LimitPassage.lean:344` and passes it to the energy step at `:394` —
+P2′ only re-exports it through the existential, the exact torus-P2 move).
+
+---
+
+## 3. ℝ³ overlap coherence at the good-representative layer — why per-ball does not break it
+
+The honest concern (issue #212 kill-criterion check + scout dossier §7): EVERYTHING in the
+ℝ³ compactness tree is ball-restricted (`restrictToBall R`, Fréchet–Kolmogorov with no
+tightness; full-space strong convergence is genuinely FALSE-in-general — mass can escape
+to spatial infinity, `SteklovAverages.lean:902–909`). Does full-space ∀t weak-limit
+uniqueness still hold for the coherence step?
+
+**Yes, and no new lemma is needed.** Resolution, in three verified facts:
+
+1. **The per-ball structure never reaches the coherence argument.** Coherence (Step 4)
+   consumes only the pin exported by `exists_weak_representative_R3` — full-space weak
+   pairings against fixed `z : L2VF_R3` at every `t` — not any per-ball datum. The
+   per-ball → full-space-weak upgrade happens INSIDE `GoodRepresentative.lean` and is
+   already merged: at a.e.-good times, `inner_tendsto_of_perball`
+   (`EnergyWeakLsc.lean:377`) converts per-ball strong convergence + the uniform `‖u₀‖`
+   bound into weak convergence against every fixed `z` (ball/tail ε/3 split — the TAIL OF
+   THE FIXED TEST VECTOR decays, so escaping mass of `uₙ` is invisible to the pairing);
+   the extension from the a.e.-good set to EVERY `t ∈ [0,T]` is the equi-Lipschitz
+   Cauchy + density argument (`cauchySeq_of_equiLipschitz_of_dense`,
+   `GoodRepresentative.lean:246–266`). Weak convergence against a fixed test is exactly
+   the notion that survives lack of tightness; nothing stronger is ever claimed.
+2. **Uniqueness needs only ℝ-limit uniqueness + subspace separation.** `w.v t = W t`
+   follows from: the same real sequence cannot have two limits (`tendsto_nhds_unique`),
+   plus `L2Sigma_R3` points are separated by `L2Sigma_R3` tests (test with the difference,
+   `inner_self_eq_zero` — spike (a) `L2Sigma_R3_eq_of_forall_inner`). Neither ingredient
+   mentions balls, norms of `uₙ`, or compactness.
+3. **The pin's test space is the full ambient `L2VF_R3`** (verified at
+   `GoodRepresentative.lean:206–208`) — strictly more than the `L2Sigma_R3` tests
+   separation needs, and along `alPkg.φ` directly (no torus-style sub-extraction `ρ`).
+
+Compiled evidence: spike (a) (`LerayHopf/Scratch/R3StageCoherence.lean`) proves the
+coherence core AND the two-representatives-on-nested-windows overlap form against the real
+ℝ³ types, sorry-free, kernel-trio pins (§7). The residual risk is not mathematical but
+plumbing: the pin must survive the κ-threading and the limit-passage re-export — that is
+the P2′ exit gate (§6).
+
+What WOULD have killed the lane (checked first, per the issue): an a.e.-in-`t`-only weak
+conjunct in the limit-curve theorem. Verified NOT the case — conjunct 2 of
+`exists_weak_representative_R3` is ∀t (the only a.e. statements are the `v = alPkg.u`
+identification and the energy-class conjunct, mirroring the torus exactly; negative
+control: `kineticEnergy_lsc_bound`'s docstring confirms the package-level bound is
+a.e.-only and the ∀t upgrade lives in `GoodRepresentative`).
+
+---
+
+## 4. κ-threading design through the four sealed wrapper layers
+
+The root primitive is already refine-capable; the chain seals it at `diag_ae_subseq`.
+Design (validated by compiled spike (b) on the two deepest layers):
+
+| Layer | Declaration | Change | Mechanism |
+|---|---|---|---|
+| 1 | `diag_ae_subseq` | `+ (κ, hκ)`; conclusion index `φ n` → `κ (φ n)` | **Pre-composition seeding**: every tower step feeds `κ ∘ Φ k` (StrictMono by `hκ.comp`) to `perBall_ae_subseq`; the tower maps `Φ`/`ρ` and their factorization (`nested_extraction_factor`) are untouched because `κ` stays OUTSIDE the tower, at datum-index positions only. The external seed and the per-ball Cantor tower compose exactly here: `Φ 0 = id` under the seed means level-`k` convergence holds along `κ ∘ Φ (k+1)`, and the diagonal factorization is applied inside `κ` by `congrArg`-rewriting (spike (b), verbatim-body port, compiled) |
+| 2 | `u_lim_aestronglyMeasurable` | `+ (κ, hκ)`; conclusion `κ (φ n)` | passes `κ ∘ φ` (with `hκ.comp hφ`) to `galerkin_weakLimit_R3`, which is extraction-generic and needs **no change** (spike (b) layer 2, compiled) |
+| 3 | `galerkinSpaceTimeExtraction_R3` | `+ (κ, hκ)`; conclusion `κ (φ n)` | pure delegation to layer 2 (byte-level wrapper) |
+| 4 | `aubinLionsPackage_R3_of_timeCompactness` + `AubinLionsPackage_R3` | structure gains parameter `κ` (after `galSeq`); builder gains `(κ, hκ)`; fields reindex to `galSeq (κ (φ n))` | field assembly uses only index-generic per-datum leaves (`galerkin_norm_le_u0` at `κ (φ n)`, curve continuity per index, dominated convergence) — shape-(a) edits only |
+
+Torus §3 design decisions adopted unchanged: **base + κ form** (base family stays a
+parameter; reindexed family = `galSeq ∘ κ`; subsequent extraction consumed as `κ ∘ φ`);
+`hκ` is a SIDE hypothesis, never a structure field (κ = id instance stays definitionally
+transparent for the in-place rewiring of `build_galerkin_package_R3_of_galSeq` and the
+byte-identical capstone); downstream `alPkg.φ`-consumers (the 15 audited declarations, §1)
+gain `(κ, hκ)` with body edits of the four audited shapes only. Effective-map
+strictness/cofinality via the torus finding-3 lemma pattern where needed
+(`hκ.comp alPkg.φ_mono`, `le_apply` chains).
+
+**P2′ additionally strengthens `galerkin_limit_passage_R3`'s conclusion** with the pin
+conjunct its proof already holds:
+
+```
+… ∧ (∀ t ∈ Set.Icc (0:ℝ) T, ∀ z : L2VF_R3,
+      Tendsto (fun n => ⟪((galSeq (κ (alPkg.φ n))).u t : L2VF_R3), z⟫) atTop
+        (𝓝 ⟪(u t : L2VF_R3), z⟫))
+```
+
+(along `alPkg.φ` directly — no `ρ` existential, simpler than torus P2's re-export).
+Fixed-horizon consumers rewire with `κ := id`; `exists_lerayHopf_r3` and
+`LerayHopfSolutionFull_R3` stay byte-identical.
+
+---
+
+## 5. Phase decomposition (PR-sized, tier table, kill criteria)
+
+Model pool: **fable and opus only** (owner cost directive 2026-07-28: opus for
+coder/prover wherever justifiable; fable reserved for genuinely-new-math nodes).
+**Tier justification:** every genuinely-new-math node of this lane is retired at B0 with
+compiled evidence — the coherence core (spike (a)) and the κ-seeding of the only
+structurally novel wrapper, the Cantor tower (spike (b)); torus P3/P4, which were
+fable-tier because the recursion/assembly pattern was then novel, are now MERGED templates
+(`DiagonalGalerkin.lean`, `GlobalCapstone.lean`) this lane mirrors declaration-for-
+declaration. Hence all coder/prover nodes are **opus**, with D4 escalation to fable
+(2 failed attempts or ~1.5h thrash, evidence attached) explicitly available; the expected
+escalation points are flagged per phase.
+
+Dependencies: P1′ ∥ P2′ (independent); P3′ needs P2′ (exit gate green); P4′ needs
+P1′+P2′+P3′. One PR per phase, target `dev/v0.2.0`, per-phase gates identical to #195
+(codex adversarial `xhigh` statement gate before proof dispatch, pr-reviewer +
+modularity-reviewer, broker codex PR review, §8 evidence; append-only live axiom pins).
+
+| Phase | Sub-issue title (`Parent: #212`) | Content | Files | Coder | Prover | Kill criterion (→ back to architect) |
+|---|---|---|---|---|---|---|
+| **P1′** | `[#212-A] ℝ³ global contract instantiation: frozen capstone target + consistency witness` | §2.1 `GlobalR3CapstoneStatement` + `GlobalLerayHopfSolutionFull_R3` + `globalR3Capstone_implies_finite` (verbatim); extend `scripts/check-scratch-pins.sh` target/pin enumeration by the two B0 spike modules (`R3StageCoherence` +3 pins, `R3KappaSeed` +2 pins → 4 targets / 14 pins, exact-set semantics unchanged) — lean-coder-owned scripts change | new `LerayHopf/R3/GlobalCapstone.lean` (statement layer only) + `scripts/` | opus | opus (one 3-line proof) | `implies_finite` not closable via `ofIsOn` (would mean the contract equivalence broke — architect) |
+| **P2′** | `[#212-B] κ-generalize the ℝ³ compactness chain + pin re-export + typed exit witness` | §1 κ-audit surface: 20 declarations + `AubinLionsPackage_R3` parameter + `build_galerkin_package_R3_of_galSeq` rewired `κ := id`; strengthen `galerkin_limit_passage_R3` conclusion with the §4 pin conjunct; NEW `extendReindexedFamily_R3` (takes an explicit filler family — ℝ³'s total ODE layer is scheme-specific, so the filler is a parameter, not hardwired; deviation from torus noted §6), `R3KappaChainExitWitness`, `r3_kappaChain_exit`. **Exit gate (§6): typed artifact compiled in production + live pin + `check-scratch-pins.sh` green.** P3′/P4′ dispatch blocked until green | `ArzelaAscoliTime, SteklovAverages, AubinLionsLimitPassage, SolutionInterfaces, EnergyWeakLsc, GoodRepresentative, LimitPassage, AubinLionsAssembly` + new `LerayHopf/R3/KappaChainExit.lean` | opus | opus (mechanical re-threading; spike (b) covers the only novel layer) | any statement fails to typecheck as designed; >2 proof bodies need non-mechanical re-proving; the release capstone's statement would change; the exit witness cannot be reached without a statement change |
+| **P3′** | `[#212-C] ℝ³ stage recursion + diagonal weak limit W` | stage handle `exists_weakLimitCurve_R3_kappa` (§2.2 Step 1, composition of two P2′ outputs); `StageData_R3`, `stageData_R3`, `stageData_R3_comp_eq_nestedComp`, `stageData_R3_diag_tendsto`, `stageData_R3_U_coherent` (promotes spike (a)'s separation lemma to production), `diagWeakLimit_R3`, `exists_diagonal_weakly_convergent_galSeq_R3` (invariant over `z : L2VF_R3` tests, §2.2 Step 2). Reuses `Bochner.DiagonalExtraction` VERBATIM (zero new order theory) | new `LerayHopf/R3/DiagonalGalerkin.lean` | opus | opus — template mirror of merged `Torus/DiagonalGalerkin.lean`; **flagged D4 escalation point**: the `Nat.rec` stage carrier (torus needed fable when the pattern was novel) | stage recursion not expressible as designed; stage-limit coherence fails from `L2Sigma_R3` tests; the stage handle needs data P2′ does not export |
+| **P4′** | `[#212-D] ℝ³ global capstone: exists_global_lerayHopf_r3` | per-horizon exit witnesses at `κ := δ` over `fun k => galSeq (δ k)` (filler `galSeq`, `htest` from `nonempty_schwartzGalerkinBasis_H1`); Step-4 coherence via the compiled spike-(a) lemma shape; `congr_Icc`/`mono` assembly; §2.1 capstones + fold `globalR3Capstone`; live pins (append-only); docs (`claims-and-scope.md`, `architecture.md`, `STATUS.md`) | `LerayHopf/R3/GlobalCapstone.lean` (fills the P1′ file) + docs | opus | opus — node-for-node mirror of merged `Torus/GlobalCapstone.lean` with spike (a) compiled; **flagged D4 escalation point**: Node C coherence assembly | the pin is insufficient for some conjunct's transfer (must NOT be patched by weakening — architect); defeq mismatch `r3Evolution` vs `(r3Domain 𝔊).evolution F.core` that `rfl`-lemmas cannot bridge |
+
+Escalation per D4 with evidence attached; `#print axioms` / `scripts/check-axioms-live.sh`
+evidence for every sorry-free claim (D7). Codex gate points: after P1′ statements, after
+the P2′ signature diff, after P3′ statements, after P4′ proofs (before PR).
+
+---
+
+## 6. Typed exit gate (P2′) — ℝ³ analogue of `P2ExitWitness`
+
+Frozen shape (production file `LerayHopf/R3/KappaChainExit.lean`; scratch pin of the
+DESIGN stays in this doc — the artifact goes straight to production under the P2′ PR,
+per the torus `KappaChainExit.lean` precedent):
+
+```lean
+structure R3KappaChainExitWitness (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν T : ℝ) (u₀ : L2Sigma_R3) (φ₁ : ℕ → ℕ)
+    (galSeq₁ : ∀ k, GalerkinSolutionData_R3 𝔊 F ν u₀ (φ₁ k)) where
+  base : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n
+  transport : ∀ k, base (φ₁ k) = galSeq₁ k          -- MANDATORY (unlinked family unrepresentable)
+  alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ base φ₁   -- κ-parameterized structure (P2′)
+  energy_class_pkg :
+    (∀ᵐ t ∂(volume.restrict (Set.Icc (0:ℝ) T)), memH1VF_R3 (alPkg.u t : L2VF_R3)) ∧
+      IntervalIntegrable (fun s => viscousFormSq_R3 ν (alPkg.u s : L2VF_R3)) volume 0 T
+  v : Time → L2Sigma_R3
+  v_ae : ∀ᵐ t ∂(volume.restrict (Set.Icc (0:ℝ) T)), v t = alPkg.u t
+  weak_eq : WeakFormNS ν T (r3Evolution 𝔊 F) v
+  energy_ineq : ∀ t, 0 ≤ t → t ≤ T →
+    (1/2 : ℝ) * ‖(v t : L2VF_R3)‖ ^ 2 + ∫ s in (0:ℝ)..t, viscousFormSq_R3 ν (v s : L2VF_R3)
+      ≤ (1/2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2
+  initial_trace : Filter.Tendsto (fun t => (v t : L2VF_R3))
+    (nhdsWithin 0 (Set.Ici 0)) (nhds (u₀ : L2VF_R3))
+  energy_class_v :
+    (∀ᵐ t ∂(volume.restrict (Set.Icc (0:ℝ) T)), memH1VF_R3 (v t : L2VF_R3)) ∧
+      IntervalIntegrable (fun s => viscousFormSq_R3 ν (v s : L2VF_R3)) volume 0 T
+  /-- Everywhere-weak pin, phrased against `galSeq₁` ITSELF, along `alPkg.φ` directly
+  (ℝ³ simplification: `exists_weak_representative_R3` pins along `alPkg.φ` with no
+  sub-extraction `ρ` — the torus witness's `ρ`/`ρ_mono` fields are ABSENT by design). -/
+  pin : ∀ t, t ∈ Set.Icc (0:ℝ) T → ∀ z : L2VF_R3,
+    Filter.Tendsto (fun k => inner (𝕜 := ℝ) (((galSeq₁ (alPkg.φ k)).u t : L2VF_R3)) z)
+      Filter.atTop (nhds (inner (𝕜 := ℝ) ((v t : L2VF_R3)) z))
+
+theorem r3_kappaChain_exit (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
+    (fill : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)   -- filler family, see note
+    (htest : R3TestApproxH1 𝔊)
+    (φ₁ : ℕ → ℕ) (hφ₁ : StrictMono φ₁)
+    (galSeq₁ : ∀ k, GalerkinSolutionData_R3 𝔊 F ν u₀ (φ₁ k)) :
+    Nonempty (R3KappaChainExitWitness 𝔊 F ν T u₀ φ₁ galSeq₁)
+```
+
+Torus-deviation note (argued, not silent): `extendReindexedFamily`'s off-subsequence
+filler is a PARAMETER (`fill`) rather than a hardwired canonical family, because ℝ³'s
+total Galerkin ODE layer (`galerkinSolutionData_unconditional`) exists over
+`schemeOfBasis B`, not over an abstract `𝔊`. P4′ instantiates `fill := galSeq` (the one
+fixed family), so no generality is lost and the `transport` field still makes an unlinked
+implementation unrepresentable. `hν` is consumed by the κ-chain builders; `hT` by the
+package; `htest` only by the `WeakFormNS` stage.
+
+**Exit-gate condition (P3′/P4′ dispatch blocker):** a production `r3_kappaChain_exit`
+compiled sorry-free, guarded by a live pin in `scripts/check-axioms-live.sh` (append-only),
+and `scripts/check-scratch-pins.sh` green at the P1′-extended enumeration. Fields may not
+lose content relative to the shape above; names may differ.
+
+---
+
+## 7. Spike results (B0 evidence — all compiled sorry-free at `455ca3b` + spikes)
+
+Build: `flock /tmp/lean-build.lock lake build LerayHopf.Scratch.R3StageCoherence
+LerayHopf.Scratch.R3KappaSeed` → `Build completed successfully (3113 jobs)`, log
+`/tmp/lh212-spike-build.log`. Re-verification from repo state alone: the same command; the
+pins are `#print axioms` lines INSIDE the committed spike files (evidence contract per
+torus §10.5; the committed checker enumeration extension is P1′'s lean-coder item).
+
+### Spike (a) — `LerayHopf/Scratch/R3StageCoherence.lean` (every-t overlap coherence)
+
+- `L2Sigma_R3_eq_of_forall_inner` — subspace separation on ℝ³ (mirror of the torus
+  `L2Sigma_eq_of_forall_inner`).
+- `r3_representative_diag_coherence` — the P4′ Step-4 core against real ℝ³ types: diagonal
+  convergence (`L2Sigma_R3` tests) + everywhere-weak pin along a sub-extraction (`L2VF_R3`
+  tests, the exact `exists_weak_representative_R3` conjunct-2 shape) ⇒ POINTWISE equality
+  `v t = W t` on the whole window.
+- `r3_representatives_agree_on_overlap` — the issue's requested form: two good
+  representatives on nested windows `[0,T₁] ⊆ [0,T₂]` from nested extractions of the same
+  diagonal agree pointwise on `[0,T₁]`.
+
+Pins (from the build log, verbatim): all three
+`depends on axioms: [propext, Classical.choice, Quot.sound]`.
+
+### Spike (b) — `LerayHopf/Scratch/R3KappaSeed.lean` (κ-threading feasibility)
+
+- `diag_ae_subseq_seeded` — the refine-capable primitive accepting a previously extracted
+  subsequence: the production Cantor tower (`diag_ae_subseq`, the ONLY sealed layer with
+  internal extraction structure) with an external seed `κ` composed in by pre-composition;
+  conclusion along `κ (φ n)`. Verbatim-body port; the tower factorization
+  (`nested_extraction_factor`) is consumed unchanged, confirming §4's "κ stays outside the
+  tower" design.
+- `spacetime_extraction_seeded` — the seed survives layer 2: `galerkin_weakLimit_R3`
+  consumed UNCHANGED at extraction `κ ∘ φ`, output in the
+  `galerkinSpaceTimeExtraction_R3` conclusion shape with effective index `κ (φ n)`.
+
+Pins: both `depends on axioms: [propext, Classical.choice, Quot.sound]`.
+
+Honest residual (stated, gated — the torus F-A discipline): the spikes do NOT compile
+κ-versions of layers 3–4, the 15 downstream `alPkg` consumers, the limit-passage pin
+re-export, or the exit witness; that residual IS phase P2′, and P3′/P4′ dispatch is
+conditioned on its typed exit gate (§6), exactly as the torus campaign gated P3/P4 on
+`P2ExitWitness` — a condition that was met there by the same mechanical pattern.
+
+---
+
+## 8. Reuse ledger (#195 artifacts)
+
+**Consumed verbatim (zero re-proving):**
+- `LerayHopf/Bochner/DiagonalExtraction.lean` — `nestedComp`, `diagExtraction`,
+  `exists_diagonal_extraction`, `tendsto_diag_of_tendsto_stage` (arbitrary filter; the ℝ³
+  stage invariant feeds through unchanged).
+- `LerayHopf/Galerkin/GlobalContract.lean` — `IsLerayHopfOn`, round-trip equivalences,
+  `GlobalLerayHopfSolution`, `WeakFormNS.mono/.congr_Icc`, `IsLerayHopfOn.mono/.congr_Icc`
+  (instantiated at `r3Domain 𝔊`, already a `Galerkin.Domain`).
+- `Galerkin/SolutionBundles.lean` contract + `r3Domain` instance + `rfl`-normalization
+  lemmas (`r3Domain_dissip`, `r3Domain_regMem`).
+
+**Template-copied (shape reused, body re-derived against ℝ³ interfaces):**
+- `Torus/KappaChainExit.lean` → `R3/KappaChainExit.lean` (§6; ℝ³ drops the `ρ` fields,
+  parameterizes the filler).
+- `Torus/DiagonalGalerkin.lean` → `R3/DiagonalGalerkin.lean` (P3′; invariant upgraded to
+  `L2VF_R3` tests).
+- `Torus/GlobalCapstone.lean` → `R3/GlobalCapstone.lean` (P4′; quantifier prefix gains
+  `∃ 𝔊`).
+- Torus §3 base+κ design decisions (base+map form, `hκ` as side hypothesis, `κ := id`
+  rewiring) — adopted as-is, revalidated by spike (b).
+
+**Not transferable (re-derived nothing — different route):** torus mode-basis compactness
+(`ModeCompactness`/`ModeTail`); ℝ³ uses its own merged ball-restricted FK chain, which this
+campaign does not touch below `diag_ae_subseq`.
+
+---
+
+## 9. GO/NO-GO verdict
+
+**CONDITIONAL-GO** — unconditional for P1′/P2′ dispatch; P3′/P4′ dispatch conditioned on
+the P2′ typed exit gate (§6). Grounds:
+
+1. **The issue's kill criterion is discharged with source-verified evidence**: the ℝ³
+   limit-curve pin is ∀t (not a.e.), full-space tests, along `alPkg.φ` directly
+   (`GoodRepresentative.lean:206–208`); the a.e. statements are confined to the same two
+   places as the torus (representative identification, energy class).
+2. **The one genuinely ℝ³-specific risk — per-ball structure vs full-space coherence — is
+   closed by compiled evidence**, not argument: spike (a) proves the coherence core and
+   the nested-window overlap form against the real interfaces, sorry-free; §3 explains why
+   the per-ball data never reaches the argument.
+3. **The κ-threading risk is retired on the only structurally novel layer**: spike (b)
+   compiles the seeded Cantor tower verbatim-body and its composition into the measurable-
+   limit layer, with `galerkin_weakLimit_R3` and the refine-capable root consumed
+   UNCHANGED. The remaining thread is mechanical (§1 audit, four body-edit shapes) and
+   gated (§6).
+4. **Every conjunct of the final target is traced** (§2.3) to a merged ℝ³ theorem conjunct
+   plus a #195-merged transfer lemma; the only new conjunct content (pin re-export) is
+   already held inside the merged proof it is exported from.
+5. **The forward-global premise holds by construction** (`Galerkin.SolutionData`
+   horizon-free; `galSeq_R3_of_basis` axiom-free and `T`-free; the capstone's `𝔊`/`F`
+   witnesses `T`-free), so the campaign is extraction, reindexing, and logic — no new
+   analysis, no new axioms, and the release capstone stays byte-identical.
+
+NO-GO triggers routed back here (D3): any P2′/P3′/P4′ kill criterion in §5.
+
+## 10. Scope guards
+
+- `exists_lerayHopf_r3` and `LerayHopfSolutionFull_R3` stay byte-identical; the finite-
+  horizon ℝ³ claims of the release cone are unchanged.
+- No global-in-space compactness, tightness, or full-space strong-convergence claim is
+  introduced anywhere — every per-ball statement stays per-ball; the capstone asserts only
+  the five merged contract conjuncts per horizon.
+- No uniqueness of weak solutions assumed; no gluing of independently chosen witnesses
+  (single diagonal family end-to-end, one `𝔊`/`F`/`galSeq` fixed once).
+- No new `axiom`/`opaque`; kernel-trio pins throughout; append-only live pins.
+- The torus lane and the frozen #195 campaign doc are untouched.
+- All PRs target `dev/v0.2.0`; owner merges dev→main only with both lanes complete.
