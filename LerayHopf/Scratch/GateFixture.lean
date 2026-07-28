@@ -46,4 +46,38 @@ def probeDef : Nat := 0
 internal proof auxiliary — the retired classifier labeled this `internal`. -/
 theorem Probe.proof_1 : True := trivial
 
+/-!
+## Serializer discrimination fixtures (pass-9 finding 1)
+
+The pass-8 serializer memoized on `BEq Expr` = `Expr.eqv` (alpha-equivalence,
+which ignores binder names and binder info), so a REPEATED subterm could reuse
+the index of an earlier alpha-equivalent occurrence and a binder rename in the
+later occurrence left the stream — hence the digest — unchanged, silently
+defeating the documented "binder names included, fail-closed" property.  The
+pass-9 serializer memoizes on exact structural equality (`Expr.equal` via
+`ExprStructEq`).  Each pair below is alpha-EQUIVALENT (`Expr.eqv` = true — the
+retired memoization would have collapsed them to identical streams) but
+structurally distinct; `scripts/scratch_reader.lean` asserts per run that the
+pair members' canonical digests DIFFER, and that `Expr.eqv` really does equate
+them (so the fixture keeps exercising the intended collision class).
+-/
+
+/-- Baseline: the same Pi subterm repeated with the SAME binder name. -/
+theorem alphaSame : ((∀ x : Nat, x = x) → True) → ((∀ x : Nat, x = x) → True) → True :=
+  fun _ _ => trivial
+
+/-- Alpha-variant of `alphaSame`: second occurrence renames the binder — the
+type is `Expr.eqv`-equal to `alphaSame`'s but must digest differently. -/
+theorem alphaRenamed : ((∀ x : Nat, x = x) → True) → ((∀ y : Nat, y = y) → True) → True :=
+  fun _ _ => trivial
+
+/-- Baseline: the same Pi subterm repeated with the SAME (explicit) binder info. -/
+theorem binfoBase : ((∀ (n : Nat), n = n) → True) → ((∀ (n : Nat), n = n) → True) → True :=
+  fun _ _ => trivial
+
+/-- BinderInfo-variant of `binfoBase`: second occurrence makes the binder
+implicit — again `Expr.eqv`-equal but must digest differently. -/
+theorem binfoVariant : ((∀ (n : Nat), n = n) → True) → ((∀ {n : Nat}, n = n) → True) → True :=
+  fun _ _ => trivial
+
 end LerayHopf.ScratchFixture

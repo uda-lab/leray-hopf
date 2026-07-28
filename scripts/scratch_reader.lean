@@ -34,11 +34,16 @@
 --      payloads are serialized as opaque `EnvExtensionEntry` values by design;
 --      the toolchain provides no typed public decoder at ModuleData level).
 --   A2 (fail-loud): the decoded data cannot drift silently.  It is cross-checked
---      by (i) 1:1 coverage against `constNames` (a real constant without an
---      entry is a VIOLATION), (ii) the kernel-trio whitelist on every decoded
---      axiom name, and (iii) the total byte-diff against the frozen manifest.
---      A layout change under a future toolchain bump yields garbage `Name`s and
---      trips (i)–(iii); it cannot decode to plausible-but-wrong closures.
+--      by (i) an EXACT PER-MODULE BIJECTION against `constNames`, enforced in
+--      `load` before any manifest line is emitted (pass-9 finding 3): duplicate
+--      entry names, entry names that are not constants of the module, constants
+--      without an entry, and cardinality mismatches are each their own
+--      VIOLATION — a duplicate cannot silently overwrite a closure and an extra
+--      entry cannot be silently ignored; (ii) the kernel-trio whitelist on
+--      every decoded axiom name; and (iii) the total byte-diff against the
+--      frozen manifest.  A layout change under a future toolchain bump yields
+--      garbage `Name`s and trips (i)–(iii); it cannot decode to
+--      plausible-but-wrong closures.
 --   A3 (why not recompute): computing axiom closures by walking
 --      `ConstantInfo.value` proof terms would need name→ConstantInfo for the
 --      full transitive import graph (mathlib-scale: thousands of modules,
@@ -73,29 +78,40 @@
 --     unique subterm is emitted exactly once as an indexed node (constants with
 --     universe levels, sorts, binder names + binder info, literals,
 --     projections, let/lambda/forall structure), children referenced by index
---     in deterministic first-visit order.  The stream determines the term, so
---     equal digests mean equal serializations, i.e. equal types (two caveats,
---     both fail-closed or inert: binder NAMES are included, so an
---     alpha-renaming changes the digest and surfaces in review as a manifest
---     edit; `mdata` PAYLOADS are elided — node presence is kept — matching the
---     kernel's treatment of mdata as inert annotation).  Collision resistance
---     is SHA-256's.  Freezing these digests in scratch-manifest.expected
---     freezes every STATEMENT, not just every name: editing any type re-digests
---     and fails the byte-diff.  (Sharing note: the serialization is emitted per
---     constant with a fresh index table; hash-consing keeps it proportional to
---     unique subterms — the expanded trees of these statements measure in the
---     gigabytes and are never materialized.)
---   * `ConstantInfo.value` of the free-κ guards (pass-7 finding 3, STRENGTHENED
---     at pass-8 finding 3): a guard's proof term, after stripping its leading
---     lambda binders (the guard's own hypotheses) and inert mdata, must have the
---     seeded theorem as its APPLICATION HEAD — `DEPGUARD|…|head` lines.  Mere
---     occurrence of the seed anywhere in the term (an unused `let`, a dead
---     branch) no longer passes: the seed application must be the term that
---     PROVES the guard.  At P2′ the sanctioned (δ) re-point (campaign doc §6
---     clause 6) swaps the guards' proof heads to the κ-threaded production
---     declarations; that same reviewed diff MUST update the DEPGUARD pairs
---     below, the checker's DEPGUARD lines, and the expected manifest together —
---     the gate is deliberately broken by a re-point that forgets any of them.
+--     in deterministic first-visit order.  "Unique" means EXACT STRUCTURAL
+--     equality: the memoization is keyed on `ExprStructEq` (`Expr.equal`), not
+--     on `BEq Expr` = `Expr.eqv` alpha-equivalence (pass-9 finding 1 — under
+--     eqv keys a repeated alpha-equivalent subterm reused its first
+--     occurrence's index, so a binder rename/annotation change in the later
+--     occurrence never reached the stream; the GateFixture alpha/binderInfo
+--     pairs assert the discrimination per run, see FIXTURE-DIGEST below).  The
+--     stream determines the term, so equal digests mean equal serializations,
+--     i.e. equal types (two caveats, both fail-closed or inert: binder NAMES
+--     are included, so an alpha-renaming changes the digest and surfaces in
+--     review as a manifest edit; `mdata` PAYLOADS are elided — node presence is
+--     kept — matching the kernel's treatment of mdata as inert annotation).
+--     Collision resistance is SHA-256's.  Freezing these digests in
+--     scratch-manifest.expected freezes every STATEMENT, not just every name:
+--     editing any type re-digests and fails the byte-diff.  (Sharing note: the
+--     serialization is emitted per constant with a fresh index table;
+--     hash-consing keeps it proportional to unique subterms — the expanded
+--     trees of these statements measure in the gigabytes and are never
+--     materialized.)
+--   * `ConstantInfo.value` of EVERY production-coupling probe (pass-7
+--     finding 3; head semantics per pass-8 finding 3; extended from the two
+--     free-κ guards to the full 11-pin table per pass-9 finding 2): each pin
+--     names the constant that must be the probe's proof-term APPLICATION HEAD
+--     after stripping its own binders and inert mdata — the actual production
+--     declarations for the exact-shape probes, the SEEDS for the id-coherence
+--     and free-κ probes (the production/seed distinction is part of the pin:
+--     a probe re-proved from the wrong side fails even with identical
+--     statement digest and axiom closure), the `mk` constructors for the
+--     field-by-field bridges — plus one documented `uses`-mode pin for the
+--     destructuring probe (see `depGuards`).  At P2′ the sanctioned (δ)
+--     re-point (campaign doc §6 clause 6) rewrites the pin table in the SAME
+--     reviewed diff as the probe changes, together with the checker's DEPGUARD
+--     lines and the expected manifest — the gate is deliberately broken by a
+--     re-point that forgets any of them.
 --
 -- CLASSIFICATION IS DISPLAY-ONLY (pass-7 finding 1).  Passes 4–6 tried to make
 -- the surface/child/internal partition load-bearing and codex kept finding
@@ -123,13 +139,17 @@
 -- scratch-editable).
 --
 -- OUTPUT GRAMMAR (the ONLY text check-scratch-pins.sh accepts as evidence):
+--   FIXTURE-DIGEST|<label>|eqv-equal-canonical-distinct   (before START; one per
+--                                                      serializer-discrimination
+--                                                      fixture pair)
 --   SCRATCH-MANIFEST-START
 --   DECL|<class>|<name>|<kind>|<sha256|- >|<axioms>   (one line per constant of a
 --                                                      target module; digest `-`
 --                                                      only for codegen extras;
 --                                                      <axioms> is a comma-joined
 --                                                      list or `-` if empty)
---   DEPGUARD|<guard>|<seed>|head                      (one line per free-κ guard)
+--   DEPGUARD|<decl>|<required>|<head|uses>            (one line per proof-value
+--                                                      pin, fixed 11-entry table)
 --   VIOLATION|<rule>|<detail...>                      (zero lines when clean)
 --   SCRATCH-MANIFEST-END|<decl-count>|<depguard-count>|<OK|FAIL>
 import Lean
@@ -148,15 +168,59 @@ def scratchTargets : Array Name := #[
   `LerayHopf.Scratch.R3KappaSeed,
   `LerayHopf.Scratch.R3ProductionCoupling]
 
-/-- The free-κ statement guards (round-6 finding 2) and the seeded theorems that
-must be each guard's proof-term APPLICATION HEAD (round-7 finding 3, head-check
-per round-8 finding 3).  See the (δ) lifecycle rule in the campaign doc §6
-clause 6 for the sanctioned P2′ re-point. -/
-def depGuards : List (Name × Name) := [
+/-- PROOF-VALUE PINS (round-7 finding 3, head-check per round-8 finding 3,
+extended to EVERY production-coupling probe per round-9 finding 2): each entry
+is `(declaration, required constant, mode)`.
+
+Mode `"head"`: the declaration's proof/definition term — its own hypothesis
+binders and inert mdata stripped — must have the required constant as its
+APPLICATION HEAD.  This encodes the module doctrine literally: the exact-shape
+probes are BARE APPLICATIONS of the named production declarations, the
+id-coherence and free-κ probes are bare applications of the SEEDS (which is
+their point — the distinction production-head vs seed-head is part of the pin,
+so a probe silently re-proved from the wrong side fails even with an identical
+statement digest and axiom closure), and the two bridges are field-by-field
+`mk` constructions.
+
+Mode `"uses"`: the required constant must occur in the proof term
+(`getUsedConstants` — direct reference).  Sanctioned for EXACTLY ONE pin:
+`r3LimitPassagePin_production_source` destructures the production existential
+(`obtain`/`exact`), so its stripped head is `Exists.casesOn`, not the
+production source; the direct-reference check pins its production consumption
+instead.  Any new `uses`-mode pin needs a documented reason like this one.
+
+At P2′ the sanctioned (δ) re-point (campaign doc §6 clause 6) rewrites this
+table in the SAME reviewed diff as the probe changes: the three probes deleted
+with the mirror lose their pins, the free-κ guards' heads swap to the
+κ-threaded production declarations, and the exact-shape probes keep their
+production heads (their proofs gain `id strictMono_id` arguments only). -/
+def depGuards : List (Name × Name × String) := [
+  (`LerayHopf.Scratch212.AubinLionsPackage_R3.ofProduction,
+   `LerayHopf.Scratch212.AubinLionsPackage_R3.mk, "head"),
+  (`LerayHopf.Scratch212.AubinLionsPackage_R3.toProduction,
+   `LerayHopf.AubinLionsPackage_R3.mk, "head"),
+  (`LerayHopf.Scratch212.r3LimitPassage_production_exact_shape,
+   `LerayHopf.galerkin_limit_passage_R3, "head"),
+  (`LerayHopf.Scratch212.r3LimitPassagePin_production_source,
+   `LerayHopf.exists_weak_representative_R3, "uses"),
+  (`LerayHopf.Scratch212.r3Production_diag_ae_subseq_exact_shape,
+   `LerayHopf.diag_ae_subseq, "head"),
+  (`LerayHopf.Scratch212.r3Production_u_lim_aestronglyMeasurable_exact_shape,
+   `LerayHopf.u_lim_aestronglyMeasurable, "head"),
+  (`LerayHopf.Scratch212.r3Production_galerkinSpaceTimeExtraction_exact_shape,
+   `LerayHopf.galerkinSpaceTimeExtraction_R3, "head"),
+  (`LerayHopf.Scratch212.diag_ae_subseq_seeded_id_recovers_production,
+   `LerayHopf.Scratch212.diag_ae_subseq_seeded, "head"),
+  (`LerayHopf.Scratch212.spacetime_extraction_seeded_id_recovers_production,
+   `LerayHopf.Scratch212.spacetime_extraction_seeded, "head"),
   (`LerayHopf.Scratch212.diag_ae_subseq_seeded_free_kappa_exact_shape,
-   `LerayHopf.Scratch212.diag_ae_subseq_seeded),
+   `LerayHopf.Scratch212.diag_ae_subseq_seeded, "head"),
   (`LerayHopf.Scratch212.spacetime_extraction_seeded_free_kappa_exact_shape,
-   `LerayHopf.Scratch212.spacetime_extraction_seeded)]
+   `LerayHopf.Scratch212.spacetime_extraction_seeded, "head")]
+
+/-- The collision-fixture module (NOT a gate target): loaded so the serializer
+discrimination fixtures (pass-9 finding 1) can be digest-checked per run. -/
+def fixtureModule : Name := `LerayHopf.Scratch.GateFixture
 
 /-- The kernel trio — the ONLY axioms any scratch constant may depend on. -/
 def kernelTrio : List Name := [``propext, ``Classical.choice, ``Quot.sound]
@@ -238,7 +302,14 @@ def biChar : BinderInfo → String
   | .instImplicit => "c"
 
 structure SerSt where
-  idx  : Std.HashMap Expr Nat := {}
+  /-- Memoization keyed on EXACT STRUCTURAL equality (`ExprStructEq` wraps
+  `Expr.equal`), NOT on `BEq Expr` (= `Expr.eqv`, alpha-equivalence): pass-9
+  finding 1 — under eqv keys a repeated alpha-equivalent subterm reused the
+  index of its first occurrence, so a binder rename/annotation change in the
+  later occurrence never reached the stream, and two distinct types could share
+  a digest.  With structural keys, only byte-identical subterms share a node
+  (the `GateFixture` alpha/binderInfo pairs assert this discrimination per run). -/
+  idx  : Std.HashMap ExprStructEq Nat := {}
   out  : String := ""
   next : Nat := 0
 
@@ -246,7 +317,7 @@ structure SerSt where
 Applications are emitted n-ary (`getAppFn` + argument list) so recursion depth
 follows term NESTING, not application-spine length. -/
 partial def serE (e : Expr) : StateM SerSt Nat := do
-  if let some i := (← get).idx[e]? then
+  if let some i := (← get).idx[ExprStructEq.mk e]? then
     return i
   let line : String ← do
     match e with
@@ -285,7 +356,7 @@ partial def serE (e : Expr) : StateM SerSt Nat := do
       pure s!"P({serName tn},{i},{bo})"
   let st ← get
   let i := st.next
-  set { st with idx := st.idx.insert e i, next := i + 1,
+  set { st with idx := st.idx.insert (ExprStructEq.mk e) i, next := i + 1,
                 out := st.out ++ s!"#{i}={line}\n" }
   return i
 
@@ -347,6 +418,9 @@ structure Loaded where
   projNames : NameSet := {}
   /-- Single-ctor inductives whose field derivation failed (violation). -/
   fieldFailures : Array Name := #[]
+  /-- Per-module axiom-entry bijection failures (violation; pass-9 finding 3):
+  formatted `rule|module|detail` for duplicate/unknown/missing/count defects. -/
+  axEntryFailures : Array String := #[]
 
 /-- Read the targets plus their transitive `LerayHopf.*` imports (mathlib/core
 imports are never read: axiom evidence for anything imported is already folded
@@ -366,11 +440,37 @@ partial def load (work : List Name) (acc : Loaded) : IO Loaded := do
     for (n, ci) in md.constNames.zip md.constants do
       acc := { acc with consts := acc.consts.insert n ci }
     if isTarget then
+      -- Axiom entries with EXACT PER-MODULE BIJECTION enforcement (pass-9
+      -- finding 3 — A2's fail-loud promise, now actually checked before any
+      -- manifest line is emitted): entry names must be pairwise distinct,
+      -- every entry name must be a constant of THIS module, every constant of
+      -- this module must have an entry from this module, and the cardinalities
+      -- must match.  A duplicate can no longer silently overwrite a closure;
+      -- an unknown or cross-module entry can no longer be silently ignored.
+      let mut eset : NameSet := {}
+      let mut nEntries : Nat := 0
       for (extName, es) in md.entries do
         if extName == axExtName then
           for e in es do
             let (n, axs) := decodeAxEntry e
+            nEntries := nEntries + 1
+            if eset.contains n then
+              acc := { acc with axEntryFailures :=
+                acc.axEntryFailures.push s!"axentry-duplicate|{m}|{n}" }
+            eset := eset.insert n
             acc := { acc with axioms := acc.axioms.insert n axs }
+      let cset : NameSet := md.constNames.foldl (·.insert ·) {}
+      for n in eset.toList do
+        if !cset.contains n then
+          acc := { acc with axEntryFailures :=
+            acc.axEntryFailures.push s!"axentry-unknown|{m}|{n}" }
+      for n in md.constNames do
+        if !eset.contains n then
+          acc := { acc with axEntryFailures :=
+            acc.axEntryFailures.push s!"axentry-missing|{m}|{n}" }
+      if nEntries != md.constNames.size then
+        acc := { acc with axEntryFailures :=
+          acc.axEntryFailures.push s!"axentry-count|{m}|{nEntries}≠{md.constNames.size}" }
       -- Structure projections, cast-free (pass-8 finding 1): a single-ctor
       -- inductive's projections are `S.<field>` for the constructor's field
       -- binders (the constructor lives in the same module, already inserted).
@@ -413,13 +513,38 @@ def classify (acc : Loaded) (n : Name) : String :=
     | _ => "surface"
 
 def main' : IO Unit := do
-  let acc ← load scratchTargets.toList {}
-  IO.println "SCRATCH-MANIFEST-START"
+  let acc ← load (scratchTargets.toList ++ [fixtureModule]) {}
   let mut nDecl := 0
   let mut nViol := 0
   let mut nDep  := 0
+  -- SERIALIZER DISCRIMINATION FIXTURES (pass-9 finding 1), asserted BEFORE the
+  -- manifest block: each GateFixture pair is alpha-equivalent (`Expr.eqv` true —
+  -- the retired eqv-keyed memoization would have collapsed them to one stream)
+  -- but must produce DISTINCT canonical digests under structural keying.
+  for (label, na, nb) in [
+      ("alpha-binder-name", `LerayHopf.ScratchFixture.alphaSame,
+       `LerayHopf.ScratchFixture.alphaRenamed),
+      ("binder-info", `LerayHopf.ScratchFixture.binfoBase,
+       `LerayHopf.ScratchFixture.binfoVariant)] do
+    match acc.consts.find? na, acc.consts.find? nb with
+    | some ca, some cb =>
+      if !(Expr.eqv ca.type cb.type) then
+        IO.println s!"VIOLATION|fixture-not-alpha-equivalent|{label}"
+        nViol := nViol + 1
+      else if canonicalOf ca == canonicalOf cb then
+        IO.println s!"VIOLATION|fixture-digest-collision|{label}"
+        nViol := nViol + 1
+      else
+        IO.println s!"FIXTURE-DIGEST|{label}|eqv-equal-canonical-distinct"
+    | _, _ =>
+      IO.println s!"VIOLATION|fixture-missing|{label}"
+      nViol := nViol + 1
+  IO.println "SCRATCH-MANIFEST-START"
   for f in acc.fieldFailures do
     IO.println s!"VIOLATION|field-derivation|{f}"
+    nViol := nViol + 1
+  for f in acc.axEntryFailures do
+    IO.println s!"VIOLATION|{f}"
     nViol := nViol + 1
   for tmod in scratchTargets do
     let some (_, md) := acc.mods.find? (·.1 == tmod)
@@ -482,20 +607,32 @@ def main' : IO Unit := do
         | none    => pure "-"
       IO.println s!"DECL|{classify acc n}|{n}|{kind}|{digest}|{axStr}"
       nDecl := nDecl + 1
-  for (guard, seed) in depGuards do
-    match acc.consts.find? guard with
-    | some (.thmInfo v) =>
-      -- Pass-8 finding 3: the seed must be the proof term's APPLICATION HEAD
-      -- once the guard's own hypothesis binders (and inert mdata) are stripped —
-      -- an unused `let` or a dead branch mentioning the seed does not pass.
-      if (stripLamsMData v.value).getAppFn.constName? == some seed then
-        IO.println s!"DEPGUARD|{guard}|{seed}|head"
+  for (guard, required, mode) in depGuards do
+    -- Pass-8 finding 3 (head mode): the required constant must be the proof
+    -- term's APPLICATION HEAD once the declaration's own binders (and inert
+    -- mdata) are stripped — an unused `let` or dead branch does not pass.
+    -- Pass-9 finding 2: the pin table covers EVERY production-coupling probe,
+    -- each naming the production/seed/constructor head its doctrine prescribes;
+    -- `uses` mode (direct proof-term reference) only for the documented
+    -- destructuring probe.
+    let value? := match acc.consts.find? guard with
+      | some (.thmInfo v)  => some v.value
+      | some (.defnInfo v) => some v.value
+      | _ => none
+    match value? with
+    | some v =>
+      let ok := match mode with
+        | "head" => (stripLamsMData v).getAppFn.constName? == some required
+        | "uses" => v.getUsedConstants.contains required
+        | _      => false
+      if ok then
+        IO.println s!"DEPGUARD|{guard}|{required}|{mode}"
         nDep := nDep + 1
       else
-        IO.println s!"VIOLATION|depguard-head-not-seed|{guard}|{seed}"
+        IO.println s!"VIOLATION|depguard-{mode}-failed|{guard}|{required}"
         nViol := nViol + 1
-    | _ =>
-      IO.println s!"VIOLATION|depguard-not-a-theorem|{guard}"
+    | none =>
+      IO.println s!"VIOLATION|depguard-no-value|{guard}"
       nViol := nViol + 1
   IO.println s!"SCRATCH-MANIFEST-END|{nDecl}|{nDep}|{if nViol == 0 then "OK" else "FAIL"}"
   if nViol != 0 then

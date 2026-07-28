@@ -21,11 +21,17 @@
 #     marked decode is registered in the reader's ASSUMPTIONS A1–A4 — pass-8
 #     finding 1).  Statements are frozen via per-declaration SHA-256 digests
 #     over a canonical hash-consed serialization of levelParams + elaborated
-#     type (pass-8 finding 2 retired the 32-bit-truncating `Expr.hash`), and
-#     each free-κ guard's proof term must have its seeded theorem as the
-#     APPLICATION HEAD (pass-8 finding 3 retired mere getUsedConstants
-#     occurrence).  See the reader's header for the full trust model and the
-#     documented residual boundary.
+#     type (pass-8 finding 2 retired the 32-bit-truncating `Expr.hash`;
+#     pass-9 finding 1 rekeyed the serializer's memoization from
+#     alpha-equivalence to exact structural equality, with per-run
+#     discrimination fixtures), and every production-coupling probe's proof
+#     term must have its pinned constant as the APPLICATION HEAD (pass-8
+#     finding 3 retired mere getUsedConstants occurrence; pass-9 finding 2
+#     extended the pins from the two free-κ guards to the full 11-entry
+#     table, encoding production-head vs seed-head intent; pass-9 finding 3
+#     added exact per-module bijection validation of the axiom entries).  See
+#     the reader's header for the full trust model and the documented residual
+#     boundary.
 #
 # WHAT THIS SCRIPT ASSERTS, FAIL-CLOSED:
 #   * every scratch target was FRESHLY rebuilt in this run (artifacts deleted
@@ -35,8 +41,10 @@
 #     pass-7 finding 1's evasion class, demonstrated on a compiled fixture);
 #   * the reader run exits 0, its sentinel block is exactly-once and well-formed,
 #     with zero VIOLATION lines (private/axiom/opaque/unsafe/initializer
-#     declarations, any non-kernel-trio axiom, any constant missing a
-#     toolchain-computed axiom entry, any free-κ guard not referencing its seed);
+#     declarations, any non-kernel-trio axiom, any axiom-entry bijection defect
+#     — duplicate/unknown/missing/count, any coupling probe whose proof term
+#     does not head on / reference its pinned constant, any serializer fixture
+#     that fails to discriminate);
 #   * the TOTAL manifest — every constant of every target: class, name, kind,
 #     sha-256 statement digest, axiom closure, plus the DEPGUARD lines — is
 #     byte-identical to the frozen scripts/scratch-manifest.expected.  Classification labels are
@@ -158,9 +166,20 @@ block="$(awk '/^SCRATCH-MANIFEST-START$/{inblk=1; next} /^SCRATCH-MANIFEST-END\|
 n_decl="$(printf '%s\n' "$block" | grep -c '^DECL|' || true)"
 n_dep="$(printf '%s\n' "$block" | grep -c '^DEPGUARD|' || true)"
 n_lines="$(printf '%s\n' "$block" | grep -c . || true)"
-[ "$n_decl" -eq "$declared" ] && [ "$n_dep" -eq "$declared_dep" ] && [ "$n_dep" -eq 2 ] \
+[ "$n_decl" -eq "$declared" ] && [ "$n_dep" -eq "$declared_dep" ] && [ "$n_dep" -eq 11 ] \
   && [ "$n_lines" -eq $((declared + declared_dep)) ] \
-  || { echo "MANIFEST BLOCK MISMATCH: $n_decl DECL / $n_dep DEPGUARD / $n_lines lines vs $declared+$declared_dep declared (DEPGUARD must be exactly 2)"; exit 1; }
+  || { echo "MANIFEST BLOCK MISMATCH: $n_decl DECL / $n_dep DEPGUARD / $n_lines lines vs $declared+$declared_dep declared (DEPGUARD must be exactly 11)"; exit 1; }
+
+# SERIALIZER DISCRIMINATION FIXTURES (pass-9 finding 1): the reader must attest,
+# per run, that each GateFixture pair is alpha-equivalent (Expr.eqv — the class
+# the retired eqv-keyed memoization collapsed) yet canonically DISTINCT under
+# the structural-keyed serializer.  Emitted before the START sentinel.
+for want in \
+  'FIXTURE-DIGEST|alpha-binder-name|eqv-equal-canonical-distinct' \
+  'FIXTURE-DIGEST|binder-info|eqv-equal-canonical-distinct'; do
+  grep -qxF "$want" "$manifest_out" \
+    || { echo "SERIALIZER FIXTURE MISSING: $want"; exit 1; }
+done
 
 # TOTAL MANIFEST EQUALITY (pass-7 finding 1 — the load-bearing check): the block
 # must be byte-identical to the frozen expected manifest.  Every constant of
@@ -269,22 +288,38 @@ if ! printf '%s\n' "$block" | awk -F'|' '
   exit 1
 fi
 
-# DEPGUARD (pass-7 finding 3, head-check per pass-8 finding 3): each free-κ
-# guard's proof term — after stripping the guard's own hypothesis binders and
-# inert mdata — must have the seeded theorem as its APPLICATION HEAD (mere
-# occurrence anywhere in the term no longer counts).  Also covered by the
-# total-manifest diff; asserted explicitly here so a failure names the broken
-# guard.  The sanctioned P2′ re-point (campaign doc §6 clause 6 rule (δ))
-# updates the reader's depGuards pairs, these two lines, and the expected
-# manifest in the SAME reviewed diff.
+# DEPGUARD (pass-7 finding 3; head semantics per pass-8 finding 3; extended to
+# the FULL 11-pin production-coupling table per pass-9 finding 2): each probe's
+# proof term — its own binders and inert mdata stripped — must have the pinned
+# constant as its APPLICATION HEAD; the pin encodes production-head vs
+# seed-head vs constructor-head intent, so a probe silently re-proved from the
+# wrong side fails even with an identical statement digest.  The single
+# `uses`-mode pin is the documented destructuring probe
+# (r3LimitPassagePin_production_source: obtain/exact over the production
+# existential — head is Exists.casesOn, consumption pinned by direct
+# reference).  Also covered by the total-manifest diff; asserted explicitly
+# here so a failure names the broken probe.  The sanctioned P2′ re-point
+# (campaign doc §6 clause 6 rule (δ)) rewrites the reader's pin table, these
+# lines, and the expected manifest in the SAME reviewed diff as the probe
+# changes (deleted probes lose pins; free-κ guard heads swap to the κ-threaded
+# production declarations; exact-shape probes keep their production heads).
 for want in \
+  'DEPGUARD|LerayHopf.Scratch212.AubinLionsPackage_R3.ofProduction|LerayHopf.Scratch212.AubinLionsPackage_R3.mk|head' \
+  'DEPGUARD|LerayHopf.Scratch212.AubinLionsPackage_R3.toProduction|LerayHopf.AubinLionsPackage_R3.mk|head' \
+  'DEPGUARD|LerayHopf.Scratch212.r3LimitPassage_production_exact_shape|LerayHopf.galerkin_limit_passage_R3|head' \
+  'DEPGUARD|LerayHopf.Scratch212.r3LimitPassagePin_production_source|LerayHopf.exists_weak_representative_R3|uses' \
+  'DEPGUARD|LerayHopf.Scratch212.r3Production_diag_ae_subseq_exact_shape|LerayHopf.diag_ae_subseq|head' \
+  'DEPGUARD|LerayHopf.Scratch212.r3Production_u_lim_aestronglyMeasurable_exact_shape|LerayHopf.u_lim_aestronglyMeasurable|head' \
+  'DEPGUARD|LerayHopf.Scratch212.r3Production_galerkinSpaceTimeExtraction_exact_shape|LerayHopf.galerkinSpaceTimeExtraction_R3|head' \
+  'DEPGUARD|LerayHopf.Scratch212.diag_ae_subseq_seeded_id_recovers_production|LerayHopf.Scratch212.diag_ae_subseq_seeded|head' \
+  'DEPGUARD|LerayHopf.Scratch212.spacetime_extraction_seeded_id_recovers_production|LerayHopf.Scratch212.spacetime_extraction_seeded|head' \
   'DEPGUARD|LerayHopf.Scratch212.diag_ae_subseq_seeded_free_kappa_exact_shape|LerayHopf.Scratch212.diag_ae_subseq_seeded|head' \
   'DEPGUARD|LerayHopf.Scratch212.spacetime_extraction_seeded_free_kappa_exact_shape|LerayHopf.Scratch212.spacetime_extraction_seeded|head'; do
   printf '%s\n' "$block" | grep -qxF "$want" \
     || { echo "DEPGUARD MISSING: $want"; exit 1; }
 done
 
-echo "SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of $declared constants byte-pinned, statements sha256-frozen, kernel-trio only; $n_dep/2 free-kappa head-depguards; collision fixture enumerated)"
+echo "SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of $declared constants byte-pinned, statements sha256-frozen, kernel-trio only; $n_dep/11 coupling value-pins (10 head + 1 uses); collision + serializer fixtures verified)"
 
 }
 

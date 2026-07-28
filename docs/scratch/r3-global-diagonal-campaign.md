@@ -4,7 +4,7 @@
 **Verdict (§9): CONDITIONAL-GO** — P1′/P2′ dispatch-ready; P3′/P4′ dispatch blocked on the
 P2′ typed exit gate (§6, six clauses), mirroring the #195 torus-campaign discipline whose
 condition was met on schedule. Codex adversarial statement gate (xhigh) pass-1 through
-pass-8 findings dispositioned in §11.
+pass-9 findings dispositioned in §11.
 
 This campaign document is NEW and separate from the frozen torus campaign doc
 (`docs/scratch/global-diagonal-campaign.md`, #195 — COMPLETE, not edited by this lane).
@@ -638,18 +638,31 @@ package; `htest` only by the `WeakFormNS` stage.
    ASSUMPTIONS A1–A4 in the reader header per pass-8 finding 1: layout pinned
    by the repo toolchain, fail-loud under drift, with the pass-7 display-only
    `projectionFnInfoExt`/`auxRecExt` decoders REMOVED in favor of cast-free
-   constructor-telescope derivation of projection names), per-declaration
-   STATEMENT DIGESTS — SHA-256 over a canonical hash-consed serialization of
-   `levelParams` + the full elaborated type (pass-8 finding 2 retired the
-   32-bit-truncating `Expr.hash`; the serialization emits every unique subterm
-   once, children by index, so the multi-gigabyte expanded trees of these
-   statements are never materialized; binder names included — fail-closed
-   against renames; `mdata` payloads elided, matching the kernel's inert
-   treatment), and the free-κ guards' proof-term APPLICATION HEADS (pass-8
-   finding 3 retired `getUsedConstants` occurrence, which an unused `let` or
-   dead branch could satisfy: the seed must now be the head of the guard's
-   proof term once its hypothesis binders and inert mdata are stripped —
-   `DEPGUARD|…|head` lines, clause 6 rule (δ)). The checker snapshots the reader, the
+   constructor-telescope derivation of projection names; per pass-9 finding 3
+   the fail-loud promise is enforced as an EXACT PER-MODULE BIJECTION against
+   `constNames` — duplicate, unknown, missing, and count defects are each
+   their own violation, checked before any manifest line is emitted),
+   per-declaration STATEMENT DIGESTS — SHA-256 over a canonical hash-consed
+   serialization of `levelParams` + the full elaborated type (pass-8 finding 2
+   retired the 32-bit-truncating `Expr.hash`; the serialization emits every
+   unique subterm once, children by index, so the multi-gigabyte expanded
+   trees of these statements are never materialized; binder names included —
+   fail-closed against renames; `mdata` payloads elided, matching the kernel's
+   inert treatment; per pass-9 finding 1 "unique" means EXACT STRUCTURAL
+   equality — memoization keyed on `ExprStructEq`/`Expr.equal`, not the
+   `Expr.eqv` alpha-equivalence of `BEq Expr` which ignores binder names/info,
+   with per-run GateFixture discrimination pairs, alpha-equivalent yet
+   canonically distinct, attesting the keying), and EVERY production-coupling
+   probe's proof-term APPLICATION HEAD (pass-8 finding 3 retired
+   `getUsedConstants` occurrence, which an unused `let` or dead branch could
+   satisfy; pass-9 finding 2 extended the pins from the two free-κ guards to
+   the full 11-entry table: production heads for the exact-shape probes, seed
+   heads for the id-coherence and free-κ probes — the production-vs-seed
+   distinction is part of the pin, so a probe re-proved from the wrong side
+   fails even with identical digest and axiom closure — `mk` heads for the
+   field-by-field bridges, plus one documented `uses`-mode pin for the
+   destructuring probe `r3LimitPassagePin_production_source` —
+   `DEPGUARD|…|head`/`|uses` lines, clause 6 rule (δ)). The checker snapshots the reader, the
    fixture self-test, and the frozen manifest to a private temp dir BEFORE the
    untrusted `lake build` step (build-time elaboration can run arbitrary IO),
    then asserts fail-closed: fresh rebuild of every target; the
@@ -659,9 +672,10 @@ package; `htest` only by the `WeakFormNS` stage.
    static channel; the def-companion suffixes are reserved names and cannot be
    collision-declared at all, verified negatively); zero VIOLATION lines
    (`private`/`axiom`/`opaque`/unsafe/initializer declarations, non-trio axioms,
-   missing axiom entries, broken depguards); exact sentinel/count grammar; the
+   axiom-entry bijection defects, broken value-pins, non-discriminating
+   serializer fixtures); exact sentinel/count grammar; the
    TOTAL manifest — every constant of every target: class, name, kind, sha-256
-   statement digest, axiom closure, plus both DEPGUARD lines — byte-identical
+   statement digest, axiom closure, plus all 11 DEPGUARD lines — byte-identical
    to the frozen `scripts/scratch-manifest.expected` (pass-7 finding 1:
    classification labels are display-only; a smuggled declaration is a NEW line
    and fails the diff whatever label it gets, so lexical label collisions are
@@ -851,6 +865,21 @@ theorem-names, axioms, release-cone (+ its self-test), statement-cards, live
 pins, scratch pins — not just the scratch checker. Run green: log
 `/tmp/lh212-preflight8.log`, ending
 `SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of 187 constants byte-pinned, statements sha256-frozen, kernel-trio only; 2/2 free-kappa head-depguards; collision fixture enumerated)`
+then `PREFLIGHT OK`.
+At the pass-9 remediation (§11.9) three implementation defects in the pass-8
+artifacts were fixed: the serializer's memoization was rekeyed from
+alpha-equivalence to exact structural equality (`ExprStructEq`; measured
+effect on the current 187 statements: ZERO digest changes — no real statement
+contained distinct-but-alpha-equivalent repeated subterms — but the
+GateFixture pairs prove the two keyings differ, and the discrimination is now
+asserted per run); the proof-value pin table was extended from the two free-κ
+guards to all ELEVEN production-coupling declarations (10 head pins encoding
+production-vs-seed-vs-constructor intent + 1 documented `uses` pin for the
+destructuring probe; heads probe-verified against the elaborated oleans before
+pinning); and the axiom-entry decode now enforces an exact per-module
+bijection against `constNames`. Evidence run: FULL `agent-preflight.sh` green,
+log `/tmp/lh212-preflight9.log`, scratch-gate line
+`SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of 187 constants byte-pinned, statements sha256-frozen, kernel-trio only; 11/11 coupling value-pins (10 head + 1 uses); collision + serializer fixtures verified)`
 then `PREFLIGHT OK`.
 
 ### Spike (a) — `LerayHopf/Scratch/R3StageCoherence.lean` (every-t overlap coherence)
@@ -1075,3 +1104,15 @@ meant §11.7's evidence claims overstated what the mechanism enforced.
 | 8.1 | high | The static reader adds six unmarked `unsafe`/`opaque` declarations — `check-no-axiom.sh` matches them, so the mandatory preflight cannot pass; they also rely on unchecked casts from opaque `EnvExtensionEntry` values into private toolchain payload layouts (a real trusted-base expansion); recommendation: typed public decoder if available, else mark each and document the exact pinned-toolchain layout assumption, then rerun the FULL preflight | **Accepted — unsafe surface minimized to ONE decode, marked and registered** (this commit): no typed public decoder exists at `ModuleData` level (extension payloads are serialized as opaque `EnvExtensionEntry` by design), so the load-bearing `exportedAxiomsExt` decode pair carries same-line `ALLOW_AXIOM` markers citing a new ASSUMPTIONS A1–A4 register in the reader header: A1 pins the entry layout (`Name × Array Name`, the type `exportEntriesFnEx` constructs in Lean/Util/CollectAxioms.lean under the repo-pinned v4.31.0-rc2 toolchain — the same cast the toolchain's own import machinery performs); A2 records why drift is fail-loud (1:1 constNames coverage + trio whitelist + total byte-diff — garbage decode cannot pass); A3 records why recomputing closures by walking `ConstantInfo.value` is rejected (name→ConstantInfo over the mathlib-scale import graph is OOM-prohibitive in the 3.4 GiB cgroup, and would reimplement exactly the computation whose exported result this data IS); A4 registers `sha256sum` (coreutils) as digest tool, same trust class as the checker's grep/awk/diff. The four OTHER unsafe/opaque declarations (display-only `projectionFnInfoExt`/`auxRecExt` decoders) were REMOVED outright: projection names now derive from constructor binder telescopes (pure `ModuleData`, cast-free; auxiliary recursors were already covered by the generated-suffix rules) — classification columns verified byte-identical across the swap. FULL `agent-preflight.sh` green is the pass-8 evidence artifact |
 | 8.2 | high | `ConstantInfo.type.hash` is not a sound statement freeze: `Expr.Data.hash` truncates to 32 bits (collisions feasible), determinism ≠ injectivity, `levelParams` omitted — a changed κ-critical statement could pass the byte diff; recommendation: exact canonical serialization / structural equality of full type + universe parameters, or a collision-resistant digest over that serialization | **Accepted — SHA-256 over a canonical hash-consed serialization** (this commit): each DECL line now carries SHA-256 of `LP[levelParams]` + the reader's canonical node stream of the fully elaborated type — every unique subterm emitted exactly once as an indexed node (constants with universe levels, sorts, binder names + binder info, n-ary applications, let/λ/∀ structure, literals, projections), children referenced by first-visit index, so the stream determines the term. Direct full-text serialization was measured and REJECTED: sharing expansion reaches 2.3 GB across the 187 statements (single worst constant 130 MB), so exactness-by-expansion is not implementable in the gate's budget; hash-consing keeps the serialized form proportional to the shared graph (whole manifest ~7 s). Two documented identifications, both safe-direction: binder names are INCLUDED (an α-rename changes the digest — fail-closed, surfaces as a reviewed manifest edit), `mdata` payloads elided (kernel-inert annotations; node presence kept). Free/meta variables in a type are a VIOLATION (kernel types never contain them). Digest determinism verified across runs; shell-side sanity check added (64 lowercase-hex or `-` for codegen extras). The §11.7 "byte-pinned" claim is now true in the intended collision-resistant sense |
 | 8.3 | medium | DEPGUARD proves only syntactic occurrence: `getUsedConstants.contains` is satisfied by an unused `let` binding or unreachable branch; recommendation: require the normalized proof term to have the seed application as its load-bearing head, or pin the complete proof-expression shape | **Accepted — application-head check, exactly as recommended** (this commit): the reader strips the guard's leading λ-binders (its own hypotheses) and inert `mdata` — nothing else — and requires `getAppFn` of the remaining term to be literally the seed constant, emitting `DEPGUARD\|guard\|seed\|head` (marker upgraded from `direct`; expected manifest and the checker's two exact-line assertions updated in the same diff). This matches the guards' authored discipline (§4.1 (f): proofs are bare applications of the seeds at free κ — probe-verified before the rewrite: both stripped proof terms are 10-argument applications headed by their seeds) and closes the unused-`let`/dead-branch channel: a guard whose proof does not USE the seed as its proving term now fails loudly. Rule (δ)'s four-artifact same-diff obligation (§6 clause 6) is unchanged in shape, with the head semantics recorded in the coupling module's header |
+
+### 11.9 Pass 9 (at `0d28847`)
+
+Verdict **needs-attention**, 2 high + 1 medium — all three narrow, concrete
+implementation defects in the pass-8 reader (still no mathematical finding since
+round 4). All accepted and fixed mechanically on the machinery already in place.
+
+| # | Sev | Finding (condensed) | Disposition |
+|---|---|---|---|
+| 9.1 | high | Hash-consing memoized on `BEq Expr` = `Expr.eqv` (alpha-equivalence, ignoring binder names AND binder info) — a repeated alpha-equivalent subterm reused its first occurrence's index, so a binder rename/annotation change in the later occurrence never reached the stream: distinct types could share a digest, defeating exactly the documented "binder names included, fail-closed" property; recommendation: structural keys (`ExprStructEq`), plus collision fixtures with repeated alpha-equivalent subterms | **Accepted — rekeyed to exact structural equality, with per-run discrimination fixtures** (this commit): the memoization key is now `ExprStructEq` (`Expr.equal`), so only byte-identical subterms share a node index. `GateFixture` gained two pairs (`alphaSame`/`alphaRenamed` — repeated Pi subterm, second occurrence binder-renamed; `binfoBase`/`binfoVariant` — second occurrence explicit→implicit), each pair `Expr.eqv`-equal (the class the retired keying collapsed) yet structurally distinct; the reader asserts BOTH properties per run (`FIXTURE-DIGEST\|…\|eqv-equal-canonical-distinct` lines, grep-pinned by the checker — a fixture that stops discriminating is itself a violation). Measured impact on the real manifest: 0/187 digests changed across the rekeying (no current statement contains distinct-but-alpha-equivalent repeated subterms — olean sharing makes repeated subterms pointer-identical), i.e. the defect was a genuine latent channel, not yet an exploited one |
+| 9.2 | high | Production-coupling probes not value-pinned: depGuards covered only the two free-κ guards — e.g. `r3Production_diag_ae_subseq_exact_shape` could be silently re-proved from `diag_ae_subseq_seeded … id strictMono_id` with identical statement digest and kernel-trio closure, production consumption gone, every gate green; recommendation: proof-value head/dependency checks for EVERY required production-coupling probe, distinguishing production-head from legitimate seed-head (id-coherence) pins | **Accepted — full 11-entry pin table, heads probe-verified before pinning** (this commit): every declaration of `R3ProductionCoupling.lean` is now value-pinned. Production heads: `r3LimitPassage_production_exact_shape`→`galerkin_limit_passage_R3`, `r3Production_diag_ae_subseq_exact_shape`→`diag_ae_subseq`, `r3Production_u_lim_aestronglyMeasurable_exact_shape`→`u_lim_aestronglyMeasurable`, `r3Production_galerkinSpaceTimeExtraction_exact_shape`→`galerkinSpaceTimeExtraction_R3`. Seed heads (the intended sides, per the finding's distinction): both `…_id_recovers_production` probes and both `…_free_kappa_exact_shape` guards → their seeds. Constructor heads: `ofProduction`→mirror `mk`, `toProduction`→production `mk` (field-by-field bridges). One `uses`-mode pin, documented in the reader as the sanctioned exception: `r3LimitPassagePin_production_source` destructures the production existential (`obtain`/`exact` ⇒ stripped head is `Exists.casesOn`), so its production consumption is pinned by direct reference to `exists_weak_representative_R3`. The exploit named in the finding now fails: re-proving an exact-shape probe from a seed at `id` changes its head from the production declaration to the seed and trips `depguard-head-failed` even though digest and axiom closure are unchanged. Rule (δ) extended with the P2′ table lifecycle (deleted probes lose pins; free-κ heads swap to κ-threaded production; exact-shape probes keep production heads, proofs gaining `id strictMono_id` only) |
+| 9.3 | medium | A2's "1:1 coverage" was not actually enforced: decoded entries went into one global NameMap — a duplicate key silently overwrote a closure, an extra/unknown entry was silently ignored, contradicting the documented fail-loud A2 | **Accepted — exact per-module bijection, validated before any manifest line is emitted** (this commit): for each target module the reader now checks, against THAT module's `constNames`: no duplicate entry names (`axentry-duplicate`), no entry naming a non-constant of the module (`axentry-unknown`), no constant without an entry (`axentry-missing`), and entry-count = constant-count (`axentry-count`) — each its own VIOLATION line, all emitted ahead of the DECL block so a bijection defect fails the run regardless of manifest content. A cross-module or duplicate entry can no longer influence which closure a constant reports. ASSUMPTIONS A2 rewritten to state what is now literally checked |

@@ -76,15 +76,26 @@
 --     VERBATIM; the only sanctioned change is the proof head swapping from the
 --     scratch seeds to the κ-threaded production declarations (plus the coupling
 --     names above).  Any other edit to those conclusion texts = kill-criterion event.
---     MACHINE-ENFORCED since pass-7 (round-7 finding 3; strengthened at round-8
---     finding 3): the static gate reader (`scripts/scratch_reader.lean`)
---     requires each guard's PROOF TERM — hypothesis binders stripped — to have
---     its seed as the APPLICATION HEAD (DEPGUARD|…|head), so the P2′ re-point
---     must update, in the SAME reviewed diff: these proof heads, the reader's
---     `depGuards` pairs, the checker's DEPGUARD assertion lines, and
---     `scripts/scratch-manifest.expected` (which also freezes every statement
---     here by sha-256 canonical digest).  Forgetting any of the four breaks the
---     gate loudly.
+--     MACHINE-ENFORCED since pass-7 (round-7 finding 3; head semantics at
+--     round-8 finding 3; extended to EVERY declaration of this module at
+--     round-9 finding 2): the static gate reader (`scripts/scratch_reader.lean`)
+--     carries an 11-entry proof-value pin table — each probe's PROOF TERM,
+--     hypothesis binders stripped, must have its pinned constant as the
+--     APPLICATION HEAD (`DEPGUARD|…|head`): the ACTUAL production declarations
+--     for the four exact-shape probes, the SEEDS for the id-coherence and
+--     free-κ probes, the `mk` constructors for the two bridges; the one
+--     destructuring proof (`r3LimitPassagePin_production_source`) is pinned by
+--     direct reference (`DEPGUARD|…|uses`) to `exists_weak_representative_R3`.
+--     A probe silently re-proved from the wrong side (e.g. an exact-shape probe
+--     re-proved from a seed at `id`) fails the gate even with an identical
+--     statement digest and axiom closure.  The P2′ re-point must therefore
+--     update, in the SAME reviewed diff: these proof heads, the reader's pin
+--     table (deleted probes lose pins; free-κ guard heads swap to the
+--     κ-threaded production declarations; exact-shape probes keep production
+--     heads, their proofs gaining `id strictMono_id` only), the checker's
+--     DEPGUARD assertion lines, and `scripts/scratch-manifest.expected` (which
+--     also freezes every statement here by sha-256 canonical digest).
+--     Forgetting any of the four breaks the gate loudly.
 -- All declarations below are fully proved (no sorry, no axioms, no `by` beyond
 -- destructuring — every probe is a bare application or field-by-field projection).
 import LerayHopf.R3.LimitPassage
