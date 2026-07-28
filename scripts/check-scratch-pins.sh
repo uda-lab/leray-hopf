@@ -7,9 +7,11 @@
 # finding 3; again append-only at the #212 B0 pass-3 remediation with the
 # exact-shape gate module KappaShapeGate per codex pass-3 finding 1; and again at the
 # pass-4 remediation with the full ℝ³ mirror shape gate R3ShapeGate (pass-4 finding 1)
-# and the source-manifest equality check (pass-4 finding 3) —
+# and the source-manifest equality check (pass-4 finding 3); and again at the pass-5
+# remediation with the production-coupling module R3ProductionCoupling (pass-5
+# findings 1+2) and the fail-closed source-discipline rejections (pass-5 finding 3) —
 # docs/scratch/r3-global-diagonal-campaign.md §11): forced-fresh
-# compilation + EXACT 41-declaration pin-set check + MANIFEST equality (every
+# compilation + EXACT 52-declaration pin-set check + MANIFEST equality (every
 # top-level declaration in every scratch target MUST carry a #print axioms pin —
 # a new declaration added without a pin fails the gate).  Non-zero exit
 # on build failure, stale/replayed
@@ -38,7 +40,7 @@ export PATH="$HOME/.elan/bin:$PATH"
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 
-targets=(KappaReindex P2ExitContract KappaShapeGate R3ShapeGate R3StageCoherence R3KappaSeed)
+targets=(KappaReindex P2ExitContract KappaShapeGate R3ShapeGate R3StageCoherence R3KappaSeed R3ProductionCoupling)
 
 # Take the container-wide build lock BEFORE the artifact deletion below and hold it
 # through the build (PR #205 review: deleting outside the lock races a concurrent
@@ -71,7 +73,8 @@ lake build \
   LerayHopf.Scratch.KappaShapeGate \
   LerayHopf.Scratch.R3ShapeGate \
   LerayHopf.Scratch.R3StageCoherence \
-  LerayHopf.Scratch.R3KappaSeed >"$log" 2>&1 \
+  LerayHopf.Scratch.R3KappaSeed \
+  LerayHopf.Scratch.R3ProductionCoupling >"$log" 2>&1 \
   || { echo "BUILD FAILED"; tail -40 "$log"; exit 1; }
 grep -q "Build completed successfully" "$log"
 
@@ -89,14 +92,14 @@ done
 # fails the gate, never silently dropped.
 joined="$(tr '\n' '@' <"$log" | sed 's/@ / /g' | tr '@' '\n')"
 
-# Exact pin set: the 41 declarations (ALL top-level declarations of every target —
+# Exact pin set: the 52 declarations (ALL top-level declarations of every target —
 # pass-4 finding 3: completeness is asserted against a source-derived manifest below)
 # that must pin to (a subset of) the kernel trio [propext, Classical.choice,
 # Quot.sound].  FULLY-QUALIFIED names — the torus (#195) spikes live in
-# LerayHopf.Scratch195, the ℝ³ (#212) spikes and both shape-gate modules in
-# LerayHopf.Scratch212.
-# KappaReindex (12) + P2ExitContract (4) + KappaShapeGate (4) + R3ShapeGate (16)
-# + R3StageCoherence (3) + R3KappaSeed (2).
+# LerayHopf.Scratch195, the ℝ³ (#212) spikes, both shape-gate modules, and the
+# production-coupling module in LerayHopf.Scratch212.
+# KappaReindex (12) + P2ExitContract (4) + KappaShapeGate (4) + R3ShapeGate (18)
+# + R3StageCoherence (3) + R3KappaSeed (2) + R3ProductionCoupling (9).
 pinned=(
   LerayHopf.Scratch195.exists_galerkin_modewise_extraction_kappa
   LerayHopf.Scratch195.reindexed_family_second_extraction
@@ -127,6 +130,8 @@ pinned=(
   LerayHopf.Scratch212.r3PackageShape_effective_le_apply
   LerayHopf.Scratch212.R3LimitPassagePinConjunct
   LerayHopf.Scratch212.r3LimitPassagePinShape_effective
+  LerayHopf.Scratch212.R3StrengthenedLimitPassageConclusion
+  LerayHopf.Scratch212.r3StrengthenedConclusion_projects_pin
   LerayHopf.Scratch212.R3KappaChainExitWitness
   LerayHopf.Scratch212.r3WitnessShape_transport
   LerayHopf.Scratch212.r3WitnessShape_pin_dependent_family
@@ -139,6 +144,15 @@ pinned=(
   LerayHopf.Scratch212.r3_representatives_agree_on_overlap
   LerayHopf.Scratch212.diag_ae_subseq_seeded
   LerayHopf.Scratch212.spacetime_extraction_seeded
+  LerayHopf.Scratch212.AubinLionsPackage_R3.ofProduction
+  LerayHopf.Scratch212.AubinLionsPackage_R3.toProduction
+  LerayHopf.Scratch212.r3LimitPassage_production_exact_shape
+  LerayHopf.Scratch212.r3LimitPassagePin_production_source
+  LerayHopf.Scratch212.r3Production_diag_ae_subseq_exact_shape
+  LerayHopf.Scratch212.r3Production_u_lim_aestronglyMeasurable_exact_shape
+  LerayHopf.Scratch212.r3Production_galerkinSpaceTimeExtraction_exact_shape
+  LerayHopf.Scratch212.diag_ae_subseq_seeded_id_recovers_production
+  LerayHopf.Scratch212.spacetime_extraction_seeded_id_recovers_production
 )
 
 # MANIFEST equality (pass-4 finding 3, fail-closed for UNPINNED declarations): derive
@@ -148,6 +162,46 @@ pinned=(
 # scratch target without a matching pin line + checker entry fails HERE, before any
 # axiom parsing.  (`example`/`variable`/`open` lines declare nothing pinnable and are
 # intentionally not matched.)
+# SOURCE DISCIPLINE (pass-5 finding 3, fail-closed): the manifest extractor below only
+# understands top-level, unmodified declarations under a single namespace-nesting
+# chain.  Rather than growing the regex to parse every Lean surface form, scratch
+# targets REJECT outright anything the extractor cannot see — a false positive fails
+# the gate loudly (reword the offending line); a false negative cannot occur for the
+# rejected forms because they never reach the manifest:
+#   (1) modifier-prefixed declarations (private/protected/scoped/local/nonrec/partial/
+#       unsafe) and mutual blocks — the name would evade extraction (and a `private`
+#       name cannot even be pinned by `#print axioms` from outside);
+#   (2) `class`/`class inductive` at top level — not in the manifest keyword set;
+#   (3) INDENTED declaration keywords — mutual/nested blocks evade the top-level
+#       anchor;
+#   (4) namespace-line irregularities: indented or dotted `namespace`, a `namespace`
+#       after the first declaration, or namespace/`end` count imbalance — any of
+#       these silently mis-qualifies every extracted name.
+decl_kw='(theorem|lemma|def|abbrev|structure|inductive|instance|opaque|axiom|class)'
+for t in "${targets[@]}"; do
+  f="LerayHopf/Scratch/$t.lean"
+  if grep -nE "^(@\[[^]]*\][[:space:]]*)?(noncomputable[[:space:]]+)?(private|protected|scoped|local|nonrec|partial|unsafe|mutual)([[:space:]]|$)" "$f"; then
+    echo "SOURCE DISCIPLINE: modifier-prefixed/mutual declaration in $f (forbidden in scratch targets — not manifest-visible)"; exit 1
+  fi
+  if grep -nE '^class([[:space:]]|$)' "$f"; then
+    echo "SOURCE DISCIPLINE: top-level class declaration in $f (forbidden in scratch targets — not in the manifest keyword set)"; exit 1
+  fi
+  if grep -nE "^[[:space:]]+(@\[[^]]*\][[:space:]]*)?(noncomputable[[:space:]]+)?${decl_kw}[[:space:]]+[A-Za-z_]" "$f"; then
+    echo "SOURCE DISCIPLINE: indented declaration keyword in $f (forbidden in scratch targets — evades the top-level manifest anchor; reword if this is a comment)"; exit 1
+  fi
+  if grep -nE '^[[:space:]]+namespace([[:space:]]|$)|^namespace[[:space:]]+[A-Za-z0-9_]*\.' "$f"; then
+    echo "SOURCE DISCIPLINE: indented or dotted namespace line in $f"; exit 1
+  fi
+  first_decl="$(grep -nE "^(@\[[^]]*\][[:space:]]*)?(noncomputable[[:space:]]+)?${decl_kw}[[:space:]]" "$f" | head -1 | cut -d: -f1)"
+  last_ns="$(grep -nE '^namespace ' "$f" | tail -1 | cut -d: -f1)"
+  [ -n "$first_decl" ] && [ -n "$last_ns" ] && [ "$last_ns" -lt "$first_decl" ] \
+    || { echo "SOURCE DISCIPLINE: namespace line missing or not preceding the first declaration in $f"; exit 1; }
+  n_ns="$(grep -cE '^namespace ' "$f")" || true
+  n_end="$(grep -cE '^end([[:space:]]|$)' "$f")" || true
+  [ "$n_ns" -eq "$n_end" ] \
+    || { echo "SOURCE DISCIPLINE: namespace/end count imbalance in $f ($n_ns namespace vs $n_end end)"; exit 1; }
+done
+
 manifest="$(mktemp)"
 trap 'rm -f "$log" "$manifest"' EXIT
 for t in "${targets[@]}"; do
@@ -195,11 +249,11 @@ for d in "${pinned[@]}"; do
   done
 done
 
-# Exactness (both directions): total #print axioms outputs must be exactly 41 —
+# Exactness (both directions): total #print axioms outputs must be exactly 52 —
 # a pin added to the sources without updating this checker fails the gate too.
 total="$(printf '%s\n' "$joined" \
   | grep -cE "depends on axioms:|does not depend on any axioms" || true)"
-[ "$total" -eq 41 ] || { echo "PIN COUNT MISMATCH: expected 41, observed $total"; fail=1; }
+[ "$total" -eq 52 ] || { echo "PIN COUNT MISMATCH: expected 52, observed $total"; fail=1; }
 
 [ "$fail" -eq 0 ] || exit 1
-echo "SCRATCH PIN CHECK OK (41/41: manifest-complete, kernel-trio only)"
+echo "SCRATCH PIN CHECK OK (52/52: manifest-complete, kernel-trio only)"

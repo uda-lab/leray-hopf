@@ -4,7 +4,7 @@
 **Verdict (§9): CONDITIONAL-GO** — P1′/P2′ dispatch-ready; P3′/P4′ dispatch blocked on the
 P2′ typed exit gate (§6, six clauses), mirroring the #195 torus-campaign discipline whose
 condition was met on schedule. Codex adversarial statement gate (xhigh) pass-1 through
-pass-4 findings dispositioned in §11.
+pass-5 findings dispositioned in §11.
 
 This campaign document is NEW and separate from the frozen torus campaign doc
 (`docs/scratch/global-diagonal-campaign.md`, #195 — COMPLETE, not edited by this lane).
@@ -369,6 +369,38 @@ torus precedent:
   layer 4's output type IS the probed mirror package. The "not negotiable"
   requirement is thereby checker-enforced over the full κ-critical surface, not
   prose.
+- **Production coupling (pass-5 findings 1–2 — the mirror is now TIED to the live
+  production surface, not just compiled beside it).** The mirror discipline above
+  freezes and type-checks the P2′ design, but by itself never APPLIES a production
+  declaration — production could drift (or a future layer stay bare-indexed) while
+  every mirror probe stayed green. The third committed gate module,
+  **`LerayHopf/Scratch/R3ProductionCoupling.lean`** (checker-wired, kernel-trio
+  pinned), closes this with probes that CONSUME the actual production declarations,
+  compiled at B0 at the κ-less production surface:
+  (a) bidirectional field-by-field bridges `AubinLionsPackage_R3.ofProduction` /
+  `.toProduction` between the production package and the mirror at `κ := id` —
+  together they assert field-set + field-type equality up to the single designed
+  κ-insertion, so package drift in EITHER direction breaks the B0 build;
+  (b) `r3LimitPassage_production_exact_shape` — a bare application of the actual
+  `galerkin_limit_passage_R3` restating its current 5-conjunct conclusion verbatim;
+  (c) `r3LimitPassagePin_production_source` — consumes the actual
+  `exists_weak_representative_R3` (the declaration the limit passage draws its
+  representative from) and lands its weak-convergence conjunct in the frozen
+  `R3LimitPassagePinConjunct` at `κ := id` through the compiled bridge: the pin
+  conjunct P2′ must append is production-DERIVABLE today, in frozen-Prop form;
+  (d) bare applications of the actual sealed layer-1/2 declarations
+  (`diag_ae_subseq`, `u_lim_aestronglyMeasurable`,
+  `galerkinSpaceTimeExtraction_R3`), conclusions restated verbatim — production
+  PROBING, counted separately from the standalone seeded feasibility proofs in
+  `R3KappaSeed`; and (e) seed↔production id-coherence probes: the frozen κ-generic
+  seeded statements instantiated at `κ := id` prove the production conclusions
+  VERBATIM (definitional `id`-collapse only), so the P2′ κ-threading is exactly the
+  frozen seed statement, not a redesign. The frozen FULL strengthened limit-passage
+  conclusion (production 5 conjuncts + pin appended) is committed as
+  `R3StrengthenedLimitPassageConclusion` in `R3ShapeGate.lean` with a compiled
+  pin-projection probe; the P2′ bare-application coupling against it is frozen in
+  §6 clause 6 (it can only compile once production's conclusion carries the pin —
+  which is exactly what it will detect).
 - **Coverage of sequence-free consumers (pass-2 finding 1, taxonomy CORRECTED at
   pass-3 finding 2).** `weak_eq`, `energy_ineq`, `initial_trace`, and the
   energy-class conjuncts mention only the limit curve, so their statements cannot
@@ -492,7 +524,7 @@ modularity-reviewer, broker codex PR review, §8 evidence; append-only live axio
 
 | Phase | Sub-issue title (`Parent: #212`) | Content | Files | Coder | Prover | Kill criterion (→ back to architect) |
 |---|---|---|---|---|---|---|
-| **P1′** | `[#212-A] ℝ³ global contract instantiation: frozen capstone target + consistency witness` | §2.1 `GlobalR3CapstoneStatement` + `GlobalLerayHopfSolutionFull_R3` + `globalR3Capstone_implies_finite` (verbatim). (The `check-scratch-pins.sh` extension originally slated here was pulled forward into the B0 commit itself — codex finding 3, §11: 4 targets / 14 pins; extended at pass-3 with the exact-shape gate module and at pass-4 with the full ℝ³ mirror gate + source-manifest equality, reaching 6 targets / 41 pins — checker green at B0) | new `LerayHopf/R3/GlobalCapstone.lean` (statement layer only) | opus | opus (one 3-line proof) | `implies_finite` not closable via `ofIsOn` (would mean the contract equivalence broke — architect) |
+| **P1′** | `[#212-A] ℝ³ global contract instantiation: frozen capstone target + consistency witness` | §2.1 `GlobalR3CapstoneStatement` + `GlobalLerayHopfSolutionFull_R3` + `globalR3Capstone_implies_finite` (verbatim). (The `check-scratch-pins.sh` extension originally slated here was pulled forward into the B0 commit itself — codex finding 3, §11: 4 targets / 14 pins; extended at pass-3 with the exact-shape gate module, at pass-4 with the full ℝ³ mirror gate + source-manifest equality, and at pass-5 with the production-coupling module + source-discipline rejections, reaching 7 targets / 52 pins — checker green at B0) | new `LerayHopf/R3/GlobalCapstone.lean` (statement layer only) | opus | opus (one 3-line proof) | `implies_finite` not closable via `ofIsOn` (would mean the contract equivalence broke — architect) |
 | **P2′** | `[#212-B] κ-generalize the ℝ³ compactness chain + pin re-export + typed exit witness` | §1 κ-audit surface: 20 declarations + `AubinLionsPackage_R3` parameter + `build_galerkin_package_R3_of_galSeq` rewired `κ := id`; strengthen `galerkin_limit_passage_R3` conclusion with the §4 pin conjunct; `AubinLionsPackage_R3.effective_strictMono` (§4.1 clause 1); NEW `extendReindexedFamily_R3` (takes an explicit filler family — ℝ³'s total ODE layer is scheme-specific, so the filler is a parameter, not hardwired; deviation from torus noted §6), `R3KappaChainExitWitness`, `r3_kappaChain_exit`, the §4.1 smoke theorem at `κ := Nat.succ` (widened: category-(iii) exercise included), the §4.1 stale-index audit script `check-kappa-effective-index.sh`, and the §6 clause-6 RE-POINT of the B0-committed shape-gate mirror `LerayHopf/Scratch/R3ShapeGate.lean` (delete the mirror declarations + add the production import; ZERO probe-statement changes — probe failure after re-point is a kill-criterion event). **Exit gate (§6, SIX clauses): typed artifact + live pin, exact-hpin coupling, widened smoke theorem, scratch-pin checker green, stale-index audit green, shape-gate re-point green.** P3′/P4′ dispatch blocked until all six green | `ArzelaAscoliTime, SteklovAverages, AubinLionsLimitPassage, SolutionInterfaces, EnergyWeakLsc, GoodRepresentative, LimitPassage, AubinLionsAssembly` + new `LerayHopf/R3/KappaChainExit.lean` | opus | opus (mechanical re-threading; spike (b) covers the only novel layer) | any statement fails to typecheck as designed; >2 proof bodies need non-mechanical re-proving; the release capstone's statement would change; the exit witness cannot be reached without a statement change |
 | **P3′** | `[#212-C] ℝ³ stage recursion + diagonal weak limit W` | stage handle `exists_weakLimitCurve_R3_kappa` (§2.2 Step 1, composition of two P2′ outputs); `StageData_R3`, `stageData_R3`, `stageData_R3_comp_eq_nestedComp`, `stageData_R3_diag_tendsto`, `stageData_R3_U_coherent` (promotes spike (a)'s separation lemma to production), `diagWeakLimit_R3`, `exists_diagonal_weakly_convergent_galSeq_R3` (invariant over `z : L2VF_R3` tests, §2.2 Step 2). Reuses `Bochner.DiagonalExtraction` VERBATIM (zero new order theory) | new `LerayHopf/R3/DiagonalGalerkin.lean` | opus | opus — template mirror of merged `Torus/DiagonalGalerkin.lean`; **flagged D4 escalation point**: the `Nat.rec` stage carrier (torus needed fable when the pattern was novel) | stage recursion not expressible as designed; stage-limit coherence fails from `L2Sigma_R3` tests; the stage handle needs data P2′ does not export |
 | **P4′** | `[#212-D] ℝ³ global capstone: exists_global_lerayHopf_r3` | per-horizon exit witnesses at `κ := δ` over `fun k => galSeq (δ k)` (filler `galSeq`, `htest` from `nonempty_schwartzGalerkinBasis_H1`); Step-4 coherence via the compiled spike-(a) lemma shape; `congr_Icc`/`mono` assembly; §2.1 capstones + fold `globalR3Capstone`; live pins (append-only); docs (`claims-and-scope.md`, `architecture.md`, `STATUS.md`) | `LerayHopf/R3/GlobalCapstone.lean` (fills the P1′ file) + docs | opus | opus — node-for-node mirror of merged `Torus/GlobalCapstone.lean` with spike (a) compiled; **flagged D4 escalation point**: Node C coherence assembly | the pin is insufficient for some conjunct's transfer (must NOT be patched by weakening — architect); defeq mismatch `r3Evolution` vs `(r3Domain 𝔊).evolution F.core` that `rfl`-lemmas cannot bridge |
@@ -571,10 +603,17 @@ package; `htest` only by the `WeakFormNS` stage.
    composed effective index `w.alPkg.φ k + 1`, AND (pass-3 widening) the
    category-(iii) exercise — the production selection helper applied at the
    nonidentity seed with the effective bound derived from `effective_strictMono`;
-4. `scripts/check-scratch-pins.sh` green at the B0-extended enumeration (pass-4
-   state: 6 targets / 41 pins — EVERY top-level declaration of every scratch
+4. `scripts/check-scratch-pins.sh` green at the B0-extended enumeration (pass-5
+   state: 7 targets / 52 pins — EVERY top-level declaration of every scratch
    target pinned, with the checker asserting source-manifest/pin-set equality, so
-   an unpinned declaration added to a target fails the gate; pass-4 finding 3);
+   an unpinned declaration added to a target fails the gate (pass-4 finding 3),
+   and rejecting outright every source form the manifest extractor cannot see —
+   modifier-prefixed (`private`/`protected`/`scoped`/`local`/`nonrec`/`partial`/
+   `unsafe`), `mutual`, top-level `class`, indented declaration keywords, and
+   dotted/indented/late `namespace` lines or namespace/`end` imbalance (pass-5
+   finding 3: hard rejection instead of regex sophistication — a false positive
+   fails loudly and is fixed by rewording; a false negative cannot occur for
+   rejected forms because they never reach the manifest));
 5. the §4.1 automated stale-index audit `scripts/check-kappa-effective-index.sh`
    committed in the P2′ PR and green: fails closed on total-family applications at
    bare extraction indices AND on bare-`φ` category-(iii) consumption sites
@@ -605,6 +644,37 @@ package; `htest` only by the `WeakFormNS` stage.
    (probe c is the defeq witness). A probe that fails to compile after the
    re-point means the production shape deviates from the frozen design: that is a
    kill-criterion event — back to the architect, never a probe edit.
+
+   **Pass-5 extension (production coupling — findings 1–2): the re-point rules for
+   `LerayHopf/Scratch/R3ProductionCoupling.lean`.** The B0 tree additionally
+   contains the compiled production-coupling probes (§4.1) and, in
+   `R3ShapeGate.lean`, the frozen FULL strengthened limit-passage conclusion
+   `R3StrengthenedLimitPassageConclusion` (production 5 conjuncts, `alPkg` ↦ `p`,
+   + `R3LimitPassagePinConjunct` appended as the sixth conjunct) with its compiled
+   pin-projection probe `r3StrengthenedConclusion_projects_pin` (survives the
+   re-point unchanged). At P2′, exactly three kinds of change are sanctioned in
+   the coupling module — anything else is a kill-criterion event:
+   (α) **DELETE with the mirror:** `AubinLionsPackage_R3.ofProduction`,
+   `.toProduction`, and `r3LimitPassagePin_production_source` — the κ-less
+   production package they bridge ceases to exist when P2′ rewires it;
+   (β) **STATEMENTS FROZEN, proof term gains `id strictMono_id` only:** the three
+   layer-1/2 bare-application probes (`r3Production_diag_ae_subseq_exact_shape`,
+   `r3Production_u_lim_aestronglyMeasurable_exact_shape`,
+   `r3Production_galerkinSpaceTimeExtraction_exact_shape`) and the two
+   seed-coherence probes — their conclusions never change; only the application
+   supplies the new κ arguments at `id`;
+   (γ) **the ONE sanctioned statement replacement + two additions (texts frozen
+   NOW, also in the module header):** `r3LimitPassage_production_exact_shape` is
+   replaced by, and the P2′ PR must add, bare-application couplings
+   `r3LimitPassage_strengthened_production_coupling : R3StrengthenedLimitPassageConclusion 𝔊 F ν T u₀ galSeq κ p := galerkin_limit_passage_R3 … κ hκ p htest`,
+   `r3Production_diag_ae_subseq_kappa_coupling : «the exact diag_ae_subseq_seeded conclusion» := diag_ae_subseq … κ hκ`, and
+   `r3Production_spacetime_extraction_kappa_coupling : «the exact spacetime_extraction_seeded conclusion» := galerkinSpaceTimeExtraction_R3 … κ hκ`
+   — i.e. the κ-threaded production layers must prove, by BARE APPLICATION, the
+   κ-generic statements frozen at B0 (`R3KappaSeed` seeds and the strengthened
+   conclusion Prop); only the production argument-list spelling is a P2′ freedom.
+   These couplings cannot compile today (production lacks κ and the pin
+   conjunct); their failure to compile at P2′ is exactly the drift they exist to
+   detect.
 
 Fields may not lose content relative to the shape above; names may differ. The
 structural κ-invariant itself (κ-parameterized package with fields typed at
@@ -644,7 +714,16 @@ the real merged ℝ³ interfaces at B0), every top-level declaration of every ta
 now pinned (KappaReindex 12, P2ExitContract 4 — completing the previously unpinned
 helper defs/structures), and the checker fails closed on any source declaration
 missing from the pin set (pass-4 finding 3). Run green: log
-`/tmp/lh212-pins-check4.log`, `SCRATCH PIN CHECK OK (41/41)`.
+`/tmp/lh212-pins-check4.log`, `SCRATCH PIN CHECK OK (41/41)`. At the pass-5
+remediation the checker reached **7 targets / 52 pins**: the production-coupling
+module `LerayHopf/Scratch/R3ProductionCoupling.lean` added (9 declarations — the
+`ofProduction`/`toProduction` package bridges, the `galerkin_limit_passage_R3` and
+layer-1/2 bare-application exact-shape probes, the `exists_weak_representative_R3`
+pin-source coupling, and the two seed↔production id-coherence probes; §4.1, §6
+clause 6 pass-5 extension), `R3StrengthenedLimitPassageConclusion` + its projection
+probe added to `R3ShapeGate.lean` (16→18), and the source-discipline hard
+rejections added to the checker (pass-5 finding 3). Run green: log
+`/tmp/lh212-pins-check5.log`, `SCRATCH PIN CHECK OK (52/52)`.
 
 ### Spike (a) — `LerayHopf/Scratch/R3StageCoherence.lean` (every-t overlap coherence)
 
@@ -811,3 +890,15 @@ sound — all three findings are coverage/enforcement refinements.
 | 4.1 | high | The committed shape gate covers only a synthetic torus one-field model; ℝ³'s `strong_convergence_ae`, sealed-layer outputs, the strengthened limit-passage pin, `transport`, and the witness's package linkage are unprobed; the promised `R3ShapeGate.lean` is absent from the commit and the checker | **Accepted — full ℝ³ mirror gate COMMITTED AND CHECKER-WIRED at B0** (this commit): `LerayHopf/Scratch/R3ShapeGate.lean` declares the frozen design mirror of the κ-parameterized `AubinLionsPackage_R3` (BOTH ball-restricted convergence fields, byte-faithful to the merged production structure) and the §6 `R3KappaChainExitWitness`, under production-intended unqualified names in `Scratch212` — so the mirror COMPILES TODAY against the real merged ℝ³ interfaces, type-checking the P2′ design itself. Probes (bare projections, `κ`/`φ₁` free): both convergence fields, limit-curve measurability, effective `le_apply`, the frozen `R3LimitPassagePinConjunct` Prop + defeq probe, witness `transport`, witness pin, alPkg-linkage convergence at `base (φ₁ (alPkg.φ n))`; plus transport-usability linkage smokes. Sealed layers 1–2 are already κ-probed by their own pinned spike statements (`R3KappaSeed`); layer 3 = layer-2 shape; layer 4's output type IS the probed package. §6 clause 6 is now a RE-POINT obligation (delete mirror decls + add production import, zero probe changes; deviation = kill criterion). Checker: 6 targets / 41 pins, green (`/tmp/lh212-pins-check4.log`) |
 | 4.2 | medium | The three-category coupling rule misclassifies `transport` (its honest proof source is `extendReindexedFamily_apply` + injectivity of the SUPPLIED map, not `effective_strictMono`), and omits non-index inputs (`htest`, `LocalRellichInput`) — the blanket rule was internally inconsistent with the §6 witness design | **Accepted — taxonomy re-scoped to five categories** (§4.1): (iii) narrowed to κ-sensitive INDEX-SELECTION facts (the effective-map derivation rule applies to these only); NEW (iv) family-linkage facts — `transport` equalities, proof source honestly stated as the embedding construction (`extendReindexedFamily_R3` `_apply` + `hφ₁.injective`) or the witness field itself, enforced type-level (mandatory field) and probed (`r3WitnessShape_transport` + linkage smokes); NEW (v) index-free ambient inputs (`htest`, Rellich/FK chain inputs, positivity) — no κ-sensitivity, no coupling obligation; limit-curve measurability/continuity refiled under (i) as probed package fields |
 | 4.3 | medium | The 18-pin checker is not fail-closed for UNPINNED declarations: only listed names + total count are verified; a new theorem added to a target without a pin passes unaudited | **Accepted — source-manifest equality added** (this commit): the checker derives the set of top-level declarations (`theorem`/`def`/`structure`/… keyword-led lines, namespace-qualified) from every target source and requires EXACT set equality with the pin enumeration before any axiom parsing — an unpinned declaration (or a pin for a nonexistent declaration) fails the gate. All previously unpinned helpers are now pinned (`KappaReindex` 6→12, `P2ExitContract` 3→4), total 41 pins; per-declaration parsing accepts the axiom-free `#print axioms` form (empty set ⊆ kernel trio) |
+
+### 11.5 Pass 5 (at `ec0cbcb`)
+
+Verdict **needs-attention**; positives: mirror transcription confirmed byte-faithful,
+41/41 manifest count consistent. All three findings target the same axis: the mirror
+compiles BESIDE production but nothing yet APPLIED production — coupling gaps.
+
+| # | Sev | Finding (condensed) | Disposition |
+|---|---|---|---|
+| 5.1 | high | The limit-passage pin probe is not coupled to production: the scratch Prop and probe only unfold a locally declared hypothesis; they never apply `galerkin_limit_passage_R3` or extract its result — production could keep its current five-conjunct conclusion while the probe stays green | **Accepted — production coupling COMMITTED AND CHECKER-WIRED at B0** (this commit): new `LerayHopf/Scratch/R3ProductionCoupling.lean` (§4.1) applies the ACTUAL production declarations today, at the κ-less surface they have at `455ca3b`: `r3LimitPassage_production_exact_shape` (bare application of `galerkin_limit_passage_R3`, current 5-conjunct conclusion verbatim — drift detector until P2′) and `r3LimitPassagePin_production_source` (consumes the actual `exists_weak_representative_R3` — the declaration the limit passage draws its representative from — and PROJECTS its weak-convergence conjunct into the frozen `R3LimitPassagePinConjunct` at `κ := id` through the compiled `ofProduction` bridge; pure destructuring + definitional unfolding, no rewriting). The FULL strengthened conclusion is now frozen and compiled as `R3StrengthenedLimitPassageConclusion` (`R3ShapeGate.lean`: production 5 conjuncts + pin appended) with the compiled projection probe `r3StrengthenedConclusion_projects_pin`; §6 clause 6 (pass-5 extension) freezes the P2′ bare-application coupling `r3LimitPassage_strengthened_production_coupling := galerkin_limit_passage_R3 …` — compilable only once production's conclusion carries the pin, which is exactly the drift it detects. Bidirectional package bridges `ofProduction`/`toProduction` additionally assert mirror↔production field-set/type equality at B0 |
+| 5.2 | high | Layer-1/2 coverage is standalone feasibility code: the seeded theorems are proved from lower-level primitives and never project or apply production `diag_ae_subseq` / `u_lim_aestronglyMeasurable` / `galerkinSpaceTimeExtraction_R3`; a future production layer could stay bare-indexed while pins pass | **Accepted — production-probing added as SEPARATE coverage** (this commit, same module; the stronger today-option since the κ-less production layers exist at `455ca3b`): bare-application exact-shape probes of all three ACTUAL production declarations (conclusions restated verbatim — consumption + drift detection), PLUS seed↔production id-coherence probes (`diag_ae_subseq_seeded_id_recovers_production`, `spacetime_extraction_seeded_id_recovers_production`: the frozen κ-generic seed statements at `κ := id` prove the production conclusions verbatim, definitional `id`-collapse only — the P2′ κ-threading is the frozen seed statement, not a redesign). §6 clause 6 (γ) freezes the P2′ κ-generic couplings (`… := diag_ae_subseq … κ hκ`, `… := galerkinSpaceTimeExtraction_R3 … κ hκ`) and (β) freezes the exact-shape probe statements with the only sanctioned proof change being the `id strictMono_id` arguments |
+| 5.3 | medium | Manifest extraction misses modifier-prefixed and indented declarations (`private`/`protected`/`scoped`/`local`/`nonrec`/`partial`/`class`, mutual/nested-namespace blocks) — such declarations can evade the manifest | **Accepted — hard fail-closed rejection over regex sophistication** (this commit, per the round-5 recommendation's simple option): the checker now REJECTS outright, per target file, (1) modifier-prefixed and `mutual` declarations, (2) top-level `class`, (3) indented declaration keywords, (4) indented/dotted `namespace` lines, `namespace` after the first declaration, and namespace/`end` count imbalance. A false positive fails the gate loudly (reword the line); a false negative cannot occur for rejected forms because they never reach the manifest. Checker at 7 targets / 52 pins, manifest equality intact |

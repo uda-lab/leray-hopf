@@ -154,6 +154,51 @@ theorem r3LimitPassagePinShape_effective (𝔊 : R3GalerkinScheme) (F : R3NSForm
         Filter.atTop (nhds (inner (𝕜 := ℝ) ((v t : L2VF_R3)) z)) :=
   h
 
+/-! ### Strengthened limit-passage conclusion (frozen §6 clause-6 target, round-5
+finding 1) + pin-projection probe -/
+
+/-- **Frozen shape** of the FULL strengthened `galerkin_limit_passage_R3` conclusion
+P2′ must produce: the merged production 5-conjunct good-representative existential
+(transcribed byte-faithfully from `LerayHopf/R3/LimitPassage.lean`, `alPkg` ↦ `p`)
+with the κ-pin conjunct `R3LimitPassagePinConjunct` APPENDED as the sixth conjunct.
+§6 clause 6 requires the P2′ production theorem's conclusion to be stated as this Prop
+(or definitionally equal to it), consumed by the bare-application coupling
+`r3LimitPassage_strengthened_production_coupling` whose text is frozen in §6 and in
+`R3ProductionCoupling.lean` — that coupling can compile only at P2′ (production's
+conclusion lacks the pin conjunct today; the coupling detects exactly that). -/
+def R3StrengthenedLimitPassageConclusion (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν T : ℝ) (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) (κ : ℕ → ℕ)
+    (p : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) : Prop :=
+  ∃ u : Time → L2Sigma_R3,
+    (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), u t = p.u t) ∧
+    WeakFormNS ν T (r3Evolution 𝔊 F) u ∧
+    (∀ t, 0 ≤ t → t ≤ T →
+      (1 / 2 : ℝ) * ‖(u t : L2VF_R3)‖ ^ 2 +
+      ∫ s in (0 : ℝ)..t, viscousFormSq_R3 ν (u s : L2VF_R3) ≤
+      (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2) ∧
+    Filter.Tendsto
+      (fun t => (u t : L2VF_R3))
+      (nhdsWithin 0 (Set.Ici 0))
+      (nhds (u₀ : L2VF_R3)) ∧
+    ((∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF_R3 (u t : L2VF_R3)) ∧
+    IntervalIntegrable (fun s => viscousFormSq_R3 ν (u s : L2VF_R3))
+      MeasureTheory.volume 0 T) ∧
+    R3LimitPassagePinConjunct 𝔊 F ν T u₀ galSeq κ p u
+
+/-- Probe (c₂) — the strengthened conclusion genuinely CONTAINS the frozen pin
+conjunct as its sixth conjunct: projecting it out is pure destructuring (no
+rewriting).  Survives the P2′ re-point unchanged (references only frozen shapes). -/
+theorem r3StrengthenedConclusion_projects_pin (𝔊 : R3GalerkinScheme)
+    (F : R3NSForms 𝔊) (ν T : ℝ) (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) (κ : ℕ → ℕ)
+    (p : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ)
+    (h : R3StrengthenedLimitPassageConclusion 𝔊 F ν T u₀ galSeq κ p) :
+    ∃ u : Time → L2Sigma_R3,
+      R3LimitPassagePinConjunct 𝔊 F ν T u₀ galSeq κ p u := by
+  obtain ⟨u, -, -, -, -, -, hpin⟩ := h
+  exact ⟨u, hpin⟩
+
 /-! ### Exit witness mirror (§6 frozen shape) + witness shape probes -/
 
 /-- **Frozen design mirror** of the P2′ exit witness (production target:
@@ -285,6 +330,8 @@ end LerayHopf
 #print axioms LerayHopf.Scratch212.r3PackageShape_effective_le_apply
 #print axioms LerayHopf.Scratch212.R3LimitPassagePinConjunct
 #print axioms LerayHopf.Scratch212.r3LimitPassagePinShape_effective
+#print axioms LerayHopf.Scratch212.R3StrengthenedLimitPassageConclusion
+#print axioms LerayHopf.Scratch212.r3StrengthenedConclusion_projects_pin
 #print axioms LerayHopf.Scratch212.R3KappaChainExitWitness
 #print axioms LerayHopf.Scratch212.r3WitnessShape_transport
 #print axioms LerayHopf.Scratch212.r3WitnessShape_pin_dependent_family
