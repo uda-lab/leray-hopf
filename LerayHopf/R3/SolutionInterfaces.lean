@@ -611,7 +611,7 @@ theorem AubinLionsPackage_R3.effective_strictMono {𝔊 : R3GalerkinScheme}
     {galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n} {κ : ℕ → ℕ}
     (p : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) (hκ : StrictMono κ) :
     StrictMono (fun n => κ (p.φ n)) :=
-  hκ.comp p.φ_mono
+  hκ.comp p.φ_mono -- KAPPA_ID_SITE: effective_strictMono's own defining composition κ ∘ φ; this is the single sanctioned consumer of bare φ_mono (all category-(iii) facts route through here)
 
 /-- Effective absolute mode map is cofinal (companion export, torus parity). -/
 theorem AubinLionsPackage_R3.effective_tendsto_atTop {𝔊 : R3GalerkinScheme}

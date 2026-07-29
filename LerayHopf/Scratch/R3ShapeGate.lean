@@ -26,61 +26,26 @@
 -- production declaration FAILS these probes at compile time.  The linkage SMOKES at the
 -- end (marked) are additionally allowed `simp only [w.transport]` rewriting: they gate
 -- USABILITY of the transport linkage, not declaration shape.
+--
+-- P2′ RE-POINT (§6 clause 6): the four frozen mirror declarations
+-- (`AubinLionsPackage_R3`, its two `effective_*` lemmas, `R3KappaChainExitWitness`) have
+-- been DELETED and `import LerayHopf.R3.KappaChainExit` added; every probe/smoke below now
+-- resolves its unqualified references to the ACTUAL production declarations
+-- (`LerayHopf.AubinLionsPackage_R3` via `SolutionInterfaces`, `LerayHopf.R3KappaChainExitWitness`
+-- via `KappaChainExit`) with ZERO probe-statement changes.  A probe that fails after this
+-- re-point means the production shape deviates from the frozen design = kill-criterion event.
 import LerayHopf.R3.SolutionInterfaces
+import LerayHopf.R3.KappaChainExit
 
 open MeasureTheory Filter Topology Set
 
 namespace LerayHopf
 namespace Scratch212
 
-/-- **Frozen design mirror** of the P2′ κ-parameterized package (production target:
-`LerayHopf.AubinLionsPackage_R3` after the P2′ rewiring).  Parameters and fields are
-byte-faithful to the merged production structure except `κ` (inserted after `galSeq`,
-§4 layer 4) and the effective datum index `galSeq (κ (φ n))` in BOTH convergence
-fields. -/
-structure AubinLionsPackage_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν T : ℝ) (u₀ : L2Sigma_R3)
-    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) (κ : ℕ → ℕ) where
-  /-- The strictly monotone extraction index. -/
-  φ : ℕ → ℕ
-  /-- Strict monotonicity of `φ`. -/
-  φ_mono : StrictMono φ
-  /-- The limit curve. -/
-  u : Time → L2Sigma_R3
-  /-- Time-measurability of the limit curve (production field, unchanged). -/
-  u_aestronglyMeasurable :
-    AEStronglyMeasurable (fun t => (u t : L2VF_R3))
-      (MeasureTheory.volume.restrict (Set.Icc 0 T))
-  /-- LOCAL space-time convergence at the EFFECTIVE index (production field with
-  `galSeq (φ n)` ↦ `galSeq (κ (φ n))`). -/
-  strong_convergence : ∀ R : ℝ,
-    Filter.Tendsto
-      (fun n => MeasureTheory.eLpNorm
-        (fun t => restrictToBall R ((galSeq (κ (φ n))).u t) - restrictToBall R (u t))
-        2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)))
-      Filter.atTop (nhds 0)
-  /-- A.e.-in-t per-ball convergence at the EFFECTIVE index (production field with
-  `galSeq (φ n)` ↦ `galSeq (κ (φ n))`). -/
-  strong_convergence_ae : ∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)),
-    Filter.Tendsto (fun n => restrictToBall R ((galSeq (κ (φ n))).u t))
-      Filter.atTop (nhds (restrictToBall R (u t)))
-
-/-- Effective absolute mode map is strictly monotone (P2′ must export this lemma with
-this statement; §4.1 primary-protection surface 1). -/
-theorem AubinLionsPackage_R3.effective_strictMono {𝔊 : R3GalerkinScheme}
-    {F : R3NSForms 𝔊} {ν T : ℝ} {u₀ : L2Sigma_R3}
-    {galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n} {κ : ℕ → ℕ}
-    (p : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) (hκ : StrictMono κ) :
-    StrictMono (fun n => κ (p.φ n)) :=
-  hκ.comp p.φ_mono
-
-/-- Effective absolute mode map is cofinal (companion export, torus parity). -/
-theorem AubinLionsPackage_R3.effective_tendsto_atTop {𝔊 : R3GalerkinScheme}
-    {F : R3NSForms 𝔊} {ν T : ℝ} {u₀ : L2Sigma_R3}
-    {galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n} {κ : ℕ → ℕ}
-    (p : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) (hκ : StrictMono κ) :
-    Filter.Tendsto (fun n => κ (p.φ n)) Filter.atTop Filter.atTop :=
-  (p.effective_strictMono hκ).tendsto_atTop
+-- P2′ RE-POINT: `AubinLionsPackage_R3` mirror structure and its two `effective_*`
+-- lemmas (`effective_strictMono`, `effective_tendsto_atTop`) DELETED here; the probes
+-- below now resolve `AubinLionsPackage_R3` and `p.effective_strictMono` to the production
+-- declarations in `LerayHopf.R3.SolutionInterfaces`.
 
 /-! ### Package shape probes (bare projections, `κ` free) -/
 
@@ -199,57 +164,11 @@ theorem r3StrengthenedConclusion_projects_pin (𝔊 : R3GalerkinScheme)
   obtain ⟨u, -, -, -, -, -, hpin⟩ := h
   exact ⟨u, hpin⟩
 
-/-! ### Exit witness mirror (§6 frozen shape) + witness shape probes -/
+/-! ### Exit witness probes (production `R3KappaChainExitWitness` after re-point) -/
 
-/-- **Frozen design mirror** of the P2′ exit witness (production target:
-`R3KappaChainExitWitness` in `LerayHopf/R3/KappaChainExit.lean`).  The §6 shape
-verbatim: dependent family parameter, mandatory `transport`, κ-package over `base`
-with `κ := φ₁`, all chain stages over the SAME `base`/`alPkg`/`v`, pin against
-`galSeq₁` ITSELF along `alPkg.φ` (no sub-extraction `ρ` — ℝ³ simplification). -/
-structure R3KappaChainExitWitness (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
-    (ν T : ℝ) (u₀ : L2Sigma_R3) (φ₁ : ℕ → ℕ)
-    (galSeq₁ : ∀ k, GalerkinSolutionData_R3 𝔊 F ν u₀ (φ₁ k)) where
-  /-- The full base family the κ-generalized chain runs over (implementation vehicle —
-  admissible ONLY because `transport` binds it to `galSeq₁`). -/
-  base : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n
-  /-- Mandatory transport equality (family-linkage category (iv)): along `φ₁`, `base`
-  IS the given dependent family. -/
-  transport : ∀ k, base (φ₁ k) = galSeq₁ k
-  /-- Aubin–Lions κ-package over `base` with effective mode map `κ := φ₁`. -/
-  alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ base φ₁
-  /-- Energy class for the package curve. -/
-  energy_class_pkg :
-    (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
-        memH1VF_R3 (alPkg.u t : L2VF_R3)) ∧
-      IntervalIntegrable (fun s => viscousFormSq_R3 ν (alPkg.u s : L2VF_R3))
-        MeasureTheory.volume 0 T
-  /-- The good representative produced by limit passage. -/
-  v : Time → L2Sigma_R3
-  /-- Representative is a.e.-linked to the package curve on `[0, T]`. -/
-  v_ae : ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)), v t = alPkg.u t
-  /-- Weak-form limit passage for the representative. -/
-  weak_eq : WeakFormNS ν T (r3Evolution 𝔊 F) v
-  /-- Energy inequality (∀t form). -/
-  energy_ineq : ∀ t, 0 ≤ t → t ≤ T →
-    (1 / 2 : ℝ) * ‖(v t : L2VF_R3)‖ ^ 2 +
-      ∫ s in (0 : ℝ)..t, viscousFormSq_R3 ν (v s : L2VF_R3) ≤
-    (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2
-  /-- Strong initial trace. -/
-  initial_trace : Filter.Tendsto (fun t => (v t : L2VF_R3))
-    (nhdsWithin 0 (Set.Ici 0)) (nhds (u₀ : L2VF_R3))
-  /-- Energy class re-exported for the representative. -/
-  energy_class_v :
-    (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
-        memH1VF_R3 (v t : L2VF_R3)) ∧
-      IntervalIntegrable (fun s => viscousFormSq_R3 ν (v s : L2VF_R3))
-        MeasureTheory.volume 0 T
-  /-- Everywhere-weak pin, phrased against `galSeq₁` ITSELF, along `alPkg.φ` directly
-  (the exact `hpin` shape of spike (a)'s `r3_representative_diag_coherence` with
-  `δ := φ₁`, `σ := alPkg.φ` — §6 clause 2 coupling). -/
-  pin : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF_R3,
-    Filter.Tendsto
-      (fun k => inner (𝕜 := ℝ) (((galSeq₁ (alPkg.φ k)).u t : L2VF_R3)) z)
-      Filter.atTop (nhds (inner (𝕜 := ℝ) ((v t : L2VF_R3)) z))
+-- P2′ RE-POINT: `R3KappaChainExitWitness` mirror structure DELETED here; the probes and
+-- smokes below now resolve `R3KappaChainExitWitness` to the production declaration in
+-- `LerayHopf.R3.KappaChainExit` (imported above).
 
 variable {𝔊 : R3GalerkinScheme} {F : R3NSForms 𝔊} {ν T : ℝ} {u₀ : L2Sigma_R3}
   {φ₁ : ℕ → ℕ} {galSeq₁ : ∀ k, GalerkinSolutionData_R3 𝔊 F ν u₀ (φ₁ k)}
@@ -315,15 +234,76 @@ theorem R3KappaChainExitWitness.alPkg_convergence_dependent_family
   intro R
   simpa only [w.transport] using w.alPkg.strong_convergence R
 
+/-! ### §6 clause-3 nontrivial-seed smokes (`κ := Nat.succ`, full-path threading)
+
+Unlike the probes/linkage-smokes above (which take a `w : R3KappaChainExitWitness`
+hypothesis), these two theorems INSTANTIATE the production exit gate `r3_kappaChain_exit`
+at the genuinely nontrivial seed `κ := Nat.succ` (`StrictMono`, provably `≠ id`), so they
+thread the ENTIRE production path — package construction → viscous lsc → limit passage →
+pin re-export → typed witness — at a nonidentity κ.  A dummy-κ or stale-index production
+chain cannot instantiate them.  They are audit artifacts (Scratch212), not release code. -/
+
+/-- **Smoke (f₁) — full-path threading + `transport` consumption to a base-family pin at the
+COMPOSED effective index `w.alPkg.φ k + 1`** (`= Nat.succ (w.alPkg.φ k)`).  Runs the whole
+production chain at `κ := Nat.succ`, then transports the dependent-family pin down to the
+base family at the `+ 1`-shifted effective index.  A pin phrased at the bare `w.alPkg.φ k`
+(dropping the `Nat.succ`) would not elaborate — this is the §4.1 defense-in-depth #1
+staleness catch at a real `κ ≠ id`. -/
+theorem r3KappaSuccSmoke_pin_base_succ
+    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (hν : 0 < ν)
+    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
+    (fill : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (htest : R3TestApproxH1 𝔊)
+    (galSeq₁ : ∀ k, GalerkinSolutionData_R3 𝔊 F ν u₀ (Nat.succ k)) :
+    ∃ w : R3KappaChainExitWitness 𝔊 F ν T u₀ Nat.succ galSeq₁,
+      ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF_R3,
+        Filter.Tendsto
+          (fun k => inner (𝕜 := ℝ) (((w.base (w.alPkg.φ k + 1)).u t : L2VF_R3)) z)
+          Filter.atTop (nhds (inner (𝕜 := ℝ) ((w.v t : L2VF_R3)) z)) := by
+  have hsucc : StrictMono Nat.succ := fun _ _ h => Nat.succ_lt_succ h
+  obtain ⟨w⟩ :=
+    r3_kappaChain_exit 𝔊 F ν hν T hT u₀ fill htest Nat.succ hsucc galSeq₁
+  refine ⟨w, ?_⟩
+  intro t ht z
+  simpa only [← w.transport] using w.pin t ht z
+
+/-- **Smoke (f₂) — category-(iii) exercise at `κ := Nat.succ`** (§4.1 pass-3 widening).
+After threading the full path, apply the PRODUCTION selection helper
+`perTest_lipschitz_R3` (the `GoodRepresentative`-side consumer of the `hlevel` growth
+bound) at the effective index, feeding it the effective bound `∀ n, n ≤ w.alPkg.φ n + 1`
+DERIVED from `effective_strictMono` (never from bare `φ_mono`).  This exercises the
+extraction-dependent pairing itself at `κ ≠ id`, not only total-family applications. -/
+theorem r3KappaSuccSmoke_categoryIII_effectiveBound
+    (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (hν : 0 < ν)
+    (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
+    (fill : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (htest : R3TestApproxH1 𝔊)
+    (galSeq₁ : ∀ k, GalerkinSolutionData_R3 𝔊 F ν u₀ (Nat.succ k))
+    (wt : L2Sigma_R3) (hwt : IsSchwartzDivFree_R3 wt) (n₀ : ℕ)
+    (hn₀ : 𝔊.P n₀ (wt : L2VF_R3) = (wt : L2VF_R3)) :
+    ∃ (w : R3KappaChainExitWitness 𝔊 F ν T u₀ Nat.succ galSeq₁) (L : ℝ), 0 ≤ L ∧
+      ∀ n, n₀ ≤ n → ∀ s ∈ Set.Ici (0 : ℝ), ∀ t ∈ Set.Ici (0 : ℝ),
+        |inner (𝕜 := ℝ) (((w.base (w.alPkg.φ n + 1)).u t : L2VF_R3)) (wt : L2VF_R3)
+          - inner (𝕜 := ℝ) (((w.base (w.alPkg.φ n + 1)).u s : L2VF_R3)) (wt : L2VF_R3)|
+          ≤ L * |t - s| := by
+  have hsucc : StrictMono Nat.succ := fun _ _ h => Nat.succ_lt_succ h
+  obtain ⟨w⟩ :=
+    r3_kappaChain_exit 𝔊 F ν hν T hT u₀ fill htest Nat.succ hsucc galSeq₁
+  -- effective bound from effective_strictMono at κ = Nat.succ (category (iii): NOT bare φ_mono)
+  have hlevel : ∀ n, n ≤ w.alPkg.φ n + 1 :=
+    fun n => (w.alPkg.effective_strictMono hsucc).le_apply
+  obtain ⟨L, hL0, hLip⟩ :=
+    perTest_lipschitz_R3 ν hν u₀ (fun n => (w.base n).toSolutionData) wt hwt n₀ hn₀
+  refine ⟨w, L, hL0, ?_⟩
+  intro n hn s hs t ht
+  exact hLip (w.alPkg.φ n + 1) (le_trans hn (hlevel n)) s hs t ht
+
 end Scratch212
 end LerayHopf
 
 -- Axiom pins (campaign doc §6 clauses 4/6, §7; enforced by scripts/check-scratch-pins.sh
 -- with source-manifest equality — EVERY top-level declaration is pinned; expected: at
 -- most [propext, Classical.choice, Quot.sound] — no sorryAx, no project axioms).
-#print axioms LerayHopf.Scratch212.AubinLionsPackage_R3
-#print axioms LerayHopf.Scratch212.AubinLionsPackage_R3.effective_strictMono
-#print axioms LerayHopf.Scratch212.AubinLionsPackage_R3.effective_tendsto_atTop
 #print axioms LerayHopf.Scratch212.r3PackageShape_strong_convergence_effective
 #print axioms LerayHopf.Scratch212.r3PackageShape_strong_convergence_ae_effective
 #print axioms LerayHopf.Scratch212.r3PackageShape_u_aestronglyMeasurable
@@ -332,10 +312,11 @@ end LerayHopf
 #print axioms LerayHopf.Scratch212.r3LimitPassagePinShape_effective
 #print axioms LerayHopf.Scratch212.R3StrengthenedLimitPassageConclusion
 #print axioms LerayHopf.Scratch212.r3StrengthenedConclusion_projects_pin
-#print axioms LerayHopf.Scratch212.R3KappaChainExitWitness
 #print axioms LerayHopf.Scratch212.r3WitnessShape_transport
 #print axioms LerayHopf.Scratch212.r3WitnessShape_pin_dependent_family
 #print axioms LerayHopf.Scratch212.r3WitnessShape_alPkg_effective_convergence
 #print axioms LerayHopf.Scratch212.R3KappaChainExitWitness.effective_strictMono
 #print axioms LerayHopf.Scratch212.R3KappaChainExitWitness.pin_base
 #print axioms LerayHopf.Scratch212.R3KappaChainExitWitness.alPkg_convergence_dependent_family
+#print axioms LerayHopf.Scratch212.r3KappaSuccSmoke_pin_base_succ
+#print axioms LerayHopf.Scratch212.r3KappaSuccSmoke_categoryIII_effectiveBound

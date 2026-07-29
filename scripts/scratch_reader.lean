@@ -152,7 +152,8 @@
 --                                                      <axioms> is a comma-joined
 --                                                      list or `-` if empty)
 --   DEPGUARD|<decl>|<required>|<head|exists-destruct> (one line per proof-value
---                                                      pin, fixed 11-entry table)
+--                                                      pin, 8-entry table after
+--                                                      the P2′ (δ) re-point)
 --   VIOLATION|<rule>|<detail...>                      (zero lines when clean)
 --   SCRATCH-MANIFEST-END|<decl-count>|<depguard-count>|<OK|FAIL>
 import Lean
@@ -192,10 +193,13 @@ some other proof): the stripped proof term must BE an `Exists.casesOn`
 application whose SCRUTINEE (the major premise) is itself headed by the
 required constant, so the pinned existential is the value the proof actually
 destructures; the direct-reference check is retained as a secondary guard.
-Sanctioned for EXACTLY ONE pin: `r3LimitPassagePin_production_source`
-destructures the production existential (`obtain`/`exact`), so its stripped
-head is `Exists.casesOn`, not the production source.  Any new
-`exists-destruct` pin needs a documented reason like this one.
+The mode machinery is retained but currently has ZERO uses: it was sanctioned
+for exactly one pin, `r3LimitPassagePin_production_source` (it destructured the
+production existential via `obtain`/`exact`, so its stripped head was
+`Exists.casesOn`, not the production source), and that pin was DELETED at the
+P2′ re-point (§6 clause 6 (α)) along with the κ-less production package it
+bridged.  The present table is all-`head` (see `depGuards` below).  Any new
+`exists-destruct` pin needs a documented reason like that one did.
 
 At P2′ the sanctioned (δ) re-point (campaign doc §6 clause 6) rewrites this
 table in the SAME reviewed diff as the probe changes: the three probes deleted
@@ -203,14 +207,8 @@ with the mirror lose their pins, the free-κ guards' heads swap to the
 κ-threaded production declarations, and the exact-shape probes keep their
 production heads (their proofs gain `id strictMono_id` arguments only). -/
 def depGuards : List (Name × Name × String) := [
-  (`LerayHopf.Scratch212.AubinLionsPackage_R3.ofProduction,
-   `LerayHopf.Scratch212.AubinLionsPackage_R3.mk, "head"),
-  (`LerayHopf.Scratch212.AubinLionsPackage_R3.toProduction,
-   `LerayHopf.AubinLionsPackage_R3.mk, "head"),
-  (`LerayHopf.Scratch212.r3LimitPassage_production_exact_shape,
+  (`LerayHopf.Scratch212.r3LimitPassage_strengthened_production_coupling,
    `LerayHopf.galerkin_limit_passage_R3, "head"),
-  (`LerayHopf.Scratch212.r3LimitPassagePin_production_source,
-   `LerayHopf.exists_weak_representative_R3, "exists-destruct"),
   (`LerayHopf.Scratch212.r3Production_diag_ae_subseq_exact_shape,
    `LerayHopf.diag_ae_subseq, "head"),
   (`LerayHopf.Scratch212.r3Production_u_lim_aestronglyMeasurable_exact_shape,
@@ -221,10 +219,10 @@ def depGuards : List (Name × Name × String) := [
    `LerayHopf.Scratch212.diag_ae_subseq_seeded, "head"),
   (`LerayHopf.Scratch212.spacetime_extraction_seeded_id_recovers_production,
    `LerayHopf.Scratch212.spacetime_extraction_seeded, "head"),
-  (`LerayHopf.Scratch212.diag_ae_subseq_seeded_free_kappa_exact_shape,
-   `LerayHopf.Scratch212.diag_ae_subseq_seeded, "head"),
-  (`LerayHopf.Scratch212.spacetime_extraction_seeded_free_kappa_exact_shape,
-   `LerayHopf.Scratch212.spacetime_extraction_seeded, "head")]
+  (`LerayHopf.Scratch212.r3Production_diag_ae_subseq_kappa_coupling,
+   `LerayHopf.diag_ae_subseq, "head"),
+  (`LerayHopf.Scratch212.r3Production_spacetime_extraction_kappa_coupling,
+   `LerayHopf.galerkinSpaceTimeExtraction_R3, "head")]
 
 /-- The collision-fixture module (NOT a gate target): loaded so the serializer
 discrimination fixtures (pass-9 finding 1) can be digest-checked per run. -/

@@ -170,9 +170,9 @@ block="$(awk '/^SCRATCH-MANIFEST-START$/{inblk=1; next} /^SCRATCH-MANIFEST-END\|
 n_decl="$(printf '%s\n' "$block" | grep -c '^DECL|' || true)"
 n_dep="$(printf '%s\n' "$block" | grep -c '^DEPGUARD|' || true)"
 n_lines="$(printf '%s\n' "$block" | grep -c . || true)"
-[ "$n_decl" -eq "$declared" ] && [ "$n_dep" -eq "$declared_dep" ] && [ "$n_dep" -eq 11 ] \
+[ "$n_decl" -eq "$declared" ] && [ "$n_dep" -eq "$declared_dep" ] && [ "$n_dep" -eq 8 ] \
   && [ "$n_lines" -eq $((declared + declared_dep)) ] \
-  || { echo "MANIFEST BLOCK MISMATCH: $n_decl DECL / $n_dep DEPGUARD / $n_lines lines vs $declared+$declared_dep declared (DEPGUARD must be exactly 11)"; exit 1; }
+  || { echo "MANIFEST BLOCK MISMATCH: $n_decl DECL / $n_dep DEPGUARD / $n_lines lines vs $declared+$declared_dep declared (DEPGUARD must be exactly 8)"; exit 1; }
 
 # SERIALIZER DISCRIMINATION FIXTURES (pass-9 finding 1): the reader must attest,
 # per run, that each GateFixture pair is alpha-equivalent (Expr.eqv — the class
@@ -219,9 +219,6 @@ pinned=(
   LerayHopf.Scratch212.packageShape_effective_strictMono
   LerayHopf.Scratch212.packageShape_effective_le_apply
   LerayHopf.Scratch212.witnessShape_pin_dependent_family
-  LerayHopf.Scratch212.AubinLionsPackage_R3
-  LerayHopf.Scratch212.AubinLionsPackage_R3.effective_strictMono
-  LerayHopf.Scratch212.AubinLionsPackage_R3.effective_tendsto_atTop
   LerayHopf.Scratch212.r3PackageShape_strong_convergence_effective
   LerayHopf.Scratch212.r3PackageShape_strong_convergence_ae_effective
   LerayHopf.Scratch212.r3PackageShape_u_aestronglyMeasurable
@@ -230,29 +227,27 @@ pinned=(
   LerayHopf.Scratch212.r3LimitPassagePinShape_effective
   LerayHopf.Scratch212.R3StrengthenedLimitPassageConclusion
   LerayHopf.Scratch212.r3StrengthenedConclusion_projects_pin
-  LerayHopf.Scratch212.R3KappaChainExitWitness
   LerayHopf.Scratch212.r3WitnessShape_transport
   LerayHopf.Scratch212.r3WitnessShape_pin_dependent_family
   LerayHopf.Scratch212.r3WitnessShape_alPkg_effective_convergence
   LerayHopf.Scratch212.R3KappaChainExitWitness.effective_strictMono
   LerayHopf.Scratch212.R3KappaChainExitWitness.pin_base
   LerayHopf.Scratch212.R3KappaChainExitWitness.alPkg_convergence_dependent_family
+  LerayHopf.Scratch212.r3KappaSuccSmoke_pin_base_succ
+  LerayHopf.Scratch212.r3KappaSuccSmoke_categoryIII_effectiveBound
   LerayHopf.Scratch212.L2Sigma_R3_eq_of_forall_inner
   LerayHopf.Scratch212.r3_representative_diag_coherence
   LerayHopf.Scratch212.r3_representatives_agree_on_overlap
   LerayHopf.Scratch212.diag_ae_subseq_seeded
   LerayHopf.Scratch212.spacetime_extraction_seeded
-  LerayHopf.Scratch212.AubinLionsPackage_R3.ofProduction
-  LerayHopf.Scratch212.AubinLionsPackage_R3.toProduction
-  LerayHopf.Scratch212.r3LimitPassage_production_exact_shape
-  LerayHopf.Scratch212.r3LimitPassagePin_production_source
+  LerayHopf.Scratch212.r3LimitPassage_strengthened_production_coupling
   LerayHopf.Scratch212.r3Production_diag_ae_subseq_exact_shape
   LerayHopf.Scratch212.r3Production_u_lim_aestronglyMeasurable_exact_shape
   LerayHopf.Scratch212.r3Production_galerkinSpaceTimeExtraction_exact_shape
   LerayHopf.Scratch212.diag_ae_subseq_seeded_id_recovers_production
   LerayHopf.Scratch212.spacetime_extraction_seeded_id_recovers_production
-  LerayHopf.Scratch212.diag_ae_subseq_seeded_free_kappa_exact_shape
-  LerayHopf.Scratch212.spacetime_extraction_seeded_free_kappa_exact_shape
+  LerayHopf.Scratch212.r3Production_diag_ae_subseq_kappa_coupling
+  LerayHopf.Scratch212.r3Production_spacetime_extraction_kappa_coupling
 )
 if ! diff <(printf '%s\n' "$block" | awk -F'|' '$1=="DECL" && $2=="surface" {print $3}' | sort -u) \
           <(printf '%s\n' "${pinned[@]}" | sort -u) >/dev/null; then
@@ -292,40 +287,37 @@ if ! printf '%s\n' "$block" | awk -F'|' '
   exit 1
 fi
 
-# DEPGUARD (pass-7 finding 3; head semantics per pass-8 finding 3; extended to
-# the FULL 11-pin production-coupling table per pass-9 finding 2): each probe's
+# DEPGUARD (pass-7 finding 3; head semantics per pass-8 finding 3; pass-9
+# finding 2 extended it to the full production-coupling table): each probe's
 # proof term — its own binders and inert mdata stripped — must have the pinned
 # constant as its APPLICATION HEAD; the pin encodes production-head vs
 # seed-head vs constructor-head intent, so a probe silently re-proved from the
-# wrong side fails even with an identical statement digest.  The single
-# `exists-destruct` pin (structural since pass-10; the pass-9 direct-reference
-# `uses` mode also accepted dead mentions) is the documented destructuring
-# probe (r3LimitPassagePin_production_source: obtain/exact over the production
-# existential — its proof term must BE an Exists.casesOn application whose
-# SCRUTINEE is headed by exists_weak_representative_R3, with direct reference
-# retained as a secondary guard).  Also covered by the total-manifest diff; asserted explicitly
-# here so a failure names the broken probe.  The sanctioned P2′ re-point
-# (campaign doc §6 clause 6 rule (δ)) rewrites the reader's pin table, these
-# lines, and the expected manifest in the SAME reviewed diff as the probe
-# changes (deleted probes lose pins; free-κ guard heads swap to the κ-threaded
-# production declarations; exact-shape probes keep their production heads).
+# wrong side fails even with an identical statement digest.  After the P2′
+# re-point the table is 8-pin, ALL `head` — the lone `exists-destruct` pin
+# (r3LimitPassagePin_production_source, structural since pass-10) was deleted at
+# the re-point along with the κ-less production package it destructured, so no
+# exists-destruct pin remains (see the reader's `depGuards` doc-comment for the
+# retained-machinery / historical note).  Also covered by the total-manifest
+# diff; asserted explicitly here so a failure names the broken probe.  The
+# sanctioned P2′ re-point (campaign doc §6 clause 6 rule (δ)) rewrites the
+# reader's pin table, these lines, and the expected manifest in the SAME
+# reviewed diff as the probe changes (deleted probes lose pins; free-κ guard
+# heads swap to the κ-threaded production declarations; exact-shape probes keep
+# their production heads).
 for want in \
-  'DEPGUARD|LerayHopf.Scratch212.AubinLionsPackage_R3.ofProduction|LerayHopf.Scratch212.AubinLionsPackage_R3.mk|head' \
-  'DEPGUARD|LerayHopf.Scratch212.AubinLionsPackage_R3.toProduction|LerayHopf.AubinLionsPackage_R3.mk|head' \
-  'DEPGUARD|LerayHopf.Scratch212.r3LimitPassage_production_exact_shape|LerayHopf.galerkin_limit_passage_R3|head' \
-  'DEPGUARD|LerayHopf.Scratch212.r3LimitPassagePin_production_source|LerayHopf.exists_weak_representative_R3|exists-destruct' \
+  'DEPGUARD|LerayHopf.Scratch212.r3LimitPassage_strengthened_production_coupling|LerayHopf.galerkin_limit_passage_R3|head' \
   'DEPGUARD|LerayHopf.Scratch212.r3Production_diag_ae_subseq_exact_shape|LerayHopf.diag_ae_subseq|head' \
   'DEPGUARD|LerayHopf.Scratch212.r3Production_u_lim_aestronglyMeasurable_exact_shape|LerayHopf.u_lim_aestronglyMeasurable|head' \
   'DEPGUARD|LerayHopf.Scratch212.r3Production_galerkinSpaceTimeExtraction_exact_shape|LerayHopf.galerkinSpaceTimeExtraction_R3|head' \
   'DEPGUARD|LerayHopf.Scratch212.diag_ae_subseq_seeded_id_recovers_production|LerayHopf.Scratch212.diag_ae_subseq_seeded|head' \
   'DEPGUARD|LerayHopf.Scratch212.spacetime_extraction_seeded_id_recovers_production|LerayHopf.Scratch212.spacetime_extraction_seeded|head' \
-  'DEPGUARD|LerayHopf.Scratch212.diag_ae_subseq_seeded_free_kappa_exact_shape|LerayHopf.Scratch212.diag_ae_subseq_seeded|head' \
-  'DEPGUARD|LerayHopf.Scratch212.spacetime_extraction_seeded_free_kappa_exact_shape|LerayHopf.Scratch212.spacetime_extraction_seeded|head'; do
+  'DEPGUARD|LerayHopf.Scratch212.r3Production_diag_ae_subseq_kappa_coupling|LerayHopf.diag_ae_subseq|head' \
+  'DEPGUARD|LerayHopf.Scratch212.r3Production_spacetime_extraction_kappa_coupling|LerayHopf.galerkinSpaceTimeExtraction_R3|head'; do
   printf '%s\n' "$block" | grep -qxF "$want" \
     || { echo "DEPGUARD MISSING: $want"; exit 1; }
 done
 
-echo "SCRATCH PIN CHECK OK (54/54 surface declarations; total static manifest of $declared constants byte-pinned, statements sha256-frozen, kernel-trio only; $n_dep/11 coupling value-pins (10 head + 1 exists-destruct); collision + serializer fixtures verified)"
+echo "SCRATCH PIN CHECK OK (49/49 surface declarations; total static manifest of $declared constants byte-pinned, statements sha256-frozen, kernel-trio only; $n_dep/8 coupling value-pins (8 head); collision + serializer fixtures verified)"
 
 }
 
