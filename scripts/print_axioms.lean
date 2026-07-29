@@ -44,6 +44,7 @@ import LerayHopf.Torus.DiagonalGalerkin
 import LerayHopf.Torus.GlobalCapstone
 import LerayHopf.R3.GlobalCapstone
 import LerayHopf.R3.KappaChainExit
+import LerayHopf.R3.DiagonalGalerkin
 
 #print axioms LerayHopf.exists_lerayHopf_torus3
 #print axioms LerayHopf.exists_lerayHopf_r3
@@ -91,6 +92,17 @@ import LerayHopf.R3.KappaChainExit
 -- axiom closure ⊆ {propext, Classical.choice, Quot.sound}. Appended per the D3 pin
 -- ruling (every phase PR appends its own live pins).
 #print axioms LerayHopf.r3_kappaChain_exit
+
+-- P3′ (#216, parent #212) ℝ³ diagonal machinery — the packaged weak-limit theorem
+-- (`exists_diagonal_weakly_convergent_galSeq_R3`, P4′-consumed) plus the coherence-
+-- coupling deliverable (`exists_diag_coherent_representative_R3`, §790) that promotes
+-- the spike-(a) coherence core against the packaged (δ,W) output. Parallels the torus
+-- P3 diagonal pins at lines 69–70. Kernel-trio only: the whole stage recursion
+-- (aubinLionsPackage_R3 → exists_weak_representative_R3, Nat.rec StageData_R3 carrier,
+-- Bochner.DiagonalExtraction consumed verbatim) is kernel-trio. Appended per the D3 pin
+-- ruling (every phase PR appends its own live pins).
+#print axioms LerayHopf.exists_diagonal_weakly_convergent_galSeq_R3
+#print axioms LerayHopf.exists_diag_coherent_representative_R3
 
 -- Experimental-module axiom profile (visibility only — see docs/statement-cards/).
 #print axioms LerayHopf.Bochner.w1pTime_continuous_in_H
