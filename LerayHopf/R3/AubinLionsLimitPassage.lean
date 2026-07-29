@@ -447,7 +447,8 @@ private theorem weakFormNS_galerkinTest_uniform_dominator
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (hν : 0 < ν) (T : ℝ)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ)
     (w : L2Sigma_R3)
     (ψ : Time → ℝ) (hψC1 : ContDiff ℝ 1 ψ)
     (ψw : Fin 3 → SchwartzMap Domain3 ℝ)
@@ -462,61 +463,61 @@ private theorem weakFormNS_galerkinTest_uniform_dominator
     (hMψb : ∀ t ∈ Set.Icc (0 : ℝ) T, |ψ t| ≤ Mψ)
     (hMψ'b : ∀ t ∈ Set.Icc (0 : ℝ) T, |deriv ψ t| ≤ Mψ') :
     (∀ n, ContinuousOn (fun t : ℝ =>
-        -(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
-          ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
-            F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w))
+        -(inner (𝕜 := ℝ) ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+          ψ t * (ν * stokesTestPairing_R3 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3) +
+            F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) w))
         (Set.Icc (0 : ℝ) T)) ∧
     (∀ n, ∀ᵐ t ∂(restrictAvgMeasure T), ‖
-        -(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
-          ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
-            F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)‖
+        -(inner (𝕜 := ℝ) ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+          ψ t * (ν * stokesTestPairing_R3 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3) +
+            F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) w)‖
       ≤ ‖(u₀ : L2VF_R3)‖ * ‖(w : L2VF_R3)‖ * Mψ'
         + Mψ * (ν * ‖vElt‖ * ‖(u₀ : L2VF_R3)‖ + Cb' * ‖(u₀ : L2VF_R3)‖ * ‖(u₀ : L2VF_R3)‖)) := by
   set M : ℝ := ‖(u₀ : L2VF_R3)‖ with hMdef
   have hM0 : 0 ≤ M := norm_nonneg _
   set Fseq : ℕ → ℝ → ℝ := fun n t =>
-    -(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
-      ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
-        F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w) with hFseq
+    -(inner (𝕜 := ℝ) ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+      ψ t * (ν * stokesTestPairing_R3 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3) +
+        F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) w) with hFseq
   set D : ℝ := M * ‖(w : L2VF_R3)‖ * Mψ' + Mψ * (ν * ‖vElt‖ * M + Cb' * M * M) with hD
   refine ⟨fun n => ?_, fun n => ?_⟩
-  · have hc := (weakFormNS_integrand_continuousOn_R3 (galSeq (alPkg.φ n)) w ⟨ψw, hψw⟩ ψ hψC1).mono
+  · have hc := (weakFormNS_integrand_continuousOn_R3 (galSeq (κ (alPkg.φ n))) w ⟨ψw, hψw⟩ ψ hψC1).mono
       (Set.Icc_subset_Ici_self : Set.Icc (0:ℝ) T ⊆ Set.Ici 0)
     simpa only [hFseq] using hc
   · have hae_ge := ae_zero_le_of_restrictAvgMeasure T
     have hae_Icc := ae_mem_Icc_of_restrictAvgMeasure T
     filter_upwards [hae_ge, hae_Icc] with t htg htIcc
-    have hUn : ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ≤ M := by
-      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) htg
+    have hUn : ‖((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)‖ ≤ M := by
+      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n))) htg
     have hψb : |ψ t| ≤ Mψ := hMψb t htIcc
     have hψ'b : |deriv ψ t| ≤ Mψ' := hMψ'b t htIcc
-    have hinb : |inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
+    have hinb : |inner (𝕜 := ℝ) ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3)|
         ≤ M * ‖(w : L2VF_R3)‖ := (abs_real_inner_le_norm _ _).trans (by gcongr)
-    have hstok : |stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
+    have hstok : |stokesTestPairing_R3 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3)|
         ≤ ‖vElt‖ * M := by
       rw [hstokes_inner]; exact (abs_real_inner_le_norm _ _).trans (by gcongr)
-    have hbb : |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| ≤ Cb' * M * M := by
+    have hbb : |F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) w| ≤ Cb' * M * M := by
       refine (hbbound _ _).trans ?_; gcongr
     show ‖Fseq n t‖ ≤ D
     rw [hFseq, Real.norm_eq_abs]
-    calc |(-(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))) * deriv ψ t +
-            ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
-              F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)|
-        ≤ |(-(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))) * deriv ψ t|
-          + |ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
-              F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)| := abs_add_le _ _
+    calc |(-(inner (𝕜 := ℝ) ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3))) * deriv ψ t +
+            ψ t * (ν * stokesTestPairing_R3 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3) +
+              F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) w)|
+        ≤ |(-(inner (𝕜 := ℝ) ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3))) * deriv ψ t|
+          + |ψ t * (ν * stokesTestPairing_R3 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3) +
+              F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) w)| := abs_add_le _ _
       _ ≤ M * ‖(w : L2VF_R3)‖ * Mψ' + Mψ * (ν * ‖vElt‖ * M + Cb' * M * M) := by
           refine add_le_add ?_ ?_
           · rw [abs_mul, abs_neg]
             exact mul_le_mul hinb hψ'b (abs_nonneg _) (mul_nonneg hM0 (norm_nonneg _))
           · rw [abs_mul]
             refine mul_le_mul hψb ?_ (abs_nonneg _) hMψ0
-            calc |ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
-                    F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w|
-                ≤ |ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
-                  + |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| := abs_add_le _ _
-              _ = ν * |stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)|
-                  + |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w| := by
+            calc |ν * stokesTestPairing_R3 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3) +
+                    F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) w|
+                ≤ |ν * stokesTestPairing_R3 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3)|
+                  + |F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) w| := abs_add_le _ _
+              _ = ν * |stokesTestPairing_R3 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3)|
+                  + |F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) w| := by
                     rw [abs_mul, abs_of_nonneg hν.le]
               _ ≤ ν * (‖vElt‖ * M) + Cb' * M * M :=
                     add_le_add (mul_le_mul_of_nonneg_left hstok hν.le) hbb
@@ -546,7 +547,8 @@ theorem weakFormNS_galerkinTest_limit
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ)
     (w : L2Sigma_R3) (hw : IsGalerkinTest_R3 𝔊 w)
     (ψ : Time → ℝ) (_hψcs : HasCompactSupport ψ)
     (hψsupp : tsupport ψ ⊆ Set.Ioo 0 T) (hψC1 : ContDiff ℝ 1 ψ) :
@@ -597,9 +599,9 @@ theorem weakFormNS_galerkinTest_limit
   haveI hμfin : IsFiniteMeasure (restrictAvgMeasure T) := isFiniteMeasure_restrictAvgMeasure T
   -- Approximant and limit integrands.
   set Fseq : ℕ → ℝ → ℝ := fun n t =>
-    -(inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
-      ψ t * (ν * stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3) +
-        F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w) with hFseq
+    -(inner (𝕜 := ℝ) ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
+      ψ t * (ν * stokesTestPairing_R3 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3) +
+        F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) w) with hFseq
   set flim : ℝ → ℝ := fun t =>
     -(inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (w : L2VF_R3)) * deriv ψ t +
       ψ t * (ν * stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (w : L2VF_R3) +
@@ -608,40 +610,40 @@ theorem weakFormNS_galerkinTest_limit
   set D : ℝ := M * ‖(w : L2VF_R3)‖ * Mψ' + Mψ * (ν * ‖vElt‖ * M + Cb' * M * M) with hD
   -- (1)+(2) Continuity + uniform dominator bound, via the extracted step.
   obtain ⟨hcontFseq, hbound⟩ := weakFormNS_galerkinTest_uniform_dominator 𝔊 F ν hν T u₀
-    galSeq alPkg w ψ hψC1 ψw hψw vElt hstokes_inner Cb' hCb'0 hbbound Mψ Mψ' hMψ0 hMψb hMψ'b
+    galSeq κ hκ alPkg w ψ hψC1 ψw hψw vElt hstokes_inner Cb' hCb'0 hbbound Mψ Mψ' hMψ0 hMψb hMψ'b
   have hmeasFseq : ∀ n, AEStronglyMeasurable (Fseq n) (restrictAvgMeasure T) := fun n =>
     (hcontFseq n).aestronglyMeasurable measurableSet_Icc
   have hDint : Integrable (fun _ : ℝ => D) (restrictAvgMeasure T) := integrable_const _
   -- (3) Pointwise a.e.-t convergence of the integrands.
   have hae_ge := ae_zero_le_of_restrictAvgMeasure T
   have hballconv : ∀ᵐ t ∂(restrictAvgMeasure T), ∀ k : ℕ,
-      Filter.Tendsto (fun n => restrictToBall (k : ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+      Filter.Tendsto (fun n => restrictToBall (k : ℝ) ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3))
         Filter.atTop (nhds (restrictToBall (k : ℝ) (alPkg.u t : L2VF_R3))) :=
     ae_all_iff.2 fun k => alPkg.strong_convergence_ae k
   have hnormlim : ∀ᵐ t ∂(restrictAvgMeasure T), ‖(alPkg.u t : L2VF_R3)‖ ≤ M := by
-    filter_upwards [kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq alPkg] with t ht
+    filter_upwards [kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq κ hκ alPkg] with t ht
     have hsq : ‖(alPkg.u t : L2VF_R3)‖ ^ 2 ≤ M ^ 2 := by rw [hMdef]; nlinarith [ht]
     exact le_of_sq_le_sq hsq hM0
   have hpt : ∀ᵐ t ∂(restrictAvgMeasure T),
       Filter.Tendsto (fun n => Fseq n t) Filter.atTop (nhds (flim t)) := by
     filter_upwards [hballconv, hnormlim, hae_ge] with t hball hnorm htg
-    have hbd : ∀ n, ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ≤ M := fun n => by
-      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) htg
+    have hbd : ∀ n, ‖((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)‖ ≤ M := fun n => by
+      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n))) htg
     have hlin : Filter.Tendsto
-        (fun n => inner (𝕜 := ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))
+        (fun n => inner (𝕜 := ℝ) ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3))
         Filter.atTop (nhds (inner (𝕜 := ℝ) (alPkg.u t : L2VF_R3) (w : L2VF_R3))) := by
       have h := inner_tendsto_of_perball (w : L2VF_R3)
-        (fun n => ((galSeq (alPkg.φ n)).u t : L2VF_R3)) (alPkg.u t : L2VF_R3) M hM0 hbd hnorm hball
+        (fun n => ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) (alPkg.u t : L2VF_R3) M hM0 hbd hnorm hball
       simpa only [real_inner_comm (w : L2VF_R3)] using h
     have hstk : Filter.Tendsto
-        (fun n => stokesTestPairing_R3 ((galSeq (alPkg.φ n)).u t : L2VF_R3) (w : L2VF_R3))
+        (fun n => stokesTestPairing_R3 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) (w : L2VF_R3))
         Filter.atTop (nhds (stokesTestPairing_R3 (alPkg.u t : L2VF_R3) (w : L2VF_R3))) := by
       simp only [hstokes_inner]
       exact inner_tendsto_of_perball vElt
-        (fun n => ((galSeq (alPkg.φ n)).u t : L2VF_R3)) (alPkg.u t : L2VF_R3) M hM0 hbd hnorm hball
-    have hnl : Filter.Tendsto (fun n => F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) w)
+        (fun n => ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) (alPkg.u t : L2VF_R3) M hM0 hbd hnorm hball
+    have hnl : Filter.Tendsto (fun n => F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) w)
         Filter.atTop (nhds (F.b (alPkg.u t) (alPkg.u t) w)) :=
-      fb_tendsto_of_perball F w ⟨ψw, hψw⟩ (fun n => (galSeq (alPkg.φ n)).u t) (alPkg.u t)
+      fb_tendsto_of_perball F w ⟨ψw, hψw⟩ (fun n => (galSeq (κ (alPkg.φ n))).u t) (alPkg.u t)
         M hM0 hbd hnorm hball
     simp only [hFseq, hflim]
     exact (hlin.neg.mul_const (deriv ψ t)).add
@@ -651,10 +653,10 @@ theorem weakFormNS_galerkinTest_limit
   -- (5) The approximant integrals are eventually `0` (per-level IBP identity).
   have hzero_ev : ∀ᶠ n in Filter.atTop, ∫ t, Fseq n t ∂(restrictAvgMeasure T) = 0 := by
     filter_upwards [Filter.eventually_ge_atTop m] with n hn
-    have hproj : (w : L2VF_R3) = 𝔊.P (alPkg.φ n) (w : L2VF_R3) :=
-      (𝔊.mono_range m (alPkg.φ n) (le_trans hn alPkg.φ_mono.le_apply) (w : L2VF_R3) hm).symm
+    have hproj : (w : L2VF_R3) = 𝔊.P (κ (alPkg.φ n)) (w : L2VF_R3) :=
+      (𝔊.mono_range m (κ (alPkg.φ n)) (le_trans hn (alPkg.effective_strictMono hκ).le_apply) (w : L2VF_R3) hm).symm
     rw [← intervalIntegral_eq_restrictAvgMeasure_integral T hT.le (Fseq n)]; simp only [hFseq]
-    exact galerkin_weakFormNS_zero_R3 T hT (galSeq (alPkg.φ n)) w hproj ψ hψsupp hψC1
+    exact galerkin_weakFormNS_zero_R3 T hT (galSeq (κ (alPkg.φ n))) w hproj ψ hψsupp hψC1
   have hlim0 : Filter.Tendsto (fun n => ∫ t, Fseq n t ∂(restrictAvgMeasure T)) Filter.atTop (nhds 0) :=
     Filter.Tendsto.congr' (hzero_ev.mono fun n h => h.symm) tendsto_const_nhds
   have hflim0 : ∫ t, flim t ∂(restrictAvgMeasure T) = 0 := tendsto_nhds_unique hlim hlim0
@@ -727,26 +729,27 @@ private theorem bForm_galerkin_crude_dominator_bound
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ)
     (z : L2Sigma_R3) (C_b : ℝ) (hC_b0 : 0 ≤ C_b)
     (hFb_crude_pt : ∀ n t, 0 ≤ t →
-      |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z|
+      |F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) z|
         ≤ C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
-            * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+            * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3))
             * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3))) :
     (∀ n, ∀ᵐ t ∂(restrictAvgMeasure T),
-        ‖F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z‖
+        ‖F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) z‖
           ≤ C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
-              * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+              * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3))
               * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3))) ∧
     (∀ n t, 0 ≤ C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
-        * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+        * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3))
         * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3))) ∧
     (∀ n, Integrable (fun t => C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
-        * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+        * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3))
         * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3))) (restrictAvgMeasure T)) ∧
     (∀ n, ∫ t, C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
-        * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+        * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3))
         * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3)) ∂(restrictAvgMeasure T)
         ≤ (C_b * Real.sqrt ‖(u₀ : L2VF_R3)‖
             * (T + ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2)))
@@ -757,58 +760,58 @@ private theorem bForm_galerkin_crude_dominator_bound
   have hS0 : 0 ≤ S := Real.sqrt_nonneg _
   have hae_ge := ae_zero_le_of_restrictAvgMeasure T
   have hFb_crude : ∀ n, ∀ᵐ t ∂(restrictAvgMeasure T),
-      ‖F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z‖
+      ‖F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) z‖
         ≤ C_b * Real.sqrt M
-            * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S := by
+            * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) * S := by
     intro n; filter_upwards [hae_ge] with t htg
     rw [Real.norm_eq_abs]; exact hFb_crude_pt n t htg
   have hV1_int : ∀ n,
-      Integrable (fun t => viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+      Integrable (fun t => viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3))
         (restrictAvgMeasure T) := by
     intro n
-    exact ((galerkin_viscous_curve_continuousOn (galSeq (alPkg.φ n))).mono
+    exact ((galerkin_viscous_curve_continuousOn (galSeq (κ (alPkg.φ n)))).mono
       Set.Icc_subset_Ici_self).integrableOn_Icc
   have hGcrude_nonneg : ∀ n t, 0 ≤ C_b * Real.sqrt M
-      * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S := by
+      * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) * S := by
     intro n t
     refine mul_nonneg (mul_nonneg (mul_nonneg hC_b0 (Real.sqrt_nonneg _)) ?_) hS0
-    have := viscousFormSq_R3_nonneg zero_le_one ((galSeq (alPkg.φ n)).u t : L2VF_R3)
+    have := viscousFormSq_R3_nonneg zero_le_one ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)
     linarith
   have hGcrude_int : ∀ n, Integrable (fun t => C_b * Real.sqrt M
-      * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S)
+      * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) * S)
       (restrictAvgMeasure T) := by
     intro n
     exact (((integrable_const (1 : ℝ)).add (hV1_int n)).const_mul (C_b * Real.sqrt M)).mul_const S
-  have hV1_reg : ∀ n, ∫ t, viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)
+  have hV1_reg : ∀ n, ∫ t, viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)
         ∂(restrictAvgMeasure T)
       ≤ ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2) := by
     intro n
-    have hrb := (galSeq (alPkg.φ n)).reg_bound T hT
-    have hscale : ∀ s, viscousFormSq_R3 ν ((galSeq (alPkg.φ n)).u s : L2VF_R3)
-        = ν * viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u s : L2VF_R3) := by
+    have hrb := (galSeq (κ (alPkg.φ n))).reg_bound T hT
+    have hscale : ∀ s, viscousFormSq_R3 ν ((galSeq (κ (alPkg.φ n))).u s : L2VF_R3)
+        = ν * viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u s : L2VF_R3) := by
       intro s; rw [viscousFormSq_R3_eq_smul, smul_eq_mul]
     rw [intervalIntegral.integral_congr (g := fun s => ν * viscousFormSq_R3 1
-        ((galSeq (alPkg.φ n)).u s : L2VF_R3)) (fun s _ => hscale s),
+        ((galSeq (κ (alPkg.φ n))).u s : L2VF_R3)) (fun s _ => hscale s),
       intervalIntegral.integral_const_mul,
       intervalIntegral_eq_restrictAvgMeasure_integral T hT.le] at hrb
     rw [hMdef]; rwa [le_inv_mul_iff₀ hν]
   have hMuUniv : ((restrictAvgMeasure T) Set.univ).toReal = T := restrictAvgMeasure_univ_toReal T hT
   have hGcrude_int_bound : ∀ n, ∫ t, C_b * Real.sqrt M
-      * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S ∂(restrictAvgMeasure T)
+      * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) * S ∂(restrictAvgMeasure T)
       ≤ (C_b * Real.sqrt M * (T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2))) * S := by
     intro n
     have heq : ∫ t, C_b * Real.sqrt M
-        * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S ∂(restrictAvgMeasure T)
+        * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) * S ∂(restrictAvgMeasure T)
         = C_b * Real.sqrt M * S
-            * (∫ t, (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+            * (∫ t, (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3))
                 ∂(restrictAvgMeasure T)) := by
       rw [← integral_const_mul]
       refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
       ring
     rw [heq]
-    have hintadd : ∫ t, (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+    have hintadd : ∫ t, (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3))
           ∂(restrictAvgMeasure T)
-        = T + ∫ t, viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)
+        = T + ∫ t, viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)
             ∂(restrictAvgMeasure T) := by
       rw [integral_add (integrable_const 1) (hV1_int n), integral_const, measureReal_def,
         hMuUniv, smul_eq_mul, mul_one]
@@ -817,7 +820,7 @@ private theorem bForm_galerkin_crude_dominator_bound
       mul_nonneg (mul_nonneg hC_b0 (Real.sqrt_nonneg _)) hS0
     have hcap := hV1_reg n
     calc C_b * Real.sqrt M * S
-            * (T + ∫ t, viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)
+            * (T + ∫ t, viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)
                 ∂(restrictAvgMeasure T))
         ≤ C_b * Real.sqrt M * S * (T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2)) := by
           refine mul_le_mul_of_nonneg_left ?_ hnn
@@ -839,7 +842,8 @@ private theorem bForm_limit_convection_bound
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) :
     ∃ K : ℝ, 0 ≤ K ∧ ∀ z : L2Sigma_R3, IsSchwartzDivFree_R3 z →
       Integrable (fun t => F.b (alPkg.u t) (alPkg.u t) z)
           (volume.restrict (Set.Icc (0 : ℝ) T)) ∧
@@ -866,51 +870,51 @@ private theorem bForm_limit_convection_bound
   have hS0 : 0 ≤ S := Real.sqrt_nonneg _
   -- a.e.-in-time facts about the limit curve.
   have hballconv : ∀ᵐ t ∂μ, ∀ k : ℕ,
-      Filter.Tendsto (fun n => restrictToBall (k : ℝ) ((galSeq (alPkg.φ n)).u t : L2VF_R3))
+      Filter.Tendsto (fun n => restrictToBall (k : ℝ) ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3))
         Filter.atTop (nhds (restrictToBall (k : ℝ) (alPkg.u t : L2VF_R3))) := by
     rw [hμ]; exact ae_all_iff.2 fun k => alPkg.strong_convergence_ae k
   have hnorm_ulim : ∀ᵐ t ∂μ, ‖(alPkg.u t : L2VF_R3)‖ ≤ M := by
     rw [hμ]
-    filter_upwards [kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq alPkg] with t ht
+    filter_upwards [kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq κ hκ alPkg] with t ht
     have hsq : ‖(alPkg.u t : L2VF_R3)‖ ^ 2 ≤ M ^ 2 := by rw [hMdef]; nlinarith [ht]
     exact le_of_sq_le_sq hsq hM0
   have haetend : ∀ᵐ t ∂μ, Filter.Tendsto
-      (fun n => F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z) Filter.atTop
+      (fun n => F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) z) Filter.atTop
       (nhds (F.b (alPkg.u t) (alPkg.u t) z)) := by
     filter_upwards [hae_ge, hnorm_ulim, hballconv] with t htg hnorm hball
-    have hbd : ∀ n, ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ≤ M := fun n => by
-      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) htg
-    exact fb_tendsto_of_perball F z ⟨ψz, hψz⟩ (fun n => (galSeq (alPkg.φ n)).u t) (alPkg.u t)
+    have hbd : ∀ n, ‖((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)‖ ≤ M := fun n => by
+      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n))) htg
+    exact fb_tendsto_of_perball F z ⟨ψz, hψz⟩ (fun n => (galSeq (κ (alPkg.φ n))).u t) (alPkg.u t)
       M hM0 hbd hnorm hball
   -- Per-level crude bound `|b(uₙ,uₙ,z)| ≤ C_b·√M·(1 + V₁ uₙ)·S` on forward time.
   have hFb_crude_pt : ∀ n t, 0 ≤ t →
-      |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z|
+      |F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) z|
         ≤ C_b * Real.sqrt M
-            * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S := by
+            * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) * S := by
     intro n t ht
-    obtain ⟨ψu, hψu0⟩ := 𝔊.range_schwartz (alPkg.φ n) ((galSeq (alPkg.φ n)).u t : L2VF_R3)
-    have hψu : ∀ j : Fin 3, L2VF_projComponent_R3 j ((galSeq (alPkg.φ n)).u t : L2VF_R3)
+    obtain ⟨ψu, hψu0⟩ := 𝔊.range_schwartz (κ (alPkg.φ n)) ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)
+    have hψu : ∀ j : Fin 3, L2VF_projComponent_R3 j ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)
         = (ψu j).toLp 2 (volume : Measure Domain3) := by
-      intro j; rw [(galSeq (alPkg.φ n)).u_inVn t]; exact hψu0 j
-    have hmix : |F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z|
-        ≤ C_b * ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ^ (1 / 2 : ℝ)
-            * (viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) ^ (1 / 4 : ℝ)
-            * Real.sqrt (viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S := by
-      rw [F.b_galerkin ψu ψu ψz ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z
+      intro j; rw [(galSeq (κ (alPkg.φ n))).u_inVn t]; exact hψu0 j
+    have hmix : |F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) z|
+        ≤ C_b * ‖((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)‖ ^ (1 / 2 : ℝ)
+            * (viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) ^ (1 / 4 : ℝ)
+            * Real.sqrt (viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) * S := by
+      rw [F.b_galerkin ψu ψu ψz ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) z
         hψu hψu hψz]
       exact hC_b _ _ _ ψu ψu ψz hψu hψu hψz
     refine hmix.trans ?_
-    set V : ℝ := viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3) with hV
+    set V : ℝ := viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) with hV
     have hV0 : 0 ≤ V := viscousFormSq_R3_nonneg zero_le_one _
-    have h1 : ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ^ (1 / 2 : ℝ) ≤ Real.sqrt M := by
+    have h1 : ‖((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)‖ ^ (1 / 2 : ℝ) ≤ Real.sqrt M := by
       rw [Real.sqrt_eq_rpow]
       refine Real.rpow_le_rpow (norm_nonneg _) ?_ (by norm_num)
-      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) ht
+      rw [hMdef]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n))) ht
     have h2 : V ^ (1 / 4 : ℝ) * Real.sqrt V ≤ 1 + V := rpow_quarter_mul_sqrt_le_R3 V hV0
-    calc C_b * ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ^ (1 / 2 : ℝ)
+    calc C_b * ‖((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)‖ ^ (1 / 2 : ℝ)
             * V ^ (1 / 4 : ℝ) * Real.sqrt V * S
         = (C_b * S)
-            * (‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ ^ (1 / 2 : ℝ) * (V ^ (1 / 4 : ℝ) * Real.sqrt V)) := by
+            * (‖((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)‖ ^ (1 / 2 : ℝ) * (V ^ (1 / 4 : ℝ) * Real.sqrt V)) := by
           ring
       _ ≤ (C_b * S) * (Real.sqrt M * (1 + V)) := by
           refine mul_le_mul_of_nonneg_left ?_ (mul_nonneg hC_b0 hS0)
@@ -921,28 +925,28 @@ private theorem bForm_limit_convection_bound
   -- shared step lemma (both are consumed twice below: once for `hlint_n`'s Fatou setup, once
   -- for the final `K·S` cap).
   obtain ⟨hFb_crude, hGcrude_nonneg, hGcrude_int, hGcrude_int_bound⟩ :=
-    bForm_galerkin_crude_dominator_bound 𝔊 F ν hν T hT u₀ galSeq alPkg z C_b hC_b0 hFb_crude_pt
+    bForm_galerkin_crude_dominator_bound 𝔊 F ν hν T hT u₀ galSeq κ hκ alPkg z C_b hC_b0 hFb_crude_pt
   -- Measurability of the approximant and limit integrands.
   have hFb_meas_n : ∀ n, AEStronglyMeasurable
-      (fun t => F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z) μ := by
+      (fun t => F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) z) μ := by
     intro n; rw [hμ]
-    exact ((bForm_curve_continuousOn_of_schwartz (galSeq (alPkg.φ n)) z ⟨ψz, hψz⟩).mono
+    exact ((bForm_curve_continuousOn_of_schwartz (galSeq (κ (alPkg.φ n))) z ⟨ψz, hψz⟩).mono
       Set.Icc_subset_Ici_self).aestronglyMeasurable measurableSet_Icc
   have hFb_meas : AEStronglyMeasurable (fun t => F.b (alPkg.u t) (alPkg.u t) z) μ :=
     aestronglyMeasurable_of_tendsto_ae Filter.atTop hFb_meas_n haetend
   -- Per-`n` `ENNReal` cap.
   have hlint_n : ∀ n,
-      ∫⁻ t, ENNReal.ofReal ‖F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z‖ ∂μ
+      ∫⁻ t, ENNReal.ofReal ‖F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) z‖ ∂μ
         ≤ ENNReal.ofReal (K * S) := by
     intro n
-    calc ∫⁻ t, ENNReal.ofReal ‖F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z‖ ∂μ
+    calc ∫⁻ t, ENNReal.ofReal ‖F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) z‖ ∂μ
         ≤ ∫⁻ t, ENNReal.ofReal (C_b * Real.sqrt M
-            * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S) ∂μ := by
+            * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) * S) ∂μ := by
           refine lintegral_mono_ae ?_
           filter_upwards [hFb_crude n] with t ht
           exact ENNReal.ofReal_le_ofReal ht
       _ = ENNReal.ofReal (∫ t, C_b * Real.sqrt M
-            * (1 + viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)) * S ∂μ) :=
+            * (1 + viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) * S ∂μ) :=
           (ofReal_integral_eq_lintegral_ofReal (hGcrude_int n)
             (Filter.Eventually.of_forall (hGcrude_nonneg n))).symm
       _ ≤ ENNReal.ofReal (K * S) := ENNReal.ofReal_le_ofReal (hGcrude_int_bound n)
@@ -951,18 +955,18 @@ private theorem bForm_limit_convection_bound
       ≤ ENNReal.ofReal (K * S) := by
     calc ∫⁻ t, ENNReal.ofReal ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂μ
         = ∫⁻ t, Filter.atTop.liminf
-            (fun n => ENNReal.ofReal ‖F.b ((galSeq (alPkg.φ n)).u t)
-              ((galSeq (alPkg.φ n)).u t) z‖) ∂μ := by
+            (fun n => ENNReal.ofReal ‖F.b ((galSeq (κ (alPkg.φ n))).u t)
+              ((galSeq (κ (alPkg.φ n))).u t) z‖) ∂μ := by
           refine lintegral_congr_ae ?_
           filter_upwards [haetend] with t ht
           have htn : Filter.Tendsto
-              (fun n => ENNReal.ofReal ‖F.b ((galSeq (alPkg.φ n)).u t)
-                ((galSeq (alPkg.φ n)).u t) z‖) Filter.atTop
+              (fun n => ENNReal.ofReal ‖F.b ((galSeq (κ (alPkg.φ n))).u t)
+                ((galSeq (κ (alPkg.φ n))).u t) z‖) Filter.atTop
               (nhds (ENNReal.ofReal ‖F.b (alPkg.u t) (alPkg.u t) z‖)) :=
             (ENNReal.continuous_ofReal.tendsto _).comp ht.norm
           exact htn.liminf_eq.symm
       _ ≤ Filter.atTop.liminf (fun n => ∫⁻ t,
-            ENNReal.ofReal ‖F.b ((galSeq (alPkg.φ n)).u t) ((galSeq (alPkg.φ n)).u t) z‖ ∂μ) :=
+            ENNReal.ofReal ‖F.b ((galSeq (κ (alPkg.φ n))).u t) ((galSeq (κ (alPkg.φ n))).u t) z‖ ∂μ) :=
           lintegral_liminf_le' (fun n => (hFb_meas_n n).norm.aemeasurable.ennreal_ofReal)
       _ ≤ ENNReal.ofReal (K * S) := by
           refine le_trans liminf_le_limsup ?_
@@ -994,7 +998,8 @@ private theorem weakFormNS_limit_G_integrable
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (T : ℝ)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ)
     (ψ : ℝ → ℝ) (hψC1 : ContDiff ℝ 1 ψ)
     (M Mψ Mψ' : ℝ) (_hMψ0 : 0 ≤ Mψ) (hMψ'0 : 0 ≤ Mψ')
     (hMψ : ∀ t ∈ Set.Icc (0 : ℝ) T, ‖ψ t‖ ≤ Mψ)
@@ -1066,7 +1071,8 @@ private theorem weakFormNS_limit_diff_bound
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊) (ν : ℝ) (hν : 0 < ν) (T : ℝ)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ)
     (ψ : ℝ → ℝ) (M Mψ Mψ' : ℝ) (hMψ0 : 0 ≤ Mψ) (hMψ'0 : 0 ≤ Mψ')
     (hMψ : ∀ t ∈ Set.Icc (0 : ℝ) T, ‖ψ t‖ ≤ Mψ)
     (hMψ' : ∀ t ∈ Set.Icc (0 : ℝ) T, ‖deriv ψ t‖ ≤ Mψ')
@@ -1233,7 +1239,8 @@ theorem weakFormNS_limit_passage
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ)
     (htest : R3TestApproxH1 𝔊) : -- (htest used in proof, PR-4)
     WeakFormNS ν T (r3Evolution 𝔊 F) alPkg.u := by
   -- Unfold `WeakFormNS` (the `r3Evolution` evolution: `viscousForm = stokesTestPairing_R3`,
@@ -1269,11 +1276,11 @@ theorem weakFormNS_limit_passage
   have hae_Icc : ∀ᵐ t ∂μ, t ∈ Set.Icc (0 : ℝ) T := by rw [hμ]; exact ae_restrict_mem measurableSet_Icc
   have hnorm_ulim : ∀ᵐ t ∂μ, ‖(alPkg.u t : L2VF_R3)‖ ≤ M := by
     rw [hμ]
-    filter_upwards [kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq alPkg] with t ht
+    filter_upwards [kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq κ hκ alPkg] with t ht
     have hsq : ‖(alPkg.u t : L2VF_R3)‖ ^ 2 ≤ M ^ 2 := by rw [hMdef]; nlinarith [ht]
     exact le_of_sq_le_sq hsq hM0
-  obtain ⟨hmemH1_u, hVν_ii, hVν_bound⟩ := viscous_lsc_under_strongL2 𝔊 F ν hν T hT u₀ galSeq alPkg
-  obtain ⟨Kb, hKb0, hKb⟩ := bForm_limit_convection_bound 𝔊 F ν hν T hT u₀ galSeq alPkg
+  obtain ⟨hmemH1_u, hVν_ii, hVν_bound⟩ := viscous_lsc_under_strongL2 𝔊 F ν hν T hT u₀ galSeq κ hκ alPkg
+  obtain ⟨Kb, hKb0, hKb⟩ := bForm_limit_convection_bound 𝔊 F ν hν T hT u₀ galSeq κ hκ alPkg
   -- `V₁(u ·)` is integrable on `[0,T]` and its integral is `≤ ν⁻¹·½‖u₀‖²`; hence so is `√V₁(u ·)`.
   have hVν_int : Integrable (fun t => viscousFormSq_R3 ν (alPkg.u t : L2VF_R3)) μ := by
     have h := (intervalIntegrable_iff_integrableOn_Ioc_of_le hT.le).mp hVν_ii
@@ -1296,7 +1303,7 @@ theorem weakFormNS_limit_passage
   have hsqrtV1u_meas : AEStronglyMeasurable
       (fun t => Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3))) μ :=
     Real.continuous_sqrt.comp_aestronglyMeasurable
-      (viscousFormSq_aestronglyMeasurable_of_memH1 alPkg hmemH1_u)
+      (viscousFormSq_aestronglyMeasurable_of_memH1 κ hκ alPkg hmemH1_u)
   have hsqrtV1u_int : Integrable
       (fun t => Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3))) μ := by
     refine Integrable.mono' ((integrable_const (1 : ℝ)).add hV1u_int) hsqrtV1u_meas ?_
@@ -1321,14 +1328,14 @@ theorem weakFormNS_limit_passage
         + F.b (alPkg.u t) (alPkg.u t) y) with hG
   -- Integrability of `G y` for any Schwartz div-free test `y`.
   have hGint : ∀ y : L2Sigma_R3, IsSchwartzDivFree_R3 y → Integrable (G y) μ := by
-    have := weakFormNS_limit_G_integrable 𝔊 F ν T u₀ galSeq alPkg ψ hψC1 M Mψ Mψ' hMψ0 hMψ'0
+    have := weakFormNS_limit_G_integrable 𝔊 F ν T u₀ galSeq κ hκ alPkg ψ hψC1 M Mψ Mψ' hMψ0 hMψ'0
       hMψ hMψ' hu_meas hnorm_ulim hae_Icc Kb hKb
     intro y hy; rw [hG]; exact this y hy
   -- Galerkin tests: `Φ(v) = 0` (W1, converted to the `μ`-integral).
   have hΦgal : ∀ v : L2Sigma_R3, IsGalerkinTest_R3 𝔊 v → ∫ t, G v t ∂μ = 0 := by
     intro v hv
     rw [← hbridge (G v)]
-    exact weakFormNS_galerkinTest_limit 𝔊 F ν hν T hT u₀ galSeq alPkg v hv ψ hψcs hψsupp hψC1
+    exact weakFormNS_galerkinTest_limit 𝔊 F ν hν T hT u₀ galSeq κ hκ alPkg v hv ψ hψcs hψsupp hψC1
   have hwH1 : memH1VF_R3 (w : L2VF_R3) := memH1VF_R3_of_isSchwartzDivFree hw
   -- Right-slot additivity: `G v t = G w t + G (v - w) t` at a.e. `t` (where `u t ∈ H¹`).
   have hGsub_pt : ∀ v : L2Sigma_R3, IsSchwartzDivFree_R3 v → ∀ t,
@@ -1352,7 +1359,7 @@ theorem weakFormNS_limit_passage
     exact add_nonneg hT.le (mul_nonneg (inv_nonneg.2 hν.le) (by positivity))
   have hDiffBound : ∀ z : L2Sigma_R3, IsSchwartzDivFree_R3 z →
       |∫ t, G z t ∂μ| ≤ A * ‖(z : L2VF_R3)‖ + B * Real.sqrt (viscousFormSq_R3 1 (z : L2VF_R3)) := by
-    have hdb := weakFormNS_limit_diff_bound 𝔊 F ν hν T u₀ galSeq alPkg ψ M Mψ Mψ' hMψ0 hMψ'0
+    have hdb := weakFormNS_limit_diff_bound 𝔊 F ν hν T u₀ galSeq κ hκ alPkg ψ M Mψ Mψ' hMψ0 hMψ'0
       hMψ hMψ' hnorm_ulim hmemH1_u hae_Icc hMuUniv hsqrtV1u_int hsqrtV1u_bound Kb hKb hGint
     intro z hz; rw [hG]; exact hdb z hz
   -- The vanishing bound sequence.
@@ -1438,15 +1445,17 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (B : LocalRellichInput) :
-    AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq := by
+    (B : LocalRellichInput)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ) :
+    AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ := by
   classical
   -- The isolated LOCAL Bochner-time extraction: one subsequence `φ` + a measurable limit curve `u`
-  -- with per-ball (`restrictToBall R`) a.e.-in-time `L²` convergence.
+  -- with per-ball (`restrictToBall R`) a.e.-in-time `L²` convergence, at the effective datum
+  -- index `κ (φ n)` (κ stays outside the extraction — §4 layer 4).
   -- The axiom is a `Prop`-existential but the goal `AubinLionsPackage_R3` is a `Type` (a
   -- structure), so the existential witnesses are extracted via `Exists.choose`/`.choose_spec`
   -- (large elimination through `Classical.choice`) rather than `obtain`/`cases`.
-  have hex := galerkinSpaceTimeExtraction_R3 𝔊 F ν hν T hT u₀ galSeq B
+  have hex := galerkinSpaceTimeExtraction_R3 𝔊 F ν hν T hT u₀ galSeq B κ hκ
   set φ : ℕ → ℕ := hex.choose
   set u : Time → L2Sigma_R3 := hex.choose_spec.choose
   have hφ : StrictMono φ := hex.choose_spec.choose_spec.1
@@ -1458,7 +1467,7 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
   -- honest content available on ℝ³ — only local compactness (no tightness), so NO global
   -- `L2VF_R3`-norm a.e. convergence is claimed.
   have hae : ∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
-      Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3)) Filter.atTop
+      Filter.Tendsto (fun n => restrictToBall R ((galSeq (κ (φ n))).u t : L2VF_R3)) Filter.atTop
         (nhds (restrictToBall R (u t : L2VF_R3))) :=
     hex.choose_spec.choose_spec.2.2
   refine
@@ -1476,7 +1485,7 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
     rw [hμ]; exact ⟨by rw [Measure.restrict_apply_univ, Real.volume_Icc]; exact ENNReal.ofReal_lt_top⟩
   -- the two ball-restricted curves, as functions of time
   set fSeq : ℕ → ℝ → L2ballR3 R :=
-    fun n t => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3) with hfSeq
+    fun n t => restrictToBall R ((galSeq (κ (φ n))).u t : L2VF_R3) with hfSeq
   set g : ℝ → L2ballR3 R := fun t => restrictToBall R (u t : L2VF_R3) with hg
   -- continuity (hence strong-measurability) of each `fSeq n` on `Ici 0 ⊇ Icc 0 T`
   have hcont_curve : ∀ m : ℕ, ContinuousOn (fun t => ((galSeq m).u t : L2VF_R3)) (Set.Ici 0) :=
@@ -1486,7 +1495,7 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
     rw [hμ]
     refine ContinuousOn.aestronglyMeasurable ?_ measurableSet_Icc
     refine (continuous_restrictToBall R).comp_continuousOn ?_
-    exact (hcont_curve (φ n)).mono (by intro t ht; exact ht.1)
+    exact (hcont_curve (κ (φ n))).mono (by intro t ht; exact ht.1)
   -- `g` is a.e.-strongly-measurable (restrictToBall continuous ∘ measurable `u`)
   have hAESM_g : AEStronglyMeasurable g μ :=
     (continuous_restrictToBall R).comp_aestronglyMeasurable hmeas
@@ -1500,7 +1509,7 @@ noncomputable def aubinLionsPackage_R3_of_timeCompactness
     rw [hμ]
     refine (ae_restrict_iff' measurableSet_Icc).mpr (ae_of_all _ (fun t ht => ?_))
     refine le_trans (norm_restrictToBall_le R _) ?_
-    exact galerkin_norm_le_u0 𝔊 F ν u₀ (φ n) (galSeq (φ n)) ht.1
+    exact galerkin_norm_le_u0 𝔊 F ν u₀ (κ (φ n)) (galSeq (κ (φ n))) ht.1
   -- `g ∈ MemLp 2 μ`: a.e.-bounded by the constant `‖u₀‖` on the finite measure.
   have hMemLp_g : MemLp g 2 μ := by
     -- `‖g t‖ ≤ ‖u₀‖` a.e. by norm-lsc through the per-ball a.e. limit `hae_ball`: `g t` is the

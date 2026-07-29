@@ -43,6 +43,7 @@ import LerayHopf.Torus.KappaChainExit
 import LerayHopf.Torus.DiagonalGalerkin
 import LerayHopf.Torus.GlobalCapstone
 import LerayHopf.R3.GlobalCapstone
+import LerayHopf.R3.KappaChainExit
 
 #print axioms LerayHopf.exists_lerayHopf_torus3
 #print axioms LerayHopf.exists_lerayHopf_r3
@@ -83,6 +84,13 @@ import LerayHopf.R3.GlobalCapstone
 -- pinned here now, not deferred to the P4′ row (which covers P4′'s own deliverables).
 #print axioms LerayHopf.GlobalR3CapstoneStatement
 #print axioms LerayHopf.globalR3Capstone_implies_finite
+
+-- P2′ (#215, parent #212) ℝ³ κ-chain exit gate — the compiled production acceptance
+-- artifact `r3_kappaChain_exit` (parallels the torus `torus_kappaChain_exit` pin at
+-- line 62). Kernel-trio only: the §4.1 smokes that consume it are kernel-trio, so its
+-- axiom closure ⊆ {propext, Classical.choice, Quot.sound}. Appended per the D3 pin
+-- ruling (every phase PR appends its own live pins).
+#print axioms LerayHopf.r3_kappaChain_exit
 
 -- Experimental-module axiom profile (visibility only — see docs/statement-cards/).
 #print axioms LerayHopf.Bochner.w1pTime_continuous_in_H

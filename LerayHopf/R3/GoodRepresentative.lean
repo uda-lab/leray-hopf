@@ -188,7 +188,7 @@ limit on ℝ³.
 
 Produces `v : Time → L2Sigma_R3` such that:
 - (a.e.)      `v t = alPkg.u t` for a.e. `t ∈ [0, T]`.
-- (∀t weak)  `⟪(galSeq (alPkg.φ n)).u t, z⟫ → ⟪v t, z⟫` for every `t ∈ [0, T]`, `z : L2VF_R3`.
+- (∀t weak)  `⟪(galSeq (κ (alPkg.φ n))).u t, z⟫ → ⟪v t, z⟫` for every `t ∈ [0, T]`, `z : L2VF_R3`.
 - (∀t bound) `‖v t‖ ≤ ‖u₀‖` for every `t ∈ [0, T]`.
 - (v 0)       `v 0 = u₀` (endpoint pinning via `u_initial` + `𝔊.tendsto_id`).
 - (Lip)       `t ↦ ⟪v t, w⟫` is Lipschitz on `[0, T]` for every Galerkin test `w`.
@@ -200,11 +200,12 @@ theorem exists_weak_representative_R3
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) :
     ∃ v : Time → L2Sigma_R3,
       (∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), v t = alPkg.u t) ∧
       (∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF_R3,
-        Tendsto (fun n => inner (𝕜 := ℝ) (((galSeq (alPkg.φ n)).u t : L2VF_R3)) z) atTop
+        Tendsto (fun n => inner (𝕜 := ℝ) (((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) z) atTop
           (𝓝 (inner (𝕜 := ℝ) ((v t : L2VF_R3)) z))) ∧
       (∀ t, t ∈ Set.Icc (0 : ℝ) T → ‖(v t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖) ∧
       v 0 = u₀ ∧
@@ -213,11 +214,11 @@ theorem exists_weak_representative_R3
           |inner (𝕜 := ℝ) ((v t : L2VF_R3)) (w : L2VF_R3)
             - inner (𝕜 := ℝ) ((v s : L2VF_R3)) (w : L2VF_R3)| ≤ L * |t - s|) := by
   classical
-  set c : ℕ → ℝ → L2VF_R3 := fun n t => ((galSeq (alPkg.φ n)).u t : L2VF_R3) with hcdef
+  set c : ℕ → ℝ → L2VF_R3 := fun n t => ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) with hcdef
   have hcmem : ∀ n t, c n t ∈ L2Sigma_R3 := fun n t => SetLike.coe_mem _
   have hcbd : ∀ n, ∀ t, 0 ≤ t → ‖c n t‖ ≤ ‖(u₀ : L2VF_R3)‖ :=
-    fun n t ht => galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) ht
-  have hlevel : ∀ n, n ≤ alPkg.φ n := fun n => alPkg.φ_mono.le_apply
+    fun n t ht => galerkin_norm_le_u0 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n))) ht
+  have hlevel : ∀ n, n ≤ κ (alPkg.φ n) := fun n => (alPkg.effective_strictMono hκ).le_apply
   -- the a.e.-good set: per-ball (all nat radii) convergence to `alPkg.u t` + the kinetic bound.
   set S : Set ℝ := {t | (∀ k : ℕ, Tendsto (fun n => restrictToBall (k : ℝ) (c n t)) atTop
       (𝓝 (restrictToBall (k : ℝ) ((alPkg.u t : L2VF_R3))))) ∧
@@ -229,7 +230,7 @@ theorem exists_weak_representative_R3
       ae_all_iff.2 (fun k => alPkg.strong_convergence_ae (k : ℝ))
     have hu_bound : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
         ‖(alPkg.u t : L2VF_R3)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
-      have hkin := kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq alPkg
+      have hkin := kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq κ hκ alPkg
       filter_upwards [hkin] with t ht
       have h2 : ‖(alPkg.u t : L2VF_R3)‖ ^ 2 ≤ ‖(u₀ : L2VF_R3)‖ ^ 2 := by nlinarith [ht]
       nlinarith [norm_nonneg (alPkg.u t : L2VF_R3), norm_nonneg (u₀ : L2VF_R3), h2]
@@ -255,7 +256,7 @@ theorem exists_weak_representative_R3
     refine cauchySeq_of_equiLipschitz_of_dense (T := T)
       (fun n s => inner (𝕜 := ℝ) (c n s) (w : L2VF_R3)) L hL0 n₀ ?_ S ?_ ?_ ht
     · intro n hn s hsI t' htI'
-      exact hLip (alPkg.φ n) (le_trans hn (hlevel n))
+      exact hLip (κ (alPkg.φ n)) (le_trans hn (hlevel n))
         s (Set.Icc_subset_Ici_self hsI) t' (Set.Icc_subset_Ici_self htI')
     · intro u hu ε hε
       exact exists_mem_of_ae_full hT S hS hu hε
@@ -325,12 +326,12 @@ theorem exists_weak_representative_R3
   -- endpoint pinning `v 0 = u₀`
   have h0Icc : (0 : ℝ) ∈ Set.Icc (0 : ℝ) T := ⟨le_refl 0, hT.le⟩
   have hv0 : v 0 = u₀ := by
-    have hck0 : ∀ n, c n 0 = 𝔊.P (alPkg.φ n) (u₀ : L2VF_R3) := by
+    have hck0 : ∀ n, c n 0 = 𝔊.P (κ (alPkg.φ n)) (u₀ : L2VF_R3) := by
       intro n
-      show ((galSeq (alPkg.φ n)).u 0 : L2VF_R3) = 𝔊.P (alPkg.φ n) (u₀ : L2VF_R3)
-      rw [(galSeq (alPkg.φ n)).u_initial]
+      show ((galSeq (κ (alPkg.φ n))).u 0 : L2VF_R3) = 𝔊.P (κ (alPkg.φ n)) (u₀ : L2VF_R3)
+      rw [(galSeq (κ (alPkg.φ n))).u_initial]
     have hP0 : Tendsto (fun n => c n 0) atTop (𝓝 (u₀ : L2VF_R3)) := by
-      have h := (𝔊.tendsto_id (u₀ : L2VF_R3) u₀.2).comp alPkg.φ_mono.tendsto_atTop
+      have h := (𝔊.tendsto_id (u₀ : L2VF_R3) u₀.2).comp (alPkg.effective_strictMono hκ).tendsto_atTop
       refine h.congr fun n => ?_
       exact (hck0 n).symm
     refine Subtype.ext ?_
@@ -360,7 +361,7 @@ theorem exists_weak_representative_R3
       (hweak t htI (w : L2VF_R3)).sub (hweak s hsI (w : L2VF_R3))
     refine le_of_tendsto h1.abs ?_
     refine Filter.eventually_atTop.mpr ⟨n₀, fun n hn => ?_⟩
-    exact hLip (alPkg.φ n) (le_trans hn (hlevel n))
+    exact hLip (κ (alPkg.φ n)) (le_trans hn (hlevel n))
       s (Set.Icc_subset_Ici_self hsI) t (Set.Icc_subset_Ici_self htI)
   exact ⟨v, hae, hweak, fun t ht => (hvcoe t ht) ▸ hybd t ht, hv0, hlip_v⟩
 

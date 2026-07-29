@@ -58,4 +58,9 @@ bash scripts/check-axioms-live.sh
 echo "==> scripts/check-scratch-pins.sh"
 bash scripts/check-scratch-pins.sh
 
+# §4.1 defense-in-depth #2 / §6 clause 5: pure lexical scan (no build), so it needs
+# no build lock — the κ effective-index stale-site audit over the κ-generic files.
+echo "==> scripts/check-kappa-effective-index.sh"
+bash scripts/check-kappa-effective-index.sh
+
 echo "PREFLIGHT OK"

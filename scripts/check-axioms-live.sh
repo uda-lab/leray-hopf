@@ -364,6 +364,24 @@ assert_axioms "globalR3Capstone_implies_finite" \
   "propext Classical.choice Quot.sound"
 
 # ---------------------------------------------------------------------------
+# Pin 19: P2′ (#215, parent #212) ℝ³ κ-chain exit gate — the compiled production
+#   acceptance artifact `r3_kappaChain_exit` (LerayHopf.R3.KappaChainExit). This is the
+#   theorem the §6 exit gate requires: for every dependent reindexed family it embeds
+#   into a base family (`extendReindexedFamily_R3`), runs the κ-generalized compactness
+#   chain with `κ := φ₁`, and re-exports the everywhere-weak pin against the dependent
+#   family via `transport`. Parallels the torus `torus_kappaChain_exit` pin (pin 12
+#   above). Per the D3 pin ruling 2026-07-29 (every phase PR appends its own live pins),
+#   this is pinned in the P2′ PR now — append-only, after pins 17–18.
+#   Kernel-only (0 project axioms): the whole κ-chain (aubinLionsPackage_R3_of_… →
+#   viscous_lsc_under_strongL2 → galerkin_limit_passage_R3) is kernel-trio, confirmed
+#   by the §4.1 smokes (r3KappaSuccSmoke_*) which consume it and are themselves
+#   kernel-trio, so its axiom closure ⊆ {propext, Classical.choice, Quot.sound}.
+#     Pin 19: r3_kappaChain_exit — the compiled production instantiation (§6 clause 1).
+# ---------------------------------------------------------------------------
+assert_axioms "r3_kappaChain_exit" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
 # Experimental-module axiom profile (issue #158 "public sorry / scaffold theorem の
 # axiom profile を release tooling で可視化" requirement) — VISIBILITY ONLY, does not
 # affect FAIL. Prints the axiom set of every `sorryAx`-carrying declaration behind the
@@ -408,4 +426,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 18 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only; P3 diagonal packaged theorem + promoted diagonal API kernel-only; P4 global torus capstone — 4 pins kernel-only, the campaign finale; P1′ ℝ³ global capstone statement layer — 2 pins kernel-only)."
+echo "AXIOM LIVE PIN OK — all 19 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only; P3 diagonal packaged theorem + promoted diagonal API kernel-only; P4 global torus capstone — 4 pins kernel-only, the campaign finale; P1′ ℝ³ global capstone statement layer — 2 pins kernel-only; P2′ ℝ³ κ-chain exit gate — 1 pin kernel-only)."
