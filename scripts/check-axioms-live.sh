@@ -403,6 +403,31 @@ assert_axioms "exists_diag_coherent_representative_R3" \
   "propext Classical.choice Quot.sound"
 
 # ---------------------------------------------------------------------------
+# Pins 22–24: P4′ (#217, parent #212) ℝ³ global capstone
+#   (LerayHopf.R3.GlobalCapstone). The campaign finale of the ℝ³ global lane: the
+#   ∃ 𝔊, ∃ F, ∃ u, ∀ T assembly and the def-fold of the frozen `def : Prop` target.
+#   These three APPEND to the P1′ statement-layer pins 17–18 and the P2′/P3′ pins
+#   19–21: with the ℝ³ global capstone now in the release cone, the whole P1′→P4′
+#   assembly (frozen target → κ-chain exit gate → diagonal machinery → per-horizon
+#   `IsLerayHopfOn.congr_Icc`/`.mono` assembly) is covered by a live-pinned downstream
+#   capstone, so any stray sorryAx/axiom introduced anywhere in that chain becomes
+#   visible here. Parallels the torus P4 capstone pins 13–16; the ℝ³ `implies_finite`
+#   twin is already pinned at pin 18 (P1′), so P4′ adds three, not four (append-only,
+#   no pruning). Per the D3 pin ruling 2026-07-29 (every phase PR appends its own live
+#   pins). Kernel-only (0 project axioms): the whole ℝ³ chain is kernel-trio, so the
+#   ∃ assembly and the def-fold `globalR3Capstone` inherit exactly the kernel trio.
+#     Pin 22: exists_global_lerayHopf_r3 — the ∃ 𝔊, ∃ F, ∃ u, ∀ T assembly (§2.1).
+#     Pin 23: exists_globalLerayHopfSolutionFull_r3 — structure form (§2.1).
+#     Pin 24: globalR3Capstone — the frozen `def : Prop` target, proved (defeq fold).
+# ---------------------------------------------------------------------------
+assert_axioms "exists_global_lerayHopf_r3" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "exists_globalLerayHopfSolutionFull_r3" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "globalR3Capstone" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
 # Experimental-module axiom profile (issue #158 "public sorry / scaffold theorem の
 # axiom profile を release tooling で可視化" requirement) — VISIBILITY ONLY, does not
 # affect FAIL. Prints the axiom set of every `sorryAx`-carrying declaration behind the
@@ -447,4 +472,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 21 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only; P3 diagonal packaged theorem + promoted diagonal API kernel-only; P4 global torus capstone — 4 pins kernel-only, the campaign finale; P1′ ℝ³ global capstone statement layer — 2 pins kernel-only; P2′ ℝ³ κ-chain exit gate — 1 pin kernel-only; P3′ ℝ³ diagonal machinery — 2 pins kernel-only)."
+echo "AXIOM LIVE PIN OK — all 24 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only; P3 diagonal packaged theorem + promoted diagonal API kernel-only; P4 global torus capstone — 4 pins kernel-only, the campaign finale; P1′ ℝ³ global capstone statement layer — 2 pins kernel-only; P2′ ℝ³ κ-chain exit gate — 1 pin kernel-only; P3′ ℝ³ diagonal machinery — 2 pins kernel-only; P4′ ℝ³ global capstone — 3 pins kernel-only, the ℝ³ lane finale)."

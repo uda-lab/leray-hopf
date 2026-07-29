@@ -50,6 +50,7 @@ FILES=(
   LerayHopf/R3/AubinLionsAssembly.lean
   LerayHopf/R3/KappaChainExit.lean
   LerayHopf/R3/DiagonalGalerkin.lean
+  LerayHopf/R3/GlobalCapstone.lean
 )
 
 # Fail CLOSED on a missing audit input (codex #220 finding 2): if a κ-generic

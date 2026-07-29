@@ -14,6 +14,13 @@
 > Previous T³ removals: `galerkin_limit_passage` (issue #25 / PR #75),
 > `torusConvectionGap_exists` (issue #53 / PR #62), `galerkin_ode_solution` (issue #24).
 > Live pin: `bash scripts/check-axioms-live.sh`.
+> **Global-in-time capstones (both kernel-only, live-pinned):** the finite-horizon
+> capstones are now each extended by a single-curve global-in-time capstone —
+> `exists_global_lerayHopf_torus3` (T³, issue #195) and `exists_global_lerayHopf_r3`
+> (ℝ³, issue #212) — producing ONE curve (ℝ³: one scheme/form/curve) satisfying the
+> finite-horizon Leray–Hopf contract at every `T > 0`. Both `#print axioms` =
+> `[propext, Classical.choice, Quot.sound]`; see `docs/claims-and-scope.md` and
+> `docs/architecture.md` for the diagonal-extraction route and scope.
 > Milestone-table and ledger rows below are historical (dated by their PR/issue refs);
 > where a row's axiom count conflicts with this banner, the banner wins.
 

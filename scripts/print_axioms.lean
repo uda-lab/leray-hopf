@@ -104,6 +104,18 @@ import LerayHopf.R3.DiagonalGalerkin
 #print axioms LerayHopf.exists_diagonal_weakly_convergent_galSeq_R3
 #print axioms LerayHopf.exists_diag_coherent_representative_R3
 
+-- P4′ (#217, parent #212) ℝ³ global capstone — the campaign finale of the ℝ³ lane
+-- (LerayHopf.R3.GlobalCapstone, filling the P1′ statement file). These three append to
+-- the P1′ statement-layer pins 17–18 (the frozen target + easy direction) and the
+-- P2′/P3′ pins 19–21; with the ℝ³ global capstone now in the release cone, the whole
+-- P1′→P4′ assembly (frozen target → κ-chain exit → diagonal machinery → per-horizon
+-- assembly) is covered by a live-pinned downstream capstone. Parallels the torus P4
+-- capstone pins (exists_global_lerayHopf_torus3 / …Full / globalTorusCapstone,
+-- lines above); the ℝ³ implies_finite twin is already pinned at pin 18 (P1′).
+#print axioms LerayHopf.exists_global_lerayHopf_r3
+#print axioms LerayHopf.exists_globalLerayHopfSolutionFull_r3
+#print axioms LerayHopf.globalR3Capstone
+
 -- Experimental-module axiom profile (visibility only — see docs/statement-cards/).
 #print axioms LerayHopf.Bochner.w1pTime_continuous_in_H
 #print axioms LerayHopf.Bochner.isWeakTimeDeriv_primitive
