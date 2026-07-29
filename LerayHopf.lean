@@ -181,3 +181,4 @@ import LerayHopf.Torus.DiagonalGalerkin            -- issue #202 P3: stage recur
 import LerayHopf.Torus.GlobalCapstone              -- issue #203 P4 (closes #195): global torus capstone (exists_global_lerayHopf_torus3 + globalTorusCapstone)
 import LerayHopf.R3.GoodRepresentative            -- issue #4 PR-5: R3 weakly-continuous representative (scaffold)
 import LerayHopf.R3.LimitPassage                  -- issue #4 PR-6: galerkin_limit_passage_R3 PROVED (zero project axioms)
+import LerayHopf.R3.GlobalCapstone                -- issue #214 P1′ (parent #212): ℝ³ global capstone statement layer (GlobalR3CapstoneStatement + globalR3Capstone_implies_finite)
