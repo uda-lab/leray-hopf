@@ -943,14 +943,15 @@ theorem galerkinSpaceTimeExtraction_R3
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (B : LocalRellichInput) :
+    (B : LocalRellichInput)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ) :
     ∃ (φ : ℕ → ℕ) (u : Time → L2Sigma_R3), StrictMono φ ∧
       AEStronglyMeasurable (fun t => (u t : L2VF_R3))
         (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
       (∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
-        Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3)) Filter.atTop
+        Filter.Tendsto (fun n => restrictToBall R ((galSeq (κ (φ n))).u t : L2VF_R3)) Filter.atTop
           (nhds (restrictToBall R (u t : L2VF_R3)))) :=
-  u_lim_aestronglyMeasurable 𝔊 F ν hν T hT u₀ galSeq B
+  u_lim_aestronglyMeasurable 𝔊 F ν hν T hT u₀ galSeq B κ hκ
 
 
 end LerayHopf

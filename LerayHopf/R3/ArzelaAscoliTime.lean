@@ -839,30 +839,33 @@ strictly-monotone subsequence converging for every ball radius k : ℕ and a.e. 
 theorem diag_ae_subseq
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
-    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) :
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ) :
     ∃ (φ : ℕ → ℕ),
       StrictMono φ ∧
       ∀ k : ℕ, ∃ g_k : ℝ → L2ballR3 k,
         AEStronglyMeasurable g_k (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
         ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
           Filter.Tendsto
-            (fun n => restrictToBall k ((galSeq (φ n)).u t : L2VF_R3))
+            (fun n => restrictToBall k ((galSeq (κ (φ n))).u t : L2VF_R3))
             Filter.atTop (nhds (g_k t)) := by
   classical
-  -- Cumulative extraction tower: `stepData k ψ hψ` = the refine-capable `perBall_ae_subseq` at
-  -- radius `k` with input subsequence `ψ`, packaged as a subtype carrying the further `ρ`, its
-  -- strict-monotonicity, and the radius-`k` limit `g` + a.e.-t convergence along `ψ ∘ ρ`.
+  -- Cumulative extraction tower, as before, except each refine-capable step is applied to
+  -- the κ-PRE-COMPOSED current subsequence `κ ∘ ψ` (§4 layer 1: κ stays outside the tower,
+  -- at datum-index positions only, so the tower factorization is unchanged).
   let stepData : ∀ (k : ℕ) (ψ : ℕ → ℕ), StrictMono ψ →
       { ρ : ℕ → ℕ // StrictMono ρ ∧ ∃ g : ℝ → L2ballR3 k,
         AEStronglyMeasurable g (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
         ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)), Filter.Tendsto
-          (fun n => restrictToBall k ((galSeq (ψ (ρ n))).u t : L2VF_R3))
+          (fun n => restrictToBall k ((galSeq (κ (ψ (ρ n)))).u t : L2VF_R3))
           Filter.atTop (nhds (g t)) } :=
     fun k ψ hψ =>
-      let h := perBall_ae_subseq 𝔊 F ν hν T hT u₀ galSeq ψ hψ k
+      let h := perBall_ae_subseq 𝔊 F ν hν T hT u₀ galSeq (κ ∘ ψ) (hκ.comp hψ) k
       ⟨h.choose, h.choose_spec.choose_spec.1,
         h.choose_spec.choose, h.choose_spec.choose_spec.2.1, h.choose_spec.choose_spec.2.2⟩
   -- Recursively build the cumulative extraction `Φ k`, with `Φ (k+1) = Φ k ∘ ρ k`.
+  -- `κ` is NOT part of the tower maps — it stays outside, so the factorization machinery
+  -- below is the pre-κ one verbatim.
   let rec_data : ℕ → { Φk : ℕ → ℕ // StrictMono Φk } := fun k => Nat.rec
     (⟨id, strictMono_id⟩)
     (fun j prev => ⟨prev.1 ∘ (stepData j prev.1 prev.2).1,
@@ -873,16 +876,17 @@ theorem diag_ae_subseq
   have hρmono : ∀ k, StrictMono (ρ k) := fun k =>
     (stepData k (rec_data k).1 (rec_data k).2).2.1
   have hstep : ∀ k, Φ (k + 1) = Φ k ∘ ρ k := fun k => rfl
-  -- At each level `k`, the cumulative extraction `Φ (k+1)` converges on ball `k` (a.e.-t).
+  -- At each level `k`, the cumulative extraction `Φ (k+1)` converges on ball `k` (a.e.-t),
+  -- with the effective datum index `κ (Φ (k+1) n)`.
   have hconv : ∀ k : ℕ, ∃ g : ℝ → L2ballR3 k,
       AEStronglyMeasurable g (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
       ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)), Filter.Tendsto
-        (fun n => restrictToBall k ((galSeq (Φ (k + 1) n)).u t : L2VF_R3))
+        (fun n => restrictToBall k ((galSeq (κ (Φ (k + 1) n))).u t : L2VF_R3))
         Filter.atTop (nhds (g t)) := by
     intro k
     obtain ⟨g, hg_aesm, hg_ae⟩ := (stepData k (rec_data k).1 (rec_data k).2).2.2
     exact ⟨g, hg_aesm, hg_ae⟩
-  -- The diagonal subsequence.
+  -- The diagonal subsequence (κ plays no role in the strict monotonicity or factorization).
   refine ⟨fun n => Φ (n + 1) (n + 1), ?_, ?_⟩
   · -- StrictMono of the diagonal.
     intro a b hab
@@ -893,7 +897,7 @@ theorem diag_ae_subseq
       rw [hReq]
       exact (hΦmono (a + 1)).monotone (hR.id_le (b + 1))
     exact lt_of_lt_of_le h1 h2
-  · -- Per-ball a.e.-t convergence of the diagonal.
+  · -- Per-ball a.e.-t convergence of the diagonal, along the κ-composed index.
     intro k
     obtain ⟨g, hg_aesm, hg_ae⟩ := hconv k
     refine ⟨g, hg_aesm, ?_⟩
@@ -921,6 +925,7 @@ theorem diag_ae_subseq
     refine hcomp.congr' ?_
     filter_upwards [eventually_ge_atTop k] with n hn
     simp only [Function.comp_apply]
+    -- rewrite under `κ`: the tower factorization is applied INSIDE the seed.
     rw [hσ_eq n hn]
 
 /-! ### T4 — Assembly: measurable limit curve -/
@@ -938,28 +943,32 @@ theorem u_lim_aestronglyMeasurable
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (_B : LocalRellichInput) :
+    (_B : LocalRellichInput)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ) :
     ∃ (φ : ℕ → ℕ) (u : Time → L2Sigma_R3),
       StrictMono φ ∧
       AEStronglyMeasurable (fun t => (u t : L2VF_R3))
         (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
       ∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
-        Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t : L2VF_R3))
+        Filter.Tendsto (fun n => restrictToBall R ((galSeq (κ (φ n))).u t : L2VF_R3))
           Filter.atTop (nhds (restrictToBall R (u t : L2VF_R3))) := by
-  -- Step 1: diagonal subsequence φ with per-ball (ℕ-radius) a.e.-t convergence.
-  obtain ⟨φ, hφ, hk⟩ := diag_ae_subseq 𝔊 F ν hν T hT u₀ galSeq
+  -- Step 1: diagonal subsequence φ with per-ball (ℕ-radius) a.e.-t convergence at the
+  -- κ-composed effective index `κ (φ n)`.
+  obtain ⟨φ, hφ, hk⟩ := diag_ae_subseq 𝔊 F ν hν T hT u₀ galSeq κ hκ
   -- Step 2: Package the ℕ-radius a.e.-t convergence into the form axiom B needs.
-  -- `hk k` gives `∃ g_k, AEStronglyMeasurable g_k ∧ ∀ᵐ t, Tendsto (...) (nhds (g_k t))`.
-  -- Axiom B's `hball` wants exactly this shape: `∀ k : ℕ, ∃ g_k, AESM ∧ ∀ᵐ t, Tendsto`.
+  -- `hk k` gives `∃ g_k, AEStronglyMeasurable g_k ∧ ∀ᵐ t, Tendsto (...) (nhds (g_k t))`,
+  -- already at the effective index `κ (φ n)`.
+  -- Axiom B's `hball` wants exactly this shape, along the composed subsequence `κ ∘ φ`.
   have hball : ∀ k : ℕ, ∃ g_k : ℝ → L2ballR3 k,
       AEStronglyMeasurable g_k (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)) ∧
       ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)),
-        Filter.Tendsto (fun n => restrictToBall k ((galSeq (φ n)).u t : L2VF_R3))
+        Filter.Tendsto (fun n => restrictToBall k ((galSeq ((κ ∘ φ) n)).u t : L2VF_R3))
           Filter.atTop (nhds (g_k t)) :=
     hk
-  -- Step 3: Apply axiom B.
+  -- Step 3: Apply axiom B (extraction-generic) to the composed subsequence `κ ∘ φ`.
   obtain ⟨u, hmeas, hconv⟩ :=
-    galerkin_weakLimit_R3 𝔊 F ν u₀ (fun n => (galSeq n).toSolutionData) φ hφ T hT hball
+    galerkin_weakLimit_R3 𝔊 F ν u₀ (fun n => (galSeq n).toSolutionData)
+      (κ ∘ φ) (hκ.comp hφ) T hT hball
   exact ⟨φ, u, hφ, hmeas, hconv⟩
 
 end LerayHopf
