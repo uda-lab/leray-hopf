@@ -382,6 +382,27 @@ assert_axioms "r3_kappaChain_exit" \
   "propext Classical.choice Quot.sound"
 
 # ---------------------------------------------------------------------------
+# Pins 20–21: P3′ (#216, parent #212) ℝ³ diagonal machinery
+#   (LerayHopf.R3.DiagonalGalerkin). The P3′ deliverables of the ℝ³ global lane: the
+#   packaged diagonal weak-limit theorem consumed by P4′, plus the §790 coherence-
+#   coupling deliverable that promotes the spike-(a) coherence core against the packaged
+#   (δ,W) output. Parallels the torus P3 diagonal pins (`exists_diagonal_weakly_convergent_galSeq`
+#   + `Bochner.exists_diagonal_extraction`, pins 10–11 above). Per the D3 pin ruling
+#   2026-07-29 (every phase PR appends its own live pins), these two are pinned in the
+#   P3′ PR now — append-only, after pin 19.
+#   Kernel-only (0 project axioms): the whole stage recursion (aubinLionsPackage_R3_of_… →
+#   exists_weak_representative_R3, the Nat.rec `stageData_R3` carrier, and
+#   `Bochner.DiagonalExtraction` consumed verbatim) is kernel-trio, so both decls' axiom
+#   closure ⊆ {propext, Classical.choice, Quot.sound}.
+#     Pin 20: exists_diagonal_weakly_convergent_galSeq_R3 — the packaged weak-limit theorem.
+#     Pin 21: exists_diag_coherent_representative_R3 — the §790 coherence-coupling deliverable.
+# ---------------------------------------------------------------------------
+assert_axioms "exists_diagonal_weakly_convergent_galSeq_R3" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "exists_diag_coherent_representative_R3" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
 # Experimental-module axiom profile (issue #158 "public sorry / scaffold theorem の
 # axiom profile を release tooling で可視化" requirement) — VISIBILITY ONLY, does not
 # affect FAIL. Prints the axiom set of every `sorryAx`-carrying declaration behind the
@@ -426,4 +447,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 19 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only; P3 diagonal packaged theorem + promoted diagonal API kernel-only; P4 global torus capstone — 4 pins kernel-only, the campaign finale; P1′ ℝ³ global capstone statement layer — 2 pins kernel-only; P2′ ℝ³ κ-chain exit gate — 1 pin kernel-only)."
+echo "AXIOM LIVE PIN OK — all 21 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only; P3 diagonal packaged theorem + promoted diagonal API kernel-only; P4 global torus capstone — 4 pins kernel-only, the campaign finale; P1′ ℝ³ global capstone statement layer — 2 pins kernel-only; P2′ ℝ³ κ-chain exit gate — 1 pin kernel-only; P3′ ℝ³ diagonal machinery — 2 pins kernel-only)."

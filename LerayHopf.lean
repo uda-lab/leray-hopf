@@ -183,3 +183,4 @@ import LerayHopf.R3.GoodRepresentative            -- issue #4 PR-5: R3 weakly-co
 import LerayHopf.R3.LimitPassage                  -- issue #4 PR-6: galerkin_limit_passage_R3 PROVED (zero project axioms)
 import LerayHopf.R3.GlobalCapstone                -- issue #214 P1′ (parent #212): ℝ³ global capstone statement layer (GlobalR3CapstoneStatement + globalR3Capstone_implies_finite)
 import LerayHopf.R3.KappaChainExit                -- issue #215 P2′: ℝ³ κ-chain exit gate (R3KappaChainExitWitness + r3_kappaChain_exit)
+import LerayHopf.R3.DiagonalGalerkin              -- issue #216 P3′ (parent #212): ℝ³ stage recursion + diagonal weak limit (exists_diagonal_weakly_convergent_galSeq_R3)
