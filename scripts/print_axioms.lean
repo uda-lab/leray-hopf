@@ -42,6 +42,7 @@ import LerayHopf.Galerkin.GlobalContract
 import LerayHopf.Torus.KappaChainExit
 import LerayHopf.Torus.DiagonalGalerkin
 import LerayHopf.Torus.GlobalCapstone
+import LerayHopf.R3.GlobalCapstone
 
 #print axioms LerayHopf.exists_lerayHopf_torus3
 #print axioms LerayHopf.exists_lerayHopf_r3
@@ -74,6 +75,14 @@ import LerayHopf.Torus.GlobalCapstone
 #print axioms LerayHopf.exists_globalLerayHopfSolutionFull_torus3
 #print axioms LerayHopf.globalTorusCapstone
 #print axioms LerayHopf.globalTorusCapstone_implies_finite
+
+-- P1′ (#214, parent #212) ℝ³ global capstone statement layer — the frozen `def : Prop`
+-- target and the easy-direction consistency witness (LerayHopf.R3.GlobalCapstone).
+-- Statement layer only; the ℝ³ assembly capstones are P4′ (#217). Per the D3 pin ruling
+-- 2026-07-29 (torus precedent: every phase PR appends its own live pins), these two are
+-- pinned here now, not deferred to the P4′ row (which covers P4′'s own deliverables).
+#print axioms LerayHopf.GlobalR3CapstoneStatement
+#print axioms LerayHopf.globalR3Capstone_implies_finite
 
 -- Experimental-module axiom profile (visibility only — see docs/statement-cards/).
 #print axioms LerayHopf.Bochner.w1pTime_continuous_in_H
