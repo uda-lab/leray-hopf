@@ -51,6 +51,21 @@ FILES=(
   LerayHopf/R3/KappaChainExit.lean
 )
 
+# Fail CLOSED on a missing audit input (codex #220 finding 2): if a κ-generic
+# module is renamed, deleted, or misspelled here while its replacement still
+# builds, a plain `grep file...` would exit 2 on the absent path — and the old
+# `2>/dev/null || true` swallowed that into an empty hit set, printing "AUDIT OK"
+# while silently skipping a required module.  Assert every input exists and is
+# readable BEFORE scanning, so a dropped module trips the gate instead.
+for f in "${FILES[@]}"; do
+  if [ ! -f "$f" ] || [ ! -r "$f" ]; then
+    echo "KAPPA EFFECTIVE-INDEX AUDIT FAILED — audit input missing/unreadable: $f" >&2
+    echo "  A κ-generic module was renamed/deleted/misspelled. Update the FILES=()" >&2
+    echo "  array in this script to match the current module layout." >&2
+    exit 1
+  fi
+done
+
 ALLOW='-- KAPPA_ID_SITE:'
 
 # Identifier-chain receiver ending in `.φ` (extraction projection), where the
@@ -69,11 +84,30 @@ violations=0
 
 report() {
   # $1 = human-readable pattern label, $2 = extended regex
-  local label="$1" regex="$2" hits
-  hits="$(grep -nE "$regex" "${FILES[@]}" 2>/dev/null | grep -vF -e "$ALLOW" || true)"
-  if [ -n "$hits" ]; then
-    echo "FAIL [$label]:"
-    echo "$hits" | sed 's/^/  /'
+  local label="$1" regex="$2" f matched found=0
+  for f in "${FILES[@]}"; do
+    # Codex #220 finding 1: when Lean wraps a forbidden form across lines (e.g.
+    # `n ≤` then `alPkg.φ n`, or `galSeq (` then `alPkg.φ n)`), a line-oriented
+    # grep never sees the two halves together, so `[[:space:]]*` cannot bridge
+    # them and the violation slips through.  Scan each file as ONE NUL-delimited
+    # record (`grep -z`): with no NUL bytes in Lean source the whole file is a
+    # single record, so `[[:space:]]` (which includes `\n`) spans physical line
+    # breaks.  `-o` emits just the matched text (NUL-separated) for the report;
+    # `tr` renders it.  Allowlisted (`-- KAPPA_ID_SITE:`) lines are dropped
+    # first — the marker is a same-line convention, so line-wise removal is
+    # correct for every current exemption.  Line numbers are traded for
+    # whole-file localization; when the gate fires a human inspects the file.
+    if matched="$(grep -vF -e "$ALLOW" -- "$f" | grep -zoE -- "$regex" | tr '\0' '\n')"; then
+      : # match found (pipeline exit 0)
+    fi
+    matched="$(printf '%s' "$matched" | sed '/^[[:space:]]*$/d')"
+    if [ -n "$matched" ]; then
+      echo "FAIL [$label]: $f"
+      printf '%s\n' "$matched" | sed 's/^/  ⟶ /'
+      found=1
+    fi
+  done
+  if [ "$found" -ne 0 ]; then
     violations=$((violations + 1))
   fi
 }
