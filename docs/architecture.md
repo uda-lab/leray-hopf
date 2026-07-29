@@ -115,11 +115,11 @@ explicit opt-in `LerayHopf.Experimental`, not from root `import LerayHopf` — s
 diagonal machinery (`nestedComp`, `exists_diagonal_extraction`,
 `tendsto_diag_of_tendsto_stage`): pure order theory over `ℕ → ℕ` extraction towers with no
 PDE, domain, or Hilbert-space content, targeting an arbitrary limit filter. Issue #195 P3;
-domain-neutral, so reusable by both lanes' global-in-time construction (currently consumed
-by the 𝕋³ lane's `Torus/DiagonalGalerkin.lean`).
+domain-neutral, so reusable by both lanes' global-in-time construction (consumed by the 𝕋³
+lane's `Torus/DiagonalGalerkin.lean` and the ℝ³ lane's `R3/DiagonalGalerkin.lean`).
 
 Imported by: `LerayHopf/R3/GoodRepresentative.lean`, `R3/SpacetimePrecompact.lean`,
-`R3/AubinLionsLimitPassage.lean`, `Torus/ModeCompactness.lean`,
+`R3/AubinLionsLimitPassage.lean`, `R3/DiagonalGalerkin.lean`, `Torus/ModeCompactness.lean`,
 `Torus/DiagonalGalerkin.lean`.
 
 ## Torus (𝕋³) lane — `LerayHopf/Torus/`
@@ -211,6 +211,30 @@ Interface + re-export: `SolutionInterfaces.lean` (support layer: `R3NSForms`,
 `LerayHopfSolutionFull_R3`, assembly helpers — capstone itself in
 `GalerkinODECapstone.lean`); root-level `LerayHopf/R3Capstone.lean` (re-exports the
 full chain).
+
+Global-in-time chain (ℝ³, issue #212): the diagonal-extraction chain downstream of the
+finite-horizon `GalerkinODECapstone.lean` (`exists_lerayHopf_r3`, unchanged) — node-for-node
+mirror of the merged 𝕋³ chain above, all in the release cone (`import LerayHopf`) and
+kernel-only (pinned by `scripts/check-axioms-live.sh`). It consumes the same generic contract
+layer (`LerayHopf/Galerkin/GlobalContract.lean`, P1) and abstract diagonal machinery
+(`LerayHopf/Bochner/DiagonalExtraction.lean`, P3) as the torus lane:
+
+- `DiagonalGalerkin.lean` (P3′, #216) — the ℝ³ diagonal weak-limit curve `W`:
+  `exists_diagonal_weakly_convergent_galSeq_R3` runs the κ-generic stage recursion over the
+  generic `Bochner/DiagonalExtraction.lean` machinery, and `exists_diag_coherent_representative_R3`
+  promotes the spike-(a) coherence core against the packaged `(δ, W)` output (returning the
+  per-horizon coherence handle P4′ consumes), plus the separation lemma
+  `L2Sigma_R3_eq_of_forall_inner`.
+- `KappaChainExit.lean` (P2′, #215) — the κ-generalized ℝ³ compactness chain threaded through
+  the Aubin–Lions package, energy class, limit passage, and everywhere-weak representative pin
+  at mode map `κ := δ`: `r3_kappaChain_exit` produces the per-horizon `R3KappaChainExitWitness`.
+- `GlobalCapstone.lean` (statement layer P1′ #214; **capstone** P4′ #217:
+  `exists_global_lerayHopf_r3`) — freezes the target `GlobalR3CapstoneStatement` and the easy
+  direction `globalR3Capstone_implies_finite`, then assembles a single scheme `𝔊`, form bundle
+  `F`, and ONE curve `u : Time → L2Sigma_R3` for which the finite-horizon Leray–Hopf contract
+  holds at **every** `T > 0` (global-in-time weak existence on `[0, ∞)`), by pinning every
+  horizon's `R3KappaChainExitWitness` to the same diagonal `W` and transferring through the
+  generic contract layer's `IsLerayHopfOn.congr_Icc`/`.mono`.
 
 ## Generic analysis layer — `LerayHopf/Analysis/`
 
