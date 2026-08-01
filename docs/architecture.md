@@ -13,10 +13,13 @@ Each rectangle is a Lean file — `LerayHopf.lean` itself, plus every file under
 `LerayHopf/`; its area is proportional to **code LOC** — physical lines minus blank
 lines and comment lines, as reported by [`cloc`](https://github.com/AlDanial/cloc).
 Color marks the top-level module a file belongs to (`Torus/`, `R3/`, `Bochner/`,
-`Analysis/`, `Galerkin/`, or the root-level group covering `LerayHopf.lean` and the
-shared modules directly under `LerayHopf/`); the same group always maps to the same
-color. Hovering a rectangle shows the full path and the code/comment/blank line
-breakdown.
+`Analysis/`, `Galerkin/`, `Scratch/`, or the root-level group covering `LerayHopf.lean`
+and the shared modules directly under `LerayHopf/`); the same group always maps to the
+same color. Hovering a rectangle shows the full path and the code/comment/blank line
+breakdown. Groups outside the generator's known-colour table — currently `Scratch/` —
+are assigned from a fallback palette in first-seen path order, which keeps the
+assignment deterministic and the whole figure within the Okabe–Ito colourblind-safe
+set.
 
 **This figure represents physical source size only.** It does not measure proof
 difficulty, mathematical importance, or code quality, and it carries no weighting by

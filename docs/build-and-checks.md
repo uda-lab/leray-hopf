@@ -206,23 +206,63 @@ specifically for pasting into a README's HTML — it is not the raw PAT and does
 the PAT's credentials. The raw PAT itself must never be committed, to this repository or
 anywhere else.
 
-If the chart stops rendering (expired token, revoked token, or a Star History service
-change):
+**Current state (2026-08-02, issue #230 §A.2): the embed is REMOVED.** The README's Star
+History section is now a plain link. Restoring the chart therefore means re-adding the
+`<picture>` markup, not merely swapping a token value — see step 3 below.
+
+### Why it was removed
+
+Both routes were tested and both fail; star-history.com itself was up (`200`), so this was
+not a transient outage:
+
+| Route | Result |
+|---|---|
+| Authenticated embed (`sealed_token=…`) | **`401`** — `The provided GitHub access token is invalid or expired` |
+| Anonymous (no `sealed_token`) | **`404`** — `GitHub restricted starred-data access for uda-lab/leray-hopf.` |
+
+The second row is the important one, and it corrects an assumption in the older version of
+this runbook: **there is no anonymous fallback for this repository.** A valid sealed token is
+structurally required, so "test the anonymous URL" is a diagnostic step, not a recovery path.
+Regenerating the token needs an interactive owner sign-in at star-history.com and a fresh
+fine-grained PAT, which no automated agent can do on the owner's behalf.
+
+### Diagnosing
+
+Run both, and read the status codes against the table above. Use the raw `&` separator, not
+the README's HTML-escaped `&amp;` — a `curl` command line is not HTML, so `&amp;` there is a
+literal string rather than a separator and a straight copy-paste from README markup will not
+work.
+
+```bash
+# authenticated (only meaningful while an embed with a token is committed)
+curl -s -o /dev/null -w '%{http_code}\n' \
+  "https://api.star-history.com/chart?repos=uda-lab/leray-hopf&type=date&legend=top-left&sealed_token=<YOUR_SEALED_TOKEN>"
+# anonymous
+curl -s -o /dev/null -w '%{http_code}\n' \
+  "https://api.star-history.com/chart?repos=uda-lab/leray-hopf&type=date"
+# service liveness, to rule out an outage
+curl -s -o /dev/null -w '%{http_code}\n' https://www.star-history.com/
+```
+
+`401` means the token died and only a regeneration will help. `404` with the
+`GitHub restricted starred-data access` body means the anonymous route is closed for this
+repository. A non-`200` on the third command means Star History is down and you should simply
+wait.
+
+### Restoring the embed
 
 1. Sign in at [star-history.com](https://www.star-history.com/) and follow the
    [authenticated embed guide](https://www.star-history.com/blog/how-to-use-github-star-history/)
-   to regenerate the embed for `uda-lab/leray-hopf`, creating a new fine-grained PAT
-   scoped the same way (this repository only, read-only) if the old one expired.
-2. Replace the `sealed_token` value in all three `srcset`/`src` URLs in the README's
-   Star History section with the newly generated one. Do not commit the raw PAT itself.
-3. Re-run the anonymous-render check before merging:
-   ```bash
-   curl -s -o /dev/null -w '%{http_code}' \
-     "https://api.star-history.com/chart?repos=uda-lab/leray-hopf&type=date&legend=top-left&sealed_token=<YOUR_SEALED_TOKEN>"
-   ```
-   should print `200`. Use the raw `&` separator shown above, not the README's HTML-escaped
-   `&amp;` — a shell/`curl` command line is not HTML, and `&amp;` there is a literal string,
-   not a separator, so a copy-paste straight from the README markup will not work.
+   to regenerate the embed for `uda-lab/leray-hopf`, creating a new fine-grained PAT scoped
+   the same way (this repository only, read-only) if the old one expired. This step requires
+   the repository owner — do not attempt to delegate it to an agent, and never route a raw
+   PAT through a transcript, a log, or a tool argument.
+2. Confirm the new token returns `200` using the authenticated command above **before**
+   committing anything.
+3. Re-add the `<picture>` block to the README's Star History section (dark `source`, light
+   `source`, and `img` fallback, all carrying the same `sealed_token`), replacing the plain
+   link. Commit only the sealed token, never the raw PAT.
 
-If Star History is unavailable for an extended period, remove the embed rather than
-leave a broken image in the README.
+If the token cannot be restored promptly, leave the plain link in place. A broken image in
+the README is worse than no image, and star counts are not evidence of mathematical quality
+(see the non-goals in issue #230).

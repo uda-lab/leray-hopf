@@ -145,13 +145,13 @@ for the full-size figure, the measurement method, and how to regenerate it.
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=uda-lab/leray-hopf&amp;type=date&amp;legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=uda-lab/leray-hopf&amp;type=date&amp;theme=dark&amp;legend=top-left&amp;sealed_token=seblTJCpa7k-WwWrbWgEIEcfB7J8ZiCwjxREO4qohU0rD65saqGYQJIVkXGjXTtu7E6rBeWSoLwCjFiCdMLs1XiPeYYnIjDcsUpyvM9KXZSjIxqCX5D5jngEDa25wroBaFIgnv8hY75VJLwU-swtQAnAvrGMmjYKIlJW0wOBpLuSRw6Aa1--x4mqRdoG" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=uda-lab/leray-hopf&amp;type=date&amp;legend=top-left&amp;sealed_token=seblTJCpa7k-WwWrbWgEIEcfB7J8ZiCwjxREO4qohU0rD65saqGYQJIVkXGjXTtu7E6rBeWSoLwCjFiCdMLs1XiPeYYnIjDcsUpyvM9KXZSjIxqCX5D5jngEDa25wroBaFIgnv8hY75VJLwU-swtQAnAvrGMmjYKIlJW0wOBpLuSRw6Aa1--x4mqRdoG" />
-   <img alt="Star History chart for uda-lab/leray-hopf" src="https://api.star-history.com/chart?repos=uda-lab/leray-hopf&amp;type=date&amp;legend=top-left&amp;sealed_token=seblTJCpa7k-WwWrbWgEIEcfB7J8ZiCwjxREO4qohU0rD65saqGYQJIVkXGjXTtu7E6rBeWSoLwCjFiCdMLs1XiPeYYnIjDcsUpyvM9KXZSjIxqCX5D5jngEDa25wroBaFIgnv8hY75VJLwU-swtQAnAvrGMmjYKIlJW0wOBpLuSRw6Aa1--x4mqRdoG" />
- </picture>
-</a>
+[Star history for `uda-lab/leray-hopf`](https://www.star-history.com/#uda-lab/leray-hopf&Date)
+
+> The inline chart embed was removed rather than left broken (issue #230 / #189): the
+> authenticated embed's token no longer resolves, and Star History cannot serve this
+> repository's star data anonymously either. See the runbook in
+> [`docs/build-and-checks.md`](docs/build-and-checks.md#readme-star-history-embed-issue-189)
+> for how to restore the embed. Star counts are not evidence of anything mathematical.
 
 ## Documentation, contributing, citation, license
 
@@ -160,7 +160,7 @@ for the full-size figure, the measurement method, and how to regenerate it.
   import guide.
 - [`docs/STATUS.md`](docs/STATUS.md) — axiom/`sorry` ledger and integrity backstop.
 - [`docs/build-and-checks.md`](docs/build-and-checks.md) — build, discipline checks,
-  CI policy, and the Star History embed's token-rotation runbook.
+  CI policy, and the Star History embed runbook (diagnosis and restoration).
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — build-cost policy, statement-changing PR
   review requirement, and issue/PR conventions.
 - [`SECURITY.md`](SECURITY.md) — soundness issues, guard bypasses, and supply-chain
