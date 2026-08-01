@@ -8,8 +8,9 @@
 
 A Lean 4 + mathlib formalization of **Leray–Hopf weak existence** for the
 incompressible Navier–Stokes equations, on the periodic 3-torus 𝕋³ and on whole
-space ℝ³. Two capstone existence theorems are proved and machine-checked, and both
-are **kernel-only**: `#print axioms` returns only the standard kernel axioms
+space ℝ³. Each domain carries a finite-horizon capstone and a global-in-time
+capstone — four machine-checked existence theorems in all — and every one of them
+is **kernel-only**: `#print axioms` returns only the standard kernel axioms
 (`propext`, `Classical.choice`, `Quot.sound`), with zero project axioms and no
 `sorryAx`. This repository does **not** claim smoothness or higher regularity
 beyond the stated energy-class properties, nor uniqueness or non-uniqueness of the
@@ -43,11 +44,30 @@ theorem exists_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
       Nonempty (LerayHopfSolutionFull_R3 𝔊 F ν T u₀)
 ```
 
-For any divergence-free initial data `u₀` in `L²`, viscosity `ν > 0`, and time
-horizon `T > 0`, a Leray–Hopf weak solution exists on `𝕋³` (unit-period torus) and
-on `ℝ³` alike — each proof-carrying, with the divergence-free property, the weak
-Navier–Stokes identity, the energy inequality, and the initial-value trace all
-exposed as fields of the returned solution structure, not just asserted in prose.
+```lean
+-- LerayHopf/Torus/GlobalCapstone.lean   (𝕋³, global-in-time)
+theorem exists_global_lerayHopf_torus3 (u₀ : L2Sigma) (ν : ℝ) (hν : 0 < ν) :
+    ∃ F : Torus3NSForms, ∃ u : Time → L2Sigma, ∀ T : ℝ, 0 < T →
+      Galerkin.IsLerayHopfOn torusDomain F.core ν T u₀ u
+
+-- LerayHopf/R3/GlobalCapstone.lean      (ℝ³, global-in-time)
+theorem exists_global_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν) :
+    ∃ (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊), ∃ u : Time → L2Sigma_R3,
+      ∀ T : ℝ, 0 < T → Galerkin.IsLerayHopfOn (r3Domain 𝔊) F.core ν T u₀ u
+```
+
+For any divergence-free initial data `u₀` in `L²` and viscosity `ν > 0`, a
+Leray–Hopf weak solution exists on `𝕋³` (unit-period torus) and on `ℝ³` alike —
+proof-carrying, with the divergence-free property, the weak Navier–Stokes identity,
+the energy inequality, and the initial-value trace all exposed as fields of the
+returned solution structure, not just asserted in prose.
+
+The finite-horizon capstones take the horizon `T > 0` as input and return a solution
+on `[0, T]`. The global capstones fix a **single** curve `u : Time → L²_σ` and one
+form bundle `F` (on ℝ³, also one Galerkin scheme `𝔊`) satisfying that same contract
+at **every** `T > 0` simultaneously — global-in-time weak existence on `[0, ∞)`,
+not a family of independently chosen finite-horizon witnesses. `Galerkin.IsLerayHopfOn`
+is the Prop-valued, field-for-field twin of the `LerayHopfSolutionFull` structure.
 
 The precise field-by-field statement of what each part of the solution structure
 guarantees — and, just as importantly, what it does not — is
@@ -56,8 +76,10 @@ guarantees — and, just as importantly, what it does not — is
 ## Scope and limitations
 
 - **No external force** — the homogeneous Navier–Stokes equation only.
-- **Finite time horizon `[0, T]`** for an arbitrary given `T > 0`, not a single
-  solution simultaneously valid on `[0, ∞)`.
+- **Global in time, but weak solutions only** — the global capstones give one curve
+  satisfying the Leray–Hopf contract at every `T > 0` simultaneously, i.e. on
+  `[0, ∞)`; coherence across horizons is pointwise (`u t` is one curve), not an
+  a.e. gluing. The energy relation is the **inequality**, not equality.
 - **𝕋³ is the unit torus** (period 1 in each coordinate), with no periodicity
   assumption on ℝ³.
 - **Separated-variable weak formulation**: test functions are `ψ(t)·w(x)`, not a
@@ -66,7 +88,7 @@ guarantees — and, just as importantly, what it does not — is
   properties** (a.e.-in-time H¹ membership plus integrable viscous dissipation);
   **uniqueness and non-uniqueness are not claimed.**
 - **`LerayHopf.Experimental`** isolates incomplete, opt-in additional work; it is not
-  reachable from the release surface below and not needed by either capstone.
+  reachable from the release surface below and not needed by any of the capstones.
 
 See [`docs/claims-and-scope.md`](docs/claims-and-scope.md) for the exact, field-level
 version of every bullet above.
