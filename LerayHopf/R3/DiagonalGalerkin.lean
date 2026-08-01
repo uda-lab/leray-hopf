@@ -44,9 +44,9 @@ namespace LerayHopf
 
 /-- **Stage handle (§2.2 Step 1).** Composition of two P2′ outputs into a single weak-limit
 curve: `aubinLionsPackage_R3_of_timeCompactness` (with the concrete FK-derived local Rellich
-input) produces the Aubin–Lions package with effective mode map `κ`, then
+input) produces the Aubin–Lions package with outer index map `κ`, then
 `exists_weak_representative_R3` produces a curve `U` whose FULL-space weak pairings converge
-at every `t ∈ [0,T]` along the effective index `κ ∘ alPkg.φ`.  The returned extraction is
+at every `t ∈ [0,T]` along the composed index map `κ ∘ alPkg.φ`.  The returned extraction is
 `alPkg.φ` (κ threaded separately in the pin — torus-parity shape).  Needs `Rell` (supplied
 internally, concrete and unconditional) but NOT `htest`. -/
 theorem exists_weakLimitCurve_R3_kappa

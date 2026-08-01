@@ -16,7 +16,7 @@ artifact), P2 is complete exactly when a production theorem of the shape
 is compiled.  `torus_kappaChain_exit` below is that theorem.  The witness runs the
 κ-generalized compactness chain (`torusAubinLionsPackage_of_galSeq` →
 `torus_energyClass_of_aubinLions` → `torus_galerkin_limit_passage_of_energyClass`)
-over a base family with effective mode map `κ := φ₁`, and the mandatory `transport`
+over a base family with outer index map `κ := φ₁`, and the mandatory `transport`
 field binds that base family to the GIVEN dependent family `galSeq₁` — an unlinked
 fresh family cannot instantiate the artifact.  The everywhere-weak pin is the final
 conjunct that P2's strengthening added to `torus_galerkin_limit_passage_of_energyClass`,
@@ -59,16 +59,18 @@ theorem extendReindexedFamily_apply
 
 /-- **Typed P2 exit contract (production).**  A witness certifies that the
 κ-generalized torus compactness chain runs end-to-end over a base family bound (via
-`transport`) to the given dependent family `galSeq₁`, with effective mode map
-`κ := φ₁`.  Field types are the production conclusions of the chain stages; the pin is
-phrased against `galSeq₁` itself. -/
+`transport`) to the given dependent family `galSeq₁`, with outer index map
+`κ := φ₁` — the index map selecting which entries of the original Galerkin family are
+used, the package choosing its own extraction `φ` internally so that convergence is
+stated along the composed index map `κ ∘ φ`.  Field types are the production conclusions
+of the chain stages; the pin is phrased against `galSeq₁` itself. -/
 structure P2ExitWitness (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
     (φ₁ : ℕ → ℕ) (galSeq₁ : ∀ k, GalerkinSolutionData F ν u₀ (φ₁ k)) where
   /-- The full base family the κ-generalized chain runs over. -/
   base : ∀ n, GalerkinSolutionData F ν u₀ n
   /-- **Mandatory transport equality**: along `φ₁`, `base` IS the given dependent family. -/
   transport : ∀ k, base (φ₁ k) = galSeq₁ k
-  /-- Stage 1 — Aubin–Lions package over `base` with effective mode map `κ := φ₁`. -/
+  /-- Stage 1 — Aubin–Lions package over `base` with outer index map `κ := φ₁`. -/
   alPkg : AubinLionsPackage F ν T u₀ base φ₁
   /-- Stage 2 — energy class for the package curve. -/
   energy_class_pkg :

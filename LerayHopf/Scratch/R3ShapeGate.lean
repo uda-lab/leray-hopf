@@ -20,7 +20,7 @@
 --     architect), never a probe edit.
 --
 -- PROBE MECHANISM (as in KappaShapeGate.lean): each shape probe re-states a declaration
--- surface verbatim with the mode map `κ` (or the supplied extraction `φ₁`) a FREE
+-- surface verbatim with the index map `κ` (or the supplied extraction `φ₁`) a FREE
 -- variable and proves it by the bare projection — no `by`, no rewriting.  For free `κ`,
 -- `galSeq (p.φ n)` does not unify with `galSeq (κ (p.φ n))`, so a dummy-κ or bare-index
 -- production declaration FAILS these probes at compile time.  The linkage SMOKES at the

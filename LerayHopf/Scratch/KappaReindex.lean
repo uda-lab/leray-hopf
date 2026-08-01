@@ -1,7 +1,7 @@
 -- SCRATCH — issue #195 feasibility spike (lean-architect). NOT production code.
 -- Resolves the index-dependence obstacle of issue #195 at the API level, against the
 -- REAL torus interfaces: the compactness entry point is generalized over a strictly
--- monotone Galerkin mode map `κ : ℕ → ℕ` (reindexed family = `galSeq ∘ κ`; subsequent
+-- monotone Galerkin index map `κ : ℕ → ℕ` (reindexed family = `galSeq ∘ κ`; subsequent
 -- extraction = composition `κ ∘ φ`), and then *instantiated with a previously
 -- extracted subsequence* — the exact `∀ k, GalerkinSolutionData F ν u₀ (φ k)` shape
 -- the issue identifies as unusable by the current fixed-index builders.
@@ -24,9 +24,9 @@ namespace Scratch195
 
 /-- **κ-generalized mode-wise extraction** (the κ-version of the production
 `exists_galerkin_modewise_extraction`, `ModeCompactness.lean:147`).  The input family
-is the reindexed `galSeq ∘ κ` for an arbitrary strictly monotone mode map `κ`; the
-conclusion extracts `φ` so that the effective mode map of the extracted family is the
-composition `κ ∘ φ`.
+is the reindexed `galSeq ∘ κ` for an arbitrary strictly monotone index map `κ`; the
+conclusion extracts `φ` so that the composed index map of the extracted family is
+`κ ∘ φ`.
 
 Proof = the production body with the datum index threaded through `κ`:
 - band-limit cutoffs and Lipschitz constants come from the UNCHANGED base-sequence
@@ -70,7 +70,7 @@ is instantiated with a *previously extracted subsequence*.  Given any earlier
 extraction `φ₁` (so the family at hand has the reindexed type
 `∀ k, GalerkinSolutionData F ν u₀ (φ₁ k)` — the exact shape the current fixed-index
 builders cannot consume), a second mode-wise extraction is performed on it, and the
-two extractions compose to a single strictly monotone mode map `φ₁ ∘ φ₂`. -/
+two extractions compose to a single strictly monotone index map `φ₁ ∘ φ₂`. -/
 theorem reindexed_family_second_extraction
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
@@ -85,7 +85,7 @@ theorem reindexed_family_second_extraction
   exact ⟨φ₂, hφ₂, hφ₁.comp hφ₂, g, hg⟩
 
 /-- Shape-check for the Phase-P2 signature design: the `AubinLionsPackage` structure
-parameterized by the base sequence AND a mode map `κ` (fields byte-identical to the
+parameterized by the base sequence AND an index map `κ` (fields byte-identical to the
 production structure except `galSeq (φ n)` ↦ `galSeq (κ (φ n))`). -/
 structure AubinLionsPackageKappa (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) (κ : ℕ → ℕ) where
@@ -121,7 +121,7 @@ def AubinLionsPackageKappa.ofId {F : Torus3NSForms} {ν T : ℝ} {u₀ : L2Sigma
   u_aestronglyMeasurable := p.u_aestronglyMeasurable
 
 /-- Extraction closure at package level: a further strictly monotone extraction `ρ`
-of the package's subsequence yields a package over the SAME mode map `κ` with
+of the package's subsequence yields a package over the SAME index map `κ` with
 extraction `φ ∘ ρ` — strong convergence restricts to subsequences. -/
 def AubinLionsPackageKappa.extract {F : Torus3NSForms} {ν T : ℝ} {u₀ : L2Sigma}
     {galSeq : ∀ n, GalerkinSolutionData F ν u₀ n} {κ : ℕ → ℕ}
@@ -203,14 +203,14 @@ constructor arity P2 wants byte-stable).  The lemmas below thread it through
 composition, including through `extract`, so every consumer has the strict/cofinal
 effective map on demand. -/
 
-/-- Effective absolute mode map of a κ-package is strictly monotone. -/
+/-- The composed index map `κ ∘ φ` of a κ-package is strictly monotone. -/
 theorem AubinLionsPackageKappa.effective_strictMono {F : Torus3NSForms} {ν T : ℝ}
     {u₀ : L2Sigma} {galSeq : ∀ n, GalerkinSolutionData F ν u₀ n} {κ : ℕ → ℕ}
     (p : AubinLionsPackageKappa F ν T u₀ galSeq κ) (hκ : StrictMono κ) :
     StrictMono (fun n => κ (p.φ n)) :=
   hκ.comp p.φ_mono
 
-/-- Effective absolute mode map is cofinal (escapes to `atTop`) — the form in which
+/-- The composed index map `κ ∘ φ` is cofinal (escapes to `atTop`) — the form in which
 the eventual band-limit cutoffs (`n₀ ≤ κ (φ N)`) are discharged. -/
 theorem AubinLionsPackageKappa.effective_tendsto_atTop {F : Torus3NSForms} {ν T : ℝ}
     {u₀ : L2Sigma} {galSeq : ∀ n, GalerkinSolutionData F ν u₀ n} {κ : ℕ → ℕ}
