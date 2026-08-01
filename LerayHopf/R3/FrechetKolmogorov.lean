@@ -445,6 +445,91 @@ theorem mollifyRep_sup_le (K : MollifierKernel) (f : L2VF_R3) (R : ℝ)
     _ ≤ ‖ha.toLp _‖ * ‖hb.toLp _‖ := hcs
     _ = ‖kernelL2R K‖ * ‖restrictToBall (R + r) f‖ := by rw [hna, hnb]
 
+/-- **Textbook step (kernel reach).**  If `‖p‖ ≤ R` and the kernel slice `z ↦ K.η (p − z)` is
+nonzero at `z`, then `z` lies in the enlarged ball `B_{R + K.supportRadius}`.
+
+This is the geometric content of "the mollified field on `B_R` only sees `f` over `B_{R+r}`":
+`K.η` vanishes off `closedBall 0 K.supportRadius`, so `K.η (p − z) ≠ 0` forces `‖p − z‖ ≤ r`,
+and the triangle inequality then bounds `‖z‖` by `R + r`. -/
+private theorem mem_closedBall_add_supportRadius_of_kernel_ne_zero
+    (K : MollifierKernel) (R : ℝ) {p z : Domain3} (hpR : ‖p‖ ≤ R)
+    (hpne : K.η (p - z) ≠ 0) :
+    z ∈ Metric.closedBall (0 : Domain3) (R + K.supportRadius) := by
+  have hmemt : p - z ∈ tsupport K.η := subset_tsupport K.η (by simpa using hpne)
+  have hball : p - z ∈ Metric.closedBall (0 : Domain3) K.supportRadius :=
+    K.tsupport_subset hmemt
+  have hpz : ‖p - z‖ ≤ K.supportRadius := by simpa [dist_eq_norm] using hball
+  have hzR : ‖z‖ ≤ R + K.supportRadius := by
+    have h1 : z = p - (p - z) := by abel
+    have h2 : ‖z‖ ≤ ‖p‖ + ‖p - z‖ := by
+      rw [h1]; exact (norm_sub_le _ _).trans_eq (by rw [sub_sub_cancel])
+    linarith
+  simpa [dist_eq_norm] using hzR
+
+/-- **Textbook step (translated-kernel difference, `coeFn` form).**  The `L²`-class
+`translate_L2R v (kernelL2R K) − kernelL2R K` is represented pointwise a.e. by the shifted
+kernel difference `w ↦ K.η (w + v) − K.η w`.
+
+Unfolding `translate_L2R` (a `compMeasurePreserving` by `(· + v)`) and `kernelL2R` (a `toLp`)
+and transporting the kernel's `coeFn` identity along the measure-preserving shift. -/
+private theorem coeFn_translate_kernelL2R_sub (K : MollifierKernel) (v : Domain3) :
+    ((translate_L2R v (kernelL2R K) - kernelL2R K :
+        Lp ℝ 2 (volume : Measure Domain3)) : Domain3 → ℝ)
+      =ᵐ[volume] fun w : Domain3 => K.η (w + v) - K.η w := by
+  have hsub := Lp.coeFn_sub (translate_L2R v (kernelL2R K)) (kernelL2R K)
+  have htr : (translate_L2R v (kernelL2R K) : Domain3 → ℝ)
+      =ᵐ[volume] fun w : Domain3 => (kernelL2R K : Domain3 → ℝ) (w + v) := by
+    rw [translate_L2R]
+    exact Lp.coeFn_compMeasurePreserving (kernelL2R K)
+      (measurePreserving_add_right (volume : Measure Domain3) v)
+  have hker : (kernelL2R K : Domain3 → ℝ) =ᵐ[volume] K.η := by
+    rw [kernelL2R]; exact MemLp.coeFn_toLp _
+  have hkershift : (fun w : Domain3 => (kernelL2R K : Domain3 → ℝ) (w + v))
+      =ᵐ[volume] fun w : Domain3 => K.η (w + v) :=
+    (measurePreserving_add_right (volume : Measure Domain3)
+      v).quasiMeasurePreserving.ae_eq_comp hker
+  filter_upwards [hsub, htr, hkershift, hker] with w hw1 hw2 hw3 hw4
+  rw [hw1]
+  simp only [Pi.sub_apply]
+  rw [hw2, hw3, hw4]
+
+/-- **Textbook step (kernel translation modulus).**  The `L²`-norm of the kernel slice difference
+`z ↦ |K.η (x − z) − K.η (y − z)|` equals the kernel's own translation modulus at the shift `x − y`,
+namely `‖translate_L2R (x − y) (kernelL2R K) − kernelL2R K‖`.
+
+The change of variables `z ↦ y − z` (measure-preserving) turns the slice difference into
+`w ↦ |K.η (w + (x − y)) − K.η w|`, which by `coeFn_translate_kernelL2R_sub` is the modulus of the
+translate-difference class. -/
+private theorem norm_toLp_kernel_slice_sub_eq_translate_modulus (K : MollifierKernel)
+    (x y : Domain3)
+    (ha : MemLp (fun z : Domain3 => |K.η (x - z) - K.η (y - z)|) 2
+      (volume : Measure Domain3)) :
+    ‖ha.toLp _‖ = ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ := by
+  have hηmem : MemLp K.η 2 (volume : Measure Domain3) :=
+    K.smooth.continuous.memLp_of_hasCompactSupport (p := 2) (μ := volume) K.hasCompactSupport
+  have hηaesm : AEStronglyMeasurable K.η (volume : Measure Domain3) :=
+    hηmem.aestronglyMeasurable
+  have hmpy := Measure.measurePreserving_sub_left (volume : Measure Domain3) y
+  rw [Lp.norm_toLp]
+  rw [Lp.norm_def, eLpNorm_congr_ae (coeFn_translate_kernelL2R_sub K (x - y))]
+  have hcompose : (fun z : Domain3 => |K.η (x - z) - K.η (y - z)|)
+      = (fun w : Domain3 => |K.η (w + (x - y)) - K.η w|) ∘ (fun z : Domain3 => y - z) := by
+    funext z
+    simp only [Function.comp_apply]
+    congr 2
+    · congr 1; abel
+  have hshiftm : AEStronglyMeasurable (fun w : Domain3 => K.η (w + (x - y)))
+      (volume : Measure Domain3) :=
+    hηaesm.comp_measurePreserving
+      (measurePreserving_add_right (volume : Measure Domain3) (x - y))
+  have habsm : AEStronglyMeasurable (fun w : Domain3 => |K.η (w + (x - y)) - K.η w|)
+      (volume : Measure Domain3) :=
+    (hshiftm.sub hηaesm).norm.congr (by filter_upwards with w using (Real.norm_eq_abs _))
+  rw [hcompose, eLpNorm_comp_measurePreserving habsm hmpy]
+  rw [show (fun w : Domain3 => |K.η (w + (x - y)) - K.η w|)
+      = (fun w : Domain3 => ‖K.η (w + (x - y)) - K.η w‖) from
+      funext fun w => (Real.norm_eq_abs _).symm, eLpNorm_norm]
+
 /-- **Helper 3 — convolution-difference estimate (modulus of the mollified field).**
 
 For `x, y ∈ closedBall 0 R`, the increment of the mollified field is bounded by the enlarged-ball
@@ -468,7 +553,6 @@ theorem mollifyRep_sub_le (K : MollifierKernel) (f : L2VF_R3) (R : ℝ)
   -- The kernel as an `L²`-class envelope.
   have hηmem : MemLp K.η 2 (volume : Measure Domain3) :=
     K.smooth.continuous.memLp_of_hasCompactSupport (p := 2) (μ := volume) K.hasCompactSupport
-  have hηaesm : AEStronglyMeasurable K.η (volume : Measure Domain3) := hηmem.aestronglyMeasurable
   -- the two measure-preserving slice maps `(x − ·)` and `(y − ·)`.
   have hmpx := Measure.measurePreserving_sub_left (volume : Measure Domain3) x
   have hmpy := Measure.measurePreserving_sub_left (volume : Measure Domain3) y
@@ -508,17 +592,11 @@ theorem mollifyRep_sub_le (K : MollifierKernel) (f : L2VF_R3) (R : ℝ)
     · -- at least one of the two kernel slices is nonzero; either reaches `z` into `B`.
       have hxR : ‖x‖ ≤ R := by simpa [dist_eq_norm] using hx
       have hyR : ‖y‖ ≤ R := by simpa [dist_eq_norm] using hy
+      -- kernel reach: a nonzero kernel slice pulls `z` into the enlarged ball `B_{R+r}`.
       have hreach : ∀ {p : Domain3}, ‖p‖ ≤ R → K.η (p - z) ≠ 0 → z ∈ B := by
         intro p hpR hpne
-        have hmemt : p - z ∈ tsupport K.η := subset_tsupport K.η (by simpa using hpne)
-        have hball : p - z ∈ Metric.closedBall (0 : Domain3) r := K.tsupport_subset hmemt
-        have hpz : ‖p - z‖ ≤ r := by simpa [dist_eq_norm] using hball
-        have hzR : ‖z‖ ≤ R + r := by
-          have h1 : z = p - (p - z) := by abel
-          have h2 : ‖z‖ ≤ ‖p‖ + ‖p - z‖ := by
-            rw [h1]; exact (norm_sub_le _ _).trans_eq (by rw [sub_sub_cancel])
-          linarith
-        simpa [hB, dist_eq_norm] using hzR
+        simpa [hB, hr] using
+          mem_closedBall_add_supportRadius_of_kernel_ne_zero K R hpR hpne
       have hmem : z ∈ B := by
         rcases (not_and_or.mp (fun hpair => hzero (by rw [hpair.1, hpair.2, sub_self])) :
             K.η (x - z) ≠ 0 ∨ K.η (y - z) ≠ 0) with hxne | hyne
@@ -547,49 +625,8 @@ theorem mollifyRep_sub_le (K : MollifierKernel) (f : L2VF_R3) (R : ℝ)
   -- `z ↦ y − z`:  `K.η(x−z) − K.η(y−z) = D(y−z)` with `D(w) = K.η(w + (x−y)) − K.η(w)`,
   -- and `D` is the coeFn of `translate_L2R (x−y) (kernelL2R K) − kernelL2R K`.
   have hna : ‖ha.toLp _‖
-      = ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ := by
-    rw [Lp.norm_toLp]
-    -- coeFn of the translate-difference class.
-    have hD : ((translate_L2R (x - y) (kernelL2R K) - kernelL2R K :
-          Lp ℝ 2 (volume : Measure Domain3)) : Domain3 → ℝ)
-        =ᵐ[volume] fun w : Domain3 => K.η (w + (x - y)) - K.η w := by
-      have hsub := Lp.coeFn_sub (translate_L2R (x - y) (kernelL2R K)) (kernelL2R K)
-      have htr : (translate_L2R (x - y) (kernelL2R K) : Domain3 → ℝ)
-          =ᵐ[volume] fun w : Domain3 => (kernelL2R K : Domain3 → ℝ) (w + (x - y)) := by
-        rw [translate_L2R]
-        exact Lp.coeFn_compMeasurePreserving (kernelL2R K)
-          (measurePreserving_add_right (volume : Measure Domain3) (x - y))
-      have hker : (kernelL2R K : Domain3 → ℝ) =ᵐ[volume] K.η := by
-        rw [kernelL2R]; exact MemLp.coeFn_toLp _
-      have hkershift : (fun w : Domain3 => (kernelL2R K : Domain3 → ℝ) (w + (x - y)))
-          =ᵐ[volume] fun w : Domain3 => K.η (w + (x - y)) :=
-        (measurePreserving_add_right (volume : Measure Domain3)
-          (x - y)).quasiMeasurePreserving.ae_eq_comp hker
-      filter_upwards [hsub, htr, hkershift, hker] with w hw1 hw2 hw3 hw4
-      rw [hw1]
-      simp only [Pi.sub_apply]
-      rw [hw2, hw3, hw4]
-    -- now compute the eLpNorm of the toLp class.
-    rw [Lp.norm_def, eLpNorm_congr_ae hD]
-    -- `K.η(x−z) − K.η(y−z) = D(y−z)` with `D w = K.η(w+(x−y)) − K.η w`.
-    have hcompose : (fun z : Domain3 => |K.η (x - z) - K.η (y - z)|)
-        = (fun w : Domain3 => |K.η (w + (x - y)) - K.η w|) ∘ (fun z : Domain3 => y - z) := by
-      funext z
-      simp only [Function.comp_apply]
-      congr 2
-      · congr 1; abel
-    have hshiftm : AEStronglyMeasurable (fun w : Domain3 => K.η (w + (x - y)))
-        (volume : Measure Domain3) :=
-      hηaesm.comp_measurePreserving
-        (measurePreserving_add_right (volume : Measure Domain3) (x - y))
-    have habsm : AEStronglyMeasurable (fun w : Domain3 => |K.η (w + (x - y)) - K.η w|)
-        (volume : Measure Domain3) :=
-      (hshiftm.sub hηaesm).norm.congr (by filter_upwards with w using (Real.norm_eq_abs _))
-    rw [hcompose, eLpNorm_comp_measurePreserving habsm hmpy]
-    -- drop the absolute value: `‖|·|‖ = ‖·‖`.
-    rw [show (fun w : Domain3 => |K.η (w + (x - y)) - K.η w|)
-        = (fun w : Domain3 => ‖K.η (w + (x - y)) - K.η w‖) from
-        funext fun w => (Real.norm_eq_abs _).symm, eLpNorm_norm]
+      = ‖translate_L2R (x - y) (kernelL2R K) - kernelL2R K‖ :=
+    norm_toLp_kernel_slice_sub_eq_translate_modulus K x y ha
   -- Assemble.
   calc ‖mollifyRep K f x - mollifyRep K f y‖
       ≤ ∫ z : Domain3, |K.η (x - z) - K.η (y - z)| * B.indicator
@@ -1313,6 +1350,50 @@ theorem dist_restrictToBall_le_of_ae_bound (R c : ℝ) (hc : 0 ≤ c) (u v : L2V
 
 /-! ### FK step 2 — Arzelà–Ascoli ⇒ total boundedness in L²(ball) -/
 
+/-- **Textbook step (sup→L² tolerance).**  The sup-level tolerance `ε' = ε / (2 (V + 1))` is small
+enough that the mass factor `V` cannot eat the target: `V · ε' < ε` for any mass `V ≥ 0`.
+
+The `+1` in the denominator is what makes the bound uniform in `V` (including `V = 0`), so the
+same `ε'` works before the ball mass is known. -/
+private theorem mul_div_two_mul_add_one_lt (V ε : ℝ) (hV : 0 ≤ V) (hε : 0 < ε) :
+    V * (ε / (2 * (V + 1))) < ε := by
+  have hVp1 : 0 < V + 1 := by positivity
+  rw [div_eq_mul_inv, ← mul_assoc]
+  calc V * ε * (2 * (V + 1))⁻¹ ≤ (V + 1) * ε * (2 * (V + 1))⁻¹ := by
+        apply mul_le_mul_of_nonneg_right _ (by positivity)
+        exact mul_le_mul_of_nonneg_right (by linarith) hε.le
+    _ = ε * ((V + 1) * (2 * (V + 1))⁻¹) := by ring
+    _ = ε * (2⁻¹) := by
+        rw [show (2 * (V + 1))⁻¹ = 2⁻¹ * (V + 1)⁻¹ by rw [mul_inv]]
+        rw [show (V + 1) * (2⁻¹ * (V + 1)⁻¹) = 2⁻¹ * ((V + 1) * (V + 1)⁻¹) by ring,
+          mul_inv_cancel₀ hVp1.ne', mul_one]
+    _ < ε := by nlinarith [hε]
+
+/-- **Textbook step (Arzelà–Ascoli net estimate).**  Two points that are each within `η` of their
+respective anchors `p'`, `q'`, whose anchors are both within `γ` of a common net value `w`, are
+within `η + 2γ + η` of each other.
+
+This is the classification step of the Arzelà–Ascoli net construction, stated for its own sake:
+`p = Φ f x`, `p' = Φ f c`, `q = Φ g x`, `q' = Φ g c` and `w` the shared value-net point at the
+center `c`, so equicontinuity supplies the two `η`-bounds and membership in the same class
+supplies the two `γ`-bounds. -/
+private theorem norm_sub_lt_of_center_net {E : Type*} [NormedAddCommGroup E]
+    {p p' q q' w : E} {η γ : ℝ}
+    (hp : ‖p - p'‖ < η) (hq : ‖q' - q‖ < η)
+    (hpw : dist p' w < γ) (hqw : dist q' w < γ) :
+    ‖p - q‖ < η + 2 * γ + η := by
+  have hmid : ‖p' - q'‖ < 2 * γ := by
+    have h1 : dist p' q' ≤ dist p' w + dist w q' := dist_triangle _ _ _
+    have hqw' : dist w q' < γ := by rw [dist_comm]; exact hqw
+    have hlt : dist p' q' < 2 * γ := by
+      have := lt_of_le_of_lt h1 (add_lt_add hpw hqw')
+      linarith [this]
+    rwa [dist_eq_norm] at hlt
+  have htri : ‖p - q‖ ≤ ‖p - p'‖ + ‖p' - q'‖ + ‖q' - q‖ := by
+    have e1 : p - q = (p - p') + (p' - q') + (q' - q) := by abel
+    rw [e1]; exact norm_add₃_le
+  exact lt_of_le_of_lt htri (add_lt_add (add_lt_add hp hmid) hq)
+
 set_option maxHeartbeats 1600000 in
 -- kept at the original 1600000 (issue #152): isolated `#count_heartbeats in` measurement
 -- reported only ~1629 heartbeats, but a real sequential build with the override removed
@@ -1351,20 +1432,9 @@ theorem totallyBounded_image_of_equicont_bdd (R : ℝ) (S : Set (L2ballR3 R))
   haveI : Nonempty ↥S := hSne.to_subtype
   -- Sup-level tolerance `ε'` with `V · ε' < ε`.
   set ε' : ℝ := ε / (2 * (V + 1)) with hε'
-  have hVp1 : 0 < V + 1 := by positivity
   have hε'pos : 0 < ε' := by positivity
   have hVε' : V * ε' < ε := by
-    rw [hε']
-    rw [div_eq_mul_inv, ← mul_assoc]
-    calc V * ε * (2 * (V + 1))⁻¹ ≤ (V + 1) * ε * (2 * (V + 1))⁻¹ := by
-          apply mul_le_mul_of_nonneg_right _ (by positivity)
-          exact mul_le_mul_of_nonneg_right (by linarith) hε.le
-      _ = ε * ((V + 1) * (2 * (V + 1))⁻¹) := by ring
-      _ = ε * (2⁻¹) := by
-          rw [show (2 * (V + 1))⁻¹ = 2⁻¹ * (V + 1)⁻¹ by rw [mul_inv]]
-          rw [show (V + 1) * (2⁻¹ * (V + 1)⁻¹) = 2⁻¹ * ((V + 1) * (V + 1)⁻¹) by ring,
-            mul_inv_cancel₀ hVp1.ne', mul_one]
-      _ < ε := by nlinarith [hε]
+    rw [hε']; exact mul_div_two_mul_add_one_lt V ε hVnn hε
   -- Per-point tolerances: equicontinuity `ηeq` + value-net `γ`, with `2ηeq + 2γ ≤ ε'`.
   set ηeq : ℝ := ε' / 8 with hηeq
   have hηpos : 0 < ηeq := by positivity
@@ -1439,32 +1509,14 @@ theorem totallyBounded_image_of_equicont_bdd (R : ℝ) (S : Set (L2ballR3 R))
       have hgc := hclassify_spec g cS
       rw [hgclass] at hgc
       simpa [hcS] using hgc
-    have hmid : ‖Φ f c - Φ (g : L2ballR3 R) c‖ < 2 * γ := by
-      have h1 : dist (Φ f c) (Φ (g : L2ballR3 R) c)
-          ≤ dist (Φ f c) (b cS : EuclideanSpace ℝ (Fin 3))
-            + dist (b cS : EuclideanSpace ℝ (Fin 3)) (Φ (g : L2ballR3 R) c) :=
-        dist_triangle _ _ _
-      have hbg' : dist (b cS : EuclideanSpace ℝ (Fin 3)) (Φ (g : L2ballR3 R) c) < γ := by
-        rw [dist_comm]; exact hbg
-      have : dist (Φ f c) (Φ (g : L2ballR3 R) c) < 2 * γ := by
-        have := lt_of_le_of_lt h1 (add_lt_add hbf hbg')
-        linarith [this]
-      rwa [dist_eq_norm] at this
-    have htri : ‖Φ f x - Φ (g : L2ballR3 R) x‖
-        ≤ ‖Φ f x - Φ f c‖ + ‖Φ f c - Φ (g : L2ballR3 R) c‖
-          + ‖Φ (g : L2ballR3 R) c - Φ (g : L2ballR3 R) x‖ := by
-      have e1 : Φ f x - Φ (g : L2ballR3 R) x
-          = (Φ f x - Φ f c) + (Φ f c - Φ (g : L2ballR3 R) c)
-            + (Φ (g : L2ballR3 R) c - Φ (g : L2ballR3 R) x) := by abel
-      rw [e1]; exact norm_add₃_le
     have heq_g' : ‖Φ (g : L2ballR3 R) c - Φ (g : L2ballR3 R) x‖ < ηeq := by
       rw [show Φ (g : L2ballR3 R) c - Φ (g : L2ballR3 R) x
           = -(Φ (g : L2ballR3 R) x - Φ (g : L2ballR3 R) c) by abel, norm_neg]
       exact heq_g
     have hsum : ηeq + 2 * γ + ηeq ≤ ε' := by rw [hηeq, hγ]; linarith
-    have hlt : ‖Φ f x - Φ (g : L2ballR3 R) x‖ < ηeq + 2 * γ + ηeq := by
-      have := add_lt_add (add_lt_add heq_f hmid) heq_g'
-      exact lt_of_le_of_lt htri this
+    -- both `Φ f` and `Φ g` sit within `γ` of the SAME net value `b cS` at the center `c`.
+    have hlt : ‖Φ f x - Φ (g : L2ballR3 R) x‖ < ηeq + 2 * γ + ηeq :=
+      norm_sub_lt_of_center_net heq_f heq_g' hbf hbg
     linarith [hlt, hsum]
   have hdist : dist (restrictToBall R (ρf (g : L2ballR3 R))) (restrictToBall R (ρf f))
       ≤ V * ε' := by
