@@ -57,17 +57,21 @@ theorem exists_global_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
 ```
 
 For any divergence-free initial data `u₀` in `L²` and viscosity `ν > 0`, a
-Leray–Hopf weak solution exists on `𝕋³` (unit-period torus) and on `ℝ³` alike —
-proof-carrying, with the divergence-free property, the weak Navier–Stokes identity,
-the energy inequality, and the initial-value trace all exposed as fields of the
-returned solution structure, not just asserted in prose.
+Leray–Hopf weak solution exists on `𝕋³` (unit-period torus) and on `ℝ³` alike, and it
+is proof-carrying: the divergence-free property, the weak Navier–Stokes identity, the
+energy inequality, and the initial-value trace are exposed as fields of the
+`LerayHopfSolutionFull` structure the finite-horizon capstones return, not just
+asserted in prose.
 
 The finite-horizon capstones take the horizon `T > 0` as input and return a solution
-on `[0, T]`. The global capstones fix a **single** curve `u : Time → L²_σ` and one
-form bundle `F` (on ℝ³, also one Galerkin scheme `𝔊`) satisfying that same contract
-at **every** `T > 0` simultaneously — global-in-time weak existence on `[0, ∞)`,
-not a family of independently chosen finite-horizon witnesses. `Galerkin.IsLerayHopfOn`
-is the Prop-valued, field-for-field twin of the `LerayHopfSolutionFull` structure.
+on `[0, T]`. The global capstones instead fix a **single** curve `u : Time → L²_σ` and
+one form bundle `F` (on ℝ³, also one Galerkin scheme `𝔊`), and assert the Prop-valued
+contract `Galerkin.IsLerayHopfOn` — the field-for-field twin of that same structure,
+with the curve taken as an argument rather than bundled as data — at **every** `T > 0`
+simultaneously. That is global-in-time weak existence on `[0, ∞)`, not a family of
+independently chosen finite-horizon witnesses. The same result in structure form is
+`exists_globalLerayHopfSolutionFull_torus3` / `…_r3`, which return
+`Nonempty (GlobalLerayHopfSolutionFull …)`.
 
 The precise field-by-field statement of what each part of the solution structure
 guarantees — and, just as importantly, what it does not — is
