@@ -108,7 +108,7 @@ structure AubinLionsPackageKappa (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigm
       (MeasureTheory.volume.restrict (Set.Icc 0 T))
 
 /-- κ = id embedding: the production `AubinLionsPackage` is definitionally the
-identity-mode-map instance (every field transfers verbatim), so existing consumers
+identity-index-map instance (every field transfers verbatim), so existing consumers
 keep working after the P2 rewiring. -/
 def AubinLionsPackageKappa.ofId {F : Torus3NSForms} {ν T : ℝ} {u₀ : L2Sigma}
     {galSeq : ∀ n, GalerkinSolutionData F ν u₀ n}
@@ -196,7 +196,7 @@ theorem exists_galerkin_modewise_extraction_of_reindexed
 
 /-! ### Codex-gate remediation (finding 3): effective-map strictness/cofinality
 
-The absolute mode index of the κ-package is `κ (p.φ n)`.  `hκ : StrictMono κ` stays a
+The composed index of the κ-package is `κ (p.φ n)`.  `hκ : StrictMono κ` stays a
 SIDE hypothesis (not a structure field: the `κ = id` instance must remain
 definitionally transparent for existing consumers, and Prop-fields would change the
 constructor arity P2 wants byte-stable).  The lemmas below thread it through
