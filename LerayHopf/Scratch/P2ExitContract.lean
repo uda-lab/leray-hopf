@@ -47,7 +47,7 @@ structure P2ExitWitness (F : Torus3NSForms) (ν T : ℝ) (u₀ : L2Sigma)
   family.  This is the field that makes an unlinked fresh/canonical family
   unrepresentable. -/
   transport : ∀ k, base (φ₁ k) = galSeq₁ k
-  /-- Stage 1 — Aubin–Lions package construction over `base` with effective mode map
+  /-- Stage 1 — Aubin–Lions package construction over `base` with outer index map
   `κ := φ₁` (so every package datum is `base (φ₁ _) = galSeq₁ _`). -/
   alPkg : AubinLionsPackageKappa F ν T u₀ base φ₁
   /-- Stage 2 — energy class for the package curve (shape of

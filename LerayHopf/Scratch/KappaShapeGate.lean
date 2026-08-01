@@ -2,7 +2,7 @@
 -- docs/scratch/r3-global-diagonal-campaign.md §4.1/§6 clause 6, §11.3). NOT production.
 --
 -- MECHANISM.  Each probe below RE-STATES a κ-critical declaration surface of the
--- compiled κ-package model verbatim — with the mode map `κ` a FREE VARIABLE — and
+-- compiled κ-package model verbatim — with the index map `κ` a FREE VARIABLE — and
 -- proves it by the raw field projection / lemma application (a bare term: no `by`,
 -- no rewriting).  Elaboration therefore succeeds ONLY if the declared type of the
 -- projected field literally carries the effective index `galSeq (κ (φ n))`: `κ` is

@@ -603,8 +603,9 @@ structure AubinLionsPackage_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     Filter.Tendsto (fun n => restrictToBall R ((galSeq (κ (φ n))).u t))
       Filter.atTop (nhds (restrictToBall R (u t)))
 
-/-- Effective absolute mode map is strictly monotone (§4.1 primary-protection surface 1):
-the composition of the κ-shift with the extraction `φ`.  Category-(iii) index-selection
+/-- The composed index map `κ ∘ φ` — the effective index into the original Galerkin family —
+is strictly monotone (§4.1 primary-protection surface 1): the composition of the outer index
+map `κ` with the package's own extraction `φ`.  Category-(iii) index-selection
 facts are derived from this lemma at the composed index, never from bare `φ_mono`. -/
 theorem AubinLionsPackage_R3.effective_strictMono {𝔊 : R3GalerkinScheme}
     {F : R3NSForms 𝔊} {ν T : ℝ} {u₀ : L2Sigma_R3}
@@ -613,7 +614,7 @@ theorem AubinLionsPackage_R3.effective_strictMono {𝔊 : R3GalerkinScheme}
     StrictMono (fun n => κ (p.φ n)) :=
   hκ.comp p.φ_mono -- KAPPA_ID_SITE: effective_strictMono's own defining composition κ ∘ φ; this is the single sanctioned consumer of bare φ_mono (all category-(iii) facts route through here)
 
-/-- Effective absolute mode map is cofinal (companion export, torus parity). -/
+/-- The composed index map `κ ∘ φ` is cofinal (companion export, torus parity). -/
 theorem AubinLionsPackage_R3.effective_tendsto_atTop {𝔊 : R3GalerkinScheme}
     {F : R3NSForms 𝔊} {ν T : ℝ} {u₀ : L2Sigma_R3}
     {galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n} {κ : ℕ → ℕ}

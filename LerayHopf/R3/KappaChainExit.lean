@@ -14,7 +14,7 @@ Per the campaign doc §5/§6, P2′ is complete exactly when a production theore
 is compiled.  `r3_kappaChain_exit` below is that theorem.  The witness runs the
 κ-generalized compactness chain (`aubinLionsPackage_R3_of_timeCompactness` →
 `viscous_lsc_under_strongL2` → `galerkin_limit_passage_R3`) over a base family with
-effective mode map `κ := φ₁`, and the mandatory `transport` field binds that base family
+outer index map `κ := φ₁`, and the mandatory `transport` field binds that base family
 to the GIVEN dependent family `galSeq₁` — an unlinked fresh family cannot instantiate the
 artifact.  The everywhere-weak pin is the final conjunct that P2′'s strengthening added to
 `galerkin_limit_passage_R3`, re-exported here phrased against `galSeq₁` itself via `transport`.
@@ -62,7 +62,10 @@ theorem extendReindexedFamily_R3_apply
 
 /-- **Typed P2′ exit contract (production).**  A witness certifies that the κ-generalized ℝ³
 compactness chain runs end-to-end over a base family bound (via `transport`) to the given
-dependent family `galSeq₁`, with effective mode map `κ := φ₁`.  Field types are the production
+dependent family `galSeq₁`, with outer index map `κ := φ₁` — the index map selecting which
+entries of the original Galerkin family are used, the package choosing its own extraction `φ`
+internally so that convergence is stated along the composed index map `κ ∘ φ`.  Field types
+are the production
 conclusions of the chain stages; the pin is phrased against `galSeq₁` itself, along `alPkg.φ`
 directly (ℝ³ simplification: `galerkin_limit_passage_R3` pins along `alPkg.φ` with no
 sub-extraction `ρ` — the torus witness's `ρ`/`ρ_mono` fields are ABSENT by design). -/
@@ -73,7 +76,7 @@ structure R3KappaChainExitWitness (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
   base : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n
   /-- **Mandatory transport equality**: along `φ₁`, `base` IS the given dependent family. -/
   transport : ∀ k, base (φ₁ k) = galSeq₁ k
-  /-- Aubin–Lions κ-package over `base` with effective mode map `κ := φ₁`. -/
+  /-- Aubin–Lions κ-package over `base` with outer index map `κ := φ₁`. -/
   alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ base φ₁
   /-- Energy class for the package curve. -/
   energy_class_pkg :
