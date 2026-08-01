@@ -58,10 +58,12 @@ theorem exists_global_lerayHopf_r3 (u₀ : L2Sigma_R3) (ν : ℝ) (hν : 0 < ν)
 
 For any divergence-free initial data `u₀` in `L²` and viscosity `ν > 0`, a
 Leray–Hopf weak solution exists on `𝕋³` (unit-period torus) and on `ℝ³` alike, and it
-is proof-carrying: the divergence-free property, the weak Navier–Stokes identity, the
-energy inequality, and the initial-value trace are exposed as fields of the
-`LerayHopfSolutionFull` structure the finite-horizon capstones return, not just
-asserted in prose.
+is proof-carrying rather than merely asserted in prose. The curve is divergence-free
+at the level of its type — it is valued in the closed divergence-free subspace `σ` —
+and the `LerayHopfSolutionFull` structure returned by the finite-horizon capstones
+carries five proof fields: the weak Navier–Stokes identity, the energy inequality, the
+one-sided initial trace at `t → 0⁺`, the energy class (a.e.-in-time H¹ membership plus
+integrable viscous dissipation), and time-measurability of the curve in ambient `L²`.
 
 The finite-horizon capstones take the horizon `T > 0` as input and return a solution
 on `[0, T]`. The global capstones instead fix a **single** curve `u : Time → L²_σ` and
