@@ -239,7 +239,7 @@ private theorem reSchwartz_L3_conv_of_valueConv (h : L2C_R3)
       exact Complex.abs_re_le_norm _
     refine hre6.trans ((gns_L6_schwartz (φ n)).trans ?_)
     rw [← hCgns]
-    refine mul_le_mul_left' ?_ Cgns
+    refine mul_le_mul_right ?_ Cgns
     refine (PlancherelKernels.eLpNorm_fderiv_le_sum_lineDeriv (φ n)).trans ?_
     exact Finset.sum_le_sum (fun i _ => hB i n)
   -- C6 and ‖h.re‖₆ are finite, so the L⁶ bound `D6` is finite.

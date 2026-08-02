@@ -264,6 +264,170 @@ assert_core_clean "lower_bound_from_inverse_square_lifespan"
 assert_core_clean "localCompactness_R3_of_ballCompact"
 
 # ---------------------------------------------------------------------------
+# Pins 5–9: generic global contract layer (issue #195 P1, LerayHopf.Galerkin.*)
+#   Interim kernel-trio pins for the promoted `LerayHopf/Galerkin/GlobalContract.lean`
+#   module (architect Q3 ruling on #200). Until P4's global-capstone live pin lands,
+#   no live-pinned capstone depends on this module, so a stray `sorryAx`/axiom
+#   introduced here between P1 and P4 would be invisible to the existing pins — `sorry`
+#   is a build *warning*, not an error, and the naming gate does not see axioms. These
+#   five close that window; by transitive closure they cover the whole promoted set
+#   (mono → WeakFormNS.mono → setIntegral_Ioc_eq_of_tail_zero; congr_Icc →
+#   WeakFormNS.congr_Icc; pins 5–7 cover IsLerayHopfOn / ofIsOn / GlobalLerayHopfSolution
+#   / toSolution). The badTail/truncation quartet is deliberately unpinned (illustrative
+#   cross-check layer, consumed by nothing downstream; cone membership suffices). P4's
+#   global-capstone live pins (13–16) are APPENDED alongside these, not substituted for
+#   them (append-only doctrine, #203 Q3 ruling: no pruning — subsumption is
+#   route-dependent and each pin costs ~zero).
+# ---------------------------------------------------------------------------
+assert_axioms "Galerkin.nonempty_lerayHopfSolution_iff_exists_isOn" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "Galerkin.globalLerayHopfSolution_nonempty_iff" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "Galerkin.GlobalLerayHopfSolution.toSolution_u" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "Galerkin.IsLerayHopfOn.mono" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "Galerkin.IsLerayHopfOn.congr_Icc" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
+# Pin 10: P2 (#201) κ-chain exit gate — torus_kappaChain_exit
+#   The compiled acceptance artifact instantiating the P2ExitWitness shape (§5 P2
+#   exit gate). Kernel-only (0 project axioms): the whole torus compactness chain it
+#   assembles is kernel-only, and the extendReindexedFamily embedding adds only
+#   Classical.choice (already in the kernel trio) + galSeq_of_torus (axiom-free).
+# ---------------------------------------------------------------------------
+assert_axioms "torus_kappaChain_exit" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
+# Pins 11–12: P3 (#202) diagonal machinery
+#   Pin 11: exists_diagonal_weakly_convergent_galSeq — the packaged diagonal weak-limit
+#     theorem (Torus/DiagonalGalerkin.lean). Kernel-only: the base family galSeq is a
+#     parameter (no galSeq_of_torus), and the whole stage recursion + diagonal engine it
+#     assembles is kernel-trio.
+#   Pin 12: Bochner.exists_diagonal_extraction — the promoted abstract diagonal API
+#     (Bochner/DiagonalExtraction.lean). The packaged theorem's witness uses
+#     diagExtraction / diagExtraction_strictMono / tendsto_diag_of_tendsto_stage
+#     DIRECTLY, so this promoted decl sits in the release cone consumed by no live-pinned
+#     capstone yet; pinning it here closes the P3→P4 sorryAx blind window (same doctrine
+#     as the P1 GlobalContract interim pins; architect #202 §7 addition).
+# ---------------------------------------------------------------------------
+assert_axioms "exists_diagonal_weakly_convergent_galSeq" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "Bochner.exists_diagonal_extraction" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
+# Pins 13–16: P4 (#203) global torus capstone (LerayHopf.Torus.GlobalCapstone)
+#   The campaign finale (issue #195). These four APPEND to the interim pins 5–12:
+#   with the global capstone now in the release cone, the whole P1→P4 assembly
+#   (generic global contract → κ-chain exit → diagonal machinery → per-horizon
+#   assembly) is covered by a live-pinned downstream capstone, so any stray
+#   sorryAx/axiom introduced anywhere in that chain becomes visible here.
+#   Kernel-only (0 project axioms): the whole torus chain is kernel-only, so the
+#   ∃ F, ∃ u, ∀ T assembly and the def-fold `globalTorusCapstone` inherit exactly
+#   the kernel trio.
+#     Pin 13: exists_global_lerayHopf_torus3 — the ∃ F, ∃ u, ∀ T assembly (§4.4).
+#     Pin 14: exists_globalLerayHopfSolutionFull_torus3 — structure form (§4.4).
+#     Pin 15: globalTorusCapstone — the frozen `def : Prop` target, proved (Q1 fold).
+#     Pin 16: globalTorusCapstone_implies_finite — the sanity direction (promoted
+#       from the deleted scratch spike; formerly a scratch pin, now release-cone).
+# ---------------------------------------------------------------------------
+assert_axioms "exists_global_lerayHopf_torus3" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "exists_globalLerayHopfSolutionFull_torus3" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "globalTorusCapstone" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "globalTorusCapstone_implies_finite" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
+# Pins 17–18: P1′ (#214, parent #212) ℝ³ global capstone statement layer
+#   (LerayHopf.R3.GlobalCapstone). The STATEMENT-layer deliverables of the ℝ³ global
+#   lane: the frozen `def : Prop` target and the easy-direction consistency witness.
+#   The ℝ³ assembly capstones (exists_global_lerayHopf_r3 / …Full / globalR3Capstone)
+#   are P4′ (#217) and will append their own pins then. Per the D3 pin ruling
+#   2026-07-29 (torus precedent, pins 5–9 note above: every phase PR appends its own
+#   live pins; production decls' single machine guard is check-axioms-live), these two
+#   are pinned in the P1′ PR now — NOT deferred to the P4′ row.
+#   Kernel-only (0 project axioms): the def's body references only the generic global
+#   contract (`Galerkin.IsLerayHopfOn`) and the ℝ³ interface layer, both kernel-trio;
+#   `implies_finite` adds only `Galerkin.LerayHopfSolution.ofIsOn`.
+#     Pin 17: GlobalR3CapstoneStatement — the frozen `def : Prop` target (§2.1).
+#     Pin 18: globalR3Capstone_implies_finite — the easy direction (global ⇒ finite).
+# ---------------------------------------------------------------------------
+assert_axioms "GlobalR3CapstoneStatement" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "globalR3Capstone_implies_finite" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
+# Pin 19: P2′ (#215, parent #212) ℝ³ κ-chain exit gate — the compiled production
+#   acceptance artifact `r3_kappaChain_exit` (LerayHopf.R3.KappaChainExit). This is the
+#   theorem the §6 exit gate requires: for every dependent reindexed family it embeds
+#   into a base family (`extendReindexedFamily_R3`), runs the κ-generalized compactness
+#   chain with `κ := φ₁`, and re-exports the everywhere-weak pin against the dependent
+#   family via `transport`. Parallels the torus `torus_kappaChain_exit` pin (pin 12
+#   above). Per the D3 pin ruling 2026-07-29 (every phase PR appends its own live pins),
+#   this is pinned in the P2′ PR now — append-only, after pins 17–18.
+#   Kernel-only (0 project axioms): the whole κ-chain (aubinLionsPackage_R3_of_… →
+#   viscous_lsc_under_strongL2 → galerkin_limit_passage_R3) is kernel-trio, confirmed
+#   by the §4.1 smokes (r3KappaSuccSmoke_*) which consume it and are themselves
+#   kernel-trio, so its axiom closure ⊆ {propext, Classical.choice, Quot.sound}.
+#     Pin 19: r3_kappaChain_exit — the compiled production instantiation (§6 clause 1).
+# ---------------------------------------------------------------------------
+assert_axioms "r3_kappaChain_exit" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
+# Pins 20–21: P3′ (#216, parent #212) ℝ³ diagonal machinery
+#   (LerayHopf.R3.DiagonalGalerkin). The P3′ deliverables of the ℝ³ global lane: the
+#   packaged diagonal weak-limit theorem consumed by P4′, plus the §790 coherence-
+#   coupling deliverable that promotes the spike-(a) coherence core against the packaged
+#   (δ,W) output. Parallels the torus P3 diagonal pins (`exists_diagonal_weakly_convergent_galSeq`
+#   + `Bochner.exists_diagonal_extraction`, pins 10–11 above). Per the D3 pin ruling
+#   2026-07-29 (every phase PR appends its own live pins), these two are pinned in the
+#   P3′ PR now — append-only, after pin 19.
+#   Kernel-only (0 project axioms): the whole stage recursion (aubinLionsPackage_R3_of_… →
+#   exists_weak_representative_R3, the Nat.rec `stageData_R3` carrier, and
+#   `Bochner.DiagonalExtraction` consumed verbatim) is kernel-trio, so both decls' axiom
+#   closure ⊆ {propext, Classical.choice, Quot.sound}.
+#     Pin 20: exists_diagonal_weakly_convergent_galSeq_R3 — the packaged weak-limit theorem.
+#     Pin 21: exists_diag_coherent_representative_R3 — the §790 coherence-coupling deliverable.
+# ---------------------------------------------------------------------------
+assert_axioms "exists_diagonal_weakly_convergent_galSeq_R3" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "exists_diag_coherent_representative_R3" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
+# Pins 22–24: P4′ (#217, parent #212) ℝ³ global capstone
+#   (LerayHopf.R3.GlobalCapstone). The campaign finale of the ℝ³ global lane: the
+#   ∃ 𝔊, ∃ F, ∃ u, ∀ T assembly and the def-fold of the frozen `def : Prop` target.
+#   These three APPEND to the P1′ statement-layer pins 17–18 and the P2′/P3′ pins
+#   19–21: with the ℝ³ global capstone now in the release cone, the whole P1′→P4′
+#   assembly (frozen target → κ-chain exit gate → diagonal machinery → per-horizon
+#   `IsLerayHopfOn.congr_Icc`/`.mono` assembly) is covered by a live-pinned downstream
+#   capstone, so any stray sorryAx/axiom introduced anywhere in that chain becomes
+#   visible here. Parallels the torus P4 capstone pins 13–16; the ℝ³ `implies_finite`
+#   twin is already pinned at pin 18 (P1′), so P4′ adds three, not four (append-only,
+#   no pruning). Per the D3 pin ruling 2026-07-29 (every phase PR appends its own live
+#   pins). Kernel-only (0 project axioms): the whole ℝ³ chain is kernel-trio, so the
+#   ∃ assembly and the def-fold `globalR3Capstone` inherit exactly the kernel trio.
+#     Pin 22: exists_global_lerayHopf_r3 — the ∃ 𝔊, ∃ F, ∃ u, ∀ T assembly (§2.1).
+#     Pin 23: exists_globalLerayHopfSolutionFull_r3 — structure form (§2.1).
+#     Pin 24: globalR3Capstone — the frozen `def : Prop` target, proved (defeq fold).
+# ---------------------------------------------------------------------------
+assert_axioms "exists_global_lerayHopf_r3" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "exists_globalLerayHopfSolutionFull_r3" \
+  "propext Classical.choice Quot.sound"
+assert_axioms "globalR3Capstone" \
+  "propext Classical.choice Quot.sound"
+
+# ---------------------------------------------------------------------------
 # Experimental-module axiom profile (issue #158 "public sorry / scaffold theorem の
 # axiom profile を release tooling で可視化" requirement) — VISIBILITY ONLY, does not
 # affect FAIL. Prints the axiom set of every `sorryAx`-carrying declaration behind the
@@ -308,4 +472,4 @@ if [ "$FAIL" -ne 0 ]; then
   exit 1
 fi
 
-echo "AXIOM LIVE PIN OK — all 4 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY)."
+echo "AXIOM LIVE PIN OK — all 24 declarations match their pinned axiom sets (R3: 0 project axioms — KERNEL-ONLY, 𝕋³: 0 project axioms — KERNEL-ONLY; 5 generic global-contract pins kernel-only; P2 κ-chain exit gate kernel-only; P3 diagonal packaged theorem + promoted diagonal API kernel-only; P4 global torus capstone — 4 pins kernel-only, the campaign finale; P1′ ℝ³ global capstone statement layer — 2 pins kernel-only; P2′ ℝ³ κ-chain exit gate — 1 pin kernel-only; P3′ ℝ³ diagonal machinery — 2 pins kernel-only; P4′ ℝ³ global capstone — 3 pins kernel-only, the ℝ³ lane finale)."

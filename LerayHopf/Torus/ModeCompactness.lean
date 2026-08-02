@@ -76,7 +76,7 @@ theorem galerkin_test_pairing_lipschitz
     have hda := (gs.u_hasDeriv r hr).inner (𝕜 := ℝ) (hasDerivAt_const r (w : L2VF))
     simp only [inner_zero_right, zero_add] at hda
     have hode := gs.u_ode r hr w hwn.symm
-    simp only [torusDomain_stokes, Torus3NSForms.core_b] at hode
+    simp only [Torus3NSForms.core_b] at hode
     have hval : inner (𝕜 := ℝ) (deriv (fun s' => (gs.u s' : L2VF)) r) (w : L2VF)
         = -(ν * stokesTestPairing (gs.u r : L2VF) (w : L2VF) + F.b (gs.u r) (gs.u r) w) := by
       linarith
@@ -147,10 +147,11 @@ via P0.9b + Cauchy–Schwarz, then the T-AL-2 engine + `choose`. -/
 theorem exists_galerkin_modewise_extraction
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
     (w : ℕ → L2Sigma) (hwtest : ∀ m, IsGalerkinTest (w m)) :
     ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∃ g : ℕ → ℝ → ℝ, ∀ m,
       TendstoUniformlyOn
-        (fun n t => inner (𝕜 := ℝ) (((galSeq (φ n)).u t : L2VF)) ((w m : L2VF)))
+        (fun n t => inner (𝕜 := ℝ) (((galSeq (κ (φ n))).u t : L2VF)) ((w m : L2VF)))
         (g m) atTop (Icc (0 : ℝ) T) := by
   classical
   -- Per-test band-limit cutoff from `IsGalerkinTest` (flag d: the engine's `n₀ m`).
@@ -161,15 +162,15 @@ theorem exists_galerkin_modewise_extraction
     galerkin_test_pairing_lipschitz F ν hν u₀ galSeq (w m) (Classical.choose (hwtest m)) (hcut m)
   -- The T-AL-2 engine over `f m n t := ⟪u_n(t), w m⟫`.
   obtain ⟨φ, hφ, hconv⟩ := exists_uniform_subseq_of_lipschitz_family T hT
-    (fun m n t => inner (𝕜 := ℝ) (((galSeq n).u t : L2VF)) ((w m : L2VF)))
+    (fun m n t => inner (𝕜 := ℝ) (((galSeq (κ n)).u t : L2VF)) ((w m : L2VF)))
     (fun m => ‖(u₀ : L2VF)‖ * ‖((w m : L2Sigma) : L2VF)‖) L
     (fun m n t ht =>
-      -- uniform bound: Cauchy–Schwarz + P0.9b (forward time from `ht.1`)
+      -- uniform bound: Cauchy–Schwarz + P0.9b (forward time from `ht.1`), at base index `κ n`
       le_trans (abs_real_inner_le_norm _ _)
-        (mul_le_mul_of_nonneg_right (galerkin_u_norm_le F ν u₀ n (galSeq n) t ht.1)
+        (mul_le_mul_of_nonneg_right (galerkin_u_norm_le F ν u₀ (κ n) (galSeq (κ n)) t ht.1)
           (norm_nonneg _)))
     (fun m => ⟨Classical.choose (hwtest m), fun n hn s t hs ht hst =>
-      hL m n hn s t hs.1 hst⟩)
+      hL m (κ n) (le_trans hn hκ.le_apply) s t hs.1 hst⟩)
   -- Package the per-`m` limits into a single function (flag b).
   choose g hg using hconv
   exact ⟨φ, hφ, g, hg⟩
@@ -222,7 +223,7 @@ theorem exists_weak_limit_curve
     (v : ℕ → ℝ → L2Sigma)
     (hb : ∀ n t, t ∈ Icc (0 : ℝ) T → ‖(v n t : L2VF)‖ ≤ M)
     (hcont : ∀ n, ContinuousOn (fun t => (v n t : L2VF)) (Icc (0 : ℝ) T))
-    (w : ℕ → L2Sigma) (hwtest : ∀ m, IsGalerkinTest (w m))
+    (w : ℕ → L2Sigma) (_hwtest : ∀ m, IsGalerkinTest (w m))
     (hspan : ∀ N : ℕ, ∃ s : Finset ℕ,
       velocitySpan N ≤ Submodule.span ℝ ((fun m => ((w m : L2Sigma) : L2VF)) '' ↑s))
     (g : ℕ → ℝ → ℝ)
@@ -514,36 +515,37 @@ The body is the REAL wiring against the merged T-AL-1/T-AL-3 production theorems
 instantiation with the production outputs type-composes exactly as claimed. -/
 theorem exists_limit_curve_of_galSeq
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
-    (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) :
+    (u₀ : L2Sigma) (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ) :
     ∃ (φ : ℕ → ℕ) (u : Time → L2Sigma), StrictMono φ ∧
       (∀ t ∈ Icc (0 : ℝ) T, ∀ z : L2Sigma,
-        Tendsto (fun n => inner (𝕜 := ℝ) (((galSeq (φ n)).u t : L2VF)) ((z : L2VF)))
+        Tendsto (fun n => inner (𝕜 := ℝ) (((galSeq (κ (φ n))).u t : L2VF)) ((z : L2VF)))
           atTop (𝓝 (inner (𝕜 := ℝ) ((u t : L2VF)) ((z : L2VF))))) ∧
       (∀ t ∈ Icc (0 : ℝ) T, ‖(u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖) ∧
       AEStronglyMeasurable (fun t => (u t : L2VF)) (volume.restrict (Icc (0 : ℝ) T)) ∧
       ∀ N : ℕ, Tendsto (fun n => ∫ t in (0 : ℝ)..T,
-          ‖velocityProjection_n N (((galSeq (φ n)).u t : L2VF)) -
+          ‖velocityProjection_n N (((galSeq (κ (φ n))).u t : L2VF)) -
             velocityProjection_n N ((u t : L2VF))‖ ^ 2)
         atTop (𝓝 0) := by
   classical
   -- T-AL-1: the countable spanning Galerkin test family (production, fully qualified).
   obtain ⟨w, hwtest, hspan⟩ := _root_.LerayHopf.exists_galerkin_test_family
-  -- T-AL-3: the mode-wise extraction over that family (production, fully qualified).
+  -- T-AL-3: the κ-mode-wise extraction over that family (production, fully qualified).
   obtain ⟨φ, hφ, g, hconv⟩ :=
-    _root_.LerayHopf.exists_galerkin_modewise_extraction F ν hν T hT u₀ galSeq w hwtest
-  -- T-AL-3 exports: ball bound (flag c) and continuity (flag a) for the reindexed curves.
-  have hb : ∀ n t, t ∈ Icc (0 : ℝ) T → ‖((galSeq (φ n)).u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖ :=
-    fun n t ht => _root_.LerayHopf.galerkin_u_norm_le F ν u₀ (φ n) (galSeq (φ n)) t ht.1
-  have hcont : ∀ n, ContinuousOn (fun t => ((galSeq (φ n)).u t : L2VF)) (Icc (0 : ℝ) T) :=
-    fun n => (_root_.LerayHopf.galerkin_u_continuousOn F ν u₀ (φ n) (galSeq (φ n))).mono
+    _root_.LerayHopf.exists_galerkin_modewise_extraction F ν hν T hT u₀ galSeq κ hκ w hwtest
+  -- T-AL-3 exports: ball bound (flag c) and continuity (flag a) at the κ-shifted indices.
+  have hb : ∀ n t, t ∈ Icc (0 : ℝ) T → ‖((galSeq (κ (φ n))).u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖ :=
+    fun n t ht => _root_.LerayHopf.galerkin_u_norm_le F ν u₀ (κ (φ n)) (galSeq (κ (φ n))) t ht.1
+  have hcont : ∀ n, ContinuousOn (fun t => ((galSeq (κ (φ n))).u t : L2VF)) (Icc (0 : ℝ) T) :=
+    fun n => (_root_.LerayHopf.galerkin_u_continuousOn F ν u₀ (κ (φ n)) (galSeq (κ (φ n)))).mono
       Icc_subset_Ici_self
   -- Step C: P0.5 instantiated with the T-AL-3 outputs (the composition under test).
   obtain ⟨u, hweak, hub, hmeas⟩ := exists_weak_limit_curve T hT (‖(u₀ : L2VF)‖)
-    (fun n => (galSeq (φ n)).u) hb hcont w hwtest hspan g hconv
+    (fun n => (galSeq (κ (φ n))).u) hb hcont w hwtest hspan g hconv
   refine ⟨φ, u, hφ, hweak, hub, hmeas, fun N => ?_⟩
   -- Step D: P0.10 at level N (v-measurability from continuity on the compact Icc).
   exact integral_sq_proj_tendsto_zero_of_weak T hT (‖(u₀ : L2VF)‖) N
-    (fun n => (galSeq (φ n)).u) u hb hub
+    (fun n => (galSeq (κ (φ n))).u) u hb hub
     (fun n => (hcont n).aestronglyMeasurable measurableSet_Icc) hmeas hweak
 
 end LerayHopf

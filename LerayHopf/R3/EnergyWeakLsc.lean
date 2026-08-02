@@ -121,7 +121,8 @@ package deliberately does not carry. -/
 theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν T : ℝ) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) :
     ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
       (1 / 2 : ℝ) * ‖(alPkg.u t : L2VF_R3)‖ ^ 2 ≤ (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2 := by
   -- PROVABLE CORE (no time-measurability needed): the uniform Galerkin energy bound,
@@ -142,13 +143,13 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
       rw [hμ]; refine ae_restrict_of_forall_mem measurableSet_Icc ?_; intro t ht; exact ht.1
     -- ════ For each integer radius `k`: the limit's ball restriction is L²-bounded by ‖u₀‖. ════
     -- This is the `Bochner.kineticEnergy_lsc_transfer` (norm-lsc) step, applied in `β = L2ballR3 k`, with
-    --   f n := t ↦ restrictToBall k ((galSeq (alPkg.φ n)).u t),   g := t ↦ restrictToBall k (u t).
+    --   f n := t ↦ restrictToBall k ((galSeq (κ (alPkg.φ n))).u t),   g := t ↦ restrictToBall k (u t).
     have hperBall : ∀ k : ℕ,
         ∀ᵐ t ∂μ, ‖restrictToBall (k : ℝ) (alPkg.u t)‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
       intro k
       set R : ℝ := (k : ℝ) with hR
       set f : ℕ → ℝ → L2ballR3 R :=
-        fun n t => restrictToBall R ((galSeq (alPkg.φ n)).u t) with hf
+        fun n t => restrictToBall R ((galSeq (κ (alPkg.φ n))).u t) with hf
       set g : ℝ → L2ballR3 R := fun t => restrictToBall R (alPkg.u t) with hg
       -- (1) `g` is a.e.-strongly measurable: `restrictToBall R` continuous ∘ `u` measurable.
       have hg_meas : AEStronglyMeasurable g μ := by
@@ -159,11 +160,11 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
       have hf_meas : ∀ n, AEStronglyMeasurable (f n) μ := by
         intro n
         have hcurve : ContinuousOn
-            (fun t => ((galSeq (alPkg.φ n)).u t : L2VF_R3)) (Set.Icc (0 : ℝ) T) :=
-          (galerkin_curve_continuous 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n))).mono
+            (fun t => ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) (Set.Icc (0 : ℝ) T) :=
+          (galerkin_curve_continuous 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n)))).mono
             (by intro t ht; exact ht.1)
         have hcurve_meas : AEStronglyMeasurable
-            (fun t => ((galSeq (alPkg.φ n)).u t : L2VF_R3)) μ := by
+            (fun t => ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) μ := by
           rw [hμ]; exact hcurve.aestronglyMeasurable measurableSet_Icc
         simp only [hf]
         exact (continuous_restrictToBall R).comp_aestronglyMeasurable hcurve_meas
@@ -172,13 +173,13 @@ theorem kineticEnergy_lsc_bound (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
         intro n
         filter_upwards [hμ_ge] with t ht
         simp only [hf]
-        calc ‖restrictToBall R ((galSeq (alPkg.φ n)).u t)‖
-            ≤ ‖((galSeq (alPkg.φ n)).u t : L2VF_R3)‖ :=
-              norm_restrictToBall_le R ((galSeq (alPkg.φ n)).u t)
-          _ ≤ ‖(u₀ : L2VF_R3)‖ := hgal (alPkg.φ n) ht
+        calc ‖restrictToBall R ((galSeq (κ (alPkg.φ n))).u t)‖
+            ≤ ‖((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)‖ :=
+              norm_restrictToBall_le R ((galSeq (κ (alPkg.φ n))).u t)
+          _ ≤ ‖(u₀ : L2VF_R3)‖ := hgal (κ (alPkg.φ n)) ht
       -- (4) the L²-in-time convergence `eLpNorm (f n - g) 2 μ → 0`. With `strong_convergence` now
       -- in its faithful `eLpNorm`-form (issue #31), this is EXACTLY the package field at radius
-      -- `R = k`: `f n t = restrictToBall R ((galSeq (alPkg.φ n)).u t)` and
+      -- `R = k`: `f n t = restrictToBall R ((galSeq (κ (alPkg.φ n))).u t)` and
       -- `g t = restrictToBall R (alPkg.u t)`, and `μ = volume.restrict (Icc 0 T)`, so the field's
       -- conclusion is definitionally `hconv`.  This DISCHARGES the former `MemLp g`-gap `sorry`
       -- (the Bochner-form residual): the faithful field supplies the time-`L²` convergence directly,
@@ -612,7 +613,7 @@ Chain (per truncation `k`): push `uₙ ⇀ u` through the bounded CLM `mulBdd_k 
 norm-weak-lsc, square, bound by the approximant integrand (truncated ≤ full, `H¹`); then take the
 supremum over `k` (MCT) to recover the full lower Lebesgue integrand of the limit. -/
 private theorem viscousLintegrand_le_liminf_of_weak (j : Fin 3)
-    (un : ℕ → L2VF_R3) (u : L2VF_R3) (M : ℝ) (hM0 : 0 ≤ M)
+    (un : ℕ → L2VF_R3) (u : L2VF_R3) (M : ℝ) (_hM0 : 0 ≤ M)
     (hbd : ∀ n, ‖un n‖ ≤ M) (hH1 : ∀ n, memH1VF_R3 (un n))
     (hweak : Tendsto (fun n => toWeakSpace ℝ L2VF_R3 (un n)) atTop
       (nhds (toWeakSpace ℝ L2VF_R3 u))) :
@@ -678,16 +679,17 @@ only the continuous (hence measurable) approximant curves. -/
 private theorem liminf_viscousFormSq_lt_top_ae (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) :
     ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)),
       Filter.atTop.liminf
-        (fun n => ENNReal.ofReal (viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3))) < ⊤ := by
+        (fun n => ENNReal.ofReal (viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3))) < ⊤ := by
   set μ : Measure ℝ := volume.restrict (Set.Icc (0 : ℝ) T) with hμ
   set gn : ℕ → ℝ → ℝ :=
-    fun n t => viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3) with hgn
+    fun n t => viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) with hgn
   have hgn_nonneg : ∀ n t, 0 ≤ gn n t := fun n t => viscousFormSq_R3_nonneg (by norm_num) _
   have hgn_cont : ∀ n, ContinuousOn (gn n) (Set.Ici (0 : ℝ)) :=
-    fun n => viscousFormSq_curve_continuousOn 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n))
+    fun n => viscousFormSq_curve_continuousOn 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n)))
   have hgn_meas : ∀ n, AEMeasurable (fun t => ENNReal.ofReal (gn n t)) μ := by
     intro n; rw [hμ]
     exact ((ContinuousOn.aemeasurable ((hgn_cont n).mono (fun t ht => ht.1))
@@ -695,8 +697,8 @@ private theorem liminf_viscousFormSq_lt_top_ae (𝔊 : R3GalerkinScheme) (F : R3
   -- `reg_bound` gives `∫₀ᵀ gn n ≤ ν⁻¹·½‖u₀‖²` (rescale the `ν`-form).
   have hgn_int : ∀ n, ∫ s in (0 : ℝ)..T, gn n s ≤ ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2) := by
     intro n
-    have hrb := (galSeq (alPkg.φ n)).reg_bound T hT
-    have hscale : ∀ s, viscousFormSq_R3 ν ((galSeq (alPkg.φ n)).u s : L2VF_R3) = ν * gn n s :=
+    have hrb := (galSeq (κ (alPkg.φ n))).reg_bound T hT
+    have hscale : ∀ s, viscousFormSq_R3 ν ((galSeq (κ (alPkg.φ n))).u s : L2VF_R3) = ν * gn n s :=
       fun s => by rw [hgn, viscousFormSq_R3_eq_smul, smul_eq_mul]
     rw [intervalIntegral.integral_congr (g := fun s => ν * gn n s) (fun s _ => hscale s),
       intervalIntegral.integral_const_mul] at hrb
@@ -760,7 +762,8 @@ across the file split (issue #114 Tier 1 commit 1). -/
 theorem viscousFormSq_aestronglyMeasurable_of_memH1
     {𝔊 : R3GalerkinScheme} {F : R3NSForms 𝔊} {ν T : ℝ} {u₀ : L2Sigma_R3}
     {galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n}
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ)
     (hmemH1 : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), memH1VF_R3 (alPkg.u t : L2VF_R3)) :
     AEStronglyMeasurable (fun t => viscousFormSq_R3 1 (alPkg.u t : L2VF_R3))
       (volume.restrict (Set.Icc (0 : ℝ) T)) := by
@@ -805,7 +808,7 @@ its viscous (Dirichlet) seminorm is dominated by the `liminf` of the approximant
 
 ```
 memH1VF_R3 (alPkg.u t) ∧
-ofReal (viscousFormSq_R3 1 (alPkg.u t)) ≤ liminf_n ofReal (viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t))
+ofReal (viscousFormSq_R3 1 (alPkg.u t)) ≤ liminf_n ofReal (viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t))
 ```
 
 together with time-measurability of the limit's viscous form (needed to feed Fatou downstream).
@@ -835,7 +838,8 @@ weakly lower-semicontinuous, under strong-L². The chain:
 theorem viscous_pointwise_lsc (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν T : ℝ) (hν : 0 < ν) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) :
     (AEStronglyMeasurable
         (fun t => viscousFormSq_R3 1 (alPkg.u t : L2VF_R3))
         (volume.restrict (Set.Icc (0 : ℝ) T))) ∧
@@ -843,13 +847,13 @@ theorem viscous_pointwise_lsc (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
       memH1VF_R3 (alPkg.u t : L2VF_R3) ∧
       ENNReal.ofReal (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) ≤
         Filter.atTop.liminf
-          (fun n => ENNReal.ofReal (viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3)))) := by
+          (fun n => ENNReal.ofReal (viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)))) := by
   -- ════ FOURIER–PLANCHEREL ROUTE (full-sequence, in `L²`; no H¹ Hilbert type, no Banach–Alaoglu). ════
   classical
   set μ : Measure ℝ := volume.restrict (Set.Icc (0 : ℝ) T) with hμ
   -- abbreviations for the limit / approximant curves.
   set u : ℝ → L2VF_R3 := fun t => (alPkg.u t : L2VF_R3) with hu
-  set un : ℕ → ℝ → L2VF_R3 := fun n t => ((galSeq (alPkg.φ n)).u t : L2VF_R3) with hun
+  set un : ℕ → ℝ → L2VF_R3 := fun n t => ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) with hun
   -- (A) full-sequence weak-L² convergence `uₙ(t) ⇀ u(t)` at a.e. `t`, from `strong_convergence_ae`
   -- (per-ball a.e.-`t` convergence) + the ball-tail ε/3 argument, against the uniform `‖·‖ ≤ ‖u₀‖`.
   -- Only NAT radii are needed (the ball-tail argument uses one integer radius per ε), so the
@@ -863,7 +867,7 @@ theorem viscous_pointwise_lsc (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     ae_restrict_of_forall_mem measurableSet_Icc (fun t ht => ht.1)
   -- (B) the kinetic-lsc limit bound `‖u t‖ ≤ ‖u₀‖` a.e. (recover from `kineticEnergy_lsc_bound`).
   have hu_bound : ∀ᵐ t ∂μ, ‖u t‖ ≤ ‖(u₀ : L2VF_R3)‖ := by
-    have hkin := kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq alPkg
+    have hkin := kineticEnergy_lsc_bound 𝔊 F ν T u₀ galSeq κ hκ alPkg
     filter_upwards [hkin] with t ht
     have h2 : ‖(alPkg.u t : L2VF_R3)‖ ^ 2 ≤ ‖(u₀ : L2VF_R3)‖ ^ 2 := by nlinarith [ht]
     nlinarith [norm_nonneg (alPkg.u t : L2VF_R3), norm_nonneg (u₀ : L2VF_R3), h2]
@@ -873,10 +877,10 @@ theorem viscous_pointwise_lsc (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     filter_upwards [hperball_ae, ht_nonneg, hu_bound] with t hpb ht0 hub
     refine weak_tendsto_of_inner_tendsto (un · t) (u t) (fun e => ?_)
     exact inner_tendsto_of_perball e (un · t) (u t) ‖(u₀ : L2VF_R3)‖ (norm_nonneg _)
-      (fun n => by rw [hun]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) ht0)
+      (fun n => by rw [hun]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n))) ht0)
       hub hpb
   -- approximants are `H¹` (`reg_mem`).
-  have hH1 : ∀ n (t : ℝ), memH1VF_R3 (un n t) := fun n t => (galSeq (alPkg.φ n)).reg_mem t
+  have hH1 : ∀ n (t : ℝ), memH1VF_R3 (un n t) := fun n t => (galSeq (κ (alPkg.φ n))).reg_mem t
   -- (C) the per-component viscous lsc bound, applied at each `j`, at a.e. `t`.
   have hlsc_j : ∀ᵐ t ∂μ, ∀ j : Fin 3,
       viscousLintegrand_j j (u t)
@@ -884,13 +888,13 @@ theorem viscous_pointwise_lsc (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     filter_upwards [hweak, ht_nonneg] with t hwt ht0
     intro j
     exact viscousLintegrand_le_liminf_of_weak j (un · t) (u t) ‖(u₀ : L2VF_R3)‖ (norm_nonneg _)
-      (fun n => by rw [hun]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) ht0)
+      (fun n => by rw [hun]; exact galerkin_norm_le_u0 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n))) ht0)
       (fun n => hH1 n t) hwt
   -- (D) finiteness of the limit's per-component lower-Lebesgue integrand at a.e. `t`
   -- (`viscousLintegrand_j j (u t) ≤ liminf_n ofReal viscousFormSq(uₙ t) < ∞`), via `reg_bound`+Fatou.
   have hfin_lt : ∀ᵐ t ∂μ,
       Filter.atTop.liminf (fun n => ENNReal.ofReal (viscousFormSq_R3 1 (un n t))) < ⊤ := by
-    rw [hμ, hun]; exact liminf_viscousFormSq_lt_top_ae 𝔊 F ν hν T hT u₀ galSeq alPkg
+    rw [hμ, hun]; exact liminf_viscousFormSq_lt_top_ae 𝔊 F ν hν T hT u₀ galSeq κ hκ alPkg
   have hLintegrand_lt : ∀ᵐ t ∂μ, ∀ j : Fin 3, viscousLintegrand_j j (u t) < ⊤ := by
     filter_upwards [hlsc_j, hfin_lt] with t ht hfin
     intro j
@@ -908,7 +912,7 @@ theorem viscous_pointwise_lsc (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
   refine ⟨?_, ?_⟩
   · -- measurability conjunct: on the (a.e.) `H¹` set, `viscousFormSq(u t) = ∑ⱼ (⨆ₖ ‖mulBdd_k‖²)`,
     -- a measurable function of `t` (sup of the continuous-CLM-composed AEStronglyMeasurable `u`).
-    exact viscousFormSq_aestronglyMeasurable_of_memH1 alPkg hmemH1
+    exact viscousFormSq_aestronglyMeasurable_of_memH1 κ hκ alPkg hmemH1
   · filter_upwards [hlsc_j, hmemH1] with t ht hmem
     refine ⟨hmem, ?_⟩
     · -- the spectral lsc bound, summed over `j` (the PROVEN analytic core).
@@ -952,7 +956,8 @@ membership from it **axiom-free**, by Fatou's lemma in time (`lintegral_liminf_l
 theorem viscous_lsc_under_strongL2 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq) :
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) :
     (∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), memH1VF_R3 (alPkg.u t : L2VF_R3)) ∧
     IntervalIntegrable (fun s => viscousFormSq_R3 ν (alPkg.u s : L2VF_R3)) volume 0 T ∧
     ∫ s in (0 : ℝ)..T, viscousFormSq_R3 ν (alPkg.u s : L2VF_R3) ≤
@@ -964,11 +969,11 @@ theorem viscous_lsc_under_strongL2 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊
     rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top
   -- The pointwise weak-H¹ lsc (proved via the Fourier–Plancherel route) + measurability of the
   -- limit's viscous form.
-  obtain ⟨hmeas_u, hptwise⟩ := viscous_pointwise_lsc 𝔊 F ν T hν hT u₀ galSeq alPkg
+  obtain ⟨hmeas_u, hptwise⟩ := viscous_pointwise_lsc 𝔊 F ν T hν hT u₀ galSeq κ hκ alPkg
   -- Abbreviations for the `ν = 1` viscous forms (scaling by `ν` is folded in at the end).
   set g : ℝ → ℝ := fun t => viscousFormSq_R3 1 (alPkg.u t : L2VF_R3) with hg
   set gn : ℕ → ℝ → ℝ :=
-    fun n t => viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u t : L2VF_R3) with hgn
+    fun n t => viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u t : L2VF_R3) with hgn
   -- Nonnegativity of every viscous form (`ν = 1 ≥ 0`).
   have hg_nonneg : ∀ t, 0 ≤ g t := fun t => viscousFormSq_R3_nonneg (by norm_num) _
   have hgn_nonneg : ∀ n t, 0 ≤ gn n t := fun n t => viscousFormSq_R3_nonneg (by norm_num) _
@@ -982,7 +987,7 @@ theorem viscous_lsc_under_strongL2 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊
   -- ════ Approximant-side: each `gn n` is continuous on `Ici 0 ⊇ Icc 0 T`, hence
   -- a.e.-measurable and interval-integrable on `[0,T]`, with `∫₀ᵀ ν·gn n ≤ ½‖u₀‖²` (`reg_bound`). ════
   have hgn_cont : ∀ n, ContinuousOn (gn n) (Set.Ici (0 : ℝ)) :=
-    fun n => viscousFormSq_curve_continuousOn 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n))
+    fun n => viscousFormSq_curve_continuousOn 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n)))
   have hgn_meas : ∀ n, AEMeasurable (gn n) μ := by
     intro n
     rw [hμ]
@@ -990,9 +995,9 @@ theorem viscous_lsc_under_strongL2 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊
     intro t ht; exact ht.1
   have hgn_int : ∀ n, ∫ s in (0 : ℝ)..T, gn n s ≤ ν⁻¹ * ((1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2) := by
     intro n
-    have hrb := (galSeq (alPkg.φ n)).reg_bound T hT
+    have hrb := (galSeq (κ (alPkg.φ n))).reg_bound T hT
     -- `reg_bound` is in `ν`-form; rescale to the `ν = 1` integrand.
-    have hscale : ∀ s, viscousFormSq_R3 ν ((galSeq (alPkg.φ n)).u s : L2VF_R3)
+    have hscale : ∀ s, viscousFormSq_R3 ν ((galSeq (κ (alPkg.φ n))).u s : L2VF_R3)
         = ν * gn n s := by
       intro s; rw [hgn, viscousFormSq_R3_eq_smul, smul_eq_mul]
     rw [intervalIntegral.integral_congr (g := fun s => ν * gn n s) (fun s _ => hscale s),

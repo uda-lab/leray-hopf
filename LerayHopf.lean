@@ -88,6 +88,7 @@ import LerayHopf.Galerkin.QuadraticField
 -- both SolutionInterfaces route through these as abbrevs/extends).
 import LerayHopf.Galerkin.Domain
 import LerayHopf.Galerkin.SolutionBundles
+import LerayHopf.Galerkin.GlobalContract
 
 -- Torus-layer files not covered by Core, needed to assemble the capstone (sorry-free per
 -- the release-cone guard; axiom-free — the former "sorry-carrying" label was stale since
@@ -171,8 +172,15 @@ import LerayHopf.Bochner.TimeConvolution
 import LerayHopf.Bochner.StepFunctionCompactness  -- issue #46 PR-1: generic step-curve Lp compactness (File A)
 import LerayHopf.Bochner.ScalarEquicontinuity     -- issue #23: domain-neutral scalar equicontinuity engine
 import LerayHopf.Bochner.WeakLimitToolkit         -- issue #4 PR-5: generic Hilbert weak-limit toolkit (hoisted from Torus/TraceEnergy)
+import LerayHopf.Bochner.DiagonalExtraction       -- issue #202 P3: abstract diagonal-subsequence machinery (PDE-independent)
 import LerayHopf.Torus.ModeCompactness             -- issue #23: mode-wise extraction (equi-Lipschitz + engine assembly)
 import LerayHopf.Torus.ModeTail                    -- issue #23: mode-wise tail bounds
 import LerayHopf.Torus.AubinLionsAssembly          -- issue #23: aubin_lions replacement assembly
+import LerayHopf.Torus.KappaChainExit              -- issue #201 P2: κ-chain exit gate (P2ExitWitness + torus_kappaChain_exit)
+import LerayHopf.Torus.DiagonalGalerkin            -- issue #202 P3: stage recursion + diagonal weak limit (exists_diagonal_weakly_convergent_galSeq)
+import LerayHopf.Torus.GlobalCapstone              -- issue #203 P4 (closes #195): global torus capstone (exists_global_lerayHopf_torus3 + globalTorusCapstone)
 import LerayHopf.R3.GoodRepresentative            -- issue #4 PR-5: R3 weakly-continuous representative (scaffold)
 import LerayHopf.R3.LimitPassage                  -- issue #4 PR-6: galerkin_limit_passage_R3 PROVED (zero project axioms)
+import LerayHopf.R3.GlobalCapstone                -- issue #214 P1′ (parent #212): ℝ³ global capstone statement layer (GlobalR3CapstoneStatement + globalR3Capstone_implies_finite)
+import LerayHopf.R3.KappaChainExit                -- issue #215 P2′: ℝ³ κ-chain exit gate (R3KappaChainExitWitness + r3_kappaChain_exit)
+import LerayHopf.R3.DiagonalGalerkin              -- issue #216 P3′ (parent #212): ℝ³ stage recursion + diagonal weak limit (exists_diagonal_weakly_convergent_galSeq_R3)

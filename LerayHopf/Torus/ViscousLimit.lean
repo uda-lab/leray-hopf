@@ -168,7 +168,8 @@ plugging in here closes the `galerkin_limit_passage` removal. -/
 theorem torus_energyClass_of_aubinLions (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν)
     (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    (alPkg : AubinLionsPackage F ν T u₀ galSeq) :
+    (κ : ℕ → ℕ) (_hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq κ) :
     (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)),
         memH1VF (alPkg.u t : L2VF)) ∧
     IntervalIntegrable (fun s => viscousFormSq ν (alPkg.u s : L2VF))
@@ -179,13 +180,13 @@ theorem torus_energyClass_of_aubinLions (F : Torus3NSForms) (ν : ℝ) (hν : 0 
   -- Step 1: extract a.e.-strong subsequence ρ from alPkg
   -- ══════════════════════════════════════════════════════════════
   -- AE strong measurability of each approximant curve
-  have hfm : ∀ n, AEStronglyMeasurable (fun t => ((galSeq (φ n)).u t : L2VF)) μ := by
+  have hfm : ∀ n, AEStronglyMeasurable (fun t => ((galSeq (κ (φ n))).u t : L2VF)) μ := by
     intro n
-    have hcont : ContinuousOn (fun t => ((galSeq (φ n)).u t : L2VF)) (Set.Icc 0 T) :=
-      fun t ht => ((galSeq (φ n)).u_hasDeriv t ht.1).continuousAt.continuousWithinAt
+    have hcont : ContinuousOn (fun t => ((galSeq (κ (φ n))).u t : L2VF)) (Set.Icc 0 T) :=
+      fun t ht => ((galSeq (κ (φ n))).u_hasDeriv t ht.1).continuousAt.continuousWithinAt
     exact hcont.aestronglyMeasurable measurableSet_Icc
   -- Tendsto in measure from eLpNorm convergence
-  have hmeas : TendstoInMeasure μ (fun n t => ((galSeq (φ n)).u t : L2VF)) atTop
+  have hmeas : TendstoInMeasure μ (fun n t => ((galSeq (κ (φ n))).u t : L2VF)) atTop
       (fun t => (alPkg.u t : L2VF)) :=
     tendstoInMeasure_of_tendsto_eLpNorm (by norm_num : (2 : ENNReal) ≠ 0)
       hfm alPkg.u_aestronglyMeasurable alPkg.strong_convergence
@@ -227,27 +228,27 @@ theorem torus_energyClass_of_aubinLions (F : Torus3NSForms) (ν : ℝ) (hν : 0 
           ‖mFourierCoeff3 (L2VF_projComponentC p.1 (alPkg.u t : L2VF)) p.2‖ ^ 2)) :=
       fun t => rfl
     simp_rw [hVEeq]
-    exact AEMeasurable.ennreal_tsum hFpaem
+    exact AEMeasurable.tsum hFpaem
   -- ══════════════════════════════════════════════════════════════
   -- Step 3: Fatou – bound lintegral of viscousEnn on limit
   -- ══════════════════════════════════════════════════════════════
   -- Restrict a.e.-strong convergence to Ioc 0 T
   have hρ_ae_Ioc : ∀ᵐ t ∂(volume.restrict (Set.Ioc 0 T)),
-      Tendsto (fun k => ((galSeq (φ (ρ k))).u t : L2VF)) atTop
+      Tendsto (fun k => ((galSeq (κ (φ (ρ k)))).u t : L2VF)) atTop
         (𝓝 (alPkg.u t : L2VF)) :=
     ae_restrict_of_ae_restrict_of_subset Set.Ioc_subset_Icc_self hρ_ae
   -- A.e. lsc: viscousEnn ν (u t) ≤ liminf (viscousEnn ν (galSeq k .u t))
   have hae_lsc : ∀ᵐ t ∂(volume.restrict (Set.Ioc 0 T)),
       viscousEnn ν (alPkg.u t : L2VF) ≤
-        Filter.liminf (fun k => viscousEnn ν ((galSeq (φ (ρ k))).u t : L2VF)) atTop := by
+        Filter.liminf (fun k => viscousEnn ν ((galSeq (κ (φ (ρ k)))).u t : L2VF)) atTop := by
     filter_upwards [hρ_ae_Ioc] with t hconv
     exact viscousEnn_lsc ν (alPkg.u t : L2VF) _ hconv
   -- AEMeasurability of each approximant viscousEnn (via continuity)
   have hmeas_k : ∀ k, AEMeasurable
-      (fun t => viscousEnn ν ((galSeq (φ (ρ k))).u t : L2VF))
+      (fun t => viscousEnn ν ((galSeq (κ (φ (ρ k)))).u t : L2VF))
       (volume.restrict (Set.Ioc 0 T)) := by
     intro k
-    set n := φ (ρ k)
+    set n := κ (φ (ρ k))
     -- viscousEnn ν ((galSeq n).u t) = ofReal (viscousFormSq) for all t
     have hVE : ∀ t, viscousEnn ν ((galSeq n).u t : L2VF) =
         ENNReal.ofReal (viscousFormSq ν ((galSeq n).u t : L2VF)) :=
@@ -259,10 +260,10 @@ theorem torus_energyClass_of_aubinLions (F : Torus3NSForms) (ν : ℝ) (hν : 0 
       (hcont.aemeasurable measurableSet_Ioc)).congr
         (Filter.Eventually.of_forall (fun t => (hVE t).symm))
   -- Energy bound on each approximant: ∫⁻ in Ioc, viscousEnn ≤ ofReal (½ ‖u₀‖²)
-  have hbound : ∀ k, ∫⁻ t in Set.Ioc 0 T, viscousEnn ν ((galSeq (φ (ρ k))).u t : L2VF) ≤
+  have hbound : ∀ k, ∫⁻ t in Set.Ioc 0 T, viscousEnn ν ((galSeq (κ (φ (ρ k)))).u t : L2VF) ≤
       ENNReal.ofReal ((1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2) := by
     intro k
-    set n := φ (ρ k)
+    set n := κ (φ (ρ k))
     have hVE : ∀ t, viscousEnn ν ((galSeq n).u t : L2VF) =
         ENNReal.ofReal (viscousFormSq ν ((galSeq n).u t : L2VF)) :=
       fun t => viscousEnn_eq_ofReal_of_bandlimited ν hν.le n _ ((galSeq n).u_inVn t).symm
@@ -289,10 +290,10 @@ theorem torus_energyClass_of_aubinLions (F : Torus3NSForms) (ν : ℝ) (hν : 0 
       ENNReal.ofReal ((1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2) := by
     calc ∫⁻ t in Set.Ioc 0 T, viscousEnn ν (alPkg.u t : L2VF)
         ≤ ∫⁻ t in Set.Ioc 0 T,
-            Filter.liminf (fun k => viscousEnn ν ((galSeq (φ (ρ k))).u t : L2VF)) atTop :=
+            Filter.liminf (fun k => viscousEnn ν ((galSeq (κ (φ (ρ k)))).u t : L2VF)) atTop :=
           lintegral_mono_ae hae_lsc
       _ ≤ Filter.liminf (fun k => ∫⁻ t in Set.Ioc 0 T,
-              viscousEnn ν ((galSeq (φ (ρ k))).u t : L2VF)) atTop :=
+              viscousEnn ν ((galSeq (κ (φ (ρ k)))).u t : L2VF)) atTop :=
           lintegral_liminf_le' hmeas_k
       _ ≤ ENNReal.ofReal ((1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2) :=
           (Filter.liminf_le_liminf (Filter.Eventually.of_forall hbound)).trans_eq

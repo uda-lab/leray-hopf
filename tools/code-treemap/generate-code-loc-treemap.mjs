@@ -231,12 +231,37 @@ for (const node of hier.descendants()) {
   }
 }
 
+// Label contrast: pick black or white per tile from the tile's own colour, rather than
+// hard-coding white. Several of the palette entries are light enough that white labels fall
+// under the WCAG AA 4.5:1 threshold for normal-size text — e.g. Torus `#56B4E9` at 2.31:1 and
+// the first fallback colour `#E69F00` at 2.25:1. This is a pure function of the fill colour,
+// so the output stays deterministic.
+function relativeLuminance(hex) {
+  const h = hex.replace("#", "");
+  const channels = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+  const [r, g, b] = channels.map((c) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  );
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function contrastRatio(hexA, hexB) {
+  const a = relativeLuminance(hexA);
+  const b = relativeLuminance(hexB);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+function labelColorFor(fill) {
+  return contrastRatio(fill, "#000000") >= contrastRatio(fill, "#ffffff")
+    ? "#000000"
+    : "#ffffff";
+}
+
 // Leaf nodes: colored rect + optional label + title (tooltip).
 for (const node of hier.leaves()) {
   const d = node.data;
   const w = node.x1 - node.x0;
   const h = node.y1 - node.y0;
   const color = groupColor[d.group] ?? "#cccccc";
+  const labelColor = labelColorFor(color);
   parts.push(`<g>`);
   parts.push(
     `<rect x="${node.x0}" y="${node.y0}" width="${w}" height="${h}" fill="${color}" stroke="#ffffff" stroke-width="1"/>`
@@ -254,10 +279,10 @@ for (const node of hier.leaves()) {
     );
     parts.push(`<g clip-path="url(#${clipId})">`);
     parts.push(
-      `<text x="${node.x0 + 3}" y="${node.y0 + 12}" font-size="${nameFontSize}" fill="#ffffff">${esc(d.name)}</text>`
+      `<text x="${node.x0 + 3}" y="${node.y0 + 12}" font-size="${nameFontSize}" fill="${labelColor}">${esc(d.name)}</text>`
     );
     parts.push(
-      `<text x="${node.x0 + 3}" y="${node.y0 + 24}" font-size="${locFontSize}" fill="#ffffff">${esc(
+      `<text x="${node.x0 + 3}" y="${node.y0 + 24}" font-size="${locFontSize}" fill="${labelColor}">${esc(
         d.code
       )} LOC</text>`
     );

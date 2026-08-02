@@ -52,11 +52,12 @@ private theorem energy_ineq_of_representative_R3
     (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ)
     (v : Time → L2Sigma_R3)
     (hae : ∀ᵐ t ∂(volume.restrict (Set.Icc (0 : ℝ) T)), v t = alPkg.u t)
     (hweak : ∀ t, t ∈ Set.Icc (0 : ℝ) T → ∀ z : L2VF_R3,
-      Tendsto (fun n => inner (𝕜 := ℝ) (((galSeq (alPkg.φ n)).u t : L2VF_R3)) z) atTop
+      Tendsto (fun n => inner (𝕜 := ℝ) (((galSeq (κ (alPkg.φ n))).u t : L2VF_R3)) z) atTop
         (𝓝 (inner (𝕜 := ℝ) ((v t : L2VF_R3)) z)))
     (hInt : IntervalIntegrable (fun s => viscousFormSq_R3 ν (v s : L2VF_R3))
         MeasureTheory.volume 0 T) :
@@ -67,7 +68,7 @@ private theorem energy_ineq_of_representative_R3
   intro t ht0 htT
   have htIcc : t ∈ Set.Icc (0 : ℝ) T := ⟨ht0, htT⟩
   -- abbreviations
-  set c : ℕ → ℝ → L2VF_R3 := fun n s => ((galSeq (alPkg.φ n)).u s : L2VF_R3) with hcdef
+  set c : ℕ → ℝ → L2VF_R3 := fun n s => ((galSeq (κ (alPkg.φ n))).u s : L2VF_R3) with hcdef
   set E : ℝ := (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2 with hEdef
   set a : ℕ → ℝ := fun n => (1 / 2 : ℝ) * ‖c n t‖ ^ 2 with hadef
   -- ν = 1 dissipation integrals for approximants
@@ -78,7 +79,7 @@ private theorem energy_ineq_of_representative_R3
     intro n
     -- energy identity: ½‖c n t‖² - ½‖c n 0‖² = -∫₀ᵗ ν·V₁(c n)
     have hid :=
-      galerkinCurve_energy_identity (galSeq (alPkg.φ n)) 0 t (le_refl 0) ht0
+      galerkinCurve_energy_identity (galSeq (κ (alPkg.φ n))) 0 t (le_refl 0) ht0
     -- ∫₀ᵗ viscous_ν(c n) = ν * b n
     have hscale : ∫ s in (0 : ℝ)..t, viscousFormSq_R3 ν (c n s) = ν * b n := by
       rw [hbdef, ← intervalIntegral.integral_const_mul]
@@ -94,7 +95,7 @@ private theorem energy_ineq_of_representative_R3
       linarith [this, show a n = (1 / 2 : ℝ) * ‖c n t‖ ^ 2 from rfl]
     -- norm bound: ‖c n 0‖ ≤ ‖u₀‖
     have hn0 : ‖c n 0‖ ≤ ‖(u₀ : L2VF_R3)‖ :=
-      galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) (le_refl 0)
+      galerkin_norm_le_u0 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n))) (le_refl 0)
     linarith [pow_le_pow_left₀ (norm_nonneg (c n 0)) hn0 2, hid']
   have ha0 : ∀ n, 0 ≤ a n := fun n => by positivity
   have hb0 : ∀ n, 0 ≤ b n := fun n =>
@@ -107,7 +108,7 @@ private theorem energy_ineq_of_representative_R3
       Filter.liminf (fun n => ‖c n t‖ ^ 2) atTop := by
     refine normSq_le_liminf_of_inner_tendsto ((v t : L2VF_R3)) (fun n => c n t)
       ‖(u₀ : L2VF_R3)‖
-      (fun n => galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) ht0) ?_
+      (fun n => galerkin_norm_le_u0 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n))) ht0) ?_
     have h := hweak t htIcc ((v t : L2VF_R3))
     rwa [real_inner_self_eq_norm_sq] at h
   have hbdd_below_normsq : IsBoundedUnder (· ≥ ·) atTop (fun n => ‖c n t‖ ^ 2) :=
@@ -117,7 +118,7 @@ private theorem energy_ineq_of_representative_R3
     isBoundedUnder_of_eventually_le (a := ‖(u₀ : L2VF_R3)‖ ^ 2)
       (Eventually.of_forall fun n =>
         pow_le_pow_left₀ (norm_nonneg _)
-          (galerkin_norm_le_u0 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n)) ht0) 2)
+          (galerkin_norm_le_u0 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n))) ht0) 2)
   have hkin : (1 / 2 : ℝ) * ‖(v t : L2VF_R3)‖ ^ 2 ≤ Filter.liminf a atTop := by
     have hmono : Monotone (fun r : ℝ => (1 / 2 : ℝ) * r) :=
       fun x y hxy => mul_le_mul_of_nonneg_left hxy (by norm_num)
@@ -170,12 +171,12 @@ private theorem energy_ineq_of_representative_R3
     fun s hs => ⟨hs.1.le, hs.2.trans htT⟩
   have hae' : ∀ᵐ s ∂(MeasureTheory.volume.restrict (Set.Ioc (0 : ℝ) t)), v s = alPkg.u s :=
     ae_restrict_of_ae_restrict_of_subset hsub hae
-  obtain ⟨_, hptwise⟩ := viscous_pointwise_lsc 𝔊 F ν T hν hT u₀ galSeq alPkg
+  obtain ⟨_, hptwise⟩ := viscous_pointwise_lsc 𝔊 F ν T hν hT u₀ galSeq κ hκ alPkg
   have hptwise' :
       ∀ᵐ s ∂(MeasureTheory.volume.restrict (Set.Ioc (0 : ℝ) t)),
       ENNReal.ofReal (viscousFormSq_R3 1 (alPkg.u s : L2VF_R3)) ≤
         Filter.atTop.liminf
-          (fun n => ENNReal.ofReal (viscousFormSq_R3 1 ((galSeq (alPkg.φ n)).u s : L2VF_R3))) := by
+          (fun n => ENNReal.ofReal (viscousFormSq_R3 1 ((galSeq (κ (alPkg.φ n))).u s : L2VF_R3))) := by
     exact ae_restrict_of_ae_restrict_of_subset hsub
       (by filter_upwards [hptwise] with s hs; exact hs.2)
   have hae_lsc :
@@ -191,7 +192,7 @@ private theorem energy_ineq_of_representative_R3
       AEMeasurable (fun s => ENNReal.ofReal (viscousFormSq_R3 1 (c n s)))
         (MeasureTheory.volume.restrict (Set.Ioc (0 : ℝ) t)) := fun n =>
     ENNReal.measurable_ofReal.comp_aemeasurable
-      ((viscousFormSq_curve_continuousOn 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n))).mono
+      ((viscousFormSq_curve_continuousOn 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n)))).mono
         (fun s hs => hs.1.le) |>.aemeasurable measurableSet_Ioc)
   -- Fatou: ∫⁻ V₁(v) ≤ liminf_n ∫⁻ V₁(c n)
   have hFatou :
@@ -206,7 +207,7 @@ private theorem energy_ineq_of_representative_R3
       ENNReal.ofReal (b n) := by
     intro n
     have hcont : ContinuousOn (fun s => viscousFormSq_R3 1 (c n s)) (Set.Icc 0 t) :=
-      (viscousFormSq_curve_continuousOn 𝔊 F ν u₀ (alPkg.φ n) (galSeq (alPkg.φ n))).mono
+      (viscousFormSq_curve_continuousOn 𝔊 F ν u₀ (κ (alPkg.φ n)) (galSeq (κ (alPkg.φ n)))).mono
         (fun s hs => hs.1)
     have hint : IntegrableOn (fun s => viscousFormSq_R3 1 (c n s)) (Set.Ioc 0 t) MeasureTheory.volume :=
       (hcont.intervalIntegrable_of_Icc ht0).1
@@ -303,6 +304,42 @@ private theorem energy_ineq_of_representative_R3
   linarith [hkin, hdiss, hsuper, habE]
 
 
+/-- **Frozen shape** of the pin conjunct P2′ adds to `galerkin_limit_passage_R3`'s
+conclusion (§4.1): everywhere-weak convergence of the EFFECTIVE-index sequence to the
+good representative, along `alPkg.φ` directly (no `ρ`). -/
+def R3LimitPassagePinConjunct (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν T : ℝ) (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) (κ : ℕ → ℕ)
+    (p : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) (v : Time → L2Sigma_R3) : Prop :=
+  ∀ t ∈ Set.Icc (0 : ℝ) T, ∀ z : L2VF_R3,
+    Filter.Tendsto
+      (fun n => inner (𝕜 := ℝ) (((galSeq (κ (p.φ n))).u t : L2VF_R3)) z)
+      Filter.atTop (nhds (inner (𝕜 := ℝ) ((v t : L2VF_R3)) z))
+
+/-- **Frozen shape** of the FULL strengthened `galerkin_limit_passage_R3` conclusion:
+the production 5-conjunct good-representative existential with the κ-pin conjunct
+`R3LimitPassagePinConjunct` APPENDED as the sixth conjunct.  `galerkin_limit_passage_R3`'s
+conclusion is stated definitionally equal to this Prop. -/
+def R3StrengthenedLimitPassageConclusion (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
+    (ν T : ℝ) (u₀ : L2Sigma_R3)
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) (κ : ℕ → ℕ)
+    (p : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) : Prop :=
+  ∃ u : Time → L2Sigma_R3,
+    (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), u t = p.u t) ∧
+    WeakFormNS ν T (r3Evolution 𝔊 F) u ∧
+    (∀ t, 0 ≤ t → t ≤ T →
+      (1 / 2 : ℝ) * ‖(u t : L2VF_R3)‖ ^ 2 +
+      ∫ s in (0 : ℝ)..t, viscousFormSq_R3 ν (u s : L2VF_R3) ≤
+      (1 / 2 : ℝ) * ‖(u₀ : L2VF_R3)‖ ^ 2) ∧
+    Filter.Tendsto
+      (fun t => (u t : L2VF_R3))
+      (nhdsWithin 0 (Set.Ici 0))
+      (nhds (u₀ : L2VF_R3)) ∧
+    ((∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF_R3 (u t : L2VF_R3)) ∧
+    IntervalIntegrable (fun s => viscousFormSq_R3 ν (u s : L2VF_R3))
+      MeasureTheory.volume 0 T) ∧
+    R3LimitPassagePinConjunct 𝔊 F ν T u₀ galSeq κ p u
+
 /-- **The proved limit-passage existential for ℝ³** (replaces axiom `galerkin_limit_passage_R3`).
 
 Produces a **good representative** `u : Time → L2Sigma_R3` of the Aubin–Lions limit
@@ -324,7 +361,8 @@ theorem galerkin_limit_passage_R3
     (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T)
     (u₀ : L2Sigma_R3)
     (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n)
-    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq)
+    (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ)
     (htest : R3TestApproxH1 𝔊) :
     ∃ u : Time → L2Sigma_R3,
     (∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), u t = alPkg.u t) ∧
@@ -339,13 +377,14 @@ theorem galerkin_limit_passage_R3
       (nhds (u₀ : L2VF_R3)) ∧
     ((∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)), memH1VF_R3 (u t : L2VF_R3)) ∧
     IntervalIntegrable (fun s => viscousFormSq_R3 ν (u s : L2VF_R3))
-      MeasureTheory.volume 0 T) := by
+      MeasureTheory.volume 0 T) ∧
+    R3LimitPassagePinConjunct 𝔊 F ν T u₀ galSeq κ alPkg u := by
   -- ══ Step 1: construct the good representative v ══
   obtain ⟨v, hae, hweak, hbd, hv0, hlip⟩ :=
-    exists_weak_representative_R3 𝔊 F ν hν T hT u₀ galSeq alPkg
+    exists_weak_representative_R3 𝔊 F ν hν T hT u₀ galSeq κ hκ alPkg
   -- ══ Step 2: energy class for alPkg.u (and transfer to v) ══
   obtain ⟨hmemH1_u, hVν_ii, _⟩ :=
-    viscous_lsc_under_strongL2 𝔊 F ν hν T hT u₀ galSeq alPkg
+    viscous_lsc_under_strongL2 𝔊 F ν hν T hT u₀ galSeq κ hκ alPkg
   -- integrability of ν-form for v, transferred from alPkg.u via a.e. equality
   have hIntv : IntervalIntegrable (fun s => viscousFormSq_R3 ν (v s : L2VF_R3))
       MeasureTheory.volume 0 T := by
@@ -366,7 +405,7 @@ theorem galerkin_limit_passage_R3
   have hW : WeakFormNS ν T (r3Evolution 𝔊 F) v := by
     intro ψ hψcs hψsupp hψC1 w hw
     have hWu :=
-      (weakFormNS_limit_passage 𝔊 F ν hν T hT u₀ galSeq alPkg htest) ψ hψcs hψsupp hψC1 w hw
+      (weakFormNS_limit_passage 𝔊 F ν hν T hT u₀ galSeq κ hκ alPkg htest) ψ hψcs hψsupp hψC1 w hw
     -- step 1: ∫ f(v) = ∫ f(alPkg.u) using a.e. equality v s = alPkg.u s
     have heq : ∫ t in (0:ℝ)..T,
             (-inner (𝕜:=ℝ) (v t) w * deriv ψ t +
@@ -391,8 +430,8 @@ theorem galerkin_limit_passage_R3
     rw [hveq]; exact hmem
   -- ══ Assemble the five conjuncts ══
   exact ⟨v, hae, hW,
-    energy_ineq_of_representative_R3 𝔊 F ν hν T hT u₀ galSeq alPkg v hae hweak hIntv,
+    energy_ineq_of_representative_R3 𝔊 F ν hν T hT u₀ galSeq κ hκ alPkg v hae hweak hIntv,
     strong_trace_of_props_R3 𝔊 T hT u₀ v hbd hv0 hlip,
-    hmemH1_v, hIntv⟩
+    ⟨hmemH1_v, hIntv⟩, hweak⟩
 
 end LerayHopf

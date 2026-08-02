@@ -1,6 +1,6 @@
 # Architecture
 
-A one-page module map of the ~95-file `LerayHopf/` tree, grouped by layer. For the
+A one-page module map of the 113-file `LerayHopf/` tree, grouped by layer. For the
 mathematical narrative see `docs/archive/REPORT.md` (historical) / `docs/formalization-review-ja.md`;
 for the exact capstone claims see [`docs/claims-and-scope.md`](claims-and-scope.md);
 for the axiom ledger see `HANDOFF.md` / `docs/STATUS.md`.
@@ -13,10 +13,16 @@ Each rectangle is a Lean file — `LerayHopf.lean` itself, plus every file under
 `LerayHopf/`; its area is proportional to **code LOC** — physical lines minus blank
 lines and comment lines, as reported by [`cloc`](https://github.com/AlDanial/cloc).
 Color marks the top-level module a file belongs to (`Torus/`, `R3/`, `Bochner/`,
-`Analysis/`, `Galerkin/`, or the root-level group covering `LerayHopf.lean` and the
-shared modules directly under `LerayHopf/`); the same group always maps to the same
-color. Hovering a rectangle shows the full path and the code/comment/blank line
-breakdown.
+`Analysis/`, `Galerkin/`, `Scratch/`, or the root-level group covering `LerayHopf.lean`
+and the shared modules directly under `LerayHopf/`); the same group always maps to the
+same color. Hovering a rectangle shows the full path and the code/comment/blank line
+breakdown. Groups outside the generator's known-colour table — currently `Scratch/` —
+are assigned from a fallback palette in first-seen path order, which keeps the
+assignment deterministic and the whole figure within the Okabe–Ito colourblind-safe
+set. Each tile's label is drawn in whichever of black or white contrasts better with
+that tile's fill (computed from the fill's relative luminance, so it stays a pure
+function of the data): most of the palette is light enough that white labels would fall
+below the WCAG AA 4.5:1 ratio for normal-size text.
 
 **This figure represents physical source size only.** It does not measure proof
 difficulty, mathematical importance, or code quality, and it carries no weighting by
@@ -77,6 +83,7 @@ sub-tiers, in DAG order:
 | `QuadraticField.lean` | `FieldForms` — raw trilinear-convection + viscous form data on `V`, and the Riesz-representative Galerkin vector field it determines (`vectorField`, `vectorField_spec`, `forwardGlobalSolution_exists` via `DissipativeODE`). Imports only `DissipativeODE.lean` + mathlib. |
 | `Domain.lean` | `Galerkin.Domain` — the ambient L² Hilbert space, closed divergence-free subspace, projector family, and the domain functionals (regularity predicate, Stokes pairing, dissipation, energy-bound integrand/RHS, test predicate) that parameterize the solution bundles; `NSFormCore` (the domain-neutral projection of the NS convection form) and `Domain.evolution : Domain → NSFormCore D → DissipativeEvolution`. Imports `EvolutionTriple.lean`. |
 | `SolutionBundles.lean` | `Galerkin.SolutionData`, `Galerkin.LerayHopfSolution`, `Galerkin.CompactnessPackage`, and `Galerkin.exists_lerayHopf_from_package` — the generic proof-carrying solution structures both lanes' bundles specialize. Imports `Domain.lean`. |
+| `GlobalContract.lean` | `Galerkin.IsLerayHopfOn` (the `Prop`-valued finite-horizon Leray–Hopf contract on a fixed curve — field-for-field twin of `LerayHopfSolution`), the round-trip equivalences, `Galerkin.GlobalLerayHopfSolution` (one curve valid at **every** `T > 0`, the literal `∃ u, ∀ T`), and the horizon-transfer lemmas `WeakFormNS.mono`/`WeakFormNS.congr_Icc`/`IsLerayHopfOn.mono`/`IsLerayHopfOn.congr_Icc`. Generic over `Galerkin.Domain`; both lanes instantiate. The global-in-time contract layer (issue #195, P1). Imports `SolutionBundles.lean`. |
 
 `DissipativeODE.lean` and `QuadraticField.lean` have no `LerayHopf` consumers of their
 own — they are pdelib-grade (see `docs/pdelib-staging.md`) and are reached only through
@@ -110,8 +117,16 @@ explicit opt-in `LerayHopf.Experimental`, not from root `import LerayHopf` — s
 `TimeMollification.lean`, `StepFunctionCompactness.lean`, `ScalarEquicontinuity.lean`,
 `WeakLimitToolkit.lean`.
 
+`DiagonalExtraction.lean` (sorry-free, PDE-independent) — the abstract nested-subsequence
+diagonal machinery (`nestedComp`, `exists_diagonal_extraction`,
+`tendsto_diag_of_tendsto_stage`): pure order theory over `ℕ → ℕ` extraction towers with no
+PDE, domain, or Hilbert-space content, targeting an arbitrary limit filter. Issue #195 P3;
+domain-neutral, so reusable by both lanes' global-in-time construction (consumed by the 𝕋³
+lane's `Torus/DiagonalGalerkin.lean` and the ℝ³ lane's `R3/DiagonalGalerkin.lean`).
+
 Imported by: `LerayHopf/R3/GoodRepresentative.lean`, `R3/SpacetimePrecompact.lean`,
-`R3/AubinLionsLimitPassage.lean`, `Torus/ModeCompactness.lean`.
+`R3/AubinLionsLimitPassage.lean`, `R3/DiagonalGalerkin.lean`, `Torus/ModeCompactness.lean`,
+`Torus/DiagonalGalerkin.lean`.
 
 ## Torus (𝕋³) lane — `LerayHopf/Torus/`
 
@@ -133,6 +148,30 @@ Interface + re-export: `SolutionInterfaces.lean` (support layer: `Torus3NSForms`
 `torusDomain` and `Torus3NSForms.core` instantiating `LerayHopf/Galerkin/Domain.lean`,
 `LerayHopfSolutionFull`, assembly helpers — the capstone itself now lives in
 `GalerkinODECapstone.lean`), `Capstone.lean` (re-exports the full chain).
+
+Global-in-time chain (𝕋³, issue #195): a diagonal-extraction chain downstream of the
+finite-horizon `GalerkinODECapstone.lean` (`exists_lerayHopf_torus3`, unchanged) — all in
+the release cone (`import LerayHopf`) and kernel-only (pinned by
+`scripts/check-axioms-live.sh`):
+
+- `DiagonalGalerkin.lean` (P3) — the torus diagonal weak-limit curve `W`:
+  `exists_diagonal_weakly_convergent_galSeq` runs the stage recursion over the generic
+  `Bochner/DiagonalExtraction.lean` machinery and returns one diagonal subsequence `δ`
+  weakly convergent at every forward time, plus the separation lemma
+  `L2Sigma_eq_of_forall_inner`.
+- `KappaChainExit.lean` (P2) — the κ-generalized torus compactness chain threaded through
+  the Aubin–Lions package, energy class, limit passage, and everywhere-weak representative
+  pin at mode map `κ := δ`: `torus_kappaChain_exit` produces the per-horizon
+  `P2ExitWitness`.
+- `GlobalCapstone.lean` (**capstone**: `exists_global_lerayHopf_torus3`) — assembles a
+  single curve `u : Time → L2Sigma` and one form bundle `F` for which the finite-horizon
+  Leray–Hopf contract holds at **every** `T > 0` (global-in-time weak existence on
+  `[0, ∞)`), by pinning every horizon's `P2ExitWitness` to the same diagonal `W` and
+  transferring through the generic contract layer's `IsLerayHopfOn.congr_Icc`/`.mono`.
+
+The generic contract layer it consumes is `LerayHopf/Galerkin/GlobalContract.lean` (P1)
+and the abstract diagonal machinery is `LerayHopf/Bochner/DiagonalExtraction.lean` (P3) —
+both domain-neutral and described in their own lanes above.
 
 ## ℝ³ lane — `LerayHopf/R3/`
 
@@ -178,6 +217,30 @@ Interface + re-export: `SolutionInterfaces.lean` (support layer: `R3NSForms`,
 `LerayHopfSolutionFull_R3`, assembly helpers — capstone itself in
 `GalerkinODECapstone.lean`); root-level `LerayHopf/R3Capstone.lean` (re-exports the
 full chain).
+
+Global-in-time chain (ℝ³, issue #212): the diagonal-extraction chain downstream of the
+finite-horizon `GalerkinODECapstone.lean` (`exists_lerayHopf_r3`, unchanged) — node-for-node
+mirror of the merged 𝕋³ chain above, all in the release cone (`import LerayHopf`) and
+kernel-only (pinned by `scripts/check-axioms-live.sh`). It consumes the same generic contract
+layer (`LerayHopf/Galerkin/GlobalContract.lean`, P1) and abstract diagonal machinery
+(`LerayHopf/Bochner/DiagonalExtraction.lean`, P3) as the torus lane:
+
+- `DiagonalGalerkin.lean` (P3′, #216) — the ℝ³ diagonal weak-limit curve `W`:
+  `exists_diagonal_weakly_convergent_galSeq_R3` runs the κ-generic stage recursion over the
+  generic `Bochner/DiagonalExtraction.lean` machinery, and `exists_diag_coherent_representative_R3`
+  promotes the spike-(a) coherence core against the packaged `(δ, W)` output (returning the
+  per-horizon coherence handle P4′ consumes), plus the separation lemma
+  `L2Sigma_R3_eq_of_forall_inner`.
+- `KappaChainExit.lean` (P2′, #215) — the κ-generalized ℝ³ compactness chain threaded through
+  the Aubin–Lions package, energy class, limit passage, and everywhere-weak representative pin
+  at mode map `κ := δ`: `r3_kappaChain_exit` produces the per-horizon `R3KappaChainExitWitness`.
+- `GlobalCapstone.lean` (statement layer P1′ #214; **capstone** P4′ #217:
+  `exists_global_lerayHopf_r3`) — freezes the target `GlobalR3CapstoneStatement` and the easy
+  direction `globalR3Capstone_implies_finite`, then assembles a single scheme `𝔊`, form bundle
+  `F`, and ONE curve `u : Time → L2Sigma_R3` for which the finite-horizon Leray–Hopf contract
+  holds at **every** `T > 0` (global-in-time weak existence on `[0, ∞)`), by pinning every
+  horizon's `R3KappaChainExitWitness` to the same diagonal `W` and transferring through the
+  generic contract layer's `IsLerayHopfOn.congr_Icc`/`.mono`.
 
 ## Generic analysis layer — `LerayHopf/Analysis/`
 

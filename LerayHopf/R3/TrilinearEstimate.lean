@@ -216,12 +216,12 @@ private theorem schwartz_trilinear_bound (f g h : SchwartzMap (EuclideanSpace �
           ∂(volume : Measure (EuclideanSpace ℝ (Fin n))) := by
         refine MeasureTheory.integral_congr_ae ?_
         filter_upwards with x
-        simp [abs_mul, Real.norm_eq_abs]
+        simp [Real.norm_eq_abs]
     _ ≤ ∫ x : EuclideanSpace ℝ (Fin n), (|f x| * |g x|) * SchwartzMap.seminorm ℝ 0 0 h
           ∂(volume : Measure (EuclideanSpace ℝ (Fin n))) := by
         refine MeasureTheory.integral_mono_ae ?_ ?_ ?_
         · refine hint.norm.congr ?_
-          filter_upwards with x; simp [abs_mul, Real.norm_eq_abs]
+          filter_upwards with x; simp [Real.norm_eq_abs]
         · have hi := (schwartzMul (schwartzMul f g) h).integrable
             (μ := (volume : Measure (EuclideanSpace ℝ (Fin n))))
           have : MeasureTheory.Integrable
@@ -233,7 +233,7 @@ private theorem schwartz_trilinear_bound (f g h : SchwartzMap (EuclideanSpace �
                 (fun x : EuclideanSpace ℝ (Fin n) => |f x| * |g x|)
                 (volume : Measure (EuclideanSpace ℝ (Fin n))) := by
               refine h2.norm.congr ?_
-              filter_upwards with x; simp [abs_mul, Real.norm_eq_abs]
+              filter_upwards with x; simp [Real.norm_eq_abs]
             exact h3.mul_const _
           exact this
         · filter_upwards with x

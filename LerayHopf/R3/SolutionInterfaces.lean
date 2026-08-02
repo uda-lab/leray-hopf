@@ -549,7 +549,7 @@ The spatial compactness half is NOT in this package — it is supplied as an exp
 hypothesis to `aubin_lions_R3` (the type matches `spatial_compactness_R3` exactly). -/
 structure AubinLionsPackage_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
     (ν T : ℝ) (u₀ : L2Sigma_R3)
-    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) where
+    (galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n) (κ : ℕ → ℕ) where
   /-- The strictly monotone extraction index. -/
   φ : ℕ → ℕ
   /-- Strict monotonicity of `φ`. -/
@@ -589,7 +589,7 @@ structure AubinLionsPackage_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
   strong_convergence : ∀ R : ℝ,
     Filter.Tendsto
       (fun n => MeasureTheory.eLpNorm
-        (fun t => restrictToBall R ((galSeq (φ n)).u t) - restrictToBall R (u t))
+        (fun t => restrictToBall R ((galSeq (κ (φ n))).u t) - restrictToBall R (u t))
         2 (MeasureTheory.volume.restrict (Set.Icc (0 : ℝ) T)))
       Filter.atTop (nhds 0)
   /-- **A.e.-in-t per-ball convergence** of the subsequence to the limit: for every ball
@@ -600,8 +600,27 @@ structure AubinLionsPackage_R3 (𝔊 : R3GalerkinScheme) (F : R3NSForms 𝔊)
   (as opposed to `strong_convergence`'s integrated `eLpNorm` form).  It is used by
   the C-route lsc wall to extract pointwise weak convergence at a.e. `t`. -/
   strong_convergence_ae : ∀ R : ℝ, ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.Icc 0 T)),
-    Filter.Tendsto (fun n => restrictToBall R ((galSeq (φ n)).u t))
+    Filter.Tendsto (fun n => restrictToBall R ((galSeq (κ (φ n))).u t))
       Filter.atTop (nhds (restrictToBall R (u t)))
+
+/-- The composed index map `κ ∘ φ` — the effective index into the original Galerkin family —
+is strictly monotone (§4.1 primary-protection surface 1): the composition of the outer index
+map `κ` with the package's own extraction `φ`.  Category-(iii) index-selection
+facts are derived from this lemma at the composed index, never from bare `φ_mono`. -/
+theorem AubinLionsPackage_R3.effective_strictMono {𝔊 : R3GalerkinScheme}
+    {F : R3NSForms 𝔊} {ν T : ℝ} {u₀ : L2Sigma_R3}
+    {galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n} {κ : ℕ → ℕ}
+    (p : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) (hκ : StrictMono κ) :
+    StrictMono (fun n => κ (p.φ n)) :=
+  hκ.comp p.φ_mono -- KAPPA_ID_SITE: effective_strictMono's own defining composition κ ∘ φ; this is the single sanctioned consumer of bare φ_mono (all category-(iii) facts route through here)
+
+/-- The composed index map `κ ∘ φ` is cofinal (companion export, torus parity). -/
+theorem AubinLionsPackage_R3.effective_tendsto_atTop {𝔊 : R3GalerkinScheme}
+    {F : R3NSForms 𝔊} {ν T : ℝ} {u₀ : L2Sigma_R3}
+    {galSeq : ∀ n, GalerkinSolutionData_R3 𝔊 F ν u₀ n} {κ : ℕ → ℕ}
+    (p : AubinLionsPackage_R3 𝔊 F ν T u₀ galSeq κ) (hκ : StrictMono κ) :
+    Filter.Tendsto (fun n => κ (p.φ n)) Filter.atTop Filter.atTop :=
+  (p.effective_strictMono hκ).tendsto_atTop
 
 /-! ### AX-2: Aubin–Lions on ℝ³ — former axiom `aubin_lions_R3` REMOVED (issue #15)
 

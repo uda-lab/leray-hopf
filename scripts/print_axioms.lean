@@ -38,11 +38,83 @@ import LerayHopf.Torus.Capstone
 import LerayHopf.R3Capstone
 import LerayHopf.Core
 import LerayHopf.Experimental
+import LerayHopf.Galerkin.GlobalContract
+import LerayHopf.Torus.KappaChainExit
+import LerayHopf.Torus.DiagonalGalerkin
+import LerayHopf.Torus.GlobalCapstone
+import LerayHopf.R3.GlobalCapstone
+import LerayHopf.R3.KappaChainExit
+import LerayHopf.R3.DiagonalGalerkin
 
 #print axioms LerayHopf.exists_lerayHopf_torus3
 #print axioms LerayHopf.exists_lerayHopf_r3
 #print axioms LerayHopf.lower_bound_from_inverse_square_lifespan
 #print axioms LerayHopf.localCompactness_R3_of_ballCompact
+
+-- Generic global contract layer (issue #195 P1) — interim live pins for the promoted
+-- module while it has no live-pinned downstream capstone (see the P1→P4 window note in
+-- check-axioms-live.sh and docs/scratch/global-diagonal-campaign.md §10.5 / Q3 ruling).
+#print axioms LerayHopf.Galerkin.nonempty_lerayHopfSolution_iff_exists_isOn
+#print axioms LerayHopf.Galerkin.globalLerayHopfSolution_nonempty_iff
+#print axioms LerayHopf.Galerkin.GlobalLerayHopfSolution.toSolution_u
+#print axioms LerayHopf.Galerkin.IsLerayHopfOn.mono
+#print axioms LerayHopf.Galerkin.IsLerayHopfOn.congr_Icc
+
+-- P2 (#201) κ-chain exit gate — the compiled acceptance artifact instantiation.
+#print axioms LerayHopf.torus_kappaChain_exit
+
+-- P3 (#202) diagonal machinery — the packaged weak-limit theorem plus the promoted
+-- abstract diagonal API it consumes directly (the latter has no other release-cone
+-- live pin, so it is pinned here to close the P3→P4 sorryAx blind window; architect
+-- #202 §7 addition).
+#print axioms LerayHopf.exists_diagonal_weakly_convergent_galSeq
+#print axioms LerayHopf.Bochner.exists_diagonal_extraction
+
+-- P4 (#203) global torus capstone — the campaign finale (issue #195). These four
+-- append to the interim pins above; with the capstone now in the release cone, the
+-- whole P1→P4 assembly is covered by a live-pinned downstream capstone.
+#print axioms LerayHopf.exists_global_lerayHopf_torus3
+#print axioms LerayHopf.exists_globalLerayHopfSolutionFull_torus3
+#print axioms LerayHopf.globalTorusCapstone
+#print axioms LerayHopf.globalTorusCapstone_implies_finite
+
+-- P1′ (#214, parent #212) ℝ³ global capstone statement layer — the frozen `def : Prop`
+-- target and the easy-direction consistency witness (LerayHopf.R3.GlobalCapstone).
+-- Statement layer only; the ℝ³ assembly capstones are P4′ (#217). Per the D3 pin ruling
+-- 2026-07-29 (torus precedent: every phase PR appends its own live pins), these two are
+-- pinned here now, not deferred to the P4′ row (which covers P4′'s own deliverables).
+#print axioms LerayHopf.GlobalR3CapstoneStatement
+#print axioms LerayHopf.globalR3Capstone_implies_finite
+
+-- P2′ (#215, parent #212) ℝ³ κ-chain exit gate — the compiled production acceptance
+-- artifact `r3_kappaChain_exit` (parallels the torus `torus_kappaChain_exit` pin at
+-- line 62). Kernel-trio only: the §4.1 smokes that consume it are kernel-trio, so its
+-- axiom closure ⊆ {propext, Classical.choice, Quot.sound}. Appended per the D3 pin
+-- ruling (every phase PR appends its own live pins).
+#print axioms LerayHopf.r3_kappaChain_exit
+
+-- P3′ (#216, parent #212) ℝ³ diagonal machinery — the packaged weak-limit theorem
+-- (`exists_diagonal_weakly_convergent_galSeq_R3`, P4′-consumed) plus the coherence-
+-- coupling deliverable (`exists_diag_coherent_representative_R3`, §790) that promotes
+-- the spike-(a) coherence core against the packaged (δ,W) output. Parallels the torus
+-- P3 diagonal pins at lines 69–70. Kernel-trio only: the whole stage recursion
+-- (aubinLionsPackage_R3 → exists_weak_representative_R3, Nat.rec StageData_R3 carrier,
+-- Bochner.DiagonalExtraction consumed verbatim) is kernel-trio. Appended per the D3 pin
+-- ruling (every phase PR appends its own live pins).
+#print axioms LerayHopf.exists_diagonal_weakly_convergent_galSeq_R3
+#print axioms LerayHopf.exists_diag_coherent_representative_R3
+
+-- P4′ (#217, parent #212) ℝ³ global capstone — the campaign finale of the ℝ³ lane
+-- (LerayHopf.R3.GlobalCapstone, filling the P1′ statement file). These three append to
+-- the P1′ statement-layer pins 17–18 (the frozen target + easy direction) and the
+-- P2′/P3′ pins 19–21; with the ℝ³ global capstone now in the release cone, the whole
+-- P1′→P4′ assembly (frozen target → κ-chain exit → diagonal machinery → per-horizon
+-- assembly) is covered by a live-pinned downstream capstone. Parallels the torus P4
+-- capstone pins (exists_global_lerayHopf_torus3 / …Full / globalTorusCapstone,
+-- lines above); the ℝ³ implies_finite twin is already pinned at pin 18 (P1′).
+#print axioms LerayHopf.exists_global_lerayHopf_r3
+#print axioms LerayHopf.exists_globalLerayHopfSolutionFull_r3
+#print axioms LerayHopf.globalR3Capstone
 
 -- Experimental-module axiom profile (visibility only — see docs/statement-cards/).
 #print axioms LerayHopf.Bochner.w1pTime_continuous_in_H

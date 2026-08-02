@@ -84,11 +84,11 @@ private theorem psi_T_of_tsupport_Ioo {ψ : ℝ → ℝ} {T : ℝ} (_hT : 0 < T)
 **Proof:** ODE at each `t ≥ 0` (after projection promotion) × ψ, integrated.
 IBP eliminates the time-derivative term using `ψ(0) = ψ(T) = 0`. -/
 private theorem galerkin_weakFormNS_zero
-    (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
+    (F : Torus3NSForms) (ν : ℝ) (_hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
     (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    (ψ : ℝ → ℝ) (hψcs : HasCompactSupport ψ) (hψsupp : tsupport ψ ⊆ Set.Ioo 0 T)
+    (ψ : ℝ → ℝ) (_hψcs : HasCompactSupport ψ) (hψsupp : tsupport ψ ⊆ Set.Ioo 0 T)
     (hψC1 : ContDiff ℝ 1 ψ)
-    (w : L2Sigma) (hw : IsGalerkinTest w)
+    (w : L2Sigma) (_hw : IsGalerkinTest w)
     (n₀ : ℕ) (hn₀ : velocityProjection_n n₀ (w : L2VF) = (w : L2VF))
     (n : ℕ) (hn : n₀ ≤ n) :
     ∫ t in (0 : ℝ)..T,
@@ -385,8 +385,8 @@ convection errors are killed by the eLpNorm strong convergence
 `alPkg.u_aestronglyMeasurable` for the dominators. -/
 theorem torus_weakFormNS_of_strongConvergence
     (F : Torus3NSForms) (ν : ℝ) (hν : 0 < ν) (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma)
-    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n)
-    (alPkg : AubinLionsPackage F ν T u₀ galSeq) :
+    (galSeq : ∀ n, GalerkinSolutionData F ν u₀ n) (κ : ℕ → ℕ) (hκ : StrictMono κ)
+    (alPkg : AubinLionsPackage F ν T u₀ galSeq κ) :
     WeakFormNS ν T (torus3Evolution F) alPkg.u := by
   intro ψ hψcs hψsupp hψC1 w hw
   -- (torus3Evolution F).H = L2Sigma definitionally (by field projection of torus3Evolution).
@@ -398,10 +398,10 @@ theorem torus_weakFormNS_of_strongConvergence
     -(inner (𝕜 := ℝ) (f t : L2VF) (w : L2VF)) * deriv ψ t +
       ψ t * (ν * stokesTestPairing (f t : L2VF) (w : L2VF) + F.b (f t) (f t) w) with hGf
   -- Per-approximant WeakFormNS = 0 (IBP + ODE), for the band-limited test `w`.
-  have hgal_zero : ∀ N, n₀ ≤ alPkg.φ N →
-      ∫ t in (0 : ℝ)..T, Gf (fun s => (galSeq (alPkg.φ N)).u s) t = 0 :=
+  have hgal_zero : ∀ N, n₀ ≤ κ (alPkg.φ N) →
+      ∫ t in (0 : ℝ)..T, Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t = 0 :=
     fun N hN => galerkin_weakFormNS_zero F ν hν T hT u₀ galSeq ψ hψcs hψsupp hψC1 w
-      ⟨n₀, hn₀⟩ n₀ hn₀ (alPkg.φ N) hN
+      ⟨n₀, hn₀⟩ n₀ hn₀ (κ (alPkg.φ N)) hN
   -- Finite Lebesgue measure on `[0,T]`.
   set μ : Measure ℝ := volume.restrict (Set.Icc (0 : ℝ) T) with hμdef
   haveI hμfin : IsFiniteMeasure μ := by
@@ -445,27 +445,27 @@ theorem torus_weakFormNS_of_strongConvergence
   have hMψ0 : 0 ≤ Mψ := le_trans (norm_nonneg _) (hMψ 0 ⟨le_refl 0, hT.le⟩)
   have hMψ'0 : 0 ≤ Mψ' := le_trans (norm_nonneg _) (hMψ' 0 ⟨le_refl 0, hT.le⟩)
   -- Galerkin-curve continuity, uniform norm bound, measurability, `MemLp`.
-  have hcont_uN : ∀ N, ContinuousOn (fun t => ((galSeq (alPkg.φ N)).u t : L2VF)) (Set.Icc 0 T) :=
-    fun N t ht => ((galSeq (alPkg.φ N)).u_hasDeriv t ht.1).continuousAt.continuousWithinAt
+  have hcont_uN : ∀ N, ContinuousOn (fun t => ((galSeq (κ (alPkg.φ N))).u t : L2VF)) (Set.Icc 0 T) :=
+    fun N t ht => ((galSeq (κ (alPkg.φ N))).u_hasDeriv t ht.1).continuousAt.continuousWithinAt
   have hnorm_uN : ∀ N, ∀ t ∈ Set.Icc (0 : ℝ) T,
-      ‖((galSeq (alPkg.φ N)).u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖ := by
+      ‖((galSeq (κ (alPkg.φ N))).u t : L2VF)‖ ≤ ‖(u₀ : L2VF)‖ := by
     intro N t ht
-    have hE := (galSeq (alPkg.φ N)).energy_bound t ht.1
-    have hP := Torus.velocityProjection_n_norm_le (alPkg.φ N) (u₀ : L2VF)
-    have h1 : ‖((galSeq (alPkg.φ N)).u t : L2VF)‖ ^ 2
-        ≤ ‖velocityProjection_n (alPkg.φ N) (u₀ : L2VF)‖ ^ 2 := by linarith
-    have h2 : ‖velocityProjection_n (alPkg.φ N) (u₀ : L2VF)‖ ^ 2 ≤ ‖(u₀ : L2VF)‖ ^ 2 :=
+    have hE := (galSeq (κ (alPkg.φ N))).energy_bound t ht.1
+    have hP := Torus.velocityProjection_n_norm_le (κ (alPkg.φ N)) (u₀ : L2VF)
+    have h1 : ‖((galSeq (κ (alPkg.φ N))).u t : L2VF)‖ ^ 2
+        ≤ ‖velocityProjection_n (κ (alPkg.φ N)) (u₀ : L2VF)‖ ^ 2 := by linarith
+    have h2 : ‖velocityProjection_n (κ (alPkg.φ N)) (u₀ : L2VF)‖ ^ 2 ≤ ‖(u₀ : L2VF)‖ ^ 2 :=
       pow_le_pow_left₀ (norm_nonneg _) hP 2
     exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) (by norm_num)).mp (h1.trans h2)
-  have hAESM_uN : ∀ N, AEStronglyMeasurable (fun t => ((galSeq (alPkg.φ N)).u t : L2VF)) μ :=
+  have hAESM_uN : ∀ N, AEStronglyMeasurable (fun t => ((galSeq (κ (alPkg.φ N))).u t : L2VF)) μ :=
     fun N => by rw [hμdef]; exact (hcont_uN N).aestronglyMeasurable measurableSet_Icc
-  have hMemLp_uN : ∀ N, MemLp (fun t => ((galSeq (alPkg.φ N)).u t : L2VF)) 2 μ := fun N =>
+  have hMemLp_uN : ∀ N, MemLp (fun t => ((galSeq (κ (alPkg.φ N))).u t : L2VF)) 2 μ := fun N =>
     MemLp.of_bound (hAESM_uN N) ‖(u₀ : L2VF)‖ (by
       rw [hμdef]
       exact (ae_restrict_iff' measurableSet_Icc).mpr (ae_of_all _ fun t ht => hnorm_uN N t ht))
   -- The differences and their `eLpNorm` convergence (the eLpNorm strong-convergence field).
-  set dN : ℕ → ℝ → L2VF := fun N t => ((galSeq (alPkg.φ N)).u t : L2VF) - (alPkg.u t : L2VF) with hdN
-  have hdNval : ∀ N t, dN N t = ((galSeq (alPkg.φ N)).u t : L2VF) - (alPkg.u t : L2VF) := fun N t => rfl
+  set dN : ℕ → ℝ → L2VF := fun N t => ((galSeq (κ (alPkg.φ N))).u t : L2VF) - (alPkg.u t : L2VF) with hdN
+  have hdNval : ∀ N t, dN N t = ((galSeq (κ (alPkg.φ N))).u t : L2VF) - (alPkg.u t : L2VF) := fun N t => rfl
   have hSC : Filter.Tendsto (fun N => eLpNorm (dN N) 2 μ) Filter.atTop (nhds 0) :=
     alPkg.strong_convergence
   set e : ℕ → ℝ := fun N => (eLpNorm (dN N) 2 μ).toReal with hedef
@@ -478,9 +478,9 @@ theorem torus_weakFormNS_of_strongConvergence
   obtain ⟨N₀, hN₀lt⟩ := hev.exists
   have hMemLp_dN0 : MemLp (dN N₀) 2 μ := ⟨hAESM_dN N₀, lt_of_lt_of_le hN₀lt le_top⟩
   have hMemLp_uu : MemLp (fun t => (alPkg.u t : L2VF)) 2 μ := by
-    have h : MemLp (fun t => ((galSeq (alPkg.φ N₀)).u t : L2VF) - dN N₀ t) 2 μ :=
+    have h : MemLp (fun t => ((galSeq (κ (alPkg.φ N₀))).u t : L2VF) - dN N₀ t) 2 μ :=
       (hMemLp_uN N₀).sub hMemLp_dN0
-    have hfun : (fun t => ((galSeq (alPkg.φ N₀)).u t : L2VF) - dN N₀ t)
+    have hfun : (fun t => ((galSeq (κ (alPkg.φ N₀))).u t : L2VF) - dN N₀ t)
         = fun t => (alPkg.u t : L2VF) := by funext t; rw [hdNval]; abel
     rwa [hfun] at h
   have hMemLp_dN : ∀ N, MemLp (dN N) 2 μ := fun N => (hMemLp_uN N).sub hMemLp_uu
@@ -579,19 +579,19 @@ theorem torus_weakFormNS_of_strongConvergence
               _ = ν * Cs * ‖(alPkg.u t : L2VF)‖ + Cb' * ‖(alPkg.u t : L2VF)‖ ^ 2 := by ring
         _ = Mψ * (ν * Cs * ‖(alPkg.u t : L2VF)‖) + Mψ * (Cb' * ‖(alPkg.u t : L2VF)‖ ^ 2) := by ring
   have hcontG_sN : ∀ N, ContinuousOn
-      (fun t => Gf (fun s => (galSeq (alPkg.φ N)).u s) t) (Set.Icc 0 T) := by
+      (fun t => Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t) (Set.Icc 0 T) := by
     intro N
     have hcurve := hcont_uN N
     have hinner_cont : ContinuousOn
-        (fun t => inner (𝕜 := ℝ) ((galSeq (alPkg.φ N)).u t : L2VF) (w : L2VF)) (Set.Icc 0 T) :=
+        (fun t => inner (𝕜 := ℝ) ((galSeq (κ (alPkg.φ N))).u t : L2VF) (w : L2VF)) (Set.Icc 0 T) :=
       ((innerSL ℝ (w : L2VF)).continuous.comp_continuousOn hcurve).congr
         (fun t _ => real_inner_comm _ _)
     have hstokes_cont : ContinuousOn
-        (fun t => stokesTestPairing ((galSeq (alPkg.φ N)).u t : L2VF) (w : L2VF)) (Set.Icc 0 T) := by
-      have hfin : (fun t => stokesTestPairing ((galSeq (alPkg.φ N)).u t : L2VF) (w : L2VF))
+        (fun t => stokesTestPairing ((galSeq (κ (alPkg.φ N))).u t : L2VF) (w : L2VF)) (Set.Icc 0 T) := by
+      have hfin : (fun t => stokesTestPairing ((galSeq (κ (alPkg.φ N))).u t : L2VF) (w : L2VF))
           = fun t => ∑ j : Fin 3, ∑ k ∈ fourierBox n₀,
               ((2 * Real.pi) ^ 2 * ∑ i : Fin 3, (k i : ℝ) ^ 2) *
-              (mFourierCoeff3 (L2VF_projComponentC j ((galSeq (alPkg.φ N)).u t : L2VF)) k *
+              (mFourierCoeff3 (L2VF_projComponentC j ((galSeq (κ (alPkg.φ N))).u t : L2VF)) k *
                 starRingEnd ℂ (mFourierCoeff3 (L2VF_projComponentC j (w : L2VF)) k)).re := by
         funext t; exact stokesTestPairing_eq_boxSum n₀ (w : L2VF) hn₀ _
       rw [hfin]
@@ -600,25 +600,25 @@ theorem torus_weakFormNS_of_strongConvergence
       apply ContinuousOn.mul continuousOn_const
       apply ContinuousOn.comp Complex.continuous_re.continuousOn _ (Set.mapsTo_univ _ _)
       apply ContinuousOn.mul _ continuousOn_const
-      have heq : (fun t => mFourierCoeff3 (L2VF_projComponentC j ((galSeq (alPkg.φ N)).u t : L2VF)) k)
-          = fun t => fourierCoeffCLM k (L2VF_projComponentC j ((galSeq (alPkg.φ N)).u t : L2VF)) := by
+      have heq : (fun t => mFourierCoeff3 (L2VF_projComponentC j ((galSeq (κ (alPkg.φ N))).u t : L2VF)) k)
+          = fun t => fourierCoeffCLM k (L2VF_projComponentC j ((galSeq (κ (alPkg.φ N))).u t : L2VF)) := by
         funext t; rw [fourierCoeffCLM_apply]
       rw [heq]
       exact ((fourierCoeffCLM k).continuous.comp
         (L2VF_projComponentC j).continuous).comp_continuousOn hcurve
-    have hcurve_sigma : ContinuousOn (fun t => (galSeq (alPkg.φ N)).u t) (Set.Icc 0 T) := by
+    have hcurve_sigma : ContinuousOn (fun t => (galSeq (κ (alPkg.φ N))).u t) (Set.Icc 0 T) := by
       have hiso : Isometry (fun x : L2Sigma => (x : L2VF)) := by
         rw [isometry_iff_dist_eq]; intro x y
         simp only [dist_eq_norm, ← AddSubgroupClass.coe_sub, Submodule.coe_norm]
       exact hiso.isUniformInducing.isInducing.continuousOn_iff.mpr hcurve
     have hb_cont : ContinuousOn
-        (fun t => F.b ((galSeq (alPkg.φ N)).u t) ((galSeq (alPkg.φ N)).u t) w) (Set.Icc 0 T) :=
+        (fun t => F.b ((galSeq (κ (alPkg.φ N))).u t) ((galSeq (κ (alPkg.φ N))).u t) w) (Set.Icc 0 T) :=
       ((b_clm.continuous₂.comp_continuousOn (hcurve_sigma.prodMk hcurve_sigma)).congr
         (fun t _ => (hbclm_eq _ _).symm))
     simp only [hGf]
     exact (hinner_cont.neg.mul hψC1.continuous_deriv_one.continuousOn).add
       (hψC1.continuous.continuousOn.mul ((continuousOn_const.mul hstokes_cont).add hb_cont))
-  have hIntG_sN : ∀ N, Integrable (fun t => Gf (fun s => (galSeq (alPkg.φ N)).u s) t) μ := fun N => by
+  have hIntG_sN : ∀ N, Integrable (fun t => Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t) μ := fun N => by
     rw [hμdef]; exact (hcontG_sN N).integrableOn_Icc
   -- Constants and the pointwise dominator.
   set K1 : ℝ := Mψ' * ‖(w : L2VF)‖ + Mψ * ν * Cs + Mψ * Cb' * ‖(u₀ : L2VF)‖ with hK1
@@ -674,81 +674,81 @@ theorem torus_weakFormNS_of_strongConvergence
     intro N; rw [hPbound, hRHSdef]; simp only
     rw [integral_add ((hInt_dN_norm N).const_mul K1) ((hInt_dN_uu N).const_mul K2),
       MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul]
-  have hdiff_le : ∀ N, (fun t => |Gf alPkg.u t - Gf (fun s => (galSeq (alPkg.φ N)).u s) t|)
+  have hdiff_le : ∀ N, (fun t => |Gf alPkg.u t - Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t|)
       ≤ᵐ[μ] Pbound N := by
     intro N
     rw [hμdef]
     refine (ae_restrict_iff' measurableSet_Icc).mpr (ae_of_all _ fun t ht => ?_)
     -- rewrite the difference into linearised form
     have hinner_d : -(inner (𝕜 := ℝ) (alPkg.u t : L2VF) (w : L2VF))
-          - -(inner (𝕜 := ℝ) ((galSeq (alPkg.φ N)).u t : L2VF) (w : L2VF))
+          - -(inner (𝕜 := ℝ) ((galSeq (κ (alPkg.φ N))).u t : L2VF) (w : L2VF))
         = inner (𝕜 := ℝ) (dN N t) (w : L2VF) := by
       rw [hdNval, inner_sub_left]; ring
     have hstokes_d : stokesTestPairing (alPkg.u t : L2VF) (w : L2VF)
-          - stokesTestPairing ((galSeq (alPkg.φ N)).u t : L2VF) (w : L2VF)
-        = stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (alPkg.φ N)).u t : L2VF)) (w : L2VF) := by
-      have h := Torus.stokesTestPairing_add_left n₀ ((alPkg.u t : L2VF) - ((galSeq (alPkg.φ N)).u t : L2VF))
-        ((galSeq (alPkg.φ N)).u t : L2VF) (w : L2VF) hn₀
+          - stokesTestPairing ((galSeq (κ (alPkg.φ N))).u t : L2VF) (w : L2VF)
+        = stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (κ (alPkg.φ N))).u t : L2VF)) (w : L2VF) := by
+      have h := Torus.stokesTestPairing_add_left n₀ ((alPkg.u t : L2VF) - ((galSeq (κ (alPkg.φ N))).u t : L2VF))
+        ((galSeq (κ (alPkg.φ N))).u t : L2VF) (w : L2VF) hn₀
       rw [sub_add_cancel] at h; linarith
     have hb_d : F.b (alPkg.u t) (alPkg.u t) w
-          - F.b ((galSeq (alPkg.φ N)).u t) ((galSeq (alPkg.φ N)).u t) w
-        = F.b (alPkg.u t - (galSeq (alPkg.φ N)).u t) (alPkg.u t) w
-          + F.b ((galSeq (alPkg.φ N)).u t) (alPkg.u t - (galSeq (alPkg.φ N)).u t) w := by
+          - F.b ((galSeq (κ (alPkg.φ N))).u t) ((galSeq (κ (alPkg.φ N))).u t) w
+        = F.b (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) (alPkg.u t) w
+          + F.b ((galSeq (κ (alPkg.φ N))).u t) (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) w := by
       rw [F.b_sub_1, F.b_sub_2]; ring
-    have hnδ : ‖((alPkg.u t - (galSeq (alPkg.φ N)).u t : L2Sigma) : L2VF)‖ = ‖dN N t‖ := by
+    have hnδ : ‖((alPkg.u t - (galSeq (κ (alPkg.φ N))).u t : L2Sigma) : L2VF)‖ = ‖dN N t‖ := by
       rw [AddSubgroupClass.coe_sub, hdNval, norm_sub_rev]
-    have hnorm_su_sN : ‖(alPkg.u t : L2VF) - ((galSeq (alPkg.φ N)).u t : L2VF)‖ = ‖dN N t‖ := by
+    have hnorm_su_sN : ‖(alPkg.u t : L2VF) - ((galSeq (κ (alPkg.φ N))).u t : L2VF)‖ = ‖dN N t‖ := by
       rw [hdNval, norm_sub_rev]
     -- subterm bounds
     have hI1 : |inner (𝕜 := ℝ) (dN N t) (w : L2VF)| ≤ ‖dN N t‖ * ‖(w : L2VF)‖ :=
       abs_real_inner_le_norm _ _
     have hψ'b : |deriv ψ t| ≤ Mψ' := by rw [← Real.norm_eq_abs]; exact hMψ' t ht
     have hψb : |ψ t| ≤ Mψ := by rw [← Real.norm_eq_abs]; exact hMψ t ht
-    have hSb : |stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (alPkg.φ N)).u t : L2VF)) (w : L2VF)|
+    have hSb : |stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (κ (alPkg.φ N))).u t : L2VF)) (w : L2VF)|
         ≤ Cs * ‖dN N t‖ := by rw [← hnorm_su_sN]; exact hCs _
-    have hB1 : |F.b (alPkg.u t - (galSeq (alPkg.φ N)).u t) (alPkg.u t) w|
+    have hB1 : |F.b (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) (alPkg.u t) w|
         ≤ Cb' * ‖dN N t‖ * ‖(alPkg.u t : L2VF)‖ := by
       refine (hCb' _ _).trans (le_of_eq ?_); rw [hnδ]
-    have hB2 : |F.b ((galSeq (alPkg.φ N)).u t) (alPkg.u t - (galSeq (alPkg.φ N)).u t) w|
+    have hB2 : |F.b ((galSeq (κ (alPkg.φ N))).u t) (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) w|
         ≤ Cb' * ‖(u₀ : L2VF)‖ * ‖dN N t‖ := by
       refine (hCb' _ _).trans ?_; rw [hnδ]
       gcongr
       · exact hnorm_uN N t ht
     -- assemble
-    have hcombine : Gf alPkg.u t - Gf (fun s => (galSeq (alPkg.φ N)).u s) t
+    have hcombine : Gf alPkg.u t - Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t
         = inner (𝕜 := ℝ) (dN N t) (w : L2VF) * deriv ψ t
-          + ψ t * (ν * stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (alPkg.φ N)).u t : L2VF)) (w : L2VF)
-            + (F.b (alPkg.u t - (galSeq (alPkg.φ N)).u t) (alPkg.u t) w
-               + F.b ((galSeq (alPkg.φ N)).u t) (alPkg.u t - (galSeq (alPkg.φ N)).u t) w)) := by
+          + ψ t * (ν * stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (κ (alPkg.φ N))).u t : L2VF)) (w : L2VF)
+            + (F.b (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) (alPkg.u t) w
+               + F.b ((galSeq (κ (alPkg.φ N))).u t) (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) w)) := by
       simp only [hGf]; rw [← hinner_d, ← hstokes_d, ← hb_d]; ring
-    show |Gf alPkg.u t - Gf (fun s => (galSeq (alPkg.φ N)).u s) t| ≤ Pbound N t
+    show |Gf alPkg.u t - Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t| ≤ Pbound N t
     rw [hcombine, hPbound]; simp only
     have hpiece1 : |inner (𝕜 := ℝ) (dN N t) (w : L2VF) * deriv ψ t|
         ≤ ‖dN N t‖ * ‖(w : L2VF)‖ * Mψ' := by
       rw [abs_mul]; exact mul_le_mul hI1 hψ'b (abs_nonneg _) (by positivity)
     have hpiece2 : |ψ t * (ν * stokesTestPairing ((alPkg.u t : L2VF)
-          - ((galSeq (alPkg.φ N)).u t : L2VF)) (w : L2VF)
-          + (F.b (alPkg.u t - (galSeq (alPkg.φ N)).u t) (alPkg.u t) w
-             + F.b ((galSeq (alPkg.φ N)).u t) (alPkg.u t - (galSeq (alPkg.φ N)).u t) w))|
+          - ((galSeq (κ (alPkg.φ N))).u t : L2VF)) (w : L2VF)
+          + (F.b (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) (alPkg.u t) w
+             + F.b ((galSeq (κ (alPkg.φ N))).u t) (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) w))|
         ≤ Mψ * (ν * (Cs * ‖dN N t‖)
             + (Cb' * ‖dN N t‖ * ‖(alPkg.u t : L2VF)‖ + Cb' * ‖(u₀ : L2VF)‖ * ‖dN N t‖)) := by
       rw [abs_mul]
       refine mul_le_mul hψb ?_ (abs_nonneg _) hMψ0
-      calc |ν * stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (alPkg.φ N)).u t : L2VF)) (w : L2VF)
-              + (F.b (alPkg.u t - (galSeq (alPkg.φ N)).u t) (alPkg.u t) w
-                 + F.b ((galSeq (alPkg.φ N)).u t) (alPkg.u t - (galSeq (alPkg.φ N)).u t) w)|
-          ≤ |ν * stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (alPkg.φ N)).u t : L2VF)) (w : L2VF)|
-            + |F.b (alPkg.u t - (galSeq (alPkg.φ N)).u t) (alPkg.u t) w
-               + F.b ((galSeq (alPkg.φ N)).u t) (alPkg.u t - (galSeq (alPkg.φ N)).u t) w| := abs_add_le _ _
+      calc |ν * stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (κ (alPkg.φ N))).u t : L2VF)) (w : L2VF)
+              + (F.b (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) (alPkg.u t) w
+                 + F.b ((galSeq (κ (alPkg.φ N))).u t) (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) w)|
+          ≤ |ν * stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (κ (alPkg.φ N))).u t : L2VF)) (w : L2VF)|
+            + |F.b (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) (alPkg.u t) w
+               + F.b ((galSeq (κ (alPkg.φ N))).u t) (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) w| := abs_add_le _ _
         _ ≤ ν * (Cs * ‖dN N t‖)
             + (Cb' * ‖dN N t‖ * ‖(alPkg.u t : L2VF)‖ + Cb' * ‖(u₀ : L2VF)‖ * ‖dN N t‖) := by
             refine add_le_add ?_ ((abs_add_le _ _).trans (add_le_add hB1 hB2))
             rw [abs_mul, abs_of_nonneg hν.le]
             exact mul_le_mul_of_nonneg_left hSb hν.le
     calc |inner (𝕜 := ℝ) (dN N t) (w : L2VF) * deriv ψ t
-            + ψ t * (ν * stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (alPkg.φ N)).u t : L2VF)) (w : L2VF)
-              + (F.b (alPkg.u t - (galSeq (alPkg.φ N)).u t) (alPkg.u t) w
-                 + F.b ((galSeq (alPkg.φ N)).u t) (alPkg.u t - (galSeq (alPkg.φ N)).u t) w))|
+            + ψ t * (ν * stokesTestPairing ((alPkg.u t : L2VF) - ((galSeq (κ (alPkg.φ N))).u t : L2VF)) (w : L2VF)
+              + (F.b (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) (alPkg.u t) w
+                 + F.b ((galSeq (κ (alPkg.φ N))).u t) (alPkg.u t - (galSeq (κ (alPkg.φ N))).u t) w))|
         ≤ ‖dN N t‖ * ‖(w : L2VF)‖ * Mψ'
           + Mψ * (ν * (Cs * ‖dN N t‖)
               + (Cb' * ‖dN N t‖ * ‖(alPkg.u t : L2VF)‖ + Cb' * ‖(u₀ : L2VF)‖ * ‖dN N t‖)) :=
@@ -757,26 +757,26 @@ theorem torus_weakFormNS_of_strongConvergence
   -- The limit passage: `∫ Gf alPkg.u = 0`.
   have key : ∫ t in (0 : ℝ)..T, Gf alPkg.u t = 0 := by
     rw [hbridge]
-    have hbound : ∀ N, |(∫ t, Gf alPkg.u t ∂μ) - ∫ t, Gf (fun s => (galSeq (alPkg.φ N)).u s) t ∂μ|
+    have hbound : ∀ N, |(∫ t, Gf alPkg.u t ∂μ) - ∫ t, Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t ∂μ|
         ≤ RHS N := by
       intro N
-      calc |(∫ t, Gf alPkg.u t ∂μ) - ∫ t, Gf (fun s => (galSeq (alPkg.φ N)).u s) t ∂μ|
-          = |∫ t, (Gf alPkg.u t - Gf (fun s => (galSeq (alPkg.φ N)).u s) t) ∂μ| := by
+      calc |(∫ t, Gf alPkg.u t ∂μ) - ∫ t, Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t ∂μ|
+          = |∫ t, (Gf alPkg.u t - Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t) ∂μ| := by
             rw [integral_sub hIntG_su (hIntG_sN N)]
-        _ ≤ ∫ t, |Gf alPkg.u t - Gf (fun s => (galSeq (alPkg.φ N)).u s) t| ∂μ := by
+        _ ≤ ∫ t, |Gf alPkg.u t - Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t| ∂μ := by
             have := norm_integral_le_integral_norm (μ := μ)
-              (fun t => Gf alPkg.u t - Gf (fun s => (galSeq (alPkg.φ N)).u s) t)
+              (fun t => Gf alPkg.u t - Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t)
             simpa [Real.norm_eq_abs] using this
         _ ≤ ∫ t, Pbound N t ∂μ :=
             integral_mono_ae ((hIntG_su.sub (hIntG_sN N)).abs) (hIntP N) (hdiff_le N)
         _ = RHS N := hPbound_split N
-    have hzero : ∀ N, n₀ ≤ alPkg.φ N →
-        ∫ t, Gf (fun s => (galSeq (alPkg.φ N)).u s) t ∂μ = 0 := by
+    have hzero : ∀ N, n₀ ≤ κ (alPkg.φ N) →
+        ∫ t, Gf (fun s => (galSeq (κ (alPkg.φ N))).u s) t ∂μ = 0 := by
       intro N hN; rw [← hbridge]; exact hgal_zero N hN
     have hle0 : |∫ t, Gf alPkg.u t ∂μ| ≤ 0 := by
       refine ge_of_tendsto hRHS0 ?_
       refine Filter.eventually_atTop.2 ⟨n₀, fun N hN => ?_⟩
-      have hφ : n₀ ≤ alPkg.φ N := hN.trans alPkg.φ_mono.le_apply
+      have hφ : n₀ ≤ κ (alPkg.φ N) := hN.trans (alPkg.φ_mono.le_apply.trans hκ.le_apply)
       have hb := hbound N
       rw [hzero N hφ, sub_zero] at hb
       exact hb

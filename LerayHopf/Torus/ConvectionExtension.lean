@@ -136,8 +136,8 @@ private lemma l2coeff_nonneg (f : L2C) : 0 ≤ l2coeff f := by
 private def shiftEquiv (m : Fin 3 → ℤ) : (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) where
   toFun k := -k - m
   invFun l := -l - m
-  left_inv k := by funext j; simp [Pi.neg_apply, Pi.sub_apply]
-  right_inv l := by funext j; simp [Pi.neg_apply, Pi.sub_apply]
+  left_inv k := by funext j; simp [Pi.sub_apply]
+  right_inv l := by funext j; simp [Pi.sub_apply]
 
 private lemma tsum_sq_shift (f : L2C) (m : Fin 3 → ℤ) :
     ∑' k : Fin 3 → ℤ, ‖mFourierCoeff3 f (-k - m)‖ ^ 2
@@ -184,8 +184,8 @@ private noncomputable def convSummandW (u v w : L2VF) (i a : Fin 3) (k l : Fin 3
 private def reidxKM : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) × (Fin 3 → ℤ) where
   toFun kl := (kl.1, -(kl.1 + kl.2))
   invFun km := (km.1, -(km.1 + km.2))
-  left_inv kl := Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
-  right_inv km := Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
+  left_inv kl := Prod.ext rfl (by funext j; simp [Pi.neg_apply])
+  right_inv km := Prod.ext rfl (by funext j; simp [Pi.neg_apply])
 
 -- Reusable section summability: for fixed m, k ↦ U k * V(-k-m) is summable (CS p=q=2).
 private lemma sec_summable (U V : (Fin 3 → ℤ) → ℝ)
@@ -195,8 +195,8 @@ private lemma sec_summable (U V : (Fin 3 → ℤ) → ℝ)
   have hVshift : Summable (fun k : Fin 3 → ℤ => V (-k - m) ^ 2) := by
     let e : (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) :=
       { toFun := fun k => -k - m, invFun := fun l => -l - m
-        left_inv := fun k => by funext j; simp [Pi.neg_apply, Pi.sub_apply]
-        right_inv := fun l => by funext j; simp [Pi.neg_apply, Pi.sub_apply] }
+        left_inv := fun k => by funext j; simp [Pi.sub_apply]
+        right_inv := fun l => by funext j; simp [Pi.sub_apply] }
     refine ((e.summable_iff (f := fun l => V l ^ 2)).mpr hVsq).congr (fun k => ?_)
     simp only [e, Equiv.coe_fn_mk, Function.comp]
   have hU' : Summable (fun k : Fin 3 → ℤ => U k ^ (2:ℝ)) := hUsq.congr (fun k => by rw [Real.rpow_two])
@@ -224,12 +224,12 @@ private lemma dom_summable (U V Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
     rw [summable_prod_of_nonneg (fun mk => by have := hUnn mk.2; have := hVnn (-mk.2-mk.1); have := hWnn mk.1; positivity)]
     refine ⟨fun m => ((hsecS m).mul_left (Wc m)).congr (fun y => rfl), ?_⟩
     refine summable_of_ne_finset_zero (s := fourierBox n) (fun m hm => ?_)
-    simp [tsum_mul_left, hWsupp m hm]
+    simp [hWsupp m hm]
   let e : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) × (Fin 3 → ℤ) :=
     { toFun := fun kl => (-(kl.1 + kl.2), kl.1)
       invFun := fun mk => (mk.2, -(mk.2 + mk.1))
-      left_inv := fun kl => Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
-      right_inv := fun mk => Prod.ext (by funext j; simp [Pi.neg_apply, Pi.add_apply]) rfl }
+      left_inv := fun kl => Prod.ext rfl (by funext j; simp [Pi.neg_apply])
+      right_inv := fun mk => Prod.ext (by funext j; simp [Pi.neg_apply]) rfl }
   refine ((e.summable_iff (f := fun mk => Wc mk.1 * (U mk.2 * V (-mk.2 - mk.1)))).mpr hg).congr
     (fun kl => ?_)
   simp only [e, Equiv.coe_fn_mk, Function.comp]
@@ -322,8 +322,8 @@ private lemma dom_tsum_le (fU fV : L2C) (Wc : (Fin 3 → ℤ) → ℝ) (n : ℕ)
   let e : (Fin 3 → ℤ) × (Fin 3 → ℤ) ≃ (Fin 3 → ℤ) × (Fin 3 → ℤ) :=
     { toFun := fun kl => (-(kl.1 + kl.2), kl.1)
       invFun := fun mk => (mk.2, -(mk.2 + mk.1))
-      left_inv := fun kl => Prod.ext rfl (by funext j; simp [Pi.neg_apply, Pi.add_apply])
-      right_inv := fun mk => Prod.ext (by funext j; simp [Pi.neg_apply, Pi.add_apply]) rfl }
+      left_inv := fun kl => Prod.ext rfl (by funext j; simp [Pi.neg_apply])
+      right_inv := fun mk => Prod.ext (by funext j; simp [Pi.neg_apply]) rfl }
   have hsumMK : Summable (fun mk : (Fin 3 → ℤ) × (Fin 3 → ℤ) => Wc mk.1 * (U mk.2 * V (-mk.2 - mk.1))) := by
     have := (e.summable_iff (f := fun mk => Wc mk.1 * (U mk.2 * V (-mk.2 - mk.1)))).symm
     rw [this]
@@ -809,9 +809,9 @@ lemma isGalerkinTest_zero : IsGalerkinTest (0 : L2Sigma) :=
 the predicate, by `Submodule.span_induction` over the three closure lemmas above. -/
 theorem mem_galerkinTestSpan_isTest {s : L2Sigma} (hs : s ∈ galerkinTestSpan) : IsGalerkinTest s :=
   Submodule.span_induction (p := fun x _ => IsGalerkinTest x)
-    (fun x hx => hx) isGalerkinTest_zero
-    (fun x y _ _ hx hy => isGalerkinTest_add hx hy)
-    (fun c x _ hx => isGalerkinTest_smul c hx) hs
+    (fun _x hx => hx) isGalerkinTest_zero
+    (fun _x _y _ _ hx hy => isGalerkinTest_add hx hy)
+    (fun c _x _ hx => isGalerkinTest_smul c hx) hs
 
 /-- **`convBLTgalerkin`.** Jointly continuous bilinear form
 `L2Sigma →L[ℝ] L2Sigma →L[ℝ] ℝ` extending `(u, v) ↦ convFormFourier u v w` for a

@@ -93,7 +93,7 @@ theorem opNorm_le_sqrt_sum_sq {ι : Type*} [Fintype ι]
   rw [hv, mul_comm]
   calc ‖∑ i, ⟪b i, v⟫ • L (b i)‖
       ≤ ∑ i, ‖⟪b i, v⟫ • L (b i)‖ := norm_sum_le _ _
-    _ = ∑ i, |⟪b i, v⟫| * ‖L (b i)‖ := by simp [norm_smul, Real.norm_eq_abs]
+    _ = ∑ i, |⟪b i, v⟫| * ‖L (b i)‖ := by simp [Real.norm_eq_abs]
     _ ≤ Real.sqrt ((∑ i, ⟪b i, v⟫ ^ 2) * (∑ i, ‖L (b i)‖ ^ 2)) := by
         apply Real.le_sqrt_of_sq_le
         calc (∑ i, |⟪b i, v⟫| * ‖L (b i)‖) ^ 2
@@ -179,13 +179,13 @@ theorem integral_normSq_fderiv_le (φ : SchwartzMap Domain3 ℂ) :
     (memLp_two_iff_integrable_sq_norm ((∂_{b i} φ).continuous.aestronglyMeasurable)).mp
       ((∂_{b i} φ).memLp 2 (volume:Measure Domain3))
   have hsumint : Integrable (fun x : Domain3 => ∑ i, ‖(∂_{b i} φ) x‖ ^ 2)
-      (volume : Measure Domain3) := integrable_finset_sum _ (fun i _ => hintR i)
+      (volume : Measure Domain3) := integrable_finsetSum _ (fun i _ => hintR i)
   have hstep1 : ∫ x : Domain3, ‖fderiv ℝ (φ:Domain3→ℂ) x‖ ^ 2 ∂(volume : Measure Domain3)
       ≤ ∫ x : Domain3, ∑ i, ‖(∂_{b i} φ) x‖ ^ 2 ∂(volume : Measure Domain3) :=
     integral_mono hintL hsumint hptwise
   have hstep2 : ∫ x : Domain3, ∑ i, ‖(∂_{b i} φ) x‖ ^ 2 ∂(volume : Measure Domain3)
       = ∫ ξ : Domain3, (2 * Real.pi) ^ 2 * ‖ξ‖ ^ 2 * ‖(𝓕 φ) ξ‖ ^ 2 ∂(volume : Measure Domain3) := by
-    rw [integral_finset_sum _ (fun i _ => hintR i)]
+    rw [integral_finsetSum _ (fun i _ => hintR i)]
     have hperdir : ∀ i, ∫ x : Domain3, ‖(∂_{b i} φ) x‖ ^ 2 ∂(volume : Measure Domain3)
         = ∫ ξ : Domain3, (2 * Real.pi)^2 * (inner ℝ ξ (b i))^2 * ‖(𝓕 φ) ξ‖^2
           ∂(volume:Measure Domain3) := by
@@ -215,7 +215,7 @@ theorem integral_normSq_fderiv_le (φ : SchwartzMap Domain3 ℂ) :
         rw [norm_mul, Complex.norm_I, mul_one, Complex.norm_real, Real.norm_eq_abs,
           abs_of_nonneg (by positivity)]
       rw [hI]
-    rw [← integral_finset_sum _ (fun i _ => hintP i)]
+    rw [← integral_finsetSum _ (fun i _ => hintP i)]
     refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
     have hinner : ∑ i, (inner ℝ ξ (b i))^2 = ‖ξ‖^2 := by
       have := b.sum_sq_norm_inner_right ξ
