@@ -29,6 +29,24 @@ else
   lake build
 fi
 
+echo "==> lake build LerayHopf.Experimental (opt-in module)"
+# `check-axioms-live.sh` runs `scripts/print_axioms.lean`, which imports
+# `LerayHopf.Experimental` for its non-gated Experimental axiom-profile section. That module
+# is deliberately outside the default target cone (`defaultTargets = ["LerayHopf"]`, and
+# `LerayHopf.lean` does not import it), so the `lake build` above does NOT produce
+# `LerayHopf/Experimental.olean`.
+#
+# Without this step the preflight is only green on a tree that already happens to carry that
+# olean from some earlier explicit build — e.g. one inherited through a `cp -al` .lake donor.
+# On a clean clone it fails exactly as GitHub Actions did in issue #232. Build it explicitly so
+# local preflight and the hosted full-build agree, and so a green preflight means the same
+# thing on both.
+if command -v flock >/dev/null 2>&1; then
+  flock /tmp/lean-build.lock lake build LerayHopf.Experimental
+else
+  lake build LerayHopf.Experimental
+fi
+
 echo "==> scripts/check-no-sorry.sh"
 bash scripts/check-no-sorry.sh
 
