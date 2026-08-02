@@ -19,7 +19,10 @@ same color. Hovering a rectangle shows the full path and the code/comment/blank 
 breakdown. Groups outside the generator's known-colour table — currently `Scratch/` —
 are assigned from a fallback palette in first-seen path order, which keeps the
 assignment deterministic and the whole figure within the Okabe–Ito colourblind-safe
-set.
+set. Each tile's label is drawn in whichever of black or white contrasts better with
+that tile's fill (computed from the fill's relative luminance, so it stays a pure
+function of the data): most of the palette is light enough that white labels would fall
+below the WCAG AA 4.5:1 ratio for normal-size text.
 
 **This figure represents physical source size only.** It does not measure proof
 difficulty, mathematical importance, or code quality, and it carries no weighting by

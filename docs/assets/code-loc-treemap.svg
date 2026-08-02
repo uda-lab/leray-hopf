@@ -25,8 +25,8 @@ comment: 348
 blank: 64</title>
 <clipPath id="clip-LerayHopf-R3-AubinLionsLimitPassage-lean"><rect x="6" y="6" width="241" height="178"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-AubinLionsLimitPassage-lean)">
-<text x="9" y="18" font-size="10" fill="#ffffff">AubinLionsLimitPassage.lean</text>
-<text x="9" y="30" font-size="10" fill="#ffffff">1145 LOC</text>
+<text x="9" y="18" font-size="10" fill="#000000">AubinLionsLimitPassage.lean</text>
+<text x="9" y="30" font-size="10" fill="#000000">1145 LOC</text>
 </g>
 </g>
 <g>
@@ -37,8 +37,8 @@ comment: 585
 blank: 140</title>
 <clipPath id="clip-LerayHopf-R3-FrechetKolmogorov-lean"><rect x="6" y="186" width="241" height="167"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-FrechetKolmogorov-lean)">
-<text x="9" y="198" font-size="10" fill="#ffffff">FrechetKolmogorov.lean</text>
-<text x="9" y="210" font-size="10" fill="#ffffff">1076 LOC</text>
+<text x="9" y="198" font-size="10" fill="#000000">FrechetKolmogorov.lean</text>
+<text x="9" y="210" font-size="10" fill="#000000">1076 LOC</text>
 </g>
 </g>
 <g>
@@ -49,8 +49,8 @@ comment: 253
 blank: 69</title>
 <clipPath id="clip-LerayHopf-R3-SpatialCompactness-lean"><rect x="6" y="355" width="241" height="147"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-SpatialCompactness-lean)">
-<text x="9" y="367" font-size="10" fill="#ffffff">SpatialCompactness.lean</text>
-<text x="9" y="379" font-size="10" fill="#ffffff">947 LOC</text>
+<text x="9" y="367" font-size="10" fill="#000000">SpatialCompactness.lean</text>
+<text x="9" y="379" font-size="10" fill="#000000">947 LOC</text>
 </g>
 </g>
 <g>
@@ -61,8 +61,8 @@ comment: 373
 blank: 114</title>
 <clipPath id="clip-LerayHopf-R3-SobolevEmbedding-lean"><rect x="6" y="504" width="241" height="132"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-SobolevEmbedding-lean)">
-<text x="9" y="516" font-size="10" fill="#ffffff">SobolevEmbedding.lean</text>
-<text x="9" y="528" font-size="10" fill="#ffffff">851 LOC</text>
+<text x="9" y="516" font-size="10" fill="#000000">SobolevEmbedding.lean</text>
+<text x="9" y="528" font-size="10" fill="#000000">851 LOC</text>
 </g>
 </g>
 <g>
@@ -73,8 +73,8 @@ comment: 272
 blank: 65</title>
 <clipPath id="clip-LerayHopf-R3-EnergyWeakLsc-lean"><rect x="6" y="638" width="241" height="116"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-EnergyWeakLsc-lean)">
-<text x="9" y="650" font-size="10" fill="#ffffff">EnergyWeakLsc.lean</text>
-<text x="9" y="662" font-size="10" fill="#ffffff">748 LOC</text>
+<text x="9" y="650" font-size="10" fill="#000000">EnergyWeakLsc.lean</text>
+<text x="9" y="662" font-size="10" fill="#000000">748 LOC</text>
 </g>
 </g>
 <g>
@@ -85,8 +85,8 @@ comment: 507
 blank: 104</title>
 <clipPath id="clip-LerayHopf-R3-ConvectionForm-lean"><rect x="249" y="6" width="137" height="192"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-ConvectionForm-lean)">
-<text x="252" y="18" font-size="10" fill="#ffffff">ConvectionForm.lean</text>
-<text x="252" y="30" font-size="10" fill="#ffffff">704 LOC</text>
+<text x="252" y="18" font-size="10" fill="#000000">ConvectionForm.lean</text>
+<text x="252" y="30" font-size="10" fill="#000000">704 LOC</text>
 </g>
 </g>
 <g>
@@ -97,8 +97,8 @@ comment: 121
 blank: 36</title>
 <clipPath id="clip-LerayHopf-R3-GalerkinTimeModulus-lean"><rect x="388" y="6" width="133" height="192"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-GalerkinTimeModulus-lean)">
-<text x="391" y="18" font-size="10" fill="#ffffff">GalerkinTimeModulus.lean</text>
-<text x="391" y="30" font-size="10" fill="#ffffff">684 LOC</text>
+<text x="391" y="18" font-size="10" fill="#000000">GalerkinTimeModulus.lean</text>
+<text x="391" y="30" font-size="10" fill="#000000">684 LOC</text>
 </g>
 </g>
 <g>
@@ -109,8 +109,8 @@ comment: 155
 blank: 54</title>
 <clipPath id="clip-LerayHopf-R3-GalerkinTrilinearBound-lean"><rect x="523" y="6" width="130" height="192"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-GalerkinTrilinearBound-lean)">
-<text x="526" y="18" font-size="10" fill="#ffffff">GalerkinTrilinearBound.lean</text>
-<text x="526" y="30" font-size="10" fill="#ffffff">671 LOC</text>
+<text x="526" y="18" font-size="10" fill="#000000">GalerkinTrilinearBound.lean</text>
+<text x="526" y="30" font-size="10" fill="#000000">671 LOC</text>
 </g>
 </g>
 <g>
@@ -121,8 +121,8 @@ comment: 269
 blank: 54</title>
 <clipPath id="clip-LerayHopf-R3-ArzelaAscoliTime-lean"><rect x="655" y="6" width="126" height="192"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-ArzelaAscoliTime-lean)">
-<text x="658" y="18" font-size="10" fill="#ffffff">ArzelaAscoliTime.lean</text>
-<text x="658" y="30" font-size="10" fill="#ffffff">651 LOC</text>
+<text x="658" y="18" font-size="10" fill="#000000">ArzelaAscoliTime.lean</text>
+<text x="658" y="30" font-size="10" fill="#000000">651 LOC</text>
 </g>
 </g>
 <g>
@@ -133,8 +133,8 @@ comment: 145
 blank: 56</title>
 <clipPath id="clip-LerayHopf-R3-TrilinearEstimate-lean"><rect x="249" y="200" width="116" height="207"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-TrilinearEstimate-lean)">
-<text x="252" y="212" font-size="10" fill="#ffffff">TrilinearEstimate.lean</text>
-<text x="252" y="224" font-size="10" fill="#ffffff">641 LOC</text>
+<text x="252" y="212" font-size="10" fill="#000000">TrilinearEstimate.lean</text>
+<text x="252" y="224" font-size="10" fill="#000000">641 LOC</text>
 </g>
 </g>
 <g>
@@ -145,8 +145,8 @@ comment: 317
 blank: 77</title>
 <clipPath id="clip-LerayHopf-R3-CurlDensity-lean"><rect x="367" y="200" width="107" height="207"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-CurlDensity-lean)">
-<text x="370" y="212" font-size="10" fill="#ffffff">CurlDensity.lean</text>
-<text x="370" y="224" font-size="10" fill="#ffffff">595 LOC</text>
+<text x="370" y="212" font-size="10" fill="#000000">CurlDensity.lean</text>
+<text x="370" y="224" font-size="10" fill="#000000">595 LOC</text>
 </g>
 </g>
 <g>
@@ -157,8 +157,8 @@ comment: 315
 blank: 68</title>
 <clipPath id="clip-LerayHopf-R3-SteklovAverages-lean"><rect x="476" y="200" width="103" height="207"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-SteklovAverages-lean)">
-<text x="479" y="212" font-size="10" fill="#ffffff">SteklovAverages.lean</text>
-<text x="479" y="224" font-size="10" fill="#ffffff">574 LOC</text>
+<text x="479" y="212" font-size="10" fill="#000000">SteklovAverages.lean</text>
+<text x="479" y="224" font-size="10" fill="#000000">574 LOC</text>
 </g>
 </g>
 <g>
@@ -169,8 +169,8 @@ comment: 293
 blank: 126</title>
 <clipPath id="clip-LerayHopf-R3-ConvectionExtension-lean"><rect x="581" y="200" width="100" height="207"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-ConvectionExtension-lean)">
-<text x="584" y="212" font-size="10" fill="#ffffff">ConvectionExtension.lean</text>
-<text x="584" y="224" font-size="10" fill="#ffffff">559 LOC</text>
+<text x="584" y="212" font-size="10" fill="#000000">ConvectionExtension.lean</text>
+<text x="584" y="224" font-size="10" fill="#000000">559 LOC</text>
 </g>
 </g>
 <g>
@@ -181,8 +181,8 @@ comment: 273
 blank: 85</title>
 <clipPath id="clip-LerayHopf-R3-EnergyClassConvection-lean"><rect x="683" y="200" width="98" height="207"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-EnergyClassConvection-lean)">
-<text x="686" y="212" font-size="10" fill="#ffffff">EnergyClassConvection.lean</text>
-<text x="686" y="224" font-size="10" fill="#ffffff">546 LOC</text>
+<text x="686" y="212" font-size="10" fill="#000000">EnergyClassConvection.lean</text>
+<text x="686" y="224" font-size="10" fill="#000000">546 LOC</text>
 </g>
 </g>
 <g>
@@ -193,8 +193,8 @@ comment: 98
 blank: 44</title>
 <clipPath id="clip-LerayHopf-R3-CurlDensityH1-lean"><rect x="249" y="409" width="173" height="93"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-CurlDensityH1-lean)">
-<text x="252" y="421" font-size="10" fill="#ffffff">CurlDensityH1.lean</text>
-<text x="252" y="433" font-size="10" fill="#ffffff">431 LOC</text>
+<text x="252" y="421" font-size="10" fill="#000000">CurlDensityH1.lean</text>
+<text x="252" y="433" font-size="10" fill="#000000">431 LOC</text>
 </g>
 </g>
 <g>
@@ -205,8 +205,8 @@ comment: 89
 blank: 27</title>
 <clipPath id="clip-LerayHopf-R3-GoodRepresentative-lean"><rect x="249" y="504" width="173" height="89"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-GoodRepresentative-lean)">
-<text x="252" y="516" font-size="10" fill="#ffffff">GoodRepresentative.lean</text>
-<text x="252" y="528" font-size="10" fill="#ffffff">417 LOC</text>
+<text x="252" y="516" font-size="10" fill="#000000">GoodRepresentative.lean</text>
+<text x="252" y="528" font-size="10" fill="#000000">417 LOC</text>
 </g>
 </g>
 <g>
@@ -217,8 +217,8 @@ comment: 216
 blank: 65</title>
 <clipPath id="clip-LerayHopf-R3-GalerkinODEExistence-lean"><rect x="249" y="595" width="173" height="82"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-GalerkinODEExistence-lean)">
-<text x="252" y="607" font-size="10" fill="#ffffff">GalerkinODEExistence.lean</text>
-<text x="252" y="619" font-size="10" fill="#ffffff">385 LOC</text>
+<text x="252" y="607" font-size="10" fill="#000000">GalerkinODEExistence.lean</text>
+<text x="252" y="619" font-size="10" fill="#000000">385 LOC</text>
 </g>
 </g>
 <g>
@@ -229,8 +229,8 @@ comment: 246
 blank: 56</title>
 <clipPath id="clip-LerayHopf-R3-RellichBall-lean"><rect x="249" y="679" width="173" height="75"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-RellichBall-lean)">
-<text x="252" y="691" font-size="10" fill="#ffffff">RellichBall.lean</text>
-<text x="252" y="703" font-size="10" fill="#ffffff">349 LOC</text>
+<text x="252" y="691" font-size="10" fill="#000000">RellichBall.lean</text>
+<text x="252" y="703" font-size="10" fill="#000000">349 LOC</text>
 </g>
 </g>
 <g>
@@ -241,8 +241,8 @@ comment: 109
 blank: 33</title>
 <clipPath id="clip-LerayHopf-R3-SpacetimePrecompact-lean"><rect x="424" y="409" width="126" height="97"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-SpacetimePrecompact-lean)">
-<text x="427" y="421" font-size="10" fill="#ffffff">SpacetimePrecompact.lean</text>
-<text x="427" y="433" font-size="10" fill="#ffffff">330 LOC</text>
+<text x="427" y="421" font-size="10" fill="#000000">SpacetimePrecompact.lean</text>
+<text x="427" y="433" font-size="10" fill="#000000">330 LOC</text>
 </g>
 </g>
 <g>
@@ -253,8 +253,8 @@ comment: 94
 blank: 21</title>
 <clipPath id="clip-LerayHopf-R3-LimitPassage-lean"><rect x="424" y="508" width="126" height="94"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-LimitPassage-lean)">
-<text x="427" y="520" font-size="10" fill="#ffffff">LimitPassage.lean</text>
-<text x="427" y="532" font-size="10" fill="#ffffff">322 LOC</text>
+<text x="427" y="520" font-size="10" fill="#000000">LimitPassage.lean</text>
+<text x="427" y="532" font-size="10" fill="#000000">322 LOC</text>
 </g>
 </g>
 <g>
@@ -265,8 +265,8 @@ comment: 95
 blank: 35</title>
 <clipPath id="clip-LerayHopf-R3-ConvectionOperator-lean"><rect x="424" y="604" width="126" height="82"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-ConvectionOperator-lean)">
-<text x="427" y="616" font-size="10" fill="#ffffff">ConvectionOperator.lean</text>
-<text x="427" y="628" font-size="10" fill="#ffffff">280 LOC</text>
+<text x="427" y="616" font-size="10" fill="#000000">ConvectionOperator.lean</text>
+<text x="427" y="628" font-size="10" fill="#000000">280 LOC</text>
 </g>
 </g>
 <g>
@@ -277,8 +277,8 @@ comment: 144
 blank: 46</title>
 <clipPath id="clip-LerayHopf-R3-GalerkinCurveBounds-lean"><rect x="424" y="688" width="126" height="66"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-GalerkinCurveBounds-lean)">
-<text x="427" y="700" font-size="10" fill="#ffffff">GalerkinCurveBounds.lean</text>
-<text x="427" y="712" font-size="10" fill="#ffffff">227 LOC</text>
+<text x="427" y="700" font-size="10" fill="#000000">GalerkinCurveBounds.lean</text>
+<text x="427" y="712" font-size="10" fill="#000000">227 LOC</text>
 </g>
 </g>
 <g>
@@ -289,8 +289,8 @@ comment: 159
 blank: 74</title>
 <clipPath id="clip-LerayHopf-R3-FourierL2-lean"><rect x="552" y="409" width="84" height="96"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-FourierL2-lean)">
-<text x="555" y="421" font-size="10" fill="#ffffff">FourierL2.lean</text>
-<text x="555" y="433" font-size="10" fill="#ffffff">220 LOC</text>
+<text x="555" y="421" font-size="10" fill="#000000">FourierL2.lean</text>
+<text x="555" y="433" font-size="10" fill="#000000">220 LOC</text>
 </g>
 </g>
 <g>
@@ -301,8 +301,8 @@ comment: 140
 blank: 43</title>
 <clipPath id="clip-LerayHopf-R3-GalerkinODE-lean"><rect x="638" y="409" width="73" height="96"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-GalerkinODE-lean)">
-<text x="641" y="421" font-size="10" fill="#ffffff">GalerkinODE.lean</text>
-<text x="641" y="433" font-size="10" fill="#ffffff">192 LOC</text>
+<text x="641" y="421" font-size="10" fill="#000000">GalerkinODE.lean</text>
+<text x="641" y="433" font-size="10" fill="#000000">192 LOC</text>
 </g>
 </g>
 <g>
@@ -313,8 +313,8 @@ comment: 81
 blank: 20</title>
 <clipPath id="clip-LerayHopf-R3-DiagonalGalerkin-lean"><rect x="713" y="409" width="68" height="96"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-DiagonalGalerkin-lean)">
-<text x="716" y="421" font-size="10" fill="#ffffff">DiagonalGalerkin.lean</text>
-<text x="716" y="433" font-size="10" fill="#ffffff">180 LOC</text>
+<text x="716" y="421" font-size="10" fill="#000000">DiagonalGalerkin.lean</text>
+<text x="716" y="433" font-size="10" fill="#000000">180 LOC</text>
 </g>
 </g>
 <g>
@@ -325,8 +325,8 @@ comment: 125
 blank: 38</title>
 <clipPath id="clip-LerayHopf-R3-SchwartzDivFreeBasis-lean"><rect x="552" y="507" width="57" height="107"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-SchwartzDivFreeBasis-lean)">
-<text x="555" y="519" font-size="10" fill="#ffffff">SchwartzDivFreeBasis.lean</text>
-<text x="555" y="531" font-size="10" fill="#ffffff">170 LOC</text>
+<text x="555" y="519" font-size="10" fill="#000000">SchwartzDivFreeBasis.lean</text>
+<text x="555" y="531" font-size="10" fill="#000000">170 LOC</text>
 </g>
 </g>
 <g>
@@ -337,8 +337,8 @@ comment: 70
 blank: 25</title>
 <clipPath id="clip-LerayHopf-R3-GalerkinBasisH1-lean"><rect x="611" y="507" width="56" height="107"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-GalerkinBasisH1-lean)">
-<text x="614" y="519" font-size="10" fill="#ffffff">GalerkinBasisH1.lean</text>
-<text x="614" y="531" font-size="10" fill="#ffffff">165 LOC</text>
+<text x="614" y="519" font-size="10" fill="#000000">GalerkinBasisH1.lean</text>
+<text x="614" y="531" font-size="10" fill="#000000">165 LOC</text>
 </g>
 </g>
 <g>
@@ -349,8 +349,8 @@ comment: 444
 blank: 106</title>
 <clipPath id="clip-LerayHopf-R3-SolutionInterfaces-lean"><rect x="669" y="507" width="56" height="107"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-SolutionInterfaces-lean)">
-<text x="672" y="519" font-size="10" fill="#ffffff">SolutionInterfaces.lean</text>
-<text x="672" y="531" font-size="10" fill="#ffffff">163 LOC</text>
+<text x="672" y="519" font-size="10" fill="#000000">SolutionInterfaces.lean</text>
+<text x="672" y="531" font-size="10" fill="#000000">163 LOC</text>
 </g>
 </g>
 <g>
@@ -361,8 +361,8 @@ comment: 67
 blank: 40</title>
 <clipPath id="clip-LerayHopf-R3-WeightedFourierCommute-lean"><rect x="727" y="507" width="54" height="107"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-WeightedFourierCommute-lean)">
-<text x="730" y="519" font-size="10" fill="#ffffff">WeightedFourierCommute.lean</text>
-<text x="730" y="531" font-size="10" fill="#ffffff">160 LOC</text>
+<text x="730" y="519" font-size="10" fill="#000000">WeightedFourierCommute.lean</text>
+<text x="730" y="531" font-size="10" fill="#000000">160 LOC</text>
 </g>
 </g>
 <g>
@@ -373,8 +373,8 @@ comment: 184
 blank: 52</title>
 <clipPath id="clip-LerayHopf-R3-GalerkinScheme-lean"><rect x="552" y="616" width="78" height="70"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-GalerkinScheme-lean)">
-<text x="555" y="628" font-size="10" fill="#ffffff">GalerkinScheme.lean</text>
-<text x="555" y="640" font-size="10" fill="#ffffff">153 LOC</text>
+<text x="555" y="628" font-size="10" fill="#000000">GalerkinScheme.lean</text>
+<text x="555" y="640" font-size="10" fill="#000000">153 LOC</text>
 </g>
 </g>
 <g>
@@ -385,8 +385,8 @@ comment: 69
 blank: 18</title>
 <clipPath id="clip-LerayHopf-R3-StokesFourier-lean"><rect x="552" y="688" width="78" height="66"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-StokesFourier-lean)">
-<text x="555" y="700" font-size="10" fill="#ffffff">StokesFourier.lean</text>
-<text x="555" y="712" font-size="10" fill="#ffffff">143 LOC</text>
+<text x="555" y="700" font-size="10" fill="#000000">StokesFourier.lean</text>
+<text x="555" y="712" font-size="10" fill="#000000">143 LOC</text>
 </g>
 </g>
 <g>
@@ -397,8 +397,8 @@ comment: 125
 blank: 43</title>
 <clipPath id="clip-LerayHopf-R3-GalerkinODESolve-lean"><rect x="632" y="616" width="75" height="55"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-GalerkinODESolve-lean)">
-<text x="635" y="628" font-size="10" fill="#ffffff">GalerkinODESolve.lean</text>
-<text x="635" y="640" font-size="10" fill="#ffffff">116 LOC</text>
+<text x="635" y="628" font-size="10" fill="#000000">GalerkinODESolve.lean</text>
+<text x="635" y="640" font-size="10" fill="#000000">116 LOC</text>
 </g>
 </g>
 <g>
@@ -409,8 +409,8 @@ comment: 64
 blank: 28</title>
 <clipPath id="clip-LerayHopf-R3-CurlSchwartzConstruction-lean"><rect x="632" y="673" width="75" height="41"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-CurlSchwartzConstruction-lean)">
-<text x="635" y="685" font-size="10" fill="#ffffff">CurlSchwartzConstruction.lean</text>
-<text x="635" y="697" font-size="10" fill="#ffffff">86 LOC</text>
+<text x="635" y="685" font-size="10" fill="#000000">CurlSchwartzConstruction.lean</text>
+<text x="635" y="697" font-size="10" fill="#000000">86 LOC</text>
 </g>
 </g>
 <g>
@@ -421,8 +421,8 @@ comment: 53
 blank: 12</title>
 <clipPath id="clip-LerayHopf-R3-KappaChainExit-lean"><rect x="632" y="716" width="75" height="38"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-R3-KappaChainExit-lean)">
-<text x="635" y="728" font-size="10" fill="#ffffff">KappaChainExit.lean</text>
-<text x="635" y="740" font-size="10" fill="#ffffff">80 LOC</text>
+<text x="635" y="728" font-size="10" fill="#000000">KappaChainExit.lean</text>
+<text x="635" y="740" font-size="10" fill="#000000">80 LOC</text>
 </g>
 </g>
 <g>
@@ -489,8 +489,8 @@ comment: 196
 blank: 60</title>
 <clipPath id="clip-LerayHopf-Torus-TraceEnergy-lean"><rect x="789" y="6" width="182" height="197"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-TraceEnergy-lean)">
-<text x="792" y="18" font-size="10" fill="#ffffff">TraceEnergy.lean</text>
-<text x="792" y="30" font-size="10" fill="#ffffff">964 LOC</text>
+<text x="792" y="18" font-size="10" fill="#000000">TraceEnergy.lean</text>
+<text x="792" y="30" font-size="10" fill="#000000">964 LOC</text>
 </g>
 </g>
 <g>
@@ -501,8 +501,8 @@ comment: 207
 blank: 112</title>
 <clipPath id="clip-LerayHopf-Torus-ConvectionExtension-lean"><rect x="973" y="6" width="132" height="197"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-ConvectionExtension-lean)">
-<text x="976" y="18" font-size="10" fill="#ffffff">ConvectionExtension.lean</text>
-<text x="976" y="30" font-size="10" fill="#ffffff">700 LOC</text>
+<text x="976" y="18" font-size="10" fill="#000000">ConvectionExtension.lean</text>
+<text x="976" y="30" font-size="10" fill="#000000">700 LOC</text>
 </g>
 </g>
 <g>
@@ -513,8 +513,8 @@ comment: 116
 blank: 32</title>
 <clipPath id="clip-LerayHopf-Torus-LimitPassage-lean"><rect x="1107" y="6" width="120" height="197"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-LimitPassage-lean)">
-<text x="1110" y="18" font-size="10" fill="#ffffff">LimitPassage.lean</text>
-<text x="1110" y="30" font-size="10" fill="#ffffff">642 LOC</text>
+<text x="1110" y="18" font-size="10" fill="#000000">LimitPassage.lean</text>
+<text x="1110" y="30" font-size="10" fill="#000000">642 LOC</text>
 </g>
 </g>
 <g>
@@ -525,8 +525,8 @@ comment: 170
 blank: 72</title>
 <clipPath id="clip-LerayHopf-Torus-GalerkinODESolve-lean"><rect x="789" y="205" width="150" height="142"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-GalerkinODESolve-lean)">
-<text x="792" y="217" font-size="10" fill="#ffffff">GalerkinODESolve.lean</text>
-<text x="792" y="229" font-size="10" fill="#ffffff">577 LOC</text>
+<text x="792" y="217" font-size="10" fill="#000000">GalerkinODESolve.lean</text>
+<text x="792" y="229" font-size="10" fill="#000000">577 LOC</text>
 </g>
 </g>
 <g>
@@ -537,8 +537,8 @@ comment: 93
 blank: 21</title>
 <clipPath id="clip-LerayHopf-Torus-ModeCompactness-lean"><rect x="789" y="349" width="150" height="107"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-ModeCompactness-lean)">
-<text x="792" y="361" font-size="10" fill="#ffffff">ModeCompactness.lean</text>
-<text x="792" y="373" font-size="10" fill="#ffffff">437 LOC</text>
+<text x="792" y="361" font-size="10" fill="#000000">ModeCompactness.lean</text>
+<text x="792" y="373" font-size="10" fill="#000000">437 LOC</text>
 </g>
 </g>
 <g>
@@ -549,8 +549,8 @@ comment: 273
 blank: 63</title>
 <clipPath id="clip-LerayHopf-Torus-ConvectionForm-lean"><rect x="789" y="458" width="150" height="79"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-ConvectionForm-lean)">
-<text x="792" y="470" font-size="10" fill="#ffffff">ConvectionForm.lean</text>
-<text x="792" y="482" font-size="10" fill="#ffffff">328 LOC</text>
+<text x="792" y="470" font-size="10" fill="#000000">ConvectionForm.lean</text>
+<text x="792" y="482" font-size="10" fill="#000000">328 LOC</text>
 </g>
 </g>
 <g>
@@ -561,8 +561,8 @@ comment: 183
 blank: 63</title>
 <clipPath id="clip-LerayHopf-Torus-EnergyConvection-lean"><rect x="941" y="205" width="95" height="117"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-EnergyConvection-lean)">
-<text x="944" y="217" font-size="10" fill="#ffffff">EnergyConvection.lean</text>
-<text x="944" y="229" font-size="10" fill="#ffffff">303 LOC</text>
+<text x="944" y="217" font-size="10" fill="#000000">EnergyConvection.lean</text>
+<text x="944" y="229" font-size="10" fill="#000000">303 LOC</text>
 </g>
 </g>
 <g>
@@ -573,8 +573,8 @@ comment: 68
 blank: 19</title>
 <clipPath id="clip-LerayHopf-Torus-AubinLionsAssembly-lean"><rect x="1038" y="205" width="95" height="117"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-AubinLionsAssembly-lean)">
-<text x="1041" y="217" font-size="10" fill="#ffffff">AubinLionsAssembly.lean</text>
-<text x="1041" y="229" font-size="10" fill="#ffffff">302 LOC</text>
+<text x="1041" y="217" font-size="10" fill="#000000">AubinLionsAssembly.lean</text>
+<text x="1041" y="229" font-size="10" fill="#000000">302 LOC</text>
 </g>
 </g>
 <g>
@@ -585,8 +585,8 @@ comment: 55
 blank: 14</title>
 <clipPath id="clip-LerayHopf-Torus-ModeTail-lean"><rect x="1135" y="205" width="92" height="117"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-ModeTail-lean)">
-<text x="1138" y="217" font-size="10" fill="#ffffff">ModeTail.lean</text>
-<text x="1138" y="229" font-size="10" fill="#ffffff">296 LOC</text>
+<text x="1138" y="217" font-size="10" fill="#000000">ModeTail.lean</text>
+<text x="1138" y="229" font-size="10" fill="#000000">296 LOC</text>
 </g>
 </g>
 <g>
@@ -597,8 +597,8 @@ comment: 93
 blank: 21</title>
 <clipPath id="clip-LerayHopf-Torus-ViscousLimit-lean"><rect x="941" y="324" width="98" height="87"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-ViscousLimit-lean)">
-<text x="944" y="336" font-size="10" fill="#ffffff">ViscousLimit.lean</text>
-<text x="944" y="348" font-size="10" fill="#ffffff">236 LOC</text>
+<text x="944" y="336" font-size="10" fill="#000000">ViscousLimit.lean</text>
+<text x="944" y="348" font-size="10" fill="#000000">236 LOC</text>
 </g>
 </g>
 <g>
@@ -609,8 +609,8 @@ comment: 135
 blank: 61</title>
 <clipPath id="clip-LerayHopf-Torus-VelocityGalerkin-lean"><rect x="941" y="413" width="98" height="62"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-VelocityGalerkin-lean)">
-<text x="944" y="425" font-size="10" fill="#ffffff">VelocityGalerkin.lean</text>
-<text x="944" y="437" font-size="10" fill="#ffffff">168 LOC</text>
+<text x="944" y="425" font-size="10" fill="#000000">VelocityGalerkin.lean</text>
+<text x="944" y="437" font-size="10" fill="#000000">168 LOC</text>
 </g>
 </g>
 <g>
@@ -621,8 +621,8 @@ comment: 146
 blank: 35</title>
 <clipPath id="clip-LerayHopf-Torus-RellichEmbedding-lean"><rect x="941" y="477" width="98" height="60"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-RellichEmbedding-lean)">
-<text x="944" y="489" font-size="10" fill="#ffffff">RellichEmbedding.lean</text>
-<text x="944" y="501" font-size="10" fill="#ffffff">165 LOC</text>
+<text x="944" y="489" font-size="10" fill="#000000">RellichEmbedding.lean</text>
+<text x="944" y="501" font-size="10" fill="#000000">165 LOC</text>
 </g>
 </g>
 <g>
@@ -633,8 +633,8 @@ comment: 101
 blank: 41</title>
 <clipPath id="clip-LerayHopf-Torus-GalerkinScheme-lean"><rect x="1041" y="324" width="53" height="91"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-GalerkinScheme-lean)">
-<text x="1044" y="336" font-size="10" fill="#ffffff">GalerkinScheme.lean</text>
-<text x="1044" y="348" font-size="10" fill="#ffffff">134 LOC</text>
+<text x="1044" y="336" font-size="10" fill="#000000">GalerkinScheme.lean</text>
+<text x="1044" y="348" font-size="10" fill="#000000">134 LOC</text>
 </g>
 </g>
 <g>
@@ -645,8 +645,8 @@ comment: 38
 blank: 14</title>
 <clipPath id="clip-LerayHopf-Torus-DiagonalGalerkin-lean"><rect x="1096" y="324" width="48" height="91"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-DiagonalGalerkin-lean)">
-<text x="1099" y="336" font-size="10" fill="#ffffff">DiagonalGalerkin.lean</text>
-<text x="1099" y="348" font-size="10" fill="#ffffff">123 LOC</text>
+<text x="1099" y="336" font-size="10" fill="#000000">DiagonalGalerkin.lean</text>
+<text x="1099" y="348" font-size="10" fill="#000000">123 LOC</text>
 </g>
 </g>
 <g>
@@ -671,8 +671,8 @@ comment: 36
 blank: 11</title>
 <clipPath id="clip-LerayHopf-Torus-TestFamily-lean"><rect x="1041" y="417" width="77" height="41"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-TestFamily-lean)">
-<text x="1044" y="429" font-size="10" fill="#ffffff">TestFamily.lean</text>
-<text x="1044" y="441" font-size="10" fill="#ffffff">90 LOC</text>
+<text x="1044" y="429" font-size="10" fill="#000000">TestFamily.lean</text>
+<text x="1044" y="441" font-size="10" fill="#000000">90 LOC</text>
 </g>
 </g>
 <g>
@@ -683,8 +683,8 @@ comment: 63
 blank: 31</title>
 <clipPath id="clip-LerayHopf-Torus-H1Sigma-lean"><rect x="1041" y="460" width="77" height="39"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-H1Sigma-lean)">
-<text x="1044" y="472" font-size="10" fill="#ffffff">H1Sigma.lean</text>
-<text x="1044" y="484" font-size="10" fill="#ffffff">86 LOC</text>
+<text x="1044" y="472" font-size="10" fill="#000000">H1Sigma.lean</text>
+<text x="1044" y="484" font-size="10" fill="#000000">86 LOC</text>
 </g>
 </g>
 <g>
@@ -695,8 +695,8 @@ comment: 51
 blank: 11</title>
 <clipPath id="clip-LerayHopf-Torus-KappaChainExit-lean"><rect x="1041" y="501" width="77" height="36"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-KappaChainExit-lean)">
-<text x="1044" y="513" font-size="10" fill="#ffffff">KappaChainExit.lean</text>
-<text x="1044" y="525" font-size="10" fill="#ffffff">80 LOC</text>
+<text x="1044" y="513" font-size="10" fill="#000000">KappaChainExit.lean</text>
+<text x="1044" y="525" font-size="10" fill="#000000">80 LOC</text>
 </g>
 </g>
 <g>
@@ -728,8 +728,8 @@ comment: 75
 blank: 43</title>
 <clipPath id="clip-LerayHopf-Torus-Leray-lean"><rect x="1120" y="481" width="58" height="30"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Torus-Leray-lean)">
-<text x="1123" y="493" font-size="10" fill="#ffffff">Leray.lean</text>
-<text x="1123" y="505" font-size="10" fill="#ffffff">51 LOC</text>
+<text x="1123" y="493" font-size="10" fill="#000000">Leray.lean</text>
+<text x="1123" y="505" font-size="10" fill="#000000">51 LOC</text>
 </g>
 </g>
 <g>
@@ -782,8 +782,8 @@ comment: 139
 blank: 40</title>
 <clipPath id="clip-LerayHopf-Analysis-WeakLeibniz-lean"><rect x="1235" y="6" width="159" height="138"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Analysis-WeakLeibniz-lean)">
-<text x="1238" y="18" font-size="10" fill="#ffffff">WeakLeibniz.lean</text>
-<text x="1238" y="30" font-size="10" fill="#ffffff">606 LOC</text>
+<text x="1238" y="18" font-size="10" fill="#000000">WeakLeibniz.lean</text>
+<text x="1238" y="30" font-size="10" fill="#000000">606 LOC</text>
 </g>
 </g>
 <g>
@@ -794,8 +794,8 @@ comment: 131
 blank: 106</title>
 <clipPath id="clip-LerayHopf-Analysis-TensorEdgeGluing-lean"><rect x="1235" y="146" width="81" height="195"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Analysis-TensorEdgeGluing-lean)">
-<text x="1238" y="158" font-size="10" fill="#ffffff">TensorEdgeGluing.lean</text>
-<text x="1238" y="170" font-size="10" fill="#ffffff">443 LOC</text>
+<text x="1238" y="158" font-size="10" fill="#000000">TensorEdgeGluing.lean</text>
+<text x="1238" y="170" font-size="10" fill="#000000">443 LOC</text>
 </g>
 </g>
 <g>
@@ -806,8 +806,8 @@ comment: 184
 blank: 54</title>
 <clipPath id="clip-LerayHopf-Analysis-FourierParseval-lean"><rect x="1318" y="146" width="76" height="195"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Analysis-FourierParseval-lean)">
-<text x="1321" y="158" font-size="10" fill="#ffffff">FourierParseval.lean</text>
-<text x="1321" y="170" font-size="10" fill="#ffffff">417 LOC</text>
+<text x="1321" y="158" font-size="10" fill="#000000">FourierParseval.lean</text>
+<text x="1321" y="170" font-size="10" fill="#000000">417 LOC</text>
 </g>
 </g>
 <g>
@@ -818,8 +818,8 @@ comment: 91
 blank: 26</title>
 <clipPath id="clip-LerayHopf-Analysis-PlancherelKernels-lean"><rect x="1235" y="343" width="96" height="93"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Analysis-PlancherelKernels-lean)">
-<text x="1238" y="355" font-size="10" fill="#ffffff">PlancherelKernels.lean</text>
-<text x="1238" y="367" font-size="10" fill="#ffffff">250 LOC</text>
+<text x="1238" y="355" font-size="10" fill="#000000">PlancherelKernels.lean</text>
+<text x="1238" y="367" font-size="10" fill="#000000">250 LOC</text>
 </g>
 </g>
 <g>
@@ -830,8 +830,8 @@ comment: 82
 blank: 26</title>
 <clipPath id="clip-LerayHopf-Analysis-SpectralWeakGradient-lean"><rect x="1333" y="343" width="61" height="93"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Analysis-SpectralWeakGradient-lean)">
-<text x="1336" y="355" font-size="10" fill="#ffffff">SpectralWeakGradient.lean</text>
-<text x="1336" y="367" font-size="10" fill="#ffffff">161 LOC</text>
+<text x="1336" y="355" font-size="10" fill="#000000">SpectralWeakGradient.lean</text>
+<text x="1336" y="367" font-size="10" fill="#000000">161 LOC</text>
 </g>
 </g>
 <g>
@@ -842,8 +842,8 @@ comment: 52
 blank: 33</title>
 <clipPath id="clip-LerayHopf-Analysis-BilinearExtension-lean"><rect x="1235" y="438" width="91" height="55"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Analysis-BilinearExtension-lean)">
-<text x="1238" y="450" font-size="10" fill="#ffffff">BilinearExtension.lean</text>
-<text x="1238" y="462" font-size="10" fill="#ffffff">143 LOC</text>
+<text x="1238" y="450" font-size="10" fill="#000000">BilinearExtension.lean</text>
+<text x="1238" y="462" font-size="10" fill="#000000">143 LOC</text>
 </g>
 </g>
 <g>
@@ -854,8 +854,8 @@ comment: 36
 blank: 19</title>
 <clipPath id="clip-LerayHopf-Analysis-BoundedMultiplier-lean"><rect x="1235" y="495" width="91" height="42"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Analysis-BoundedMultiplier-lean)">
-<text x="1238" y="507" font-size="10" fill="#ffffff">BoundedMultiplier.lean</text>
-<text x="1238" y="519" font-size="10" fill="#ffffff">111 LOC</text>
+<text x="1238" y="507" font-size="10" fill="#000000">BoundedMultiplier.lean</text>
+<text x="1238" y="519" font-size="10" fill="#000000">111 LOC</text>
 </g>
 </g>
 <g>
@@ -880,8 +880,8 @@ comment: 48
 blank: 20</title>
 <clipPath id="clip-LerayHopf-Analysis-LpInterpolation-lean"><rect x="1328" y="512" width="66" height="25"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Analysis-LpInterpolation-lean)">
-<text x="1331" y="524" font-size="10" fill="#ffffff">LpInterpolation.lean</text>
-<text x="1331" y="536" font-size="10" fill="#ffffff">50 LOC</text>
+<text x="1331" y="524" font-size="10" fill="#000000">LpInterpolation.lean</text>
+<text x="1331" y="536" font-size="10" fill="#000000">50 LOC</text>
 </g>
 </g>
 <g>
@@ -892,8 +892,8 @@ comment: 248
 blank: 67</title>
 <clipPath id="clip-LerayHopf-Bochner-TimeMollifierInterval-lean"><rect x="789" y="545" width="146" height="71"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Bochner-TimeMollifierInterval-lean)">
-<text x="792" y="557" font-size="10" fill="#ffffff">TimeMollifierInterval.lean</text>
-<text x="792" y="569" font-size="10" fill="#ffffff">290 LOC</text>
+<text x="792" y="557" font-size="10" fill="#000000">TimeMollifierInterval.lean</text>
+<text x="792" y="569" font-size="10" fill="#000000">290 LOC</text>
 </g>
 </g>
 <g>
@@ -904,8 +904,8 @@ comment: 77
 blank: 28</title>
 <clipPath id="clip-LerayHopf-Bochner-TimeSobolevAC-lean"><rect x="789" y="618" width="146" height="69"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Bochner-TimeSobolevAC-lean)">
-<text x="792" y="630" font-size="10" fill="#ffffff">TimeSobolevAC.lean</text>
-<text x="792" y="642" font-size="10" fill="#ffffff">286 LOC</text>
+<text x="792" y="630" font-size="10" fill="#000000">TimeSobolevAC.lean</text>
+<text x="792" y="642" font-size="10" fill="#000000">286 LOC</text>
 </g>
 </g>
 <g>
@@ -916,8 +916,8 @@ comment: 294
 blank: 72</title>
 <clipPath id="clip-LerayHopf-Bochner-TimeSobolev-lean"><rect x="789" y="689" width="146" height="65"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Bochner-TimeSobolev-lean)">
-<text x="792" y="701" font-size="10" fill="#ffffff">TimeSobolev.lean</text>
-<text x="792" y="713" font-size="10" fill="#ffffff">266 LOC</text>
+<text x="792" y="701" font-size="10" fill="#000000">TimeSobolev.lean</text>
+<text x="792" y="713" font-size="10" fill="#000000">266 LOC</text>
 </g>
 </g>
 <g>
@@ -928,8 +928,8 @@ comment: 41
 blank: 23</title>
 <clipPath id="clip-LerayHopf-Bochner-WeakLimitToolkit-lean"><rect x="937" y="545" width="84" height="107"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Bochner-WeakLimitToolkit-lean)">
-<text x="940" y="557" font-size="10" fill="#ffffff">WeakLimitToolkit.lean</text>
-<text x="940" y="569" font-size="10" fill="#ffffff">250 LOC</text>
+<text x="940" y="557" font-size="10" fill="#000000">WeakLimitToolkit.lean</text>
+<text x="940" y="569" font-size="10" fill="#000000">250 LOC</text>
 </g>
 </g>
 <g>
@@ -940,8 +940,8 @@ comment: 101
 blank: 34</title>
 <clipPath id="clip-LerayHopf-Bochner-StepFunctionCompactness-lean"><rect x="1023" y="545" width="56" height="107"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Bochner-StepFunctionCompactness-lean)">
-<text x="1026" y="557" font-size="10" fill="#ffffff">StepFunctionCompactness.lean</text>
-<text x="1026" y="569" font-size="10" fill="#ffffff">170 LOC</text>
+<text x="1026" y="557" font-size="10" fill="#000000">StepFunctionCompactness.lean</text>
+<text x="1026" y="569" font-size="10" fill="#000000">170 LOC</text>
 </g>
 </g>
 <g>
@@ -952,8 +952,8 @@ comment: 58
 blank: 14</title>
 <clipPath id="clip-LerayHopf-Bochner-ScalarEquicontinuity-lean"><rect x="937" y="654" width="69" height="58"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Bochner-ScalarEquicontinuity-lean)">
-<text x="940" y="666" font-size="10" fill="#ffffff">ScalarEquicontinuity.lean</text>
-<text x="940" y="678" font-size="10" fill="#ffffff">115 LOC</text>
+<text x="940" y="666" font-size="10" fill="#000000">ScalarEquicontinuity.lean</text>
+<text x="940" y="678" font-size="10" fill="#000000">115 LOC</text>
 </g>
 </g>
 <g>
@@ -964,8 +964,8 @@ comment: 117
 blank: 34</title>
 <clipPath id="clip-LerayHopf-Bochner-TimeConvolution-lean"><rect x="937" y="714" width="69" height="40"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Bochner-TimeConvolution-lean)">
-<text x="940" y="726" font-size="10" fill="#ffffff">TimeConvolution.lean</text>
-<text x="940" y="738" font-size="10" fill="#ffffff">79 LOC</text>
+<text x="940" y="726" font-size="10" fill="#000000">TimeConvolution.lean</text>
+<text x="940" y="738" font-size="10" fill="#000000">79 LOC</text>
 </g>
 </g>
 <g>
@@ -990,8 +990,8 @@ comment: 137
 blank: 38</title>
 <clipPath id="clip-LerayHopf-Bochner-TimeMollification-lean"><rect x="1008" y="727" width="55" height="27"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Bochner-TimeMollification-lean)">
-<text x="1011" y="739" font-size="10" fill="#ffffff">TimeMollification.lean</text>
-<text x="1011" y="751" font-size="10" fill="#ffffff">45 LOC</text>
+<text x="1011" y="739" font-size="10" fill="#000000">TimeMollification.lean</text>
+<text x="1011" y="751" font-size="10" fill="#000000">45 LOC</text>
 </g>
 </g>
 <g>
@@ -1059,8 +1059,8 @@ comment: 109
 blank: 30</title>
 <clipPath id="clip-LerayHopf-Scratch-R3ShapeGate-lean"><rect x="1087" y="655" width="114" height="54"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Scratch-R3ShapeGate-lean)">
-<text x="1090" y="667" font-size="10" fill="#ffffff">R3ShapeGate.lean</text>
-<text x="1090" y="679" font-size="10" fill="#ffffff">183 LOC</text>
+<text x="1090" y="667" font-size="10" fill="#000000">R3ShapeGate.lean</text>
+<text x="1090" y="679" font-size="10" fill="#000000">183 LOC</text>
 </g>
 </g>
 <g>
@@ -1071,8 +1071,8 @@ comment: 87
 blank: 21</title>
 <clipPath id="clip-LerayHopf-Scratch-KappaReindex-lean"><rect x="1087" y="711" width="114" height="43"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Scratch-KappaReindex-lean)">
-<text x="1090" y="723" font-size="10" fill="#ffffff">KappaReindex.lean</text>
-<text x="1090" y="735" font-size="10" fill="#ffffff">146 LOC</text>
+<text x="1090" y="723" font-size="10" fill="#000000">KappaReindex.lean</text>
+<text x="1090" y="735" font-size="10" fill="#000000">146 LOC</text>
 </g>
 </g>
 <g>
@@ -1083,8 +1083,8 @@ comment: 160
 blank: 16</title>
 <clipPath id="clip-LerayHopf-Scratch-R3ProductionCoupling-lean"><rect x="1203" y="655" width="77" height="52"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Scratch-R3ProductionCoupling-lean)">
-<text x="1206" y="667" font-size="10" fill="#ffffff">R3ProductionCoupling.lean</text>
-<text x="1206" y="679" font-size="10" fill="#ffffff">118 LOC</text>
+<text x="1206" y="667" font-size="10" fill="#000000">R3ProductionCoupling.lean</text>
+<text x="1206" y="679" font-size="10" fill="#000000">118 LOC</text>
 </g>
 </g>
 <g>
@@ -1095,8 +1095,8 @@ comment: 50
 blank: 6</title>
 <clipPath id="clip-LerayHopf-Scratch-R3KappaSeed-lean"><rect x="1203" y="709" width="77" height="45"/></clipPath>
 <g clip-path="url(#clip-LerayHopf-Scratch-R3KappaSeed-lean)">
-<text x="1206" y="721" font-size="10" fill="#ffffff">R3KappaSeed.lean</text>
-<text x="1206" y="733" font-size="10" fill="#ffffff">103 LOC</text>
+<text x="1206" y="721" font-size="10" fill="#000000">R3KappaSeed.lean</text>
+<text x="1206" y="733" font-size="10" fill="#000000">103 LOC</text>
 </g>
 </g>
 <g>
