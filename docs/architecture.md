@@ -1,6 +1,6 @@
 # Architecture
 
-A one-page module map of the ~95-file `LerayHopf/` tree, grouped by layer. For the
+A one-page module map of the 113-file `LerayHopf/` tree, grouped by layer. For the
 mathematical narrative see `docs/archive/REPORT.md` (historical) / `docs/formalization-review-ja.md`;
 for the exact capstone claims see [`docs/claims-and-scope.md`](claims-and-scope.md);
 for the axiom ledger see `HANDOFF.md` / `docs/STATUS.md`.

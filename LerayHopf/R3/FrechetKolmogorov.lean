@@ -1359,10 +1359,14 @@ It is applied by fixing the mass `V` first and only then choosing the sup-level 
 genuinely depends on `V`, so it can only be chosen once the ball mass has been bounded.
 
 The `+1` in the denominator does two things: it keeps the denominator from degenerating at
-`V = 0`, and it gives `V / (V + 1) < 1`.  The latter is what the proof uses, and it yields the
-strictly stronger bound
+`V = 0`, and it makes the mass factor bounded by the denominator, `V ≤ V + 1`.  The proof uses
+exactly that non-strict step to reach
 
-  `V · (ε / (2 (V + 1))) = (ε / 2) · (V / (V + 1)) < ε / 2`. -/
+  `V · (ε / (2 (V + 1))) ≤ ε / 2`,
+
+and then concludes `< ε`.  The sharper strict bound `< ε / 2` is also true, since
+`V / (V + 1) < 1` for every `V ≥ 0`, but it is neither what the statement claims nor what the
+proof establishes. -/
 private theorem mul_div_two_mul_add_one_lt (V ε : ℝ) (hV : 0 ≤ V) (hε : 0 < ε) :
     V * (ε / (2 * (V + 1))) < ε := by
   have hVp1 : 0 < V + 1 := by positivity

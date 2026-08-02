@@ -143,16 +143,6 @@ color marks the top-level module a file belongs to.
 See [`docs/architecture.md`](docs/architecture.md#visual-overview-code-loc-treemap)
 for the full-size figure, the measurement method, and how to regenerate it.
 
-## Star History
-
-[Star history for `uda-lab/leray-hopf`](https://www.star-history.com/#uda-lab/leray-hopf&Date)
-
-> The inline chart embed was removed rather than left broken (issue #230 / #189): the
-> authenticated embed's token no longer resolves, and Star History cannot serve this
-> repository's star data anonymously either. See the runbook in
-> [`docs/build-and-checks.md`](docs/build-and-checks.md#readme-star-history-embed-issue-189)
-> for how to restore the embed. Star counts are not evidence of anything mathematical.
-
 ## Documentation, contributing, citation, license
 
 - [`docs/architecture.md`](docs/architecture.md) — module map.
@@ -160,7 +150,7 @@ for the full-size figure, the measurement method, and how to regenerate it.
   import guide.
 - [`docs/STATUS.md`](docs/STATUS.md) — axiom/`sorry` ledger and integrity backstop.
 - [`docs/build-and-checks.md`](docs/build-and-checks.md) — build, discipline checks,
-  CI policy, and the Star History embed runbook (diagnosis and restoration).
+  and CI policy.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — build-cost policy, statement-changing PR
   review requirement, and issue/PR conventions.
 - [`SECURITY.md`](SECURITY.md) — soundness issues, guard bypasses, and supply-chain
