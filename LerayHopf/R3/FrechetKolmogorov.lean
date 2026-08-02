@@ -1350,11 +1350,23 @@ theorem dist_restrictToBall_le_of_ae_bound (R c : ℝ) (hc : 0 ≤ c) (u v : L2V
 
 /-! ### FK step 2 — Arzelà–Ascoli ⇒ total boundedness in L²(ball) -/
 
-/-- **Textbook step (sup→L² tolerance).**  The sup-level tolerance `ε' = ε / (2 (V + 1))` is small
-enough that the mass factor `V` cannot eat the target: `V · ε' < ε` for any mass `V ≥ 0`.
+/-- **Textbook step (sup→L² tolerance).**  For a mass factor `V ≥ 0` and a target `ε > 0`,
 
-The `+1` in the denominator is what makes the bound uniform in `V` (including `V = 0`), so the
-same `ε'` works before the ball mass is known. -/
+  `V · (ε / (2 (V + 1))) < ε`.
+
+It is applied by fixing the mass `V` first and only then choosing the sup-level tolerance
+`ε' = ε / (2 (V + 1))`, so that multiplying by `V` still cannot eat the target.  Note that `ε'`
+genuinely depends on `V`, so it can only be chosen once the ball mass has been bounded.
+
+The `+1` in the denominator does two things: it keeps the denominator from degenerating at
+`V = 0`, and it makes the mass factor bounded by the denominator, `V ≤ V + 1`.  The proof uses
+exactly that non-strict step to reach
+
+  `V · (ε / (2 (V + 1))) ≤ ε / 2`,
+
+and then concludes `< ε`.  The sharper strict bound `< ε / 2` is also true, since
+`V / (V + 1) < 1` for every `V ≥ 0`, but it is neither what the statement claims nor what the
+proof establishes. -/
 private theorem mul_div_two_mul_add_one_lt (V ε : ℝ) (hV : 0 ≤ V) (hε : 0 < ε) :
     V * (ε / (2 * (V + 1))) < ε := by
   have hVp1 : 0 < V + 1 := by positivity

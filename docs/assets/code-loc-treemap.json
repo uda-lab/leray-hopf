@@ -2,13 +2,13 @@
   "generator": "tools/code-treemap/generate-code-loc-treemap.mjs",
   "measurementMethod": "cloc --by-file --json --quiet LerayHopf.lean LerayHopf",
   "clocVersion": "2.06",
-  "sourceDigest": "sha256:680a1127d1c2cb1499e482e28643952e44a807b1f55dcfd0f32587d81dfe2cb1",
-  "fileCount": 97,
-  "totalCodeLoc": 25451,
+  "sourceDigest": "sha256:7ccaa8f93e87f247971f842f982e0d34a1354e1ca2721f5bc3cfe8ba4c6ed4e8",
+  "fileCount": 113,
+  "totalCodeLoc": 27152,
   "files": [
     {
       "path": "LerayHopf.lean",
-      "code": 55,
+      "code": 63,
       "comment": 96,
       "blank": 27
     },
@@ -79,6 +79,12 @@
       "blank": 7
     },
     {
+      "path": "LerayHopf/Bochner/DiagonalExtraction.lean",
+      "code": 78,
+      "comment": 31,
+      "blank": 18
+    },
+    {
       "path": "LerayHopf/Bochner/GelfandTriple.lean",
       "code": 66,
       "comment": 144,
@@ -98,8 +104,8 @@
     },
     {
       "path": "LerayHopf/Bochner/TimeConvolution.lean",
-      "code": 78,
-      "comment": 112,
+      "code": 79,
+      "comment": 117,
       "blank": 34
     },
     {
@@ -170,7 +176,7 @@
     },
     {
       "path": "LerayHopf/Galerkin/DissipativeODE.lean",
-      "code": 286,
+      "code": 289,
       "comment": 38,
       "blank": 17
     },
@@ -179,6 +185,12 @@
       "code": 45,
       "comment": 67,
       "blank": 17
+    },
+    {
+      "path": "LerayHopf/Galerkin/GlobalContract.lean",
+      "code": 209,
+      "comment": 92,
+      "blank": 31
     },
     {
       "path": "LerayHopf/Galerkin/QuadraticField.lean",
@@ -194,8 +206,8 @@
     },
     {
       "path": "LerayHopf/R3/ArzelaAscoliTime.lean",
-      "code": 647,
-      "comment": 263,
+      "code": 651,
+      "comment": 269,
       "blank": 54
     },
     {
@@ -206,8 +218,8 @@
     },
     {
       "path": "LerayHopf/R3/AubinLionsLimitPassage.lean",
-      "code": 1137,
-      "comment": 347,
+      "code": 1145,
+      "comment": 348,
       "blank": 64
     },
     {
@@ -253,6 +265,12 @@
       "blank": 28
     },
     {
+      "path": "LerayHopf/R3/DiagonalGalerkin.lean",
+      "code": 180,
+      "comment": 81,
+      "blank": 20
+    },
+    {
       "path": "LerayHopf/R3/DivergenceFree.lean",
       "code": 51,
       "comment": 115,
@@ -272,7 +290,7 @@
     },
     {
       "path": "LerayHopf/R3/EnergyWeakLsc.lean",
-      "code": 743,
+      "code": 748,
       "comment": 272,
       "blank": 65
     },
@@ -284,9 +302,9 @@
     },
     {
       "path": "LerayHopf/R3/FrechetKolmogorov.lean",
-      "code": 1059,
-      "comment": 555,
-      "blank": 127
+      "code": 1076,
+      "comment": 585,
+      "blank": 140
     },
     {
       "path": "LerayHopf/R3/GalerkinBasisH1.lean",
@@ -343,8 +361,14 @@
       "blank": 54
     },
     {
+      "path": "LerayHopf/R3/GlobalCapstone.lean",
+      "code": 55,
+      "comment": 73,
+      "blank": 15
+    },
+    {
       "path": "LerayHopf/R3/GoodRepresentative.lean",
-      "code": 416,
+      "code": 417,
       "comment": 89,
       "blank": 27
     },
@@ -355,10 +379,16 @@
       "blank": 11
     },
     {
+      "path": "LerayHopf/R3/KappaChainExit.lean",
+      "code": 80,
+      "comment": 53,
+      "blank": 12
+    },
+    {
       "path": "LerayHopf/R3/LimitPassage.lean",
-      "code": 292,
-      "comment": 87,
-      "blank": 19
+      "code": 322,
+      "comment": 94,
+      "blank": 21
     },
     {
       "path": "LerayHopf/R3/Regularity.lean",
@@ -369,7 +399,7 @@
     {
       "path": "LerayHopf/R3/RellichBall.lean",
       "code": 349,
-      "comment": 245,
+      "comment": 246,
       "blank": 56
     },
     {
@@ -386,9 +416,9 @@
     },
     {
       "path": "LerayHopf/R3/SolutionInterfaces.lean",
-      "code": 151,
-      "comment": 439,
-      "blank": 104
+      "code": 163,
+      "comment": 444,
+      "blank": 106
     },
     {
       "path": "LerayHopf/R3/SpacetimePrecompact.lean",
@@ -404,7 +434,7 @@
     },
     {
       "path": "LerayHopf/R3/SteklovAverages.lean",
-      "code": 573,
+      "code": 574,
       "comment": 315,
       "blank": 68
     },
@@ -433,9 +463,57 @@
       "blank": 10
     },
     {
+      "path": "LerayHopf/Scratch/GateFixture.lean",
+      "code": 16,
+      "comment": 51,
+      "blank": 16
+    },
+    {
+      "path": "LerayHopf/Scratch/KappaReindex.lean",
+      "code": 146,
+      "comment": 87,
+      "blank": 21
+    },
+    {
+      "path": "LerayHopf/Scratch/KappaShapeGate.lean",
+      "code": 42,
+      "comment": 38,
+      "blank": 9
+    },
+    {
+      "path": "LerayHopf/Scratch/P2ExitContract.lean",
+      "code": 59,
+      "comment": 67,
+      "blank": 9
+    },
+    {
+      "path": "LerayHopf/Scratch/R3KappaSeed.lean",
+      "code": 103,
+      "comment": 50,
+      "blank": 6
+    },
+    {
+      "path": "LerayHopf/Scratch/R3ProductionCoupling.lean",
+      "code": 118,
+      "comment": 160,
+      "blank": 16
+    },
+    {
+      "path": "LerayHopf/Scratch/R3ShapeGate.lean",
+      "code": 183,
+      "comment": 109,
+      "blank": 30
+    },
+    {
+      "path": "LerayHopf/Scratch/R3StageCoherence.lean",
+      "code": 71,
+      "comment": 34,
+      "blank": 7
+    },
+    {
       "path": "LerayHopf/Torus/AubinLionsAssembly.lean",
-      "code": 301,
-      "comment": 65,
+      "code": 302,
+      "comment": 68,
       "blank": 19
     },
     {
@@ -461,6 +539,12 @@
       "code": 328,
       "comment": 273,
       "blank": 63
+    },
+    {
+      "path": "LerayHopf/Torus/DiagonalGalerkin.lean",
+      "code": 123,
+      "comment": 38,
+      "blank": 14
     },
     {
       "path": "LerayHopf/Torus/DivergenceFree.lean",
@@ -511,10 +595,22 @@
       "blank": 41
     },
     {
+      "path": "LerayHopf/Torus/GlobalCapstone.lean",
+      "code": 52,
+      "comment": 52,
+      "blank": 15
+    },
+    {
       "path": "LerayHopf/Torus/H1Sigma.lean",
       "code": 86,
       "comment": 63,
       "blank": 31
+    },
+    {
+      "path": "LerayHopf/Torus/KappaChainExit.lean",
+      "code": 80,
+      "comment": 51,
+      "blank": 11
     },
     {
       "path": "LerayHopf/Torus/Leray.lean",
@@ -530,7 +626,7 @@
     },
     {
       "path": "LerayHopf/Torus/ModeCompactness.lean",
-      "code": 435,
+      "code": 437,
       "comment": 93,
       "blank": 21
     },
@@ -561,8 +657,8 @@
     {
       "path": "LerayHopf/Torus/SolutionInterfaces.lean",
       "code": 109,
-      "comment": 260,
-      "blank": 78
+      "comment": 262,
+      "blank": 79
     },
     {
       "path": "LerayHopf/Torus/TestFamily.lean",
@@ -572,7 +668,7 @@
     },
     {
       "path": "LerayHopf/Torus/TraceEnergy.lean",
-      "code": 952,
+      "code": 964,
       "comment": 196,
       "blank": 60
     },
@@ -584,7 +680,7 @@
     },
     {
       "path": "LerayHopf/Torus/ViscousLimit.lean",
-      "code": 235,
+      "code": 236,
       "comment": 93,
       "blank": 21
     }
