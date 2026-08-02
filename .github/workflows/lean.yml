@@ -58,6 +58,17 @@ jobs:
         uses: leanprover/lean-action@v1
         with:
           use-mathlib-cache: true
+      # `scripts/print_axioms.lean` imports `LerayHopf.Experimental` (for the non-gated
+      # Experimental axiom-profile section), but `Experimental` is deliberately NOT in the
+      # default target cone — `defaultTargets = ["LerayHopf"]` and `LerayHopf.lean` does not
+      # import it, that being the point of the opt-in. So `lake build` above does not produce
+      # `LerayHopf/Experimental.olean`, and `check-axioms-live.sh` then dies on
+      # "object file ... does not exist" (issue #232). `release-attestation.yml` has carried
+      # this step since #185; this job never did. Keep the two workflows in step.
+      - name: Build Experimental opt-in module (required by check-axioms-live)
+        run: |
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake build LerayHopf.Experimental
       - name: Guardrail — no unmarked sorry
         run: bash scripts/check-no-sorry.sh
       - name: Guardrail — no undeclared axiom/opaque/unsafe
