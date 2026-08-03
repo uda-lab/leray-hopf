@@ -698,6 +698,46 @@ private theorem fourier_ae_eq_wInv_smul (f : L2C_R3)
         rw [smul_smul, hwprod, one_smul]
     _ = (wInv ξ : ℂ) • (f' : Domain3 → ℂ) ξ := by rw [hξ]
 
+/-- **Textbook step (Schwartz density in `L²`, sequence form).**  Every `f' : L2C_R3` is the
+`L²`-limit of a sequence of Schwartz functions.
+
+This is `SchwartzMap.denseRange_toLpCLM` repackaged from a `DenseRange` statement into the
+sequence form the approximation arguments actually consume, via `mem_closure_iff_seq_limit`
+and `choose`. No Sobolev or Fourier content enters. -/
+private theorem exists_schwartz_seq_toLp_tendsto (f' : L2C_R3) :
+    ∃ η : ℕ → SchwartzMap Domain3 ℂ,
+      Filter.Tendsto (fun n => (η n).toLp 2 (volume : Measure Domain3))
+        Filter.atTop (nhds f') := by
+  have hdr : DenseRange (SchwartzMap.toLpCLM ℝ ℂ (2 : ENNReal) (volume : Measure Domain3)) :=
+    SchwartzMap.denseRange_toLpCLM (F := ℂ) ENNReal.ofNat_ne_top
+  have hmem : f' ∈ closure (Set.range
+      (SchwartzMap.toLpCLM ℝ ℂ (2 : ENNReal) (volume : Measure Domain3))) := hdr f'
+  rw [mem_closure_iff_seq_limit] at hmem
+  obtain ⟨v, hv_range, hv⟩ := hmem
+  choose ψ hψ using hv_range
+  refine ⟨ψ, ?_⟩
+  have hveq : (fun n => (ψ n).toLp 2 (volume : Measure Domain3)) = v := by funext n; exact hψ n
+  rw [hveq]; exact hv
+
+/-- **Textbook step (convergence dominated by a convergent sequence).**  If `‖b n - y‖` is
+bounded by `‖a n - x‖` for every `n` and `a n → x`, then `b n → y`.
+
+Stated over arbitrary normed additive groups, with the two sequences allowed to live in
+*different* spaces: at the call site `a` is the Schwartz approximation of the Sobolev
+representative `f'` and `b` is its Fourier-inverse image converging to `f`, so no
+Sobolev-specific structure is involved — only the squeeze. -/
+private theorem tendsto_of_norm_sub_le_of_tendsto {E F : Type*}
+    [NormedAddCommGroup E] [NormedAddCommGroup F]
+    {a : ℕ → E} {x : E} {b : ℕ → F} {y : F}
+    (hle : ∀ n, ‖b n - y‖ ≤ ‖a n - x‖)
+    (ha : Filter.Tendsto a Filter.atTop (nhds x)) :
+    Filter.Tendsto b Filter.atTop (nhds y) := by
+  rw [tendsto_iff_dist_tendsto_zero]
+  have hd : Filter.Tendsto (fun n => ‖a n - x‖) Filter.atTop (nhds 0) := by
+    simpa only [dist_eq_norm] using tendsto_iff_dist_tendsto_zero.mp ha
+  refine squeeze_zero (fun n => dist_nonneg) (fun n => ?_) hd
+  rw [dist_eq_norm]; exact hle n
+
 /-- **Value-convergence step.**  A direction-independent Schwartz sequence `φ n :=
 𝓕⁻ (smulLeftCLM wInv (η n))`, built from a Schwartz approximant `η n → f'` of the Sobolev
 representative `f'` of `f`, converges to `f` itself in L² (verbatim A3 Steps 0–2 + 6). Also
@@ -727,18 +767,7 @@ private theorem schwartz_seq_valueConv_of_memSobolev (f : L2C_R3)
   -- The bounded multiplier `wInv` (m-independent).
   have hwInv_mem := memLp_top_ofReal_wInv
   -- Step 1: a Schwartz sequence `η n` with `(η n).toLp 2 → f'` in L² (verbatim from A3).
-  obtain ⟨η, hη⟩ : ∃ η : ℕ → SchwartzMap Domain3 ℂ,
-      Filter.Tendsto (fun n => (η n).toLp 2 (volume : Measure Domain3)) Filter.atTop (nhds f') := by
-    have hdr : DenseRange (SchwartzMap.toLpCLM ℝ ℂ (2 : ENNReal) (volume : Measure Domain3)) :=
-      SchwartzMap.denseRange_toLpCLM (F := ℂ) ENNReal.ofNat_ne_top
-    have hmem : f' ∈ closure (Set.range
-        (SchwartzMap.toLpCLM ℝ ℂ (2 : ENNReal) (volume : Measure Domain3))) := hdr f'
-    rw [mem_closure_iff_seq_limit] at hmem
-    obtain ⟨v, hv_range, hv⟩ := hmem
-    choose ψ hψ using hv_range
-    refine ⟨ψ, ?_⟩
-    have hveq : (fun n => (ψ n).toLp 2 (volume : Measure Domain3)) = v := by funext n; exact hψ n
-    rw [hveq]; exact hv
+  obtain ⟨η, hη⟩ := exists_schwartz_seq_toLp_tendsto f'
   -- Step 2: the Schwartz approximants `φ n := 𝓕⁻ (smulLeftCLM wInv (η n))` (verbatim from A3).
   set φ : ℕ → SchwartzMap Domain3 ℂ :=
     fun n => 𝓕⁻ (SchwartzMap.smulLeftCLM ℂ wInv (η n)) with hφdef
@@ -785,14 +814,8 @@ private theorem schwartz_seq_valueConv_of_memSobolev (f : L2C_R3)
     refine (norm_mulBdd_le wInv hwInv_mem (zero_le_one) (fun ξ => abs_wInv_le_one ξ) _).trans ?_
     rw [one_mul]
   have htoLp : Filter.Tendsto (fun n => (φ n).toLp 2 (volume : Measure Domain3))
-      Filter.atTop (nhds f) := by
-    rw [tendsto_iff_dist_tendsto_zero]
-    have hd : Filter.Tendsto (fun n => ‖(η n).toLp 2 (volume : Measure Domain3) - f'‖)
-        Filter.atTop (nhds 0) := by
-      have hdist := tendsto_iff_dist_tendsto_zero.mp hη
-      simpa only [dist_eq_norm] using hdist
-    refine squeeze_zero (fun n => dist_nonneg) (fun n => ?_) hd
-    rw [dist_eq_norm]; exact hnorm_le n
+      Filter.atTop (nhds f) :=
+    tendsto_of_norm_sub_le_of_tendsto hnorm_le hη
   exact ⟨η, f', φ, hη, hFφ_pt, htoLp⟩
 
 /-! ### A3 — H¹(ℝ³; ℂ) ↪ L⁶(ℝ³; ℂ) for `MemSobolev 1 2` -/
