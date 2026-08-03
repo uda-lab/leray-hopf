@@ -1087,6 +1087,64 @@ direction `m`, L² convergence of `(∂_{m} φₙ).toLp` to the weak derivative 
 (`schwartz_gradConv_of_valueConv`, below). Both public exports of `schwartz_h1_gradConv_aux`
 peel off the appropriate piece. -/
 
+/-- **Textbook step (distributional derivative of an `L²` limit).**  If Schwartz functions
+`φ n` converge to `f` in `L²` and their `m`-th line derivatives `∂_{m} (φ n)` converge to `g`
+in `L²`, then the distributional derivative of `f` is `g`:
+`∂_{m} (f : 𝓢') = (g : 𝓢')`.
+
+The argument is uniqueness of limits in the Hausdorff space `𝓢'`: both
+`n ↦ ∂_{m} ((φ n).toLp : 𝓢')` and `n ↦ ((∂_{m} (φ n)).toLp : 𝓢')` are the SAME sequence — the
+Schwartz `lineDerivOp` commutes with `toTemperedDistributionCLM` — while the first converges to
+`∂_{m} (f : 𝓢')` and the second to `(g : 𝓢')`, both by continuity of the embedding `L² ↪ 𝓢'`.
+
+Only the two `L²` convergences are assumed; no Sobolev membership and no Fourier machinery
+enter, which is what lets the gradient-convergence step apply it per direction `m`. -/
+private theorem lineDeriv_toTemperedDistribution_eq_of_tendsto (m : Domain3)
+    (φ : ℕ → SchwartzMap Domain3 ℂ) (f g : L2C_R3)
+    (htoLp : Filter.Tendsto (fun n => (φ n).toLp 2 (volume : Measure Domain3))
+      Filter.atTop (nhds f))
+    (hgradtend : Filter.Tendsto
+      (fun n => (∂_{m} (φ n)).toLp 2 (volume : Measure Domain3)) Filter.atTop (nhds g)) :
+    (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ)) := by
+  -- The continuous embedding `L² → 𝓢'`.
+  set ι : L2C_R3 →L[ℂ] 𝓢'(Domain3, ℂ) :=
+    MeasureTheory.Lp.toTemperedDistributionCLM ℂ (volume : Measure Domain3) 2 with hι
+  have hι_apply : ∀ x : L2C_R3, ι x = (x : 𝓢'(Domain3, ℂ)) := fun x =>
+    MeasureTheory.Lp.toTemperedDistributionCLM_apply x
+  -- Continuous map `L² → 𝓢', x ↦ ∂_m (x : 𝓢')`.
+  set D : L2C_R3 →L[ℂ] 𝓢'(Domain3, ℂ) :=
+    (LineDeriv.lineDerivOpCLM ℂ 𝓢'(Domain3, ℂ) m) ∘L ι with hD
+  -- `(∂_m φₙ).toLp : 𝓢'  →  (g : 𝓢')`.
+  have hgrad𝓢' : Filter.Tendsto
+      (fun n => ((∂_{m} (φ n)).toLp 2 (volume : Measure Domain3) : 𝓢'(Domain3, ℂ)))
+      Filter.atTop (nhds (g : 𝓢'(Domain3, ℂ))) := by
+    have := (ι.continuous.tendsto g).comp hgradtend
+    simp only [hι_apply] at this
+    exact this
+  -- `D (φₙ.toLp) = ∂_m (φₙ.toLp : 𝓢')  →  ∂_m (f : 𝓢') = D f`.
+  have hDf : Filter.Tendsto (fun n => D ((φ n).toLp 2 (volume : Measure Domain3)))
+      Filter.atTop (nhds (D f)) := (D.continuous.tendsto f).comp htoLp
+  -- For each n: `D (φₙ.toLp) = ((∂_m φₙ).toLp : 𝓢')`.
+  have hDeq : ∀ n, D ((φ n).toLp 2 (volume : Measure Domain3))
+      = ((∂_{m} (φ n)).toLp 2 (volume : Measure Domain3) : 𝓢'(Domain3, ℂ)) := by
+    intro n
+    rw [hD]
+    simp only [ContinuousLinearMap.comp_apply, hι_apply, LineDeriv.lineDerivOpCLM_apply]
+    -- ∂_m (φₙ.toLp : 𝓢') = ((∂_m φₙ).toLp : 𝓢') via Schwartz commute.
+    rw [MeasureTheory.Lp.toTemperedDistribution_toLp_eq (φ n),
+      TemperedDistribution.lineDerivOp_toTemperedDistributionCLM_eq,
+      ← MeasureTheory.Lp.toTemperedDistribution_toLp_eq (p := (2 : ENNReal)) (∂_{m} (φ n))]
+  -- `D f = ∂_m (f : 𝓢')`.
+  have hDf_eq : D f = (∂_{m} (f : 𝓢'(Domain3, ℂ))) := by
+    rw [hD]; simp only [ContinuousLinearMap.comp_apply, hι_apply, LineDeriv.lineDerivOpCLM_apply]
+  -- Both sequences agree, so their limits agree (𝓢' is T2).
+  rw [hDf_eq] at hDf
+  have hgrad𝓢'' : Filter.Tendsto
+      (fun n => D ((φ n).toLp 2 (volume : Measure Domain3)))
+      Filter.atTop (nhds (g : 𝓢'(Domain3, ℂ))) := by
+    refine hgrad𝓢'.congr (fun n => ?_); exact (hDeq n).symm
+  exact tendsto_nhds_unique hDf hgrad𝓢''
+
 /-- **Gradient-convergence step (per direction `m`).**  Given the value-convergent Schwartz
 sequence `φ` from the previous step (exposed via `η`/`f'`/the pointwise Fourier formula
 `hFφ_pt`), the `m`-directional derivatives `(∂_m φ n).toLp` converge in L² to a limit `g`
@@ -1159,45 +1217,8 @@ private theorem schwartz_gradConv_of_valueConv (f : L2C_R3)
   -- `hg : ∂_m (f : 𝓢') = (g : 𝓢')` by UNIQUENESS of limits in the Hausdorff space `𝓢'`.
   -- Both `∂_m (φₙ.toLp : 𝓢')` (→ `∂_m (f:𝓢')`) and `((∂_m φₙ).toLp : 𝓢')` (→ `(g:𝓢')`)
   -- are the same 𝓢'-valued sequence (Schwartz `lineDerivOp`↔`toTemperedDistribution` commute).
-  have hg : (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ)) := by
-    -- The continuous embedding `L² → 𝓢'`.
-    set ι : L2C_R3 →L[ℂ] 𝓢'(Domain3, ℂ) :=
-      MeasureTheory.Lp.toTemperedDistributionCLM ℂ (volume : Measure Domain3) 2 with hι
-    have hι_apply : ∀ x : L2C_R3, ι x = (x : 𝓢'(Domain3, ℂ)) := fun x =>
-      MeasureTheory.Lp.toTemperedDistributionCLM_apply x
-    -- Continuous map `L² → 𝓢', x ↦ ∂_m (x : 𝓢')`.
-    set D : L2C_R3 →L[ℂ] 𝓢'(Domain3, ℂ) :=
-      (LineDeriv.lineDerivOpCLM ℂ 𝓢'(Domain3, ℂ) m) ∘L ι with hD
-    -- `(∂_m φₙ).toLp : 𝓢'  →  (g : 𝓢')`.
-    have hgrad𝓢' : Filter.Tendsto
-        (fun n => ((∂_{m} (φ n)).toLp 2 (volume : Measure Domain3) : 𝓢'(Domain3, ℂ)))
-        Filter.atTop (nhds (g : 𝓢'(Domain3, ℂ))) := by
-      have := (ι.continuous.tendsto g).comp hgradtend
-      simp only [hι_apply] at this
-      exact this
-    -- `D (φₙ.toLp) = ∂_m (φₙ.toLp : 𝓢')  →  ∂_m (f : 𝓢') = D f`.
-    have hDf : Filter.Tendsto (fun n => D ((φ n).toLp 2 (volume : Measure Domain3)))
-        Filter.atTop (nhds (D f)) := (D.continuous.tendsto f).comp htoLp
-    -- For each n: `D (φₙ.toLp) = ((∂_m φₙ).toLp : 𝓢')`.
-    have hDeq : ∀ n, D ((φ n).toLp 2 (volume : Measure Domain3))
-        = ((∂_{m} (φ n)).toLp 2 (volume : Measure Domain3) : 𝓢'(Domain3, ℂ)) := by
-      intro n
-      rw [hD]
-      simp only [ContinuousLinearMap.comp_apply, hι_apply, LineDeriv.lineDerivOpCLM_apply]
-      -- ∂_m (φₙ.toLp : 𝓢') = ((∂_m φₙ).toLp : 𝓢') via Schwartz commute.
-      rw [MeasureTheory.Lp.toTemperedDistribution_toLp_eq (φ n),
-        TemperedDistribution.lineDerivOp_toTemperedDistributionCLM_eq,
-        ← MeasureTheory.Lp.toTemperedDistribution_toLp_eq (p := (2 : ENNReal)) (∂_{m} (φ n))]
-    -- `D f = ∂_m (f : 𝓢')`.
-    have hDf_eq : D f = (∂_{m} (f : 𝓢'(Domain3, ℂ))) := by
-      rw [hD]; simp only [ContinuousLinearMap.comp_apply, hι_apply, LineDeriv.lineDerivOpCLM_apply]
-    -- Both sequences agree, so their limits agree (𝓢' is T2).
-    rw [hDf_eq] at hDf
-    have hgrad𝓢'' : Filter.Tendsto
-        (fun n => D ((φ n).toLp 2 (volume : Measure Domain3)))
-        Filter.atTop (nhds (g : 𝓢'(Domain3, ℂ))) := by
-      refine hgrad𝓢'.congr (fun n => ?_); exact (hDeq n).symm
-    exact tendsto_nhds_unique hDf hgrad𝓢''
+  have hg : (∂_{m} (f : 𝓢'(Domain3, ℂ))) = (g : 𝓢'(Domain3, ℂ)) :=
+    lineDeriv_toTemperedDistribution_eq_of_tendsto m φ f g htoLp hgradtend
   exact ⟨g, hg, hgradtend⟩
 
 /-- Assembly: the value-convergence step feeds its witnesses into the gradient-convergence
