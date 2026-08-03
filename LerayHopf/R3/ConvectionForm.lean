@@ -312,6 +312,24 @@ structure ConvectionGapOp (𝔊 : R3GalerkinScheme) where
 
 /-! ### G2 — The conditional concrete `R3NSForms` -/
 
+/-- **Textbook step (a product bound passes to the limit).**  If `f n → L`, `a n → A`,
+`b n → B`, and `|f n| ≤ C * a n * b n` for every `n`, then `|L| ≤ C * A * B`.
+
+This is the density-extension move stated without any convection content: a bound known only on
+a dense subclass is transported to the whole space by taking limits along approximating
+sequences. In `R3NSForms_of_gap` the sequences are Schwartz approximants supplied by
+`ConvectionGap.schwartz_dense`, `f` is the trilinear form at a fixed test vector (continuous by
+`b_cont_fixedTest`), and `a`, `b` are the two argument norms. -/
+private theorem abs_le_mul_of_tendsto {f a b : ℕ → ℝ} {L A B C : ℝ}
+    (hf : Filter.Tendsto f Filter.atTop (nhds L))
+    (ha : Filter.Tendsto a Filter.atTop (nhds A))
+    (hb : Filter.Tendsto b Filter.atTop (nhds B))
+    (hbd : ∀ n, |f n| ≤ C * a n * b n) :
+    |L| ≤ C * A * B := by
+  refine le_of_tendsto_of_tendsto ((continuous_abs.tendsto _).comp hf)
+    ((tendsto_const_nhds.mul ha).mul hb) ?_
+  exact Filter.Eventually.of_forall hbd
+
 /-- **G2. The conditional concrete `R3NSForms` — a genuine derivation.**
 
 Given the isolated `ConvectionGap 𝔊` (a total `b`, its extension `b_extends`, the
@@ -418,14 +436,8 @@ theorem R3NSForms_of_gap (𝔊 : R3GalerkinScheme) (g : ConvectionGap 𝔊) :
     have hlim_norm_v : Filter.Tendsto (fun n => ‖(sv n : L2VF_R3)‖) Filter.atTop (nhds ‖(v : L2VF_R3)‖) :=
       (continuous_norm.tendsto _).comp
         ((continuous_subtype_val.tendsto _).comp hsv_lim)
-    have hlim_rhs : Filter.Tendsto (fun n => C * ‖(su n : L2VF_R3)‖ * ‖(sv n : L2VF_R3)‖)
-        Filter.atTop (nhds (C * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖)) :=
-      ((tendsto_const_nhds.mul hlim_norm_u).mul hlim_norm_v)
-    -- Apply le_of_tendsto_of_tendsto to pass the bound to the limit
-    apply le_of_tendsto_of_tendsto
-      ((continuous_abs.tendsto _).comp hlim_b)
-      hlim_rhs
-    exact Filter.Eventually.of_forall (fun n => hbound_seq n)
+    -- The bound passes to the limit (textbook step, extracted above).
+    exact abs_le_mul_of_tendsto hlim_b hlim_norm_u hlim_norm_v hbound_seq
   case b_galerkin =>
     -- From convFormSchwartz_eq_witness via g.b_extends
     intro ψu ψv ψw u v w hpu hpv hpw
