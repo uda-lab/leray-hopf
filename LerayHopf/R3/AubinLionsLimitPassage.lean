@@ -1061,6 +1061,22 @@ private theorem weakFormNS_limit_G_integrable
       exact hMψ t htI
   exact hi1.add hrest
 
+/-- **Textbook step (splitting a three-term integral).**  For integrable `f`, `g`, `h`,
+
+  `∫ (f + g + h) = ∫ f + ∫ g + ∫ h`.
+
+Mathlib's `integral_add` is binary, so a three-way split otherwise takes two chained rewrites
+whose statements must each repeat the full integrand. Stated once here, it collapses that pair
+into a single application. In `weakFormNS_limit_diff_bound` the three terms are the kinetic,
+viscous and convective pieces of the weak-form difference. -/
+private theorem integral_add₃ {α : Type*} [MeasurableSpace α] {μ : MeasureTheory.Measure α}
+    {f g h : α → ℝ} (hf : Integrable f μ) (hg : Integrable g μ) (hh : Integrable h μ) :
+    ∫ t, (f t + g t + h t) ∂μ = (∫ t, f t ∂μ) + (∫ t, g t ∂μ) + (∫ t, h t ∂μ) := by
+  have h1 : ∫ t, (f t + g t + h t) ∂μ
+      = (∫ t, (f t + g t) ∂μ) + (∫ t, h t ∂μ) := integral_add (hf.add hg) hh
+  have h2 : ∫ t, (f t + g t) ∂μ = (∫ t, f t ∂μ) + (∫ t, g t ∂μ) := integral_add hf hg
+  rw [h1, h2]
+
 /-- **The `Φ`-difference bound `|Φ(z)| ≤ A‖z‖ + B√V₁(z)` (W2 step 2).** For any Schwartz
 divergence-free test `z`, the weak-form functional `Φ(z) = ∫₀ᵀ G z` is controlled by
 `A := M·Mψ'·T` on the kinetic slot (`abs_real_inner_le_norm`) and `B := Mψ·ν·(T+ν⁻¹·½M²) + Mψ·Kb`
@@ -1167,21 +1183,14 @@ private theorem weakFormNS_limit_diff_bound
     (hsqrtV1u_int.mul_const S).const_mul (Mψ * ν)
   have hconv_int : Integrable (fun t => Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖)
       (restrictAvgMeasure T) := hb_int.norm.const_mul Mψ
-  have hsplit1 : ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
+  have hsplit : ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
         + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
         + Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖) ∂(restrictAvgMeasure T)
-      = (∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
-          + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S))
-            ∂(restrictAvgMeasure T))
-        + (∫ t, Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂(restrictAvgMeasure T)) :=
-    integral_add ((integrable_const (M * ‖(z : L2VF_R3)‖ * Mψ')).add hmid_int) hconv_int
-  have hsplit2 : ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ'
-        + Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S))
-          ∂(restrictAvgMeasure T)
       = (∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ' : ℝ) ∂(restrictAvgMeasure T))
         + (∫ t, Mψ * ν * (Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3)) * S)
-            ∂(restrictAvgMeasure T)) :=
-    integral_add (integrable_const (M * ‖(z : L2VF_R3)‖ * Mψ')) hmid_int
+            ∂(restrictAvgMeasure T))
+        + (∫ t, Mψ * ‖F.b (alPkg.u t) (alPkg.u t) z‖ ∂(restrictAvgMeasure T)) :=
+    integral_add₃ (integrable_const (M * ‖(z : L2VF_R3)‖ * Mψ')) hmid_int hconv_int
   have e1 : ∫ t, (M * ‖(z : L2VF_R3)‖ * Mψ' : ℝ) ∂(restrictAvgMeasure T)
       = M * ‖(z : L2VF_R3)‖ * Mψ' * T := by
     rw [integral_const, measureReal_def, hMuUniv, smul_eq_mul, mul_comm]
@@ -1209,7 +1218,7 @@ private theorem weakFormNS_limit_diff_bound
         integral_mono_ae hGz_int.norm hDom_int hDbound
     _ ≤ (M * Mψ' * T) * ‖(z : L2VF_R3)‖
           + (Mψ * ν * (T + ν⁻¹ * ((1 / 2 : ℝ) * M ^ 2)) + Mψ * Kb) * S := by
-        rw [hsplit1, hsplit2, e1, e2, e3]
+        rw [hsplit, e1, e2, e3]
         have hb2 := (hKb z ⟨ψz, hψz⟩).2
         have hqv : Mψ * ν * ((∫ t, Real.sqrt (viscousFormSq_R3 1 (alPkg.u t : L2VF_R3))
               ∂(restrictAvgMeasure T)) * S)
