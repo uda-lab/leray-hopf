@@ -267,6 +267,20 @@ terms rather than assumed to be the restriction case.
 
 ### Restoring the embed
 
+**Regenerating the token may not be sufficient.** The owner has regenerated a correctly scoped
+fine-grained PAT (resource owner `uda-lab`, repository `uda-lab/leray-hopf`, Metadata read-only)
+several times, and Star History still reports that statistics are restricted to repository
+contributors/collaborators. The evidence therefore points at a **Star History compatibility or
+authorization-flow problem**, not merely an expired token — so treat the steps below as an
+attempt with an uncertain outcome rather than a repair procedure with a known result.
+
+In particular, an authenticated `200` obtained with some *other* credential does not establish
+that the embed will work: it shows only that one authorized collaborator credential can read
+`GET /stargazers`, which is expected under GitHub's July 2026 restriction. It does not show that
+the owner's fine-grained PAT is accepted by Star History, that the generated sealed token carries
+that PAT, or that Star History recognises the PAT principal as a collaborator of an
+organization-owned repository.
+
 1. Sign in at [star-history.com](https://www.star-history.com/) and follow the
    [authenticated embed guide](https://www.star-history.com/blog/how-to-use-github-star-history/)
    to regenerate the embed for `uda-lab/leray-hopf`, creating a new fine-grained PAT scoped
@@ -281,6 +295,7 @@ terms rather than assumed to be the restriction case.
    section was their explicit call, so restoring it is their decision, not a maintenance
    default.
 
-If the token cannot be restored, leave the README as it is. A broken image is worse than no
-section, and star counts are not evidence of mathematical quality (see the non-goals in issue
-#230).
+If the embed cannot be made to render — whether because the token cannot be restored or because
+Star History cannot serve this repository at all — leave the README as it is. A broken image is
+worse than no section, and star counts are not evidence of mathematical quality (see the
+non-goals in issue #230).
