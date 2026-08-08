@@ -594,6 +594,52 @@ private theorem exists_weak_representative (F : Torus3NSForms) (ν : ℝ) (hν :
 
 /-! ### Conjunct (3): strong initial trace -/
 
+/-- **Textbook step (liminf of a nonnegative, uniformly bounded sequence).**  A real sequence
+that is bounded above by a constant is `liminf`-cobounded from below along `atTop`.
+
+Separated out because it is pure filter bookkeeping: no Navier–Stokes content enters, only the
+existence of a uniform upper bound. -/
+private theorem isCoboundedUnder_ge_atTop_of_le {b : ℕ → ℝ} {C : ℝ} (hbC : ∀ k, b k ≤ C) :
+    Filter.IsCoboundedUnder (· ≥ ·) atTop b :=
+  (Filter.isBoundedUnder_of_eventually_le (a := C)
+    (Filter.Eventually.of_forall hbC)).isCoboundedUnder_ge
+
+/-- **Textbook step (nonnegativity passes to the liminf).**  A nonnegative real sequence that is
+also bounded above has nonnegative `liminf` along `atTop`.
+
+The upper bound is not decoration: without coboundedness `Filter.liminf` of an unbounded-below
+sequence is not controlled by the pointwise bound, so both hypotheses are load-bearing. In
+`dissipation_liminf_le_of_aeTendsto` the sequence is the Galerkin dissipation integrals, whose
+uniform upper bound is the Galerkin energy inequality. -/
+private theorem liminf_nonneg_atTop_of_nonneg_of_le {b : ℕ → ℝ} {C : ℝ}
+    (hb0 : ∀ k, 0 ≤ b k) (hbC : ∀ k, b k ≤ C) :
+    0 ≤ Filter.liminf b atTop :=
+  Filter.le_liminf_of_le (isCoboundedUnder_ge_atTop_of_le hbC)
+    (Filter.Eventually.of_forall hb0)
+
+/-- **Textbook step (ε/4 budget against an unknown constant).**  For a nonnegative constant `c`
+and a nonnegative budget `ε`,
+
+  `c · (ε / (4 (c + 1))) ≤ ε / 4`.
+
+The `+1` keeps the denominator non-degenerate at `c = 0` and bounds the constant by the
+denominator, `c ≤ c + 1`; that non-strict step is what the proof uses to land on `ε / 4`.
+
+Used twice in `weak_trace_inner` with two different unknown constants — the `H`-bound `M` of the
+initial datum and the Lipschitz constant `L` of the chosen Galerkin test — so that each of the
+three ε/4 pieces of the trace estimate can be budgeted before its constant is known. Compare
+`mul_div_two_mul_add_one_lt` in `LerayHopf/R3/FrechetKolmogorov.lean`, the `ε/2` sibling of this
+step. -/
+private theorem mul_div_four_mul_add_one_le (c ε : ℝ) (hc : 0 ≤ c) (hε : 0 ≤ ε) :
+    c * (ε / (4 * (c + 1))) ≤ ε / 4 := by
+  have hc1 : (0 : ℝ) < c + 1 := by linarith
+  have heq : c * (ε / (4 * (c + 1))) = (c / (c + 1)) * (ε / 4) := by field_simp
+  have hle1 : c / (c + 1) ≤ 1 := by
+    rw [div_le_one hc1]; linarith
+  calc c * (ε / (4 * (c + 1))) = (c / (c + 1)) * (ε / 4) := heq
+    _ ≤ 1 * (ε / 4) := mul_le_mul_of_nonneg_right hle1 (by linarith)
+    _ = ε / 4 := one_mul _
+
 /-- **Weak initial trace against `u₀`:** `⟪v(t), u₀⟫ → ⟪u₀, u₀⟫` as `t → 0⁺`, from the
 per-Galerkin-test Lipschitz continuity, the endpoint value `v 0 = u₀`, band-limited
 approximation of `u₀`, and the uniform `H`-bound (ε/3 argument). -/
@@ -647,15 +693,8 @@ private theorem weak_trace_inner (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma) (v : Ti
         (mul_le_mul_of_nonneg_right (hbd t' ht') (norm_nonneg _))
     have h2 : M * ‖(u₀ : L2VF) - (w : L2VF)‖ ≤ M * (ε / (4 * (M + 1))) :=
       mul_le_mul_of_nonneg_left hwnorm.le hM0
-    have h3 : M * (ε / (4 * (M + 1))) ≤ ε / 4 := by
-      have heq : M * (ε / (4 * (M + 1))) = (M / (M + 1)) * (ε / 4) := by
-        field_simp
-      have hle1 : M / (M + 1) ≤ 1 := by
-        rw [div_le_one (by linarith : (0 : ℝ) < M + 1)]
-        linarith
-      calc M * (ε / (4 * (M + 1))) = (M / (M + 1)) * (ε / 4) := heq
-        _ ≤ 1 * (ε / 4) := mul_le_mul_of_nonneg_right hle1 (by positivity)
-        _ = ε / 4 := one_mul _
+    have h3 : M * (ε / (4 * (M + 1))) ≤ ε / 4 :=
+      mul_div_four_mul_add_one_le M ε hM0 hε.le
     linarith
   -- Lipschitz bound at the test w
   have hLbound : |inner (𝕜 := ℝ) ((v x : L2VF)) (w : L2VF)
@@ -663,15 +702,8 @@ private theorem weak_trace_inner (T : ℝ) (hT : 0 < T) (u₀ : L2Sigma) (v : Ti
     have h1 := hLipw 0 h0Icc x hxT
     rw [sub_zero, abs_of_nonneg hx0] at h1
     have h2 : L * x ≤ L * (ε / (4 * (L + 1))) := mul_le_mul_of_nonneg_left hxlt.le hL0
-    have h3 : L * (ε / (4 * (L + 1))) ≤ ε / 4 := by
-      have heq : L * (ε / (4 * (L + 1))) = (L / (L + 1)) * (ε / 4) := by
-        field_simp
-      have hle1 : L / (L + 1) ≤ 1 := by
-        rw [div_le_one (by linarith : (0 : ℝ) < L + 1)]
-        linarith
-      calc L * (ε / (4 * (L + 1))) = (L / (L + 1)) * (ε / 4) := heq
-        _ ≤ 1 * (ε / 4) := mul_le_mul_of_nonneg_right hle1 (by positivity)
-        _ = ε / 4 := one_mul _
+    have h3 : L * (ε / (4 * (L + 1))) ≤ ε / 4 :=
+      mul_div_four_mul_add_one_le L ε hL0 hε.le
     linarith
   -- decomposition and assembly
   have hkey : inner (𝕜 := ℝ) ((v x : L2VF)) (u₀ : L2VF)
@@ -940,16 +972,16 @@ private theorem dissipation_liminf_le_of_aeTendsto
   have hbdd_below_b : Filter.IsBoundedUnder (· ≥ ·) atTop b :=
     Filter.isBoundedUnder_of_eventually_ge (a := 0)
       (Filter.Eventually.of_forall hb0)
-  have hcobdd_b : Filter.IsCoboundedUnder (· ≥ ·) atTop b := by
-    have hbE : ∀ k, b k ≤ (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2 := fun k => by
-      have h := torus_galerkin_energy_le F ν u₀ _ (galSeq (κ (alPkg.φ (ρ k)))) t ht0
-      have h0 : (0 : ℝ) ≤ (1 / 2 : ℝ) * ‖((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)‖ ^ 2 := by
-        positivity
-      linarith [h, h0]
-    exact (Filter.isBoundedUnder_of_eventually_le (a := (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2)
-      (Filter.Eventually.of_forall hbE)).isCoboundedUnder_ge
+  -- uniform upper bound on the approximants' dissipation: the Galerkin energy inequality.
+  have hbE : ∀ k, b k ≤ (1 / 2 : ℝ) * ‖(u₀ : L2VF)‖ ^ 2 := fun k => by
+    have h := torus_galerkin_energy_le F ν u₀ _ (galSeq (κ (alPkg.φ (ρ k)))) t ht0
+    have h0 : (0 : ℝ) ≤ (1 / 2 : ℝ) * ‖((galSeq (κ (alPkg.φ (ρ k)))).u t : L2VF)‖ ^ 2 := by
+      positivity
+    linarith [h, h0]
+  have hcobdd_b : Filter.IsCoboundedUnder (· ≥ ·) atTop b :=
+    isCoboundedUnder_ge_atTop_of_le hbE
   have hliminfb0 : 0 ≤ Filter.liminf b atTop :=
-    Filter.le_liminf_of_le hcobdd_b (Filter.Eventually.of_forall hb0)
+    liminf_nonneg_atTop_of_nonneg_of_le hb0 hbE
   -- restrict the [0, T] integrability hypothesis to [0, t]
   have hIntt : IntervalIntegrable (fun s => viscousFormSq ν (v s : L2VF)) volume 0 t :=
     hInt.mono_set (Set.uIcc_subset_uIcc Set.left_mem_uIcc

@@ -312,6 +312,24 @@ structure ConvectionGapOp (𝔊 : R3GalerkinScheme) where
 
 /-! ### G2 — The conditional concrete `R3NSForms` -/
 
+/-- **Textbook step (a product bound passes to the limit).**  If `f n → L`, `a n → A`,
+`b n → B`, and `|f n| ≤ C * a n * b n` for every `n`, then `|L| ≤ C * A * B`.
+
+This is the density-extension move stated without any convection content: a bound known only on
+a dense subclass is transported to the whole space by taking limits along approximating
+sequences. In `R3NSForms_of_gap` the sequences are Schwartz approximants supplied by
+`ConvectionGap.schwartz_dense`, `f` is the trilinear form at a fixed test vector (continuous by
+`b_cont_fixedTest`), and `a`, `b` are the two argument norms. -/
+private theorem abs_le_mul_of_tendsto {f a b : ℕ → ℝ} {L A B C : ℝ}
+    (hf : Filter.Tendsto f Filter.atTop (nhds L))
+    (ha : Filter.Tendsto a Filter.atTop (nhds A))
+    (hb : Filter.Tendsto b Filter.atTop (nhds B))
+    (hbd : ∀ n, |f n| ≤ C * a n * b n) :
+    |L| ≤ C * A * B := by
+  refine le_of_tendsto_of_tendsto ((continuous_abs.tendsto _).comp hf)
+    ((tendsto_const_nhds.mul ha).mul hb) ?_
+  exact Filter.Eventually.of_forall hbd
+
 /-- **G2. The conditional concrete `R3NSForms` — a genuine derivation.**
 
 Given the isolated `ConvectionGap 𝔊` (a total `b`, its extension `b_extends`, the
@@ -418,14 +436,8 @@ theorem R3NSForms_of_gap (𝔊 : R3GalerkinScheme) (g : ConvectionGap 𝔊) :
     have hlim_norm_v : Filter.Tendsto (fun n => ‖(sv n : L2VF_R3)‖) Filter.atTop (nhds ‖(v : L2VF_R3)‖) :=
       (continuous_norm.tendsto _).comp
         ((continuous_subtype_val.tendsto _).comp hsv_lim)
-    have hlim_rhs : Filter.Tendsto (fun n => C * ‖(su n : L2VF_R3)‖ * ‖(sv n : L2VF_R3)‖)
-        Filter.atTop (nhds (C * ‖(u : L2VF_R3)‖ * ‖(v : L2VF_R3)‖)) :=
-      ((tendsto_const_nhds.mul hlim_norm_u).mul hlim_norm_v)
-    -- Apply le_of_tendsto_of_tendsto to pass the bound to the limit
-    apply le_of_tendsto_of_tendsto
-      ((continuous_abs.tendsto _).comp hlim_b)
-      hlim_rhs
-    exact Filter.Eventually.of_forall (fun n => hbound_seq n)
+    -- The bound passes to the limit (textbook step, extracted above).
+    exact abs_le_mul_of_tendsto hlim_b hlim_norm_u hlim_norm_v hbound_seq
   case b_galerkin =>
     -- From convFormSchwartz_eq_witness via g.b_extends
     intro ψu ψv ψw u v w hpu hpv hpw
@@ -950,6 +962,29 @@ private theorem normSq_mulBddR_CF (φ : Domain3 → ℝ)
 -- family lives in `R3.SpatialCompactness`, issue #111 PR-3); deleted, callers below use the
 -- imported public versions directly.
 
+/-- **Textbook step (bounded multiplier times a coordinate).**  If `‖a‖ ≤ Φ` then, for every
+vector `v`, the squared product of `a` with the `j`-th coordinate of `v` is bounded by
+`Φ² ‖v‖²`:
+
+  `(a · proj j v)² ≤ Φ² ‖v‖²`.
+
+Two elementary facts combined: `|a| ≤ Φ` squares to `a² ≤ Φ²`, and a single coordinate never
+exceeds the norm, `|proj j v| ≤ ‖v‖` (`euclidean_proj_le_norm_CF`). Applied pointwise a.e.
+under the ball integral in `mulBddR_projComp_norm_tendsto_CF`, where `a` is the bounded cutoff
+`φs x` and `v` is the field value. -/
+private theorem sq_mul_euclidean_proj_le (j : Fin 3) {Φ a : ℝ} (hΦnn : 0 ≤ Φ) (ha : ‖a‖ ≤ Φ)
+    (v : EuclideanSpace ℝ (Fin 3)) :
+    (a * (EuclideanSpace.proj j (𝕜 := ℝ)) v) ^ 2 ≤ Φ ^ 2 * ‖v‖ ^ 2 := by
+  have h_a_sq : a ^ 2 ≤ Φ ^ 2 := by
+    have habs : |a| ≤ Φ := by rwa [← Real.norm_eq_abs]
+    nlinarith [sq_abs a, hΦnn, abs_nonneg a]
+  have h_proj_sq : ((EuclideanSpace.proj j (𝕜 := ℝ)) v) ^ 2 ≤ ‖v‖ ^ 2 := by
+    have h_le := euclidean_proj_le_norm_CF j v
+    rw [← sq_abs]
+    exact pow_le_pow_left₀ (abs_nonneg _) h_le 2
+  rw [mul_pow]
+  exact mul_le_mul h_a_sq h_proj_sq (sq_nonneg _) (sq_nonneg _)
+
 set_option maxHeartbeats 800000 in
 -- kept at the original 800000 (issue #152): isolated `#count_heartbeats in` measurement
 -- reported ~2165 heartbeats, but sibling declarations elsewhere in this file family with
@@ -1038,20 +1073,7 @@ private theorem mulBddR_projComp_norm_tendsto_CF
           apply setIntegral_mono_on_ae h_int.integrableOn hΦfn_int measurableSet_closedBall
           filter_upwards [hφ_ae_le, hg_ceFn] with x hφx hgx _
           rw [hgx]
-          have h_φ_sq : (⇑φs x) ^ 2 ≤ Φ ^ 2 := by
-            have habs : |⇑φs x| ≤ Φ := by rwa [← Real.norm_eq_abs]
-            nlinarith [sq_abs (⇑φs x), hΦnn, abs_nonneg (⇑φs x)]
-          have h_proj_sq :
-              ((EuclideanSpace.proj j (𝕜 := ℝ))
-                ((fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x)) ^ 2 ≤
-              ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 := by
-            -- |proj j v| ≤ ‖v‖ → |proj j v|² ≤ ‖v‖², and p² = |p|²
-            have h_le := euclidean_proj_le_norm_CF j
-                ((fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x)
-            rw [← sq_abs]
-            exact pow_le_pow_left₀ (abs_nonneg _) h_le 2
-          rw [mul_pow]
-          exact mul_le_mul h_φ_sq h_proj_sq (sq_nonneg _) (sq_nonneg _)
+          exact sq_mul_euclidean_proj_le j hΦnn hφx _
       _ = Φ ^ 2 * ∫ x in B,
             ‖(fn n : Domain3 → EuclideanSpace ℝ (Fin 3)) x‖ ^ 2 ∂volume :=
           integral_const_mul _ _
