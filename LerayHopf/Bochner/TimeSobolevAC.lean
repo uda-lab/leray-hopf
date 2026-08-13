@@ -319,7 +319,114 @@ interval form for a Banach-valued primitive. -/
 theorem isWeakTimeDeriv_primitive {T : ℝ} (hT : 0 < T) {v : ℝ → X}
     (hv : IntegrableOn v (Set.Icc 0 T) volume) :
     IsWeakTimeDeriv T (fun t => ∫ s in (0:ℝ)..t, v s) v := by
-  sorry -- ALLOW_SORRY: Bochner–Fubini distributional FTC for the primitive w(t)=∫₀ᵗ v (interval form). The identity ∫ψ'(t)•(∫₀ᵗ v) = -∫ψ•v is the Fubini swap ∫∫ψ'(t)𝟙[s<t]v(s) = ∫v(s)(ψ(T)-ψ(s)) = -∫ψ•v (ψ(T)=0); mathlib has integral_integral_swap (Bochner) + the scalar FTC but not this assembled interval form. Trace-free and NON-CIRCULAR (no reflection, no boundary value of v fed in). Isolated as the single residual of R1.
+  intro ψ hψcs hψsupp hψC1
+  have hTle : (0 : ℝ) ≤ T := hT.le
+  have hψT : ψ T = 0 :=
+    image_eq_zero_of_notMem_tsupport (fun h => (lt_irrefl T) (hψsupp h).2)
+  have hψ'cont : Continuous (deriv ψ) := hψC1.continuous_deriv_one
+  have hψderiv : ∀ x, HasDerivAt ψ (deriv ψ x) x := fun x =>
+    (hψC1.differentiable one_ne_zero).differentiableAt.hasDerivAt
+  haveI : IsFiniteMeasure (volume.restrict (Icc (0 : ℝ) T)) :=
+    ⟨by
+      rw [Measure.restrict_apply MeasurableSet.univ, univ_inter, Real.volume_Icc]
+      exact ENNReal.ofReal_lt_top⟩
+  have hψ'int : Integrable (deriv ψ) (volume.restrict (Icc (0 : ℝ) T)) :=
+    hψ'cont.continuousOn.integrableOn_compact isCompact_Icc
+  have hprod : Integrable (fun p : ℝ × ℝ => deriv ψ p.1 • v p.2)
+      ((volume.restrict (Icc (0 : ℝ) T)).prod (volume.restrict (Icc (0 : ℝ) T))) :=
+    hψ'int.smul_prod hv
+  have hle_set : MeasurableSet {p : ℝ × ℝ | p.2 ≤ p.1} :=
+    measurableSet_le measurable_snd measurable_fst
+  have htri : Integrable
+      ({z : ℝ × ℝ | z.2 ≤ z.1}.indicator fun z => deriv ψ z.1 • v z.2)
+      ((volume.restrict (Icc (0 : ℝ) T)).prod (volume.restrict (Icc (0 : ℝ) T))) :=
+    hprod.indicator hle_set
+  -- Pull the scalar `ψ'(t)` through the primitive, then rewrite nested interval
+  -- integrals as a product integral over the triangle `{s ≤ t}` in `[0,T]²`.
+  have hpt : ∀ t ∈ Icc (0 : ℝ) T,
+      deriv ψ t • ∫ s in (0 : ℝ)..t, v s
+        = ∫ s in Icc 0 T,
+            ({z : ℝ × ℝ | z.2 ≤ z.1}.indicator fun z => deriv ψ z.1 • v z.2) (t, s) ∂volume := by
+    intro t ht
+    have ht0 : (0 : ℝ) ≤ t := ht.1
+    have hv_ii : IntervalIntegrable v volume 0 t := by
+      rw [intervalIntegrable_iff, uIoc_of_le ht0]
+      exact hv.mono_set (Ioc_subset_Icc_self.trans (Icc_subset_Icc_right ht.2))
+    have hIcc_t : Icc (0 : ℝ) t = Icc (0 : ℝ) T ∩ {s | s ≤ t} := by
+      ext s
+      simp only [mem_Icc]
+      exact ⟨fun h => ⟨⟨h.1, h.2.trans ht.2⟩, h.2⟩, fun h => ⟨h.1.1, h.2⟩⟩
+    calc deriv ψ t • ∫ s in (0 : ℝ)..t, v s
+        = ∫ s in (0 : ℝ)..t, deriv ψ t • v s := (hv_ii.integral_smul (deriv ψ t)).symm
+      _ = ∫ s in Ioc 0 t, deriv ψ t • v s ∂volume := intervalIntegral.integral_of_le ht0
+      _ = ∫ s in Icc 0 t, deriv ψ t • v s ∂volume := (integral_Icc_eq_integral_Ioc).symm
+      _ = ∫ s in Icc 0 T ∩ {s | s ≤ t}, deriv ψ t • v s ∂volume := by rw [hIcc_t]
+      _ = ∫ s in Icc 0 T, ({s | s ≤ t}.indicator fun s => deriv ψ t • v s) s ∂volume :=
+          (setIntegral_indicator (measurableSet_le measurable_id measurable_const)).symm
+      _ = ∫ s in Icc 0 T,
+            ({z : ℝ × ℝ | z.2 ≤ z.1}.indicator fun z => deriv ψ z.1 • v z.2) (t, s) ∂volume := by
+          refine setIntegral_congr_fun measurableSet_Icc fun s _ => ?_
+          simp [Set.indicator, mem_setOf_eq]
+  have hLHS : (∫ t in (0 : ℝ)..T, deriv ψ t • ∫ s in (0 : ℝ)..t, v s)
+      = ∫ t in Icc 0 T, ∫ s in Icc 0 T,
+          ({z : ℝ × ℝ | z.2 ≤ z.1}.indicator fun z => deriv ψ z.1 • v z.2) (t, s)
+            ∂volume ∂volume := by
+    rw [intervalIntegral.integral_of_le hTle, ← integral_Icc_eq_integral_Ioc]
+    refine setIntegral_congr_fun measurableSet_Icc fun t ht => hpt t ht
+  -- Fubini on the triangle, then the inner `t`-integral is the scalar FTC.
+  have hswap :
+      (∫ t in Icc 0 T, ∫ s in Icc 0 T,
+          ({z : ℝ × ℝ | z.2 ≤ z.1}.indicator fun z => deriv ψ z.1 • v z.2) (t, s)
+            ∂volume ∂volume)
+        = ∫ s in Icc 0 T, ∫ t in Icc 0 T,
+            ({z : ℝ × ℝ | z.2 ≤ z.1}.indicator fun z => deriv ψ z.1 • v z.2) (t, s)
+              ∂volume ∂volume :=
+    integral_integral_swap htri
+  have hinner : ∀ s ∈ Icc (0 : ℝ) T,
+      (∫ t in Icc 0 T,
+          ({z : ℝ × ℝ | z.2 ≤ z.1}.indicator fun z => deriv ψ z.1 • v z.2) (t, s) ∂volume)
+        = -ψ s • v s := by
+    intro s hs
+    have hIcc_s : Icc s T = Icc (0 : ℝ) T ∩ {t | s ≤ t} := by
+      ext t
+      simp only [mem_Icc]
+      exact ⟨fun h => ⟨⟨hs.1.trans h.1, h.2⟩, h.1⟩, fun h => ⟨h.2, h.1.2⟩⟩
+    have hψ'ii : IntervalIntegrable (deriv ψ) volume s T :=
+      hψ'cont.intervalIntegrable s T
+    have hftc : (∫ t in s..T, deriv ψ t) = ψ T - ψ s :=
+      intervalIntegral.integral_eq_sub_of_hasDerivAt
+        (fun x _ => hψderiv x) hψ'ii
+    have hsmul :
+        (∫ t in Icc s T, deriv ψ t • v s ∂volume) = (∫ t in Icc s T, deriv ψ t ∂volume) • v s := by
+      simpa using
+        (integral_smul_const (μ := volume.restrict (Icc s T)) (deriv ψ) (v s))
+    calc (∫ t in Icc 0 T,
+            ({z : ℝ × ℝ | z.2 ≤ z.1}.indicator fun z => deriv ψ z.1 • v z.2) (t, s) ∂volume)
+        = ∫ t in Icc 0 T, ({t | s ≤ t}.indicator fun t => deriv ψ t • v s) t ∂volume := by
+          refine setIntegral_congr_fun measurableSet_Icc fun t _ => ?_
+          simp [Set.indicator, mem_setOf_eq]
+      _ = ∫ t in Icc 0 T ∩ {t | s ≤ t}, deriv ψ t • v s ∂volume :=
+          setIntegral_indicator (measurableSet_le measurable_const measurable_id)
+      _ = ∫ t in Icc s T, deriv ψ t • v s ∂volume := by rw [hIcc_s]
+      _ = (∫ t in Icc s T, deriv ψ t ∂volume) • v s := hsmul
+      _ = (∫ t in Ioc s T, deriv ψ t ∂volume) • v s := by rw [integral_Icc_eq_integral_Ioc]
+      _ = (∫ t in s..T, deriv ψ t) • v s := by rw [intervalIntegral.integral_of_le hs.2]
+      _ = (ψ T - ψ s) • v s := by rw [hftc]
+      _ = -ψ s • v s := by rw [hψT, zero_sub, neg_smul]
+  have hRHS : (∫ s in Icc 0 T, ∫ t in Icc 0 T,
+        ({z : ℝ × ℝ | z.2 ≤ z.1}.indicator fun z => deriv ψ z.1 • v z.2) (t, s)
+          ∂volume ∂volume)
+      = -∫ s in (0 : ℝ)..T, ψ s • v s := by
+    have hcongr : (∫ s in Icc 0 T, ∫ t in Icc 0 T,
+          ({z : ℝ × ℝ | z.2 ≤ z.1}.indicator fun z => deriv ψ z.1 • v z.2) (t, s)
+            ∂volume ∂volume)
+        = ∫ s in Icc 0 T, (-ψ s • v s) ∂volume :=
+      setIntegral_congr_fun measurableSet_Icc fun s hs => hinner s hs
+    rw [hcongr, intervalIntegral.integral_of_le hTle, ← integral_Icc_eq_integral_Ioc,
+      ← integral_neg]
+    refine setIntegral_congr_fun measurableSet_Icc fun s _ => ?_
+    rw [neg_smul]
+  rw [hLHS, hswap, hRHS]
 
 /-- **R1 — V'-continuous good representative (trace-free).** A `W1pTime` curve's embedded image
 `t ↦ hToVprime (ι (uV t))` admits a representative continuous into `V'` on `[0,T]`, a.e.-equal to
