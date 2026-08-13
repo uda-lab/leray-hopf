@@ -594,11 +594,12 @@ private theorem exists_weak_representative (F : Torus3NSForms) (ν : ℝ) (hν :
 
 /-! ### Conjunct (3): strong initial trace -/
 
-/-- **Textbook step (liminf of a nonnegative, uniformly bounded sequence).**  A real sequence
-that is bounded above by a constant is `liminf`-cobounded from below along `atTop`.
+/-- **Textbook step (upper bound yields liminf coboundedness).**  A real sequence that is bounded
+above by a constant is `liminf`-cobounded from below along `atTop`.
 
 Separated out because it is pure filter bookkeeping: no Navier–Stokes content enters, only the
-existence of a uniform upper bound. -/
+existence of a uniform upper bound. The lemma does not assume nonnegativity; that hypothesis
+lives on the sister `liminf_nonneg_atTop_of_nonneg_of_le`. -/
 private theorem isCoboundedUnder_ge_atTop_of_le {b : ℕ → ℝ} {C : ℝ} (hbC : ∀ k, b k ≤ C) :
     Filter.IsCoboundedUnder (· ≥ ·) atTop b :=
   (Filter.isBoundedUnder_of_eventually_le (a := C)
@@ -607,8 +608,10 @@ private theorem isCoboundedUnder_ge_atTop_of_le {b : ℕ → ℝ} {C : ℝ} (hbC
 /-- **Textbook step (nonnegativity passes to the liminf).**  A nonnegative real sequence that is
 also bounded above has nonnegative `liminf` along `atTop`.
 
-The upper bound is not decoration: without coboundedness `Filter.liminf` of an unbounded-below
-sequence is not controlled by the pointwise bound, so both hypotheses are load-bearing. In
+The upper bound `hbC` is not decoration: `Filter.le_liminf_of_le` requires
+`Filter.IsCoboundedUnder (· ≥ ·)` (upper coboundedness), which `hbC` supplies via
+`isCoboundedUnder_ge_atTop_of_le`. Without that side-condition an unbounded-above sequence's
+`liminf` is not controlled by the pointwise lower bound, so both hypotheses are load-bearing. In
 `dissipation_liminf_le_of_aeTendsto` the sequence is the Galerkin dissipation integrals, whose
 uniform upper bound is the Galerkin energy inequality. -/
 private theorem liminf_nonneg_atTop_of_nonneg_of_le {b : ℕ → ℝ} {C : ℝ}
