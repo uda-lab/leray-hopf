@@ -289,12 +289,77 @@ private theorem timeConv_prod_integrable {a ρ : ℝ → ℝ}
       (fun s => ∫ t, ‖(Function.uncurry fun t s => a t • ρ s • w (t - s)) (t, s)‖
         ∂(volume : Measure ℝ)) (volume : Measure ℝ) :=
     hmeas.prod_swap.norm.integral_prod_right'
-  -- ALLOW_SORRY: standard compact-box L¹ estimate for the outer norm-integral. The integrand
-  -- `s ↦ ∫ t ‖a t • ρ s • w(t−s)‖` is supported in the compact `tsupport ρ` and bounded there by
-  -- `|ρ s| · ‖a‖∞ · ∫_{tsupport a − tsupport ρ}‖w‖`; integrability follows by domination against the
-  -- integrable `|ρ ·| · B`. Not soundness-critical (the convolution-commutation identity below does
-  -- not depend on the *value* of this estimate, only its existence as a Fubini side-condition).
-  sorry -- ALLOW_SORRY: s1-walls-design.md §1c — Fubini side-condition (compact-box L¹ bound on `s ↦ ∫ t ‖a t • ρ s • w(t−s)‖`); standard box estimate, not soundness-critical; mathematical commutation identity proved unconditionally below
+  -- Compact-box L¹ estimate: dominate `s ↦ ∫ t ‖a t • ρ s • w(t−s)‖` by `|ρ s| · ‖a‖∞ · C`,
+  -- where `C = ∫_{closedBall 0 (r_a+r_ρ)} ‖w‖` is finite by local integrability of `w`.
+  obtain ⟨Ma, hMa⟩ := ha_cont.bounded_above_of_compact_support ha_cs
+  obtain ⟨ra, hra⟩ := ha_cs.isCompact.isBounded.subset_closedBall (0 : ℝ)
+  obtain ⟨rρ, hrρ⟩ := hρ.hasCompactSupport.isCompact.isBounded.subset_closedBall (0 : ℝ)
+  set R : ℝ := ra + rρ
+  have hwR : IntegrableOn (fun t => ‖w t‖) (closedBall (0 : ℝ) R) volume :=
+    (hw.integrableOn_isCompact (isCompact_closedBall (0 : ℝ) R)).norm
+  have hwRind : Integrable (Set.indicator (closedBall (0 : ℝ) R) (fun t => ‖w t‖)) volume :=
+    hwR.integrable_indicator measurableSet_closedBall
+  set C : ℝ := ∫ t, Set.indicator (closedBall (0 : ℝ) R) (fun t => ‖w t‖) t ∂volume
+  have hdom : Integrable (fun s => |ρ s| * (Ma * C)) volume :=
+    (hρ.continuous.integrable_of_hasCompactSupport hρ.hasCompactSupport).abs.mul_const (Ma * C)
+  refine hdom.mono' hmeas_int (Filter.Eventually.of_forall fun s => ?_)
+  simp only [Function.uncurry, Real.norm_eq_abs]
+  have hnn : 0 ≤ ∫ t, ‖a t • ρ s • w (t - s)‖ ∂(volume : Measure ℝ) :=
+    integral_nonneg fun _ => norm_nonneg _
+  rw [abs_of_nonneg hnn]
+  have hpt : ∀ t, ‖a t • ρ s • w (t - s)‖
+      ≤ |ρ s| * Ma * Set.indicator (closedBall (0 : ℝ) R) (fun u => ‖w u‖) (t - s) := by
+    intro t
+    have hMa0 : 0 ≤ Ma := (norm_nonneg (a 0)).trans (hMa 0)
+    have hindnn : 0 ≤ Set.indicator (closedBall (0 : ℝ) R) (fun u => ‖w u‖) (t - s) :=
+      Set.indicator_nonneg (fun _ _ => norm_nonneg _) _
+    by_cases hs : s ∈ tsupport ρ
+    · by_cases ht : t ∈ tsupport a
+      · have htball : t - s ∈ closedBall (0 : ℝ) R := by
+          have hta := hra ht
+          have hsa := hrρ hs
+          rw [mem_closedBall_zero_iff] at hta hsa ⊢
+          calc ‖t - s‖ ≤ ‖t‖ + ‖s‖ := norm_sub_le t s
+            _ ≤ ra + rρ := add_le_add hta hsa
+        have hle : |a t| ≤ Ma := by simpa [Real.norm_eq_abs] using hMa t
+        calc ‖a t • ρ s • w (t - s)‖
+            = |a t| * |ρ s| * ‖w (t - s)‖ := by
+              simp [norm_smul, Real.norm_eq_abs, mul_assoc]
+          _ ≤ Ma * |ρ s| * ‖w (t - s)‖ := by
+              gcongr
+          _ = |ρ s| * Ma * Set.indicator (closedBall (0 : ℝ) R) (fun u => ‖w u‖) (t - s) := by
+              rw [Set.indicator_of_mem htball]; ring
+      · have : a t = 0 := image_eq_zero_of_notMem_tsupport ht
+        simp only [this, zero_smul, norm_zero]
+        exact mul_nonneg (mul_nonneg (abs_nonneg _) hMa0) hindnn
+    · have : ρ s = 0 := image_eq_zero_of_notMem_tsupport hs
+      simp [this]
+  have hslice_norm : Integrable (fun t => ‖a t • ρ s • w (t - s)‖) volume :=
+    (timeConv_slice_integrable ha_cont ha_cs hw s).norm
+  have hbound_int : Integrable
+      (fun t => |ρ s| * Ma * Set.indicator (closedBall (0 : ℝ) R) (fun u => ‖w u‖) (t - s))
+      volume :=
+    (hwRind.comp_sub_right s).const_mul (|ρ s| * Ma)
+  have hmono : (∫ t, ‖a t • ρ s • w (t - s)‖ ∂volume)
+      ≤ ∫ t, |ρ s| * Ma * Set.indicator (closedBall (0 : ℝ) R) (fun u => ‖w u‖) (t - s)
+          ∂volume :=
+    integral_mono hslice_norm hbound_int hpt
+  have hshift :
+      (∫ t, Set.indicator (closedBall (0 : ℝ) R) (fun u => ‖w u‖) (t - s) ∂volume) = C :=
+    integral_sub_right_eq_self (Set.indicator (closedBall (0 : ℝ) R) (fun u => ‖w u‖)) s
+  calc (∫ t, ‖a t • ρ s • w (t - s)‖ ∂volume)
+      ≤ ∫ t, |ρ s| * Ma * Set.indicator (closedBall (0 : ℝ) R) (fun u => ‖w u‖) (t - s)
+          ∂volume :=
+        hmono
+    _ = ∫ t, (|ρ s| * Ma) *
+          Set.indicator (closedBall (0 : ℝ) R) (fun u => ‖w u‖) (t - s) ∂volume := by
+        refine integral_congr_ae (Filter.Eventually.of_forall fun _ => ?_)
+        ring
+    _ = (|ρ s| * Ma) * ∫ t, Set.indicator (closedBall (0 : ℝ) R) (fun u => ‖w u‖) (t - s)
+          ∂volume :=
+        integral_const_mul _ _
+    _ = (|ρ s| * Ma) * C := by rw [hshift]
+    _ = |ρ s| * (Ma * C) := by ring
 
 /-- **Weak-derivative commutation `(ρ ⋆ u)' = ρ ⋆ u'` (pointwise-curve form, corrected signature).**
 
